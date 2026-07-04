@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.BoardController"
+            styleClass="page-root">
+    <center>
+        <StackPane fx:id="boardContainer" style="-fx-background-color: transparent;">
+            <!-- Canvas added programmatically -->
+        </StackPane>
+    </center>
+    <right>
+        <VBox spacing="12" prefWidth="220">
+            <Label fx:id="blackLabel" text="黑方" styleClass="section-label"/>
+            <Label fx:id="whiteLabel" text="白方" styleClass="subtitle"/>
+            <Label fx:id="turnLabel" text="当前回合: 黑方" styleClass="subtitle"/>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+            <Label text="聊天" styleClass="section-label" style="-fx-padding: 8 0;"/>
+            <TextArea fx:id="chatArea" editable="false" VBox.vgrow="ALWAYS" styleClass="chat-area"/>
+            <TextField fx:id="chatInput" promptText="输入消息..." styleClass="field"/>
+            <HBox spacing="8">
+                <Button text="悔棋" fx:id="undoBtn" onAction="#handleUndo" styleClass="btn-secondary" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                <Button text="求和" fx:id="drawBtn" onAction="#handleDraw" styleClass="btn-secondary" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+            </HBox>
+            <Button text="认输" fx:id="surrenderBtn" onAction="#handleSurrender" styleClass="btn-danger" maxWidth="Infinity"/>
+        </VBox>
+    </right>
+</BorderPane>

@@ -1,0 +1,160 @@
+package com.gomatch.client.ui;
+
+import com.gomatch.client.ClientMain;
+import com.gomatch.client.model.RoomInfo;
+import com.gomatch.client.model.User;
+import com.gomatch.client.network.NetworkListener;
+import com.gomatch.common.Protocol;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class CasualLobbyController implements NetworkListener {
+    @FXML private TableView<RoomInfo> roomTable;
+    @FXML private TableColumn<RoomInfo, String> roomIdCol;
+    @FXML private TableColumn<RoomInfo, String> roomNameCol;
+    @FXML private TableColumn<RoomInfo, String> ownerCol;
+    @FXML private TableColumn<RoomInfo, Integer> playerCountCol;
+    @FXML private TableColumn<RoomInfo, String> statusCol;
+    @FXML private ListView<String> spectateList;
+
+    private final ObservableList<RoomInfo> roomData = FXCollections.observableArrayList();
+    private final ObservableList<String> spectateData = FXCollections.observableArrayList();
+    private final Gson gson = new Gson();
+    private User currentUser;
+    private boolean previewMode;
+
+    @FXML
+    private void initialize() {
+        roomIdCol.setCellValueFactory(new PropertyValueFactory<>("roomId"));
+        roomNameCol.setCellValueFactory(new PropertyValueFactory<>("roomName"));
+        ownerCol.setCellValueFactory(new PropertyValueFactory<>("ownerName"));
+        playerCountCol.setCellValueFactory(new PropertyValueFactory<>("playerCount"));
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+        roomTable.setItems(roomData);
+        roomTable.setRowFactory(tv -> {
+            TableRow<RoomInfo> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    joinRoom(row.getItem());
+                }
+            });
+            return row;
+        });
+        spectateList.setItems(spectateData);
+        ClientMain.getConnector().addListener(this);
+        if (!ClientMain.getConnector().isConnected()) {
+            roomData.addAll(
+                new RoomInfo("1001", "五子棋切磋", "玩家A", 2, "对局中"),
+                new RoomInfo("1002", "休闲一局", "玩家B", 1, "等待中")
+            );
+            spectateData.addAll("#1001 五子棋切磋  玩家A vs 玩家D");
+        } else {
+            ClientMain.getConnector().send(Protocol.ROOM_LIST);
+        }
+    }
+
+    public void setPreviewMode(boolean previewMode) { this.previewMode = previewMode; }
+
+    public void setCurrentUser(User user) { this.currentUser = user; }
+
+    @FXML
+    private void handleCreateRoom() {
+        if (previewMode) {
+            RoomInfo fakeRoom = new RoomInfo("9999", "预览房间", currentUser.getUsername(), 1, "等待中");
+            RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
+            ctrl.setRoomInfo(fakeRoom, currentUser);
+            ctrl.setPreviewMode(true);
+            return;
+        }
+        CreateRoomController ctrl = ScreenManager.switchTo("/fxml/CreateRoomUI.fxml");
+        ctrl.setCurrentUser(currentUser);
+    }
+
+    @FXML
+    private void handleJoinRoom() {
+        RoomInfo selected = roomTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert("请先选择一个房间");
+            return;
+        }
+        joinRoom(selected);
+    }
+
+    private void joinRoom(RoomInfo room) {
+        if (previewMode) {
+            RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
+            ctrl.setRoomInfo(room, currentUser);
+            ctrl.setPreviewMode(true);
+            return;
+        }
+        ClientMain.getConnector().send(Protocol.JOIN_ROOM, room.getRoomId(), "");
+    }
+
+    @FXML
+    private void handleQuickMatch() {
+        if (previewMode) {
+            RoomInfo fakeRoom = new RoomInfo("8888", "快速匹配", "对手", 1, "等待中");
+            RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
+            ctrl.setRoomInfo(fakeRoom, currentUser);
+            ctrl.setPreviewMode(true);
+            return;
+        }
+        ClientMain.getConnector().send("QUICK_MATCH");
+    }
+
+    @FXML
+    private void handleSpectate() {
+        String selected = spectateList.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert(previewMode ? "预览模式：观战" : "请先选择一个对局");
+            return;
+        }
+        if (previewMode) {
+            showAlert("预览模式：观战功能需要服务器");
+            return;
+        }
+        String roomId = selected.split(" ")[0].replace("#", "");
+        ClientMain.getConnector().send("SPECTATE", roomId);
+    }
+
+    @FXML
+    private void handleBack() {
+        ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+    }
+
+    private void showAlert(String msg) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, msg);
+        alert.showAndWait();
+    }
+
+    @Override
+    public void onMessage(String command, String[] args) {
+        if (Protocol.ROOM_LIST.equals(command)) {
+            Type listType = new TypeToken<List<RoomInfo>>() {}.getType();
+            List<RoomInfo> rooms = gson.fromJson(args[0], listType);
+            roomData.setAll(rooms);
+            spectateData.setAll(rooms.stream()
+                .filter(r -> "对局中".equals(r.getStatus()))
+                .map(r -> "#" + r.getRoomId() + " " + r.getRoomName() + "  房主: " + r.getOwnerName())
+                .collect(Collectors.toList()));
+        } else if (Protocol.JOIN_OK.equals(command)) {
+            RoomInfo room = gson.fromJson(args[0], RoomInfo.class);
+            RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
+            ctrl.setRoomInfo(room, currentUser);
+        } else if (Protocol.JOIN_FAIL.equals(command)) {
+            showAlert("加入失败: " + args[0]);
+        } else if (Protocol.GAME_START.equals(command)) {
+            BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
+            ctrl.setGameInfo(args[0], args[1], currentUser.getUsername());
+        }
+    }
+}

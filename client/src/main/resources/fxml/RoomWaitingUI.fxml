@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.RoomWaitingController"
+            styleClass="page-root">
+    <top>
+        <VBox spacing="0">
+            <VBox spacing="4">
+                <Label fx:id="roomTitleLabel" styleClass="title"/>
+                <Label fx:id="statusLabel" text="等待其他玩家加入..." styleClass="subtitle"/>
+            </VBox>
+            <Separator styleClass="section-divider" prefWidth="Infinity" style="-fx-padding: 12 0 0 0;"/>
+        </VBox>
+    </top>
+    <center>
+        <VBox spacing="8" VBox.vgrow="ALWAYS">
+            <Label text="玩家列表" styleClass="section-label" style="-fx-padding: 8 0;"/>
+            <ListView fx:id="playerList" VBox.vgrow="ALWAYS" minHeight="120"/>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+            <Label text="聊天" styleClass="section-label" style="-fx-padding: 8 0;"/>
+            <TextArea fx:id="chatArea" editable="false" prefHeight="100" styleClass="chat-area"/>
+            <HBox spacing="8">
+                <TextField fx:id="chatInput" promptText="输入聊天消息..." HBox.hgrow="ALWAYS" styleClass="field"/>
+                <Button text="发送" onAction="#handleSendChat" styleClass="btn-primary"/>
+            </HBox>
+        </VBox>
+    </center>
+    <bottom>
+        <VBox spacing="0">
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+            <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 16 0 0 0;">
+                <Button text="开始游戏" fx:id="startBtn" onAction="#handleStart" visible="false" styleClass="btn-primary"/>
+                <Button text="离开房间" onAction="#handleLeave" styleClass="btn-secondary"/>
+            </HBox>
+        </VBox>
+    </bottom>
+</BorderPane>

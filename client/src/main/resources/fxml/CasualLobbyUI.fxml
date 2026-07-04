@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.CasualLobbyController"
+            styleClass="page-root">
+    <top>
+        <VBox spacing="0">
+            <HBox alignment="CENTER_LEFT" spacing="18">
+                <Button text="« 返回" onMouseClicked="#handleBack" styleClass="icon-btn"/>
+                <Label text="匹配大厅" styleClass="title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="创建房间" onAction="#handleCreateRoom" styleClass="btn-primary"/>
+                <Button text="加入房间" onAction="#handleJoinRoom" styleClass="btn-secondary"/>
+                <Button text="快速匹配" onAction="#handleQuickMatch" styleClass="btn-secondary"/>
+            </HBox>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+        </VBox>
+    </top>
+    <center>
+        <!-- Left: room list + right: spectate list, separated by vertical line -->
+        <HBox spacing="0" alignment="CENTER">
+            <VBox spacing="8" HBox.hgrow="ALWAYS">
+                <TableView fx:id="roomTable" editable="false" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn text="房间号" fx:id="roomIdCol" prefWidth="100"/>
+                        <TableColumn text="房间名" fx:id="roomNameCol" prefWidth="240"/>
+                        <TableColumn text="房主" fx:id="ownerCol" prefWidth="140"/>
+                        <TableColumn text="人数" fx:id="playerCountCol" prefWidth="80"/>
+                        <TableColumn text="状态" fx:id="statusCol" prefWidth="120"/>
+                    </columns>
+                </TableView>
+            </VBox>
+            <Separator orientation="VERTICAL" styleClass="section-divider"/>
+            <VBox spacing="8" prefWidth="260" style="-fx-padding: 0 0 0 20;">
+                <Label text="观战" styleClass="section-label"/>
+                <ListView fx:id="spectateList" VBox.vgrow="ALWAYS" minHeight="200"/>
+                <Button text="进入观战" onAction="#handleSpectate" styleClass="btn-secondary" prefWidth="Infinity"/>
+            </VBox>
+        </HBox>
+    </center>
+</BorderPane>

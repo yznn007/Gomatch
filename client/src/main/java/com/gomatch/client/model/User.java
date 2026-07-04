@@ -7,6 +7,8 @@ public class User {
     private int winCount;
     private int loseCount;
     private int drawCount;
+    private int rank;
+    private String winRate;
 
     public User() {}
 
@@ -27,4 +29,8 @@ public class User {
     public void setLoseCount(int loseCount) { this.loseCount = loseCount; }
     public int getDrawCount() { return drawCount; }
     public void setDrawCount(int drawCount) { this.drawCount = drawCount; }
+    public int getRank() { return rank; }
+    public void setRank(int rank) { this.rank = rank; }
+    public String getWinRate() { return winRate; }
+    public void setWinRate(String winRate) { this.winRate = winRate; }
 }

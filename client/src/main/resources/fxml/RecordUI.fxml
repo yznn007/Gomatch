@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.RecordController"
+            styleClass="page-root">
+    <top>
+        <VBox spacing="0">
+            <Label text="对战记录" styleClass="title"/>
+            <Separator styleClass="section-divider" prefWidth="Infinity" style="-fx-padding: 12 0 0 0;"/>
+        </VBox>
+    </top>
+    <center>
+        <TableView fx:id="recordTable" VBox.vgrow="ALWAYS" style="-fx-padding: 8 0;">
+            <columns>
+                <TableColumn text="对手" fx:id="opponentCol" prefWidth="160"/>
+                <TableColumn text="结果" fx:id="resultCol" prefWidth="100"/>
+                <TableColumn text="时间" fx:id="timeCol" prefWidth="220"/>
+                <TableColumn text="棋谱回放" fx:id="replayCol" prefWidth="120"/>
+            </columns>
+        </TableView>
+    </center>
+    <bottom>
+        <VBox spacing="0">
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+            <HBox alignment="CENTER" style="-fx-padding: 14 0 0 0;">
+                <Button text="返回大厅" onAction="#handleBack" styleClass="btn-primary"/>
+            </HBox>
+        </VBox>
+    </bottom>
+</BorderPane>

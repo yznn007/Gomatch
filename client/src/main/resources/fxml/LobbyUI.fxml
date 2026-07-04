@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.LobbyController"
+            styleClass="page-root">
+    <left>
+        <!-- Ranking side drawer (collapsible via visible property in controller) -->
+        <VBox fx:id="rankDrawer" styleClass="side-drawer" prefWidth="240" managed="false" visible="false" minWidth="0" maxWidth="240">
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="排行榜" styleClass="section-label"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="«" onAction="#toggleRankDrawer" styleClass="drawer-toggle"/>
+            </HBox>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+            <ListView fx:id="rankDrawerList" VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </left>
+    <top>
+        <VBox spacing="0">
+            <HBox alignment="CENTER_LEFT" spacing="18">
+                <HBox fx:id="playerInfoBox" styleClass="player-chip" onMouseClicked="#handleProfile" HBox.hgrow="ALWAYS" spacing="12">
+                    <Label fx:id="avatarLabel" text="U" styleClass="avatar" prefWidth="44" prefHeight="44" minWidth="44" minHeight="44"/>
+                    <VBox spacing="2" alignment="CENTER_LEFT">
+                        <Label fx:id="userInfoLabel" text="" styleClass="player-name"/>
+                        <Label fx:id="userScoreLabel" text="" styleClass="player-score"/>
+                    </VBox>
+                </HBox>
+                <HBox spacing="6" alignment="CENTER_RIGHT">
+                    <Button text="排行榜" onAction="#toggleRankDrawer" styleClass="icon-btn"/>
+                    <Button text="好友" onAction="#handleFriends" styleClass="icon-btn"/>
+                    <Button text="设置" onAction="#handleSettings" styleClass="icon-btn"/>
+                </HBox>
+            </HBox>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+        </VBox>
+    </top>
+    <center>
+        <!-- Empty center with arena buttons at ~4/5 position -->
+        <VBox styleClass="page-root" spacing="0" alignment="BOTTOM_CENTER" style="-fx-padding: 0 0 80 0;">
+            <Region VBox.vgrow="ALWAYS"/>
+            <HBox styleClass="lobby-center" spacing="50" alignment="BOTTOM_CENTER">
+                <!-- 匹配 -->
+                <StackPane styleClass="arena-btn, arena-casual" onMouseClicked="#handleCasual"
+                           prefWidth="300" prefHeight="180" minWidth="300" minHeight="180" maxWidth="300" maxHeight="180">
+                    <VBox alignment="CENTER" spacing="8">
+                        <Label text="⚔" styleClass="arena-icon"/>
+                        <Label text="匹  配" styleClass="arena-title"/>
+                        <Label text="MATCH" styleClass="arena-sub"/>
+                    </VBox>
+                </StackPane>
+                <!-- 排位 -->
+                <StackPane styleClass="arena-btn, arena-ranked" onMouseClicked="#handleRanked"
+                           prefWidth="300" prefHeight="180" minWidth="300" minHeight="180" maxWidth="300" maxHeight="180">
+                    <VBox alignment="CENTER" spacing="8">
+                        <Label text="♛" styleClass="arena-icon"/>
+                        <Label text="排  位" styleClass="arena-title"/>
+                        <Label text="RANK" styleClass="arena-sub"/>
+                    </VBox>
+                </StackPane>
+            </HBox>
+            <Label text="" style="-fx-padding: 18 0 0 0;"/>
+        </VBox>
+    </center>
+</BorderPane>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.AboutController"
+            styleClass="page-root">
+    <center>
+        <VBox styleClass="card-padded" alignment="CENTER" spacing="14" maxWidth="420">
+            <Label text="Gomatch" styleClass="title"/>
+            <Label text="网络五子棋联机对战平台" styleClass="subtitle"/>
+            <Region prefHeight="10"/>
+            <Label text="版本: 1.0.0" styleClass="muted"/>
+            <Label text="技术栈: JavaFX + Socket + JDBC" styleClass="muted"/>
+            <Region VBox.vgrow="ALWAYS"/>
+            <Button text="关闭" onAction="#handleClose" styleClass="btn-secondary"/>
+        </VBox>
+    </center>
+</BorderPane>

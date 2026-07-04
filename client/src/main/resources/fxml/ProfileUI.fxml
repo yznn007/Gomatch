@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.ProfileController"
+            styleClass="page-root">
+    <top>
+        <VBox spacing="0">
+            <HBox alignment="CENTER_LEFT" spacing="18">
+                <Button text="« 返回" onAction="#handleBack" styleClass="icon-btn"/>
+                <Label text="个人中心" styleClass="title"/>
+            </HBox>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+        </VBox>
+    </top>
+    <center>
+        <VBox spacing="14" alignment="TOP_CENTER" prefWidth="600" maxWidth="600">
+            <GridPane hgap="14" vgap="12" alignment="CENTER_LEFT" style="-fx-padding: 14 0;">
+                <Label text="用户ID" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
+                <Label fx:id="userIdLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" styleClass="section-label"/>
+                <Label text="用户名" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
+                <Label fx:id="usernameLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="section-label"/>
+                <Label text="积分" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="muted"/>
+                <Label fx:id="scoreLabel" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="section-label"/>
+                <Label text="胜场" GridPane.rowIndex="3" GridPane.columnIndex="0" styleClass="muted"/>
+                <Label fx:id="winLabel" GridPane.rowIndex="3" GridPane.columnIndex="1" styleClass="section-label"/>
+                <Label text="负场" GridPane.rowIndex="4" GridPane.columnIndex="0" styleClass="muted"/>
+                <Label fx:id="loseLabel" GridPane.rowIndex="4" GridPane.columnIndex="1" styleClass="section-label"/>
+                <Label text="平局" GridPane.rowIndex="5" GridPane.columnIndex="0" styleClass="muted"/>
+                <Label fx:id="drawLabel" GridPane.rowIndex="5" GridPane.columnIndex="1" styleClass="section-label"/>
+            </GridPane>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+            <Label text="对战记录" styleClass="section-label" style="-fx-padding: 8 0;"/>
+            <TableView fx:id="recordTable" VBox.vgrow="ALWAYS" minHeight="160">
+                <columns>
+                    <TableColumn text="对手" fx:id="opponentCol" prefWidth="160"/>
+                    <TableColumn text="结果" fx:id="resultCol" prefWidth="100"/>
+                    <TableColumn text="时间" fx:id="timeCol" prefWidth="200"/>
+                    <TableColumn text="棋谱回放" fx:id="replayCol" prefWidth="120"/>
+                </columns>
+            </TableView>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+            <Label text="修改密码" styleClass="section-label" style="-fx-padding: 8 0;"/>
+            <PasswordField fx:id="oldPwdField" promptText="旧密码" styleClass="field"/>
+            <PasswordField fx:id="newPwdField" promptText="新密码" styleClass="field"/>
+            <Label fx:id="errorLabel" text="" styleClass="error-text"/>
+            <Button text="确认修改" onAction="#handleChangePwd" styleClass="btn-primary"/>
+        </VBox>
+    </center>
+</BorderPane>

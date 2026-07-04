@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.RegisterController"
+            styleClass="page-root">
+    <center>
+        <VBox styleClass="card-padded" alignment="CENTER" spacing="18" maxWidth="420">
+            <Label text="注册账号" styleClass="title"/>
+            <Label text="创建你的账号以加入对战" styleClass="subtitle"/>
+            <GridPane hgap="10" vgap="14" alignment="CENTER">
+                <Label text="用户名" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="section-label"/>
+                <TextField fx:id="usernameField" GridPane.rowIndex="0" GridPane.columnIndex="1"
+                           styleClass="field" prefWidth="220"/>
+                <Label text="密码" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="section-label"/>
+                <PasswordField fx:id="passwordField" GridPane.rowIndex="1" GridPane.columnIndex="1"
+                               styleClass="field" prefWidth="220"/>
+                <Label text="确认密码" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="section-label"/>
+                <PasswordField fx:id="confirmField" GridPane.rowIndex="2" GridPane.columnIndex="1"
+                                styleClass="field" prefWidth="220"/>
+                <Label fx:id="errorLabel" text="" styleClass="error-text"
+                       GridPane.rowIndex="3" GridPane.columnIndex="0" GridPane.columnSpan="2"/>
+            </GridPane>
+            <HBox spacing="12" alignment="CENTER">
+                <Button text="注册" onAction="#handleRegister" styleClass="btn-primary"/>
+                <Button text="返回登录" onAction="#handleBack" styleClass="btn-secondary"/>
+            </HBox>
+        </VBox>
+    </center>
+</BorderPane>

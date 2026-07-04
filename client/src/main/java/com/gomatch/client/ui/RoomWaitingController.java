@@ -1,0 +1,86 @@
+package com.gomatch.client.ui;
+
+import com.gomatch.client.ClientMain;
+import com.gomatch.client.model.RoomInfo;
+import com.gomatch.client.model.User;
+import com.gomatch.client.network.NetworkListener;
+import com.gomatch.common.Protocol;
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+
+public class RoomWaitingController implements NetworkListener {
+    @FXML private Label roomTitleLabel;
+    @FXML private Label statusLabel;
+    @FXML private ListView<String> playerList;
+    @FXML private Button startBtn;
+    @FXML private TextField chatInput;
+    @FXML private TextArea chatArea;
+
+    private final ObservableList<String> players = FXCollections.observableArrayList();
+    private RoomInfo roomInfo;
+    private User currentUser;
+    private boolean previewMode;
+
+    public void setRoomInfo(RoomInfo room, User user) {
+        this.roomInfo = room;
+        this.currentUser = user;
+        roomTitleLabel.setText("房间: " + room.getRoomName() + " (#" + room.getRoomId() + ")");
+        players.add(user.getUsername());
+        playerList.setItems(players);
+        if (user.getUsername().equals(room.getOwnerName())) {
+            startBtn.setVisible(true);
+        }
+        if (!previewMode) {
+            ClientMain.getConnector().addListener(this);
+        }
+    }
+
+    public void setPreviewMode(boolean previewMode) {
+        this.previewMode = previewMode;
+    }
+
+    @FXML
+    private void handleStart() {
+        if (previewMode) {
+            players.add("玩家C（bot）");
+            BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
+            ctrl.setGameInfo(currentUser.getUsername(), "玩家C（bot）", currentUser.getUsername());
+            ctrl.setPreviewMode(true);
+            return;
+        }
+        ClientMain.getConnector().send("READY");
+    }
+
+    @FXML
+    private void handleLeave() {
+        ClientMain.getConnector().send(Protocol.LEAVE_ROOM);
+        ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+    }
+
+    @FXML
+    private void handleSendChat() {
+        String msg = chatInput.getText().trim();
+        if (!msg.isEmpty()) {
+            ClientMain.getConnector().send(Protocol.CHAT, msg);
+            chatInput.clear();
+        }
+    }
+
+    @Override
+    public void onMessage(String command, String[] args) {
+        if (Protocol.PLAYER_ENTER.equals(command)) {
+            players.add(args[0]);
+            statusLabel.setText("玩家 " + args[0] + " 已加入");
+        } else if (Protocol.PLAYER_LEAVE.equals(command)) {
+            players.remove(args[0]);
+        } else if (Protocol.CHAT_MSG.equals(command)) {
+            chatArea.appendText(args[0] + ": " + args[1] + "\n");
+        } else if (Protocol.GAME_START.equals(command)) {
+            BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
+            ctrl.setGameInfo(args[0], args[1], currentUser.getUsername());
+        }
+    }
+}
