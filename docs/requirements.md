@@ -12,7 +12,7 @@ Gomatch 是一个基于 **Swing + Socket 多线程服务端 + JDBC** 三段式�
 | 层级 | 技术 | 版本 | 说明 |
 |------|------|------|------|
 | 运行环境 | JDK | 21 LTS | 跨平台运行基础，LTS 版本稳定支持到 2031 年 |
-| 客户端 UI | Java Swing | JDK 内置 | 构建桌面窗口、棋盘绘制、按钮/列表/对话框等交互组件 |
+| 客户端 UI | JavaFX (FXML + CSS) | 21 | 构建桌面窗口、棋盘绘制、按钮/列表/对话框等交互组件；FXML 布局 + CSS 样式 |
 | 网络通信 | Java Socket（TCP） | JDK 内置 | 客户端与服务端之间的实时双向数据传输；自定义文本协议 |
 | 并发模型 | Java 原生多线程 | JDK 内置 | 每连接分配独立 `ClientHandler` 线程；`Room` 对象同步锁保障并发安全 |
 | 数据持久化 | JDBC + MySQL | MySQL 8.x | 用户注册/登录、战绩写入与查询、排行榜聚合查询 |
@@ -25,7 +25,7 @@ Gomatch 是一个基于 **Swing + Socket 多线程服务端 + JDBC** 三段式�
 
 ### 2.2 部署模型
 ```
-客户端（Swing） ←— TCP Socket —→ 服务端（多线程） ←— JDBC —→ MySQL
+客户端（JavaFX） ←— TCP Socket —→ 服务端（多线程） ←— JDBC —→ MySQL
 ```
 客户端启动独立接收线程读取服务端推送；服务端为每个连接分配独立线程，`Room` 对象管理状态机与广播。
 
@@ -158,9 +158,11 @@ Gomatch 是一个基于 **Swing + Socket 多线程服务端 + JDBC** 三段式�
 |------|----------|------|
 | UI-001 | 登录界面 | 用户名、密码、注册入口 |
 | UI-002 | 注册界面 | 用户名、密码、确认密码、返回登录 |
-| UI-003 | 游戏大厅 | 房间列表、创建房间、刷新、排行榜入口、个人中心入口 |
-| UI-004 | 创建房间 | 房间名、密码（可选）、确认/取消 |
-| UI-005 | 房间等待界面 | 显示房主、空位、开始按钮（房主）、聊天框 |
+| UI-003 | 游戏大厅（LobbyUI） | 头像/昵称、匹配/排位入口、排行榜抽屉、好友/设置按钮 |
+| UI-004 | 匹配大厅（CasualLobbyUI） | 房间列表 + 观战列表、创建/加入/快速匹配 |
+| UI-005 | 排位大厅（RankedLobbyUI） | 段位显示、开始匹配按钮 |
+| UI-006 | 创建房间（CreateRoomUI） | 房间名、密码（可选）、确认/取消 |
+| UI-007 | 房间等待界面（RoomWaitingUI） | 显示房主/玩家列表、开始按钮（房主）、聊天框 |
 | UI-006 | 棋盘对战界面 | 15×15 棋盘、双方信息、聊天框、悔棋/求和/认输按钮 |
 | UI-007 | 对局结束界面 | 胜负结果、返回大厅、再来一局 |
 | UI-008 | 聊天界面/面板 | 消息列表、输入框、发送按钮 |
@@ -367,12 +369,15 @@ return false;
 
 ```
 gomatch/                                # 项目根目录
-├── client/                             # 客户端模块（Swing 桌面应用）
+├── client/                             # 客户端模块（JavaFX 桌面应用）
 │   ├── src/main/java/com/gomatch/client/
-│   │   ├── ClientMain.java             # 客户端入口，启动 Swing 与 Socket
-│   │   ├── ui/                         # 界面类（登录/大厅/棋盘/战绩等，每界面独立文件）
-│   │   ├── network/                    # 网络层（Socket 连接、接收线程、消息收发）
-│   │   └── model/                      # 数据模型（User/Room/Move 等，映射服务端实体）
+│   │   ├── ClientMain.java             # 客户端入口（extends Application）
+│   │   ├── ui/                         # FXML Controller + ScreenManager 导航
+│   │   ├── network/                    # 网络层（Socket 连接、接收线程、消息分发）
+│   │   └── model/                      # 数据模型（User/RoomInfo 等）
+│   └── src/main/resources/
+│       ├── fxml/                       # FXML 布局文件
+│       └── css/style.css               # 全局 CSS（白色极简风）
 │   └── pom.xml                         # 客户端 Maven 配置
 ├── server/                             # 服务端模块（多线程 Socket 服务）
 │   ├── src/main/java/com/gomatch/server/
