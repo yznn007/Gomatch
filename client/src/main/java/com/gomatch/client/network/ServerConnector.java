@@ -31,11 +31,18 @@ public class ServerConnector {
     }
 
     public void addListener(NetworkListener listener) {
-        listeners.add(listener);
+        if (!listeners.contains(listener)) {
+            listeners.add(listener);
+        }
     }
 
     public void removeListener(NetworkListener listener) {
         listeners.remove(listener);
+    }
+
+    /** 切换页面前调用，清除所有旧 Controller 的监听，避免消息乱投。 */
+    public void clearListeners() {
+        listeners.clear();
     }
 
     public void disconnect() {

@@ -3,21 +3,14 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
+<!--
+    排行榜抽屉改为 StackPane 浮层覆盖，不再占据 BorderPane left 槽位，
+    展开时主界面（匹配/排位按钮）不受任何挤压。
+-->
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.gomatch.client.ui.LobbyController"
-            styleClass="page-root">
-    <left>
-        <!-- Ranking side drawer (collapsible via visible property in controller) -->
-        <VBox fx:id="rankDrawer" styleClass="side-drawer" prefWidth="240" managed="false" visible="false" minWidth="0" maxWidth="240">
-            <HBox spacing="8" alignment="CENTER_LEFT">
-                <Label text="排行榜" styleClass="section-label"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Button text="«" onAction="#toggleRankDrawer" styleClass="drawer-toggle"/>
-            </HBox>
-            <Separator styleClass="section-divider" prefWidth="Infinity"/>
-            <ListView fx:id="rankDrawerList" VBox.vgrow="ALWAYS"/>
-        </VBox>
-    </left>
+            styleClass="page-root"
+            style="-fx-padding: 10 32 24 32;">
     <top>
         <VBox spacing="0">
             <HBox alignment="CENTER_LEFT" spacing="18">
@@ -38,30 +31,51 @@
         </VBox>
     </top>
     <center>
-        <!-- Empty center with arena buttons at ~4/5 position -->
-        <VBox styleClass="page-root" spacing="0" alignment="BOTTOM_CENTER" style="-fx-padding: 0 0 80 0;">
-            <Region VBox.vgrow="ALWAYS"/>
-            <HBox styleClass="lobby-center" spacing="50" alignment="BOTTOM_CENTER">
-                <!-- 匹配 -->
-                <StackPane styleClass="arena-btn, arena-casual" onMouseClicked="#handleCasual"
-                           prefWidth="300" prefHeight="180" minWidth="300" minHeight="180" maxWidth="300" maxHeight="180">
-                    <VBox alignment="CENTER" spacing="8">
-                        <Label text="⚔" styleClass="arena-icon"/>
-                        <Label text="匹  配" styleClass="arena-title"/>
-                        <Label text="MATCH" styleClass="arena-sub"/>
-                    </VBox>
-                </StackPane>
-                <!-- 排位 -->
-                <StackPane styleClass="arena-btn, arena-ranked" onMouseClicked="#handleRanked"
-                           prefWidth="300" prefHeight="180" minWidth="300" minHeight="180" maxWidth="300" maxHeight="180">
-                    <VBox alignment="CENTER" spacing="8">
-                        <Label text="♛" styleClass="arena-icon"/>
-                        <Label text="排  位" styleClass="arena-title"/>
-                        <Label text="RANK" styleClass="arena-sub"/>
-                    </VBox>
-                </StackPane>
-            </HBox>
-            <Label text="" style="-fx-padding: 18 0 0 0;"/>
-        </VBox>
+        <!--
+            StackPane 作为浮层容器：
+            第一层（bottom）= 主内容，始终占满全部空间
+            第二层（top）   = 排行榜抽屉，absolute 定位在左侧，不占布局空间
+        -->
+        <StackPane>
+            <!-- 主内容层：匹配 / 排位入口 -->
+            <VBox styleClass="page-root" spacing="0" alignment="BOTTOM_CENTER" style="-fx-padding: 0 0 80 0;">
+                <Region VBox.vgrow="ALWAYS"/>
+                <HBox styleClass="lobby-center" spacing="50" alignment="BOTTOM_CENTER">
+                    <!-- 匹配 -->
+                    <StackPane styleClass="arena-btn, arena-casual" onMouseClicked="#handleCasual"
+                               prefWidth="300" prefHeight="180" minWidth="300" minHeight="180" maxWidth="300" maxHeight="180">
+                        <VBox alignment="CENTER" spacing="8">
+                            <Label text="⚔" styleClass="arena-icon"/>
+                            <Label text="匹  配" styleClass="arena-title"/>
+                            <Label text="MATCH" styleClass="arena-sub"/>
+                        </VBox>
+                    </StackPane>
+                    <!-- 排位 -->
+                    <StackPane styleClass="arena-btn, arena-ranked" onMouseClicked="#handleRanked"
+                               prefWidth="300" prefHeight="180" minWidth="300" minHeight="180" maxWidth="300" maxHeight="180">
+                        <VBox alignment="CENTER" spacing="8">
+                            <Label text="♛" styleClass="arena-icon"/>
+                            <Label text="排  位" styleClass="arena-title"/>
+                            <Label text="RANK" styleClass="arena-sub"/>
+                        </VBox>
+                    </StackPane>
+                </HBox>
+                <Label text="" style="-fx-padding: 18 0 0 0;"/>
+            </VBox>
+
+            <!-- 浮层：排行榜抽屉，默认隐藏，展开时覆盖在左侧，不影响主内容布局 -->
+            <VBox fx:id="rankDrawer" styleClass="side-drawer"
+                  prefWidth="240" maxWidth="240"
+                  managed="false" visible="false"
+                  StackPane.alignment="TOP_LEFT">
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="排行榜" styleClass="section-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="«" onAction="#toggleRankDrawer" styleClass="drawer-toggle"/>
+                </HBox>
+                <Separator styleClass="section-divider" prefWidth="Infinity"/>
+                <ListView fx:id="rankDrawerList" VBox.vgrow="ALWAYS"/>
+            </VBox>
+        </StackPane>
     </center>
 </BorderPane>

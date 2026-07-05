@@ -5,7 +5,6 @@ import com.gomatch.client.model.RoomInfo;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Protocol;
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -24,8 +23,16 @@ public class RoomWaitingController implements NetworkListener {
     private User currentUser;
     private boolean previewMode;
 
+    /**
+     * 修复时序依赖：先调 setPreviewMode(true/false)，再调 setRoomInfo()。
+     * 但为健壮性，setRoomInfo 内部检查 previewMode 字段已就绪。
+     */
+    public void setPreviewMode(boolean previewMode) {
+        this.previewMode = previewMode;
+    }
+
     public void setRoomInfo(RoomInfo room, User user) {
-        this.roomInfo = room;
+        this.roomInfo    = room;
         this.currentUser = user;
         roomTitleLabel.setText("房间: " + room.getRoomName() + " (#" + room.getRoomId() + ")");
         players.add(user.getUsername());
@@ -33,13 +40,10 @@ public class RoomWaitingController implements NetworkListener {
         if (user.getUsername().equals(room.getOwnerName())) {
             startBtn.setVisible(true);
         }
+        // 非预览模式才注册网络监听（时序已由 ScreenManager.clearListeners + 先 setPreviewMode 保证）
         if (!previewMode) {
             ClientMain.getConnector().addListener(this);
         }
-    }
-
-    public void setPreviewMode(boolean previewMode) {
-        this.previewMode = previewMode;
     }
 
     @FXML
@@ -51,20 +55,27 @@ public class RoomWaitingController implements NetworkListener {
             ctrl.setPreviewMode(true);
             return;
         }
-        ClientMain.getConnector().send("READY");
+        ClientMain.getConnector().send(Protocol.READY);
     }
 
     @FXML
     private void handleLeave() {
-        ClientMain.getConnector().send(Protocol.LEAVE_ROOM);
-        ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        if (!previewMode) {
+            ClientMain.getConnector().send(Protocol.LEAVE_ROOM);
+        }
+        // 返回大厅时传递用户信息
+        LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        ctrl.setCurrentUser(currentUser);
+        ctrl.setPreviewMode(previewMode);
     }
 
     @FXML
     private void handleSendChat() {
         String msg = chatInput.getText().trim();
         if (!msg.isEmpty()) {
-            ClientMain.getConnector().send(Protocol.CHAT, msg);
+            if (!previewMode) {
+                ClientMain.getConnector().send(Protocol.CHAT, msg);
+            }
             chatInput.clear();
         }
     }
@@ -78,6 +89,8 @@ public class RoomWaitingController implements NetworkListener {
             players.remove(args[0]);
         } else if (Protocol.CHAT_MSG.equals(command)) {
             chatArea.appendText(args[0] + ": " + args[1] + "\n");
+            // 自动滚动到底部
+            chatArea.setScrollTop(Double.MAX_VALUE);
         } else if (Protocol.GAME_START.equals(command)) {
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
             ctrl.setGameInfo(args[0], args[1], currentUser.getUsername());

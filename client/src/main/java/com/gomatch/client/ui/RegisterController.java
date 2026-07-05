@@ -1,5 +1,6 @@
 package com.gomatch.client.ui;
 
+import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Protocol;
@@ -16,14 +17,14 @@ public class RegisterController implements NetworkListener {
 
     @FXML
     private void initialize() {
-        ClientMain.getConnector().addListener(this);
+        // 不在 initialize() 注册监听，避免未连接时注册以及重复进入页面时堆叠
     }
 
     @FXML
     private void handleRegister() {
         String username = usernameField.getText().trim();
         String password = passwordField.getText().trim();
-        String confirm = confirmField.getText().trim();
+        String confirm  = confirmField.getText().trim();
 
         if (username.isEmpty() || password.isEmpty()) {
             errorLabel.setText("用户名和密码不能为空");
@@ -42,7 +43,10 @@ public class RegisterController implements NetworkListener {
             return;
         }
         try {
-            ClientMain.getConnector().connect("127.0.0.1", 8888);
+            if (!ClientMain.getConnector().isConnected()) {
+                ClientMain.getConnector().connect(AppConfig.SERVER_HOST, AppConfig.SERVER_PORT);
+            }
+            ClientMain.getConnector().addListener(this);
             ClientMain.getConnector().send(Protocol.REGISTER, username, password);
         } catch (Exception e) {
             errorLabel.setText("连接服务器失败: " + e.getMessage());
@@ -56,7 +60,11 @@ public class RegisterController implements NetworkListener {
 
     @Override
     public void onMessage(String command, String[] args) {
-        if (Protocol.LOGIN_OK.equals(command)) {
+        // 服务端注册成功应回复 REGISTER_OK，兼容旧服务端也处理 LOGIN_OK
+        if (Protocol.REGISTER_OK.equals(command) || Protocol.LOGIN_OK.equals(command)) {
+            errorLabel.setStyle("-fx-text-fill: green;");
+            errorLabel.setText("注册成功，请登录");
+            ClientMain.getConnector().disconnect();
             ScreenManager.switchTo("/fxml/LoginUI.fxml");
         } else if (Protocol.LOGIN_FAIL.equals(command)) {
             errorLabel.setText(args[0]);
