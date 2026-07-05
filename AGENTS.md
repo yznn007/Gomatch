@@ -55,10 +55,10 @@ ClientMain (extends Application)
 ### UI 约定
 
 - FXML 命名空间 **不含版本号**：`xmlns="http://javafx.com/javafx"`（写 `/21` 会导致 FXML LoadException）
-- 白色极简风格，全局 CSS 禁用卡片阴影/渐变，用 `Separator` 分割区域
-- 按钮区分 `btn-primary`（蓝）、`btn-secondary`（灰）、`btn-danger`（红）、`btn-link`
-- 切角形状用 `-fx-shape` SVG 路径，非 `-fx-border-radius`
-- hover/pressed 状态显式写三个伪类，不要用 derive
+- 白色极简风格：采用乳白色透明磨砂质感卡片（`.glass-card`、`.card` 等）与 `Separator` 分割区域，禁用深色卡片阴影或粗糙渐变
+- 极简底划线控件：文本框与所有按钮元素（包含主次按钮、控制按钮、匹配卡片入口）高度统一样式，去除四面外边框与卡片阴影，仅留底部 1.5px 极简下划线描边
+- 按钮圆角与交互反馈：放弃之前的切角形状，统一使用 8px 圆角结构。鼠标悬停时背景填充板岩灰 Cover 遮罩（`rgba(148, 163, 184, 0.35)`），点击按下（armed）时切换为高亮聚焦实白（`rgba(255, 255, 255, 0.95)`）
+- 显式定义 hover/pressed/focused 伪类，全界面杜绝鲜活天蓝色，一律归一化为板岩灰和木炭黑等中性无色系，保证白色极简的高级感
 
 ### FXML ↔ Controller 映射
 

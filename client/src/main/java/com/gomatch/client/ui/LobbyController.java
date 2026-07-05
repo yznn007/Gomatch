@@ -1,11 +1,10 @@
 package com.gomatch.client.ui;
 
+import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Protocol;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -13,6 +12,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 
 import java.lang.reflect.Type;
+import com.google.gson.reflect.TypeToken;
 import java.util.List;
 
 public class LobbyController implements NetworkListener {
@@ -23,7 +23,6 @@ public class LobbyController implements NetworkListener {
     @FXML private ListView<String> rankDrawerList;
 
     private final ObservableList<String> drawerRanks = FXCollections.observableArrayList();
-    private final Gson gson = new Gson();
     private User currentUser;
     private boolean previewMode;
 
@@ -36,6 +35,12 @@ public class LobbyController implements NetworkListener {
         } else {
             ClientMain.getConnector().send(Protocol.RANKING);
         }
+        // 将抽屉高度绑定到父容器，保证浮层铺满纵向
+        rankDrawer.parentProperty().addListener((obs, oldParent, newParent) -> {
+            if (newParent instanceof javafx.scene.layout.Region parent) {
+                rankDrawer.prefHeightProperty().bind(parent.heightProperty());
+            }
+        });
     }
 
     public void setPreviewMode(boolean previewMode) {

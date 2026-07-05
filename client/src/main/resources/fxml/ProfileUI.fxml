@@ -8,7 +8,7 @@
             styleClass="page-root">
     <top>
         <VBox spacing="0">
-            <HBox alignment="CENTER_LEFT" spacing="18">
+            <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 0 0 10 0;">
                 <Button text="« 返回" onAction="#handleBack" styleClass="icon-btn"/>
                 <Label text="个人中心" styleClass="title"/>
             </HBox>
@@ -16,37 +16,72 @@
         </VBox>
     </top>
     <center>
-        <VBox spacing="14" alignment="TOP_CENTER" prefWidth="600" maxWidth="600">
-            <GridPane hgap="14" vgap="12" alignment="CENTER_LEFT" style="-fx-padding: 14 0;">
-                <Label text="用户ID" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
-                <Label fx:id="userIdLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" styleClass="section-label"/>
-                <Label text="用户名" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
-                <Label fx:id="usernameLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="section-label"/>
-                <Label text="积分" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="muted"/>
-                <Label fx:id="scoreLabel" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="section-label"/>
-                <Label text="胜场" GridPane.rowIndex="3" GridPane.columnIndex="0" styleClass="muted"/>
-                <Label fx:id="winLabel" GridPane.rowIndex="3" GridPane.columnIndex="1" styleClass="section-label"/>
-                <Label text="负场" GridPane.rowIndex="4" GridPane.columnIndex="0" styleClass="muted"/>
-                <Label fx:id="loseLabel" GridPane.rowIndex="4" GridPane.columnIndex="1" styleClass="section-label"/>
-                <Label text="平局" GridPane.rowIndex="5" GridPane.columnIndex="0" styleClass="muted"/>
-                <Label fx:id="drawLabel" GridPane.rowIndex="5" GridPane.columnIndex="1" styleClass="section-label"/>
-            </GridPane>
-            <Separator styleClass="section-divider" prefWidth="Infinity"/>
-            <Label text="对战记录" styleClass="section-label" style="-fx-padding: 8 0;"/>
-            <TableView fx:id="recordTable" VBox.vgrow="ALWAYS" minHeight="160">
-                <columns>
-                    <TableColumn text="对手" fx:id="opponentCol" prefWidth="160"/>
-                    <TableColumn text="结果" fx:id="resultCol" prefWidth="100"/>
-                    <TableColumn text="时间" fx:id="timeCol" prefWidth="200"/>
-                    <TableColumn text="棋谱回放" fx:id="replayCol" prefWidth="120"/>
-                </columns>
-            </TableView>
-            <Separator styleClass="section-divider" prefWidth="Infinity"/>
-            <Label text="修改密码" styleClass="section-label" style="-fx-padding: 8 0;"/>
-            <PasswordField fx:id="oldPwdField" promptText="旧密码" styleClass="field"/>
-            <PasswordField fx:id="newPwdField" promptText="新密码" styleClass="field"/>
-            <Label fx:id="errorLabel" text="" styleClass="error-text"/>
-            <Button text="确认修改" onAction="#handleChangePwd" styleClass="btn-primary"/>
-        </VBox>
+        <!-- 主布局：水平分布左侧导航栏与右侧动态内容区 -->
+        <HBox spacing="24" alignment="TOP_CENTER" style="-fx-padding: 18 0 0 0;">
+            
+            <!-- 左侧导航栏 VBox (使用微透磨砂底卡片，统一图标字符范围以保障尺寸完全一致) -->
+            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10; -fx-background-color: rgba(245, 247, 250, 0.65);">
+                <Button fx:id="menuInfoBtn" text="👤 个人信息" onAction="#showInfoTab" styleClass="sidebar-menu-btn"/>
+                <Button fx:id="menuRecordBtn" text="📝 对战记录" onAction="#showRecordTab" styleClass="sidebar-menu-btn"/>
+                <Button fx:id="menuPwdBtn" text="🔒 修改密码" onAction="#showPwdTab" styleClass="sidebar-menu-btn"/>
+            </VBox>
+
+            <!-- 右侧内容区域，带纵向 ScrollPane 适应较小窗口 -->
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" HBox.hgrow="ALWAYS">
+                <StackPane alignment="CENTER" style="-fx-background-color: transparent;">
+                    
+                    <!-- 面板 1: 个人信息 (Grid) -->
+                    <VBox fx:id="infoPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                        <Label text="基本信息" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
+                        <GridPane hgap="24" vgap="12" alignment="CENTER" style="-fx-padding: 10 0;">
+                            <columnConstraints>
+                                <ColumnConstraints minWidth="120" prefWidth="120" halignment="RIGHT"/>
+                                <ColumnConstraints minWidth="180" prefWidth="180" halignment="LEFT"/>
+                            </columnConstraints>
+                            
+                            <Label text="用户ID" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
+                            <Label fx:id="userIdLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" styleClass="section-label"/>
+                            
+                            <Label text="用户名" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
+                            <Label fx:id="usernameLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="section-label"/>
+                            
+                            <Label text="当前积分" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="muted"/>
+                            <Label fx:id="scoreLabel" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="section-label"/>
+                            
+                            <Label text="胜场数" GridPane.rowIndex="3" GridPane.columnIndex="0" styleClass="muted"/>
+                            <Label fx:id="winLabel" GridPane.rowIndex="3" GridPane.columnIndex="1" styleClass="section-label"/>
+                            
+                            <Label text="负场数" GridPane.rowIndex="4" GridPane.columnIndex="0" styleClass="muted"/>
+                            <Label fx:id="loseLabel" GridPane.rowIndex="4" GridPane.columnIndex="1" styleClass="section-label"/>
+                            
+                            <Label text="平局数" GridPane.rowIndex="5" GridPane.columnIndex="0" styleClass="muted"/>
+                            <Label fx:id="drawLabel" GridPane.rowIndex="5" GridPane.columnIndex="1" styleClass="section-label"/>
+                        </GridPane>
+                    </VBox>
+
+                    <!-- 面板 2: 对战记录 (Table) -->
+                    <VBox fx:id="recordPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                        <Label text="对战记录列表" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
+                        <TableView fx:id="recordTable" prefHeight="320" minHeight="240" styleClass="table-view">
+                            <columns>
+                                <TableColumn text="对手" fx:id="opponentCol" prefWidth="130"/>
+                                <TableColumn text="结果" fx:id="resultCol" prefWidth="100"/>
+                                <TableColumn text="对局时间" fx:id="timeCol" prefWidth="210"/>
+                                <TableColumn text="回放" fx:id="replayCol" prefWidth="100"/>
+                            </columns>
+                        </TableView>
+                    </VBox>
+
+                    <!-- 面板 3: 修改密码 (Form) - 删除了顶部多余的“密码修改安全中心”标签 -->
+                    <VBox fx:id="pwdPane" spacing="16" alignment="TOP_CENTER" maxWidth="380" prefWidth="380" style="-fx-background-color: transparent; -fx-padding: 20 16 20 0;">
+                        <PasswordField fx:id="oldPwdField" promptText="请输入旧密码" styleClass="field" prefWidth="380"/>
+                        <PasswordField fx:id="newPwdField" promptText="请输入新密码" styleClass="field" prefWidth="380"/>
+                        <Label fx:id="errorLabel" text="" styleClass="error-text" wrapText="true" alignment="CENTER"/>
+                        <Button text="确认修改" onAction="#handleChangePwd" styleClass="btn-primary" prefWidth="160" prefHeight="36"/>
+                    </VBox>
+                    
+                </StackPane>
+            </ScrollPane>
+        </HBox>
     </center>
 </BorderPane>

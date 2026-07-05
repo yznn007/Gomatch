@@ -1,11 +1,11 @@
 package com.gomatch.client.ui;
 
+import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.RoomInfo;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Protocol;
-import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -19,16 +19,15 @@ import java.util.stream.Collectors;
 
 public class CasualLobbyController implements NetworkListener {
     @FXML private TableView<RoomInfo> roomTable;
-    @FXML private TableColumn<RoomInfo, String> roomIdCol;
-    @FXML private TableColumn<RoomInfo, String> roomNameCol;
-    @FXML private TableColumn<RoomInfo, String> ownerCol;
+    @FXML private TableColumn<RoomInfo, String>  roomIdCol;
+    @FXML private TableColumn<RoomInfo, String>  roomNameCol;
+    @FXML private TableColumn<RoomInfo, String>  ownerCol;
     @FXML private TableColumn<RoomInfo, Integer> playerCountCol;
-    @FXML private TableColumn<RoomInfo, String> statusCol;
+    @FXML private TableColumn<RoomInfo, String>  statusCol;
     @FXML private ListView<String> spectateList;
 
-    private final ObservableList<RoomInfo> roomData = FXCollections.observableArrayList();
-    private final ObservableList<String> spectateData = FXCollections.observableArrayList();
-    private final Gson gson = new Gson();
+    private final ObservableList<RoomInfo> roomData    = FXCollections.observableArrayList();
+    private final ObservableList<String>   spectateData = FXCollections.observableArrayList();
     private User currentUser;
     private boolean previewMode;
 
@@ -54,7 +53,7 @@ public class CasualLobbyController implements NetworkListener {
         if (!ClientMain.getConnector().isConnected()) {
             roomData.addAll(
                 new RoomInfo("1001", "五子棋切磋", "玩家A", 2, "对局中"),
-                new RoomInfo("1002", "休闲一局", "玩家B", 1, "等待中")
+                new RoomInfo("1002", "休闲一局",  "玩家B", 1, "等待中")
             );
             spectateData.addAll("#1001 五子棋切磋  玩家A vs 玩家D");
         } else {
@@ -71,8 +70,8 @@ public class CasualLobbyController implements NetworkListener {
         if (previewMode) {
             RoomInfo fakeRoom = new RoomInfo("9999", "预览房间", currentUser.getUsername(), 1, "等待中");
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
-            ctrl.setRoomInfo(fakeRoom, currentUser);
             ctrl.setPreviewMode(true);
+            ctrl.setRoomInfo(fakeRoom, currentUser);
             return;
         }
         CreateRoomController ctrl = ScreenManager.switchTo("/fxml/CreateRoomUI.fxml");
@@ -92,8 +91,8 @@ public class CasualLobbyController implements NetworkListener {
     private void joinRoom(RoomInfo room) {
         if (previewMode) {
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
-            ctrl.setRoomInfo(room, currentUser);
             ctrl.setPreviewMode(true);
+            ctrl.setRoomInfo(room, currentUser);
             return;
         }
         ClientMain.getConnector().send(Protocol.JOIN_ROOM, room.getRoomId(), "");
@@ -104,11 +103,11 @@ public class CasualLobbyController implements NetworkListener {
         if (previewMode) {
             RoomInfo fakeRoom = new RoomInfo("8888", "快速匹配", "对手", 1, "等待中");
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
-            ctrl.setRoomInfo(fakeRoom, currentUser);
             ctrl.setPreviewMode(true);
+            ctrl.setRoomInfo(fakeRoom, currentUser);
             return;
         }
-        ClientMain.getConnector().send("QUICK_MATCH");
+        ClientMain.getConnector().send(Protocol.QUICK_MATCH);
     }
 
     @FXML
@@ -123,12 +122,15 @@ public class CasualLobbyController implements NetworkListener {
             return;
         }
         String roomId = selected.split(" ")[0].replace("#", "");
-        ClientMain.getConnector().send("SPECTATE", roomId);
+        ClientMain.getConnector().send(Protocol.SPECTATE, roomId);
     }
 
     @FXML
     private void handleBack() {
-        ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        // 修复：返回大厅时将 currentUser 传递给新的 LobbyController 实例
+        LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        ctrl.setCurrentUser(currentUser);
+        ctrl.setPreviewMode(previewMode);
     }
 
     private void showAlert(String msg) {
@@ -140,15 +142,16 @@ public class CasualLobbyController implements NetworkListener {
     public void onMessage(String command, String[] args) {
         if (Protocol.ROOM_LIST.equals(command)) {
             Type listType = new TypeToken<List<RoomInfo>>() {}.getType();
-            List<RoomInfo> rooms = gson.fromJson(args[0], listType);
+            List<RoomInfo> rooms = AppConfig.GSON.fromJson(args[0], listType);
             roomData.setAll(rooms);
             spectateData.setAll(rooms.stream()
                 .filter(r -> "对局中".equals(r.getStatus()))
                 .map(r -> "#" + r.getRoomId() + " " + r.getRoomName() + "  房主: " + r.getOwnerName())
                 .collect(Collectors.toList()));
         } else if (Protocol.JOIN_OK.equals(command)) {
-            RoomInfo room = gson.fromJson(args[0], RoomInfo.class);
+            RoomInfo room = AppConfig.GSON.fromJson(args[0], RoomInfo.class);
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
+            ctrl.setPreviewMode(false);
             ctrl.setRoomInfo(room, currentUser);
         } else if (Protocol.JOIN_FAIL.equals(command)) {
             showAlert("加入失败: " + args[0]);

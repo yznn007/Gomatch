@@ -1,5 +1,6 @@
 package com.gomatch.client.ui;
 
+import com.gomatch.client.AppConfig;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
@@ -24,13 +25,18 @@ public class GameOverController {
     @FXML
     private void handleBack() {
         closeDialog();
-        ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        // 修复：从全局 AppConfig 中获取当前用户与预览状态回传大厅，防止状态丢失
+        LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        ctrl.setCurrentUser(AppConfig.getCurrentUser());
+        ctrl.setPreviewMode(AppConfig.isPreviewMode());
     }
 
     @FXML
     private void handleReplay() {
         closeDialog();
-        ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        ctrl.setCurrentUser(AppConfig.getCurrentUser());
+        ctrl.setPreviewMode(AppConfig.isPreviewMode());
     }
 
     private void closeDialog() {
