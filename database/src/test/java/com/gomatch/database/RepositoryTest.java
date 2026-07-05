@@ -9,14 +9,14 @@ import com.gomatch.database.repository.GameRecordRepository;
 import com.gomatch.database.repository.impl.UserRepositoryImpl;
 import com.gomatch.database.repository.impl.RoomRepositoryImpl;
 import com.gomatch.database.repository.impl.GameRecordRepositoryImpl;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class RepositoryTest {
     private static final Logger logger = LoggerFactory.getLogger(RepositoryTest.class);
@@ -25,7 +25,7 @@ public class RepositoryTest {
     private static RoomRepository roomRepository;
     private static GameRecordRepository gameRecordRepository;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() {
         logger.info("Initializing database connection...");
         DatabaseBootstrap.main(new String[0]);
@@ -46,24 +46,24 @@ public class RepositoryTest {
         user.setScore(1000);
         
         User savedUser = userRepository.save(user);
-        assertNotNull("User should be saved", savedUser.getUserId());
+        assertNotNull(savedUser.getUserId(), "User should be saved");
         logger.info("Saved user: {}", savedUser);
         
         User foundUser = userRepository.findById(savedUser.getUserId());
-        assertNotNull("User should be found", foundUser);
-        assertEquals("Username should match", uniqueUsername, foundUser.getUsername());
+        assertNotNull(foundUser, "User should be found");
+        assertEquals(uniqueUsername, foundUser.getUsername(), "Username should match");
         
         boolean exists = userRepository.existsByUsername(uniqueUsername);
-        assertTrue("User should exist", exists);
+        assertTrue(exists, "User should exist");
         
         int updated = userRepository.updateScore(savedUser.getUserId(), 100);
-        assertEquals("Score should be updated", 1, updated);
+        assertEquals(1, updated, "Score should be updated");
         
         User updatedUser = userRepository.findById(savedUser.getUserId());
-        assertEquals("Score should be 1100", Integer.valueOf(1100), updatedUser.getScore());
+        assertEquals(Integer.valueOf(1100), updatedUser.getScore(), "Score should be 1100");
         
         List<User> allUsers = userRepository.findAll();
-        assertTrue("Should have at least one user", allUsers.size() > 0);
+        assertTrue(allUsers.size() > 0, "Should have at least one user");
         
         logger.info("UserRepository test completed");
     }
@@ -75,21 +75,21 @@ public class RepositoryTest {
         Room room = new Room("Test Room", 1L);
         
         Room savedRoom = roomRepository.save(room);
-        assertNotNull("Room should be saved", savedRoom.getRoomId());
+        assertNotNull(savedRoom.getRoomId(), "Room should be saved");
         logger.info("Saved room: {}", savedRoom);
         
         Room foundRoom = roomRepository.findById(savedRoom.getRoomId());
-        assertNotNull("Room should be found", foundRoom);
-        assertEquals("Room name should match", "Test Room", foundRoom.getRoomName());
+        assertNotNull(foundRoom, "Room should be found");
+        assertEquals("Test Room", foundRoom.getRoomName(), "Room name should match");
         
         int updated = roomRepository.updatePlayerCount(savedRoom.getRoomId(), 2);
-        assertEquals("Player count should be updated", 1, updated);
+        assertEquals(1, updated, "Player count should be updated");
         
         Room updatedRoom = roomRepository.findById(savedRoom.getRoomId());
-        assertEquals("Player count should be 2", Integer.valueOf(2), updatedRoom.getCurrentPlayers());
+        assertEquals(Integer.valueOf(2), updatedRoom.getCurrentPlayers(), "Player count should be 2");
         
         List<Room> waitingRooms = roomRepository.findByStatus("waiting");
-        assertTrue("Should have waiting rooms", waitingRooms.size() > 0);
+        assertTrue(waitingRooms.size() > 0, "Should have waiting rooms");
         
         logger.info("RoomRepository test completed");
     }
@@ -102,18 +102,18 @@ public class RepositoryTest {
         record.setBoardData("[]");
         
         GameRecord savedRecord = gameRecordRepository.save(record);
-        assertNotNull("Game record should be saved", savedRecord.getRecordId());
+        assertNotNull(savedRecord.getRecordId(), "Game record should be saved");
         logger.info("Saved game record: {}", savedRecord);
         
         GameRecord foundRecord = gameRecordRepository.findById(savedRecord.getRecordId());
-        assertNotNull("Game record should be found", foundRecord);
+        assertNotNull(foundRecord, "Game record should be found");
         
         int updated = gameRecordRepository.updateResult(savedRecord.getRecordId(), 1L, "win");
-        assertEquals("Result should be updated", 1, updated);
+        assertEquals(1, updated, "Result should be updated");
         
         GameRecord updatedRecord = gameRecordRepository.findById(savedRecord.getRecordId());
-        assertEquals("Winner should be 1", Long.valueOf(1), updatedRecord.getWinnerId());
-        assertEquals("Result should be win", "win", updatedRecord.getResult());
+        assertEquals(Long.valueOf(1), updatedRecord.getWinnerId(), "Winner should be 1");
+        assertEquals("win", updatedRecord.getResult(), "Result should be win");
         
         logger.info("GameRecordRepository test completed");
     }
