@@ -35,31 +35,32 @@
 | 21 | 落子同步 | 已完成 |
 | 22 | 五连判胜 | 已完成 |
 | 23 | 断线判负 + 认输 | 已完成 |
-| 24 | 定时心跳发送，检测半开连接 | 已完成 |
-| 25 | 房间聊天 | 已完成 |
-| 26 | 观战功能 | 已完成 |
-| 27 | 悔棋/求和 | 已完成 |
-| 28 | 断线重连 | 已完成 |
-| 29 | 简单人机对战 | 已完成 |
-| 30 | 密码房间 | 已完成 |
-| 31 | 排位匹配（ELO算法） | 已完成 |
-| 32 | 好友系统 | 已完成 |
-| 33 | 棋局保存 | 已完成 |
-| 34 | 聊天消息持久化 | 已完成 |
-| 35 | Socket会话持久化 | 已完成 |
-| 36 | 观战记录 | 已完成 |
-| 37 | 游戏操作记录 | 已完成 |
-| 38 | 排行榜物化表 | 已完成 |
-| 39 | Redis优化（会话/排行榜/匹配/在线状态） | 已完成 |
-| 40 | 房间定时持久化 | 已完成 |
-| 41 | 退出登录 | 已完成 |
-| 42 | 服务器地址配置化 | 已完成 |
-| 43 | NetworkListener 自动注销 | 已完成 |
-| 44 | 注册/登录/改密码对接 | 已完成 |
-| 45 | 房间创建/列表/观战流程对接 | 已完成 |
-| 46 | 快速/排位匹配流程对接 | 已完成 |
-| 47 | 对战记录页面 + 棋局回放 | 已完成 |
-| 48 | 排行榜页面路由 | 已完成 |
+| 24 | 战绩入库 | 已完成 |
+| 25 | 定时心跳发送，检测半开连接 | 已完成 |
+| 26 | 房间聊天 | 已完成 |
+| 27 | 观战功能 | 已完成 |
+| 28 | 悔棋/求和 | 已完成 |
+| 29 | 断线重连 | 已完成 |
+| 30 | 简单人机对战 | 已完成 |
+| 31 | 密码房间 | 已完成 |
+| 32 | 排位匹配（ELO算法） | 已完成 |
+| 33 | 好友系统 | 已完成 |
+| 34 | 棋局保存 | 已完成 |
+| 35 | 聊天消息持久化 | 已完成 |
+| 36 | Socket会话持久化 | 已完成 |
+| 37 | 观战记录 | 已完成 |
+| 38 | 游戏操作记录 | 已完成 |
+| 39 | 排行榜物化表 | 已完成 |
+| 40 | Redis优化（会话/排行榜/匹配/在线状态） | 已完成 |
+| 41 | 房间定时持久化 | 已完成 |
+| 42 | 退出登录 | 已完成 |
+| 43 | 服务器地址配置化 | 已完成 |
+| 44 | NetworkListener 自动注销 | 已完成 |
+| 45 | 注册/登录/改密码对接 | 已完成 |
+| 46 | 房间创建/列表/观战流程对接 | 已完成 |
+| 47 | 快速/排位匹配流程对接 | 已完成 |
+| 48 | 对战记录页面 + 棋局回放 | 已完成 |
+| 49 | 排行榜页面路由 | 已完成 |
 
 ### 状态说明
 
@@ -72,27 +73,70 @@
 
 ## 日志
 
+### Updated upstream（服务端 + 数据库）
+
+| 日期 | 工作内容 | 问题/备注 |
+|------|----------|-----------|
+| 2026-07-05 | Contributor| |
+| 2026-07-05 | Contributor| 修复编译失败 |
+| 2026-07-05 | Contributor| |
+| 2026-07-06 | Contributor| 基于 Socket 多线程架构 |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| 定时任务自动刷新 |
+| 2026-07-06 | Contributor| 使用 Lettuce Redis 客户端 |
+| 2026-07-06 | Contributor| RoomDAO 每1分钟同步，修改 t_room.room_id 为 VARCHAR(50) |
+| 2026-07-06 | Contributor| 减少约190行，编译验证通过 |
+| 2026-07-06 | Contributor| 编译验证通过 |
+
+---
+
+### Stashed changes（客户端）
+
 | 日期 | 工作内容 | 问题/备注 |
 |------|----------|-----------|
 | 2026-07-04 | Contributor| 使用 JDK 21 |
 | 2026-07-05 | Contributor| FXML 命名空间不能加版本号 |
 | 2026-07-05 | Contributor| 首次居中，之后保留窗口位置 |
+| 2026-07-05 | Contributor| |
+| 2026-07-05 | Contributor| |
 | 2026-07-05 | Contributor| 预览模式支持无服务器浏览 |
+| 2026-07-05 | Contributor| 卡片/按钮/表格/输入框圆角 |
+| 2026-07-05 | Contributor| 上传头像+昵称、匹配/排位入口、排行榜侧边抽屉 |
+| 2026-07-05 | Contributor| 房间列表+观战+创建/加入/快速匹配 |
+| 2026-07-05 | Contributor| 段位+匹配按钮 |
 | 2026-07-05 | Contributor| |
-| 2026-07-05 | Contributor|  |
-| 2026-07-05 | Contributor| |
-| 2026-07-05 | Contributor| |
-| 2026-07-05 | Contributor| hover 仅变背景色，无特效 |
-| 2026-07-05 | Contributor| mvn compile 通过 |
-| 2026-07-05 | Contributor| mvn clean compile 通过 |
-| 2026-07-05 | Contributor| mvn clean compile 通过，Git 提交规范代码 |
-| 2026-07-06 | Contributor| 基于 Socket 多线程架构 |
-| 2026-07-06 | Contributor| 定时任务自动刷新 |
-| 2026-07-06 | Contributor| 使用 Lettuce Redis 客户端 |
-| 2026-07-06 | Contributor| 修改 t_room.room_id 为 VARCHAR(50) |
-| 2026-07-06 | Contributor| 编译验证通过 |
-| 2026-07-06 | Contributor| 编译验证通过 |
-| 2026-07-06 | Contributor| 涉及 Protocol.java、ClientConfig.java、AutoCleanupController.java、各 Controller |
-| 2026-07-06 | Contributor| 心跳间隔30s、超时90s；重连3次/5s；预览模式AI对战直接进棋盘 |
-| 2026-07-06 | Contributor| Protocol.java、BoardController.java |
-
+| 2026-07-05 | Contributor| -fx-shape SVG path，hover 仅变背景色 |
+| 2026-07-05 | Contributor| 全面优化白色极简UI |
+| 2026-07-05 | Contributor| StackPane 浮层+Undecorated 标题栏+8px 圆角+磨砂玻璃卡片+动态注册字体 |
+| 2026-07-05 | Contributor| 纯白磨砂卡片+底线描边+悬浮遮罩极简按钮 |
+| 2026-07-06 | Contributor| HEARTBEAT、SPECTATE_OK/FAIL、RANKED_MATCH 等 |
+| 2026-07-06 | Contributor| ClientConfig + client-config.properties |
+| 2026-07-06 | Contributor| AutoCleanupController 基类 |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| RecordController + BoardController.replayMoves |
+| 2026-07-06 | Contributor| spectateMode 禁用落子 |
+| 2026-07-06 | Contributor| |
+| 2026-07-06 | Contributor| 30s 发送 / 90s 超时 |
+| 2026-07-06 | Contributor| 3次重试 / 5s 间隔 |
+| 2026-07-06 | Contributor| GomokuAI 启发式评分 |
+| 2026-07-06 | Contributor| |
