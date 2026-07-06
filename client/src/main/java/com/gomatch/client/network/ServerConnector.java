@@ -68,6 +68,8 @@ public class ServerConnector {
         }
         listeners.clear();
         try { if (socket != null) socket.close(); } catch (IOException ignored) {}
+        lastHost = null;
+        lastPort = 0;
     }
 
     public boolean isConnected() {
