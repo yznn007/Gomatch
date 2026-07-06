@@ -178,6 +178,6 @@
 | 2026-07-06 | Contributor| 3次重试 / 5s 间隔 |
 | 2026-07-06 | Contributor| GomokuAI 启发式评分 |
 | 2026-07-06 | Contributor| |
-| 2026-07-06 | Contributor| 采用可编辑的 ComboBox 与本地 client-config.properties 存储 |
+| 2026-07-06 | Contributor| 采用可编辑的 ComboBox，解耦本地存储路径，并适配项目磨砂极简风格的 MessageDialogUI 弹窗 |
 
 

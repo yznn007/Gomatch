@@ -19,7 +19,7 @@ client/src/main/
 │   │   ├── RoomInfo.java               # 房间信息数据模型
 │   │   └── User.java                   # 用户数据模型
 │   ├── network/
-│   │   ├── ClientConfig.java           # 网络配置（已废弃，由 AppConfig 代替）
+│   │   ├── ClientConfig.java           # 网络配置加载与持久化
 │   │   ├── NetworkListener.java        # 网络消息监听器接口
 │   │   └── ServerConnector.java        # TCP 连接管理与消息收发
 │   └── ui/
@@ -40,7 +40,7 @@ client/src/main/
 │       ├── ScreenManager.java          # 全局场景/窗口管理器
 │       └── ShapeGridBackground.java    # 动态粒子点阵背景
 └── resources/
-    ├── client-config.properties        # 客户端配置文件
+    ├── client-config.json              # 客户端默认配置文件
     ├── css/style.css                   # 全局 CSS 样式表
     ├── fonts/
     │   ├── MapleMono-NF-CN-Regular.ttf # 内置等宽字体（Regular）
@@ -89,14 +89,14 @@ main() → Application.launch()
 
 | 常量/字段 | 类型 | 值 / 说明 |
 |-----------|------|-----------|
-| `SERVER_HOST` | `String` | `"127.0.0.1"` — 服务器地址 |
-| `SERVER_PORT` | `int` | `8888` — 服务器端口 |
+| `SERVER_HOST` | `String` | 通过 `ClientConfig` 动态初始化，可被修改 — 服务器地址 |
+| `SERVER_PORT` | `int` | 通过 `ClientConfig` 动态初始化，可被修改 — 服务器端口 |
 | `GSON` | `Gson` | 共享 Gson 单例（线程安全） |
 | `currentUser` | `User` | 当前登录用户，登录成功后设置 |
 | `previewMode` | `boolean` | 预览模式开关（无需服务器即可浏览界面） |
 
 > [!TIP]
-> 修改服务器地址只需改 `AppConfig.SERVER_HOST` 和 `SERVER_PORT`，无需改动其他代码。
+> 客户端启动时会自动通过 `ClientConfig` 初始化服务器地址。用户可以在“系统设置”的界面中动态修改并刷新当前 IP 状态。
 
 ---
 
@@ -159,7 +159,21 @@ public interface NetworkListener {
 
 ---
 
-### 3.5 `ScreenManager` — 场景管理器
+### 3.5 `ClientConfig` — 本地与包内配置管理
+
+**文件**：[ClientConfig.java](../client/src/main/java/com/gomatch/client/network/ClientConfig.java)  
+**类型**：静态配置读写类
+
+负责加载和保存客户端的服务器 IP 及端口配置，避免不同启动路径对配置文件的依赖。
+
+#### 双向存储路由机制
+1. **默认包内配置**：从类路径下加载只读默认配置文件 `client-config.json`（采用 Java Properties 属性名键值对格式保存）。
+2. **用户本地配置**：当用户在设置页面中更改服务器地址并应用时，配置将被自动写入用户主目录的隐藏文件夹：`${user.home}/.gomatch/config.json`（亦为 Properties 格式）。
+3. **加载优先级**：启动时优先加载本地的 `config.json`，若文件不存在则降级加载包内默认的 `client-config.json`。
+
+---
+
+### 3.6 `ScreenManager` — 场景管理器
 
 **文件**：[ScreenManager.java](../client/src/main/java/com/gomatch/client/ui/ScreenManager.java)  
 **类型**：静态工具类（全局唯一 `Stage`）
@@ -206,7 +220,7 @@ StackPane (wrapper)
 
 ---
 
-### 3.6 `ShapeGridBackground` — 动态背景
+### 3.7 `ShapeGridBackground` — 动态背景
 
 **文件**：[ShapeGridBackground.java](../client/src/main/java/com/gomatch/client/ui/ShapeGridBackground.java)
 
