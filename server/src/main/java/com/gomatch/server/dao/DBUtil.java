@@ -13,9 +13,9 @@ public class DBUtil {
 
     public static void init() {
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl("jdbc:mysql://localhost:3306/gomatch?useSSL=false&serverTimezone=Asia/Shanghai");
-        config.setUsername("root");
-        config.setPassword("root");
+        config.setJdbcUrl("jdbc:mysql://localhost:3306/gomatch?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true");
+        config.setUsername("gomatch");
+        config.setPassword("password");
         config.setMaximumPoolSize(20);
         config.setMinimumIdle(5);
         ds = new HikariDataSource(config);
