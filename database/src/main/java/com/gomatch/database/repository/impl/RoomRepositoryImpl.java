@@ -83,24 +83,24 @@ public class RoomRepositoryImpl implements RoomRepository {
     }
 
     private Room insert(Room room) {
-        String sql = "INSERT INTO t_room (room_name, password, max_players, current_players, " +
-                "watcher_count, status, host_id, allow_watch, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        if (room.getRoomId() == null) {
+            room.setRoomId(System.currentTimeMillis() * 1000 + (long)(Math.random() * 1000));
+        }
+        String sql = "INSERT INTO t_room (room_id, room_name, password, max_players, current_players, " +
+                "watcher_count, status, host_id, allow_watch, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setString(1, room.getRoomName());
-            stmt.setString(2, room.getPassword());
-            stmt.setInt(3, room.getMaxPlayers());
-            stmt.setInt(4, room.getCurrentPlayers());
-            stmt.setInt(5, room.getWatcherCount());
-            stmt.setString(6, room.getStatus());
-            stmt.setLong(7, room.getHostId());
-            stmt.setBoolean(8, room.getAllowWatch());
-            stmt.setInt(9, room.getVersion());
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, room.getRoomId());
+            stmt.setString(2, room.getRoomName());
+            stmt.setString(3, room.getPassword());
+            stmt.setInt(4, room.getMaxPlayers());
+            stmt.setInt(5, room.getCurrentPlayers());
+            stmt.setInt(6, room.getWatcherCount());
+            stmt.setString(7, room.getStatus());
+            stmt.setLong(8, room.getHostId());
+            stmt.setBoolean(9, room.getAllowWatch());
+            stmt.setInt(10, room.getVersion());
             stmt.executeUpdate();
-            ResultSet rs = stmt.getGeneratedKeys();
-            if (rs.next()) {
-                room.setRoomId(rs.getLong(1));
-            }
             conn.commit();
             logger.info("Inserted room: {}", room.getRoomId());
         } catch (SQLException e) {

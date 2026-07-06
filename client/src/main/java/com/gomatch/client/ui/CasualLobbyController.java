@@ -12,6 +12,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.VBox;
 
 import java.lang.reflect.Type;
 import java.util.List;
@@ -25,6 +26,11 @@ public class CasualLobbyController implements NetworkListener {
     @FXML private TableColumn<RoomInfo, Integer> playerCountCol;
     @FXML private TableColumn<RoomInfo, String>  statusCol;
     @FXML private ListView<String> spectateList;
+
+    @FXML private Button menuRoomsBtn;
+    @FXML private Button menuSpectateBtn;
+    @FXML private VBox roomsPane;
+    @FXML private VBox spectatePane;
 
     private final ObservableList<RoomInfo> roomData    = FXCollections.observableArrayList();
     private final ObservableList<String>   spectateData = FXCollections.observableArrayList();
@@ -58,6 +64,48 @@ public class CasualLobbyController implements NetworkListener {
             spectateData.addAll("#1001 五子棋切磋  玩家A vs 玩家D");
         } else {
             ClientMain.getConnector().send(Protocol.ROOM_LIST);
+        }
+
+        showRoomsTab();
+    }
+
+    private void switchTab(VBox activePane, Button activeBtn) {
+        roomsPane.setVisible(false);
+        roomsPane.setManaged(false);
+        spectatePane.setVisible(false);
+        spectatePane.setManaged(false);
+
+        activePane.setVisible(true);
+        activePane.setManaged(true);
+
+        menuRoomsBtn.getStyleClass().remove("active");
+        menuSpectateBtn.getStyleClass().remove("active");
+
+        activeBtn.getStyleClass().add("active");
+    }
+
+    @FXML
+    private void showRoomsTab() {
+        switchTab(roomsPane, menuRoomsBtn);
+        handleRefresh();
+    }
+
+    @FXML
+    private void showSpectateTab() {
+        switchTab(spectatePane, menuSpectateBtn);
+        handleRefresh();
+    }
+
+    @FXML
+    private void handleRefresh() {
+        if (ClientMain.getConnector().isConnected()) {
+            ClientMain.getConnector().send(Protocol.ROOM_LIST);
+        } else {
+            roomData.setAll(
+                new RoomInfo("1001", "五子棋切磋", "玩家A", 2, "对局中"),
+                new RoomInfo("1002", "休闲一局",  "玩家B", 1, "等待中")
+            );
+            spectateData.setAll("#1001 五子棋切磋  玩家A vs 玩家D");
         }
     }
 
@@ -101,10 +149,9 @@ public class CasualLobbyController implements NetworkListener {
     @FXML
     private void handleQuickMatch() {
         if (previewMode) {
-            RoomInfo fakeRoom = new RoomInfo("8888", "快速匹配", "对手", 1, "等待中");
-            RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
+            BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
+            ctrl.setGameInfo(currentUser.getUsername(), "对手（bot）", currentUser.getUsername());
             ctrl.setPreviewMode(true);
-            ctrl.setRoomInfo(fakeRoom, currentUser);
             return;
         }
         ClientMain.getConnector().send(Protocol.QUICK_MATCH);
@@ -127,7 +174,6 @@ public class CasualLobbyController implements NetworkListener {
 
     @FXML
     private void handleBack() {
-        // 修复：返回大厅时将 currentUser 传递给新的 LobbyController 实例
         LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
         ctrl.setCurrentUser(currentUser);
         ctrl.setPreviewMode(previewMode);
@@ -149,7 +195,23 @@ public class CasualLobbyController implements NetworkListener {
                 .map(r -> "#" + r.getRoomId() + " " + r.getRoomName() + "  房主: " + r.getOwnerName())
                 .collect(Collectors.toList()));
         } else if (Protocol.JOIN_OK.equals(command)) {
-            RoomInfo room = AppConfig.GSON.fromJson(args[0], RoomInfo.class);
+            RoomInfo room;
+            try {
+                room = AppConfig.GSON.fromJson(args[0], RoomInfo.class);
+                if (room == null || room.getRoomId() == null) {
+                    throw new Exception();
+                }
+            } catch (Exception e) {
+                room = new RoomInfo();
+                if (args.length > 0) room.setRoomId(args[0]);
+                if (args.length > 1) room.setRoomName(args[1]);
+                if (args.length > 2) {
+                    String[] pc = args[2].split("/");
+                    try {
+                        room.setPlayerCount(Integer.parseInt(pc[0]));
+                    } catch (Exception ignored) {}
+                }
+            }
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
             ctrl.setPreviewMode(false);
             ctrl.setRoomInfo(room, currentUser);

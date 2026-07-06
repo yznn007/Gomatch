@@ -8,38 +8,55 @@
             styleClass="page-root">
     <top>
         <VBox spacing="0">
-            <HBox alignment="CENTER_LEFT" spacing="18">
-                <Button text="« 返回" onMouseClicked="#handleBack" styleClass="icon-btn"/>
-                <Label text="匹配大厅" styleClass="title"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Button text="创建房间" onAction="#handleCreateRoom" styleClass="btn-primary"/>
-                <Button text="加入房间" onAction="#handleJoinRoom" styleClass="btn-secondary"/>
-                <Button text="快速匹配" onAction="#handleQuickMatch" styleClass="btn-secondary"/>
-                <Button text="刷新" onAction="#handleRefresh" styleClass="btn-secondary"/>
+            <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 0 0 10 0;">
+                <Button text="« 返回" onAction="#handleBack" styleClass="icon-btn"/>
+                <Label text="对战大厅" styleClass="title"/>
             </HBox>
             <Separator styleClass="section-divider" prefWidth="Infinity"/>
         </VBox>
     </top>
     <center>
-        <!-- Left: room list + right: spectate list, separated by vertical line -->
-        <HBox spacing="0" alignment="CENTER">
-            <VBox spacing="8" HBox.hgrow="ALWAYS">
-                <TableView fx:id="roomTable" editable="false" VBox.vgrow="ALWAYS">
-                    <columns>
-                        <TableColumn text="房间号" fx:id="roomIdCol" prefWidth="100"/>
-                        <TableColumn text="房间名" fx:id="roomNameCol" prefWidth="240"/>
-                        <TableColumn text="房主" fx:id="ownerCol" prefWidth="140"/>
-                        <TableColumn text="人数" fx:id="playerCountCol" prefWidth="80"/>
-                        <TableColumn text="状态" fx:id="statusCol" prefWidth="120"/>
-                    </columns>
-                </TableView>
+        <HBox spacing="24" alignment="TOP_CENTER" style="-fx-padding: 18 0 0 0;">
+            
+            <!-- 左侧导航栏 VBox -->
+            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10; -fx-background-color: rgba(245, 247, 250, 0.65);">
+                <Button fx:id="menuRoomsBtn" text="🎮 房间列表" onAction="#showRoomsTab" styleClass="sidebar-menu-btn"/>
+                <Button fx:id="menuSpectateBtn" text="👁 观战对局" onAction="#showSpectateTab" styleClass="sidebar-menu-btn"/>
             </VBox>
-            <Separator orientation="VERTICAL" styleClass="section-divider"/>
-            <VBox spacing="8" prefWidth="260" style="-fx-padding: 0 0 0 20;">
-                <Label text="观战" styleClass="section-label"/>
-                <ListView fx:id="spectateList" VBox.vgrow="ALWAYS" minHeight="200"/>
-                <Button text="进入观战" onAction="#handleSpectate" styleClass="btn-secondary" prefWidth="Infinity"/>
-            </VBox>
+
+            <!-- 右侧内容区域 -->
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" HBox.hgrow="ALWAYS">
+                <StackPane alignment="CENTER" style="-fx-background-color: transparent;">
+                    
+                    <!-- 面板 1: 房间列表 -->
+                    <VBox fx:id="roomsPane" spacing="16" alignment="TOP_CENTER" maxWidth="600" prefWidth="600" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Button text="创建房间" onAction="#handleCreateRoom" styleClass="btn-primary"/>
+                            <Button text="加入房间" onAction="#handleJoinRoom" styleClass="btn-secondary"/>
+                            <Button text="快速匹配" onAction="#handleQuickMatch" styleClass="btn-secondary"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button text="刷新" onAction="#handleRefresh" styleClass="btn-secondary"/>
+                        </HBox>
+                        <TableView fx:id="roomTable" prefHeight="320" minHeight="240" styleClass="table-view" editable="false">
+                            <columns>
+                                <TableColumn text="房间号" fx:id="roomIdCol" prefWidth="90"/>
+                                <TableColumn text="房间名" fx:id="roomNameCol" prefWidth="200"/>
+                                <TableColumn text="房主" fx:id="ownerCol" prefWidth="120"/>
+                                <TableColumn text="人数" fx:id="playerCountCol" prefWidth="70"/>
+                                <TableColumn text="状态" fx:id="statusCol" prefWidth="100"/>
+                            </columns>
+                        </TableView>
+                    </VBox>
+
+                    <!-- 面板 2: 观战列表 -->
+                    <VBox fx:id="spectatePane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                        <Label text="正在进行中的对局" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
+                        <ListView fx:id="spectateList" prefHeight="260" minHeight="200" styleClass="list-view"/>
+                        <Button text="进入观战" onAction="#handleSpectate" styleClass="btn-primary" prefWidth="160" prefHeight="36"/>
+                    </VBox>
+                    
+                </StackPane>
+            </ScrollPane>
         </HBox>
     </center>
 </BorderPane>

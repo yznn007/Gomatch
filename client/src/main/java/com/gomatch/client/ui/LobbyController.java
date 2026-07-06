@@ -88,28 +88,28 @@ public class LobbyController implements NetworkListener {
 
     @FXML
     private void handleFriends() {
-        showAlert(previewMode ? "预览模式：好友功能" : "好友功能开发中");
+        FriendsController ctrl = ScreenManager.switchTo("/fxml/FriendsUI.fxml");
+        ctrl.setCurrentUser(currentUser);
+        ctrl.setPreviewMode(previewMode);
     }
 
     @FXML
     private void handleRankingPage() {
-        ScreenManager.switchTo("/fxml/RankingUI.fxml");
+        RankingController ctrl = ScreenManager.switchTo("/fxml/RankingUI.fxml");
+        ctrl.setCurrentUser(currentUser);
+        ctrl.setPreviewMode(previewMode);
     }
 
     @FXML
     private void handleSettings() {
-        showAlert(previewMode ? "预览模式：设置功能" : "设置功能开发中");
+        SettingsController ctrl = ScreenManager.switchTo("/fxml/SettingsUI.fxml");
+        ctrl.setCurrentUser(currentUser);
+        ctrl.setPreviewMode(previewMode);
     }
 
     @FXML
     private void handleAbout() {
         ScreenManager.switchTo("/fxml/AboutUI.fxml");
-    }
-
-    @FXML
-    private void handleLogout() {
-        ClientMain.getConnector().disconnect();
-        ScreenManager.switchTo("/fxml/LoginUI.fxml");
     }
 
     private void showAlert(String msg) {

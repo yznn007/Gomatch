@@ -7,9 +7,11 @@ import com.google.gson.reflect.TypeToken;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.VBox;
 
 import java.lang.reflect.Type;
 import java.text.DecimalFormat;
@@ -24,7 +26,12 @@ public class RankingController implements NetworkListener {
     @FXML private TableColumn<User, Integer> loseCol;
     @FXML private TableColumn<User, String>  winRateCol;
 
+    @FXML private Button menuRankingBtn;
+    @FXML private VBox rankingPane;
+
     private final ObservableList<User> rankingData = FXCollections.observableArrayList();
+    private User currentUser;
+    private boolean previewMode;
 
     @FXML
     private void initialize() {
@@ -58,18 +65,37 @@ public class RankingController implements NetworkListener {
                 rankingData.add(u);
             }
         }
+
+        showRankingTab();
+    }
+
+    @FXML
+    public void showRankingTab() {
+        rankingPane.setVisible(true);
+        rankingPane.setManaged(true);
+        menuRankingBtn.getStyleClass().add("active");
+    }
+
+    public void setCurrentUser(User user) {
+        this.currentUser = user;
+    }
+
+    public void setPreviewMode(boolean previewMode) {
+        this.previewMode = previewMode;
     }
 
     @FXML
     private void handleBack() {
-        ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        ctrl.setCurrentUser(currentUser);
+        ctrl.setPreviewMode(previewMode);
     }
 
     @Override
     public void onMessage(String command, String[] args) {
         if (com.gomatch.common.Protocol.RANKING_LIST.equals(command)) {
             Type listType = new TypeToken<List<User>>() {}.getType();
-            List<User> list = AppConfig.GSON.fromJson(args[0], listType); // 使用共享 GSON
+            List<User> list = AppConfig.GSON.fromJson(args[0], listType);
             DecimalFormat df = new DecimalFormat("0.0%");
             for (int i = 0; i < list.size(); i++) {
                 User u = list.get(i);

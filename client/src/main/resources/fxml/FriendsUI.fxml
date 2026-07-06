@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.FriendsController"
+            styleClass="page-root">
+    <top>
+        <VBox spacing="0">
+            <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 0 0 10 0;">
+                <Button text="« 返回" onAction="#handleBack" styleClass="icon-btn"/>
+                <Label text="好友大厅" styleClass="title"/>
+            </HBox>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+        </VBox>
+    </top>
+    <center>
+        <HBox spacing="24" alignment="TOP_CENTER" style="-fx-padding: 18 0 0 0;">
+            
+            <!-- 左侧导航栏 VBox -->
+            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10; -fx-background-color: rgba(245, 247, 250, 0.65);">
+                <Button fx:id="menuMyFriendsBtn" text="👥 我的好友" onAction="#showMyFriendsTab" styleClass="sidebar-menu-btn"/>
+                <Button fx:id="menuRequestsBtn" text="📨 好友请求" onAction="#showRequestsTab" styleClass="sidebar-menu-btn"/>
+                <Button fx:id="menuAddBtn" text="🔍 添加好友" onAction="#showAddTab" styleClass="sidebar-menu-btn"/>
+            </VBox>
+
+            <!-- 右侧内容区域 -->
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" HBox.hgrow="ALWAYS">
+                <StackPane alignment="CENTER" style="-fx-background-color: transparent;">
+                    
+                    <!-- 面板 1: 我的好友 -->
+                    <VBox fx:id="myFriendsPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                        <Label text="好友列表" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
+                        <TableView fx:id="friendsTable" prefHeight="320" minHeight="240" styleClass="table-view">
+                            <columns>
+                                <TableColumn text="用户ID" fx:id="friendIdCol" prefWidth="120"/>
+                                <TableColumn text="用户名" fx:id="friendNameCol" prefWidth="220"/>
+                                <TableColumn text="积分" fx:id="friendScoreCol" prefWidth="100"/>
+                                <TableColumn text="操作" fx:id="friendActionCol" prefWidth="100"/>
+                            </columns>
+                        </TableView>
+                    </VBox>
+
+                    <!-- 面板 2: 好友请求 -->
+                    <VBox fx:id="requestsPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                        <Label text="待处理好友请求" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
+                        <TableView fx:id="requestsTable" prefHeight="320" minHeight="240" styleClass="table-view">
+                            <columns>
+                                <TableColumn text="申请人ID" fx:id="reqUserIdCol" prefWidth="100"/>
+                                <TableColumn text="申请人" fx:id="reqNameCol" prefWidth="140"/>
+                                <TableColumn text="积分" fx:id="reqScoreCol" prefWidth="80"/>
+                                <TableColumn text="留言" fx:id="reqMsgCol" prefWidth="140"/>
+                                <TableColumn text="操作" fx:id="reqActionCol" prefWidth="100"/>
+                            </columns>
+                        </TableView>
+                    </VBox>
+
+                    <!-- 面板 3: 添加好友 -->
+                    <VBox fx:id="addPane" spacing="16" alignment="TOP_CENTER" maxWidth="380" prefWidth="380" style="-fx-background-color: transparent; -fx-padding: 20 16 20 0;">
+                        <Label text="发送好友申请" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
+                        <TextField fx:id="friendIdField" promptText="请输入对方用户ID" styleClass="field" prefWidth="380"/>
+                        <TextField fx:id="addMsgField" promptText="申请备注消息 (可选)" styleClass="field" prefWidth="380"/>
+                        <Label fx:id="errorLabel" text="" styleClass="error-text" wrapText="true" alignment="CENTER"/>
+                        <Button text="发送申请" onAction="#handleAddFriend" styleClass="btn-primary" prefWidth="160" prefHeight="36"/>
+                    </VBox>
+                    
+                </StackPane>
+            </ScrollPane>
+        </HBox>
+    </center>
+</BorderPane>

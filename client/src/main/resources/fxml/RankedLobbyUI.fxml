@@ -8,20 +8,20 @@
             styleClass="page-root">
     <top>
         <VBox spacing="0">
-            <HBox alignment="CENTER_LEFT" spacing="18">
-                <Button text="« 返回" onMouseClicked="#handleBack" styleClass="icon-btn"/>
+            <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 0 0 10 0;">
+                <Button text="« 返回" onAction="#handleBack" styleClass="icon-btn"/>
                 <Label text="排位大厅" styleClass="title"/>
             </HBox>
             <Separator styleClass="section-divider" prefWidth="Infinity"/>
         </VBox>
     </top>
     <center>
-        <VBox styleClass="page-root" spacing="20" alignment="CENTER">
+        <VBox spacing="20" alignment="CENTER" style="-fx-padding: 40 0 0 0;">
             <Region VBox.vgrow="ALWAYS"/>
             <Label fx:id="rankLabel" text="当前段位: 未定级" styleClass="title" style="-fx-font-size: 28px;"/>
             <Label text="排位胜负会计入积分与段位" styleClass="subtitle"/>
-            <Button text="开 始 排 位 匹 配" onAction="#handleMatch" styleClass="mode-btn-primary"
-                    prefWidth="320" prefHeight="80" style="-fx-font-size: 20px;"/>
+            <Button text="开 始 排 位 匹 配" onAction="#handleMatch" styleClass="btn-primary"
+                    prefWidth="320" prefHeight="80" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
             <Label fx:id="matchStatus" text="" styleClass="subtitle" style="-fx-padding: 10 0 0 0;"/>
             <Region VBox.vgrow="ALWAYS"/>
         </VBox>

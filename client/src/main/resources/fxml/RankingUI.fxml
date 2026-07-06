@@ -8,28 +8,42 @@
             styleClass="page-root">
     <top>
         <VBox spacing="0">
-            <Label text="排行榜" styleClass="title"/>
-            <Separator styleClass="section-divider" prefWidth="Infinity" style="-fx-padding: 12 0 0 0;"/>
+            <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 0 0 10 0;">
+                <Button text="« 返回" onAction="#handleBack" styleClass="icon-btn"/>
+                <Label text="排行榜大厅" styleClass="title"/>
+            </HBox>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
         </VBox>
     </top>
     <center>
-        <TableView fx:id="rankingTable" VBox.vgrow="ALWAYS" style="-fx-padding: 8 0;">
-            <columns>
-                <TableColumn text="排名" fx:id="rankCol" prefWidth="100"/>
-                <TableColumn text="用户名" fx:id="usernameCol" prefWidth="200"/>
-                <TableColumn text="积分" fx:id="scoreCol" prefWidth="120"/>
-                <TableColumn text="胜场" fx:id="winCol" prefWidth="100"/>
-                <TableColumn text="负场" fx:id="loseCol" prefWidth="100"/>
-                <TableColumn text="胜率" fx:id="winRateCol" prefWidth="140"/>
-            </columns>
-        </TableView>
+        <HBox spacing="24" alignment="TOP_CENTER" style="-fx-padding: 18 0 0 0;">
+            
+            <!-- 左侧导航栏 VBox -->
+            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10; -fx-background-color: rgba(245, 247, 250, 0.65);">
+                <Button fx:id="menuRankingBtn" text="🏆 积分排行" onAction="#showRankingTab" styleClass="sidebar-menu-btn"/>
+            </VBox>
+
+            <!-- 右侧内容区域 -->
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" HBox.hgrow="ALWAYS">
+                <StackPane alignment="CENTER" style="-fx-background-color: transparent;">
+                    
+                    <!-- 面板: 积分排行 -->
+                    <VBox fx:id="rankingPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                        <Label text="全服积分排行榜" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
+                        <TableView fx:id="rankingTable" prefHeight="320" minHeight="240" styleClass="table-view">
+                            <columns>
+                                <TableColumn text="排名" fx:id="rankCol" prefWidth="80"/>
+                                <TableColumn text="用户名" fx:id="usernameCol" prefWidth="180"/>
+                                <TableColumn text="积分" fx:id="scoreCol" prefWidth="100"/>
+                                <TableColumn text="胜场" fx:id="winCol" prefWidth="80"/>
+                                <TableColumn text="负场" fx:id="loseCol" prefWidth="80"/>
+                                <TableColumn text="胜率" fx:id="winRateCol" prefWidth="120"/>
+                            </columns>
+                        </TableView>
+                    </VBox>
+                    
+                </StackPane>
+            </ScrollPane>
+        </HBox>
     </center>
-    <bottom>
-        <VBox spacing="0">
-            <Separator styleClass="section-divider" prefWidth="Infinity"/>
-            <HBox alignment="CENTER" style="-fx-padding: 14 0 0 0;">
-                <Button text="返回大厅" onAction="#handleBack" styleClass="btn-primary"/>
-            </HBox>
-        </VBox>
-    </bottom>
 </BorderPane>

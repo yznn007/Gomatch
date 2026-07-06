@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.gomatch.client.ui.ConfirmExitController"
+      styleClass="card-padded" alignment="CENTER" spacing="20" prefWidth="320" maxWidth="320">
+    
+    <Label text="确认退出" styleClass="title" style="-fx-font-size: 18px;"/>
+    <Label text="确定要退出游戏吗？" styleClass="subtitle"/>
+    
+    <Separator styleClass="section-divider" prefWidth="Infinity"/>
+    
+    <HBox spacing="16" alignment="CENTER">
+        <Button fx:id="yesBtn" text="确定" onAction="#handleYes" styleClass="btn-primary" prefWidth="90"/>
+        <Button fx:id="noBtn" text="取消" onAction="#handleNo" styleClass="btn-secondary" prefWidth="90"/>
+    </HBox>
+</VBox>

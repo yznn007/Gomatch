@@ -10,12 +10,16 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
 
 public class BoardController implements NetworkListener {
     private static final int SIZE   = 15;
     private static final int MARGIN = 20;
 
+    @FXML private BorderPane rootPane;
     @FXML private StackPane boardContainer;
     @FXML private Label blackLabel;
     @FXML private Label whiteLabel;
@@ -25,6 +29,14 @@ public class BoardController implements NetworkListener {
     @FXML private Button undoBtn;
     @FXML private Button drawBtn;
     @FXML private Button surrenderBtn;
+    @FXML private Button toggleSidebarBtn;
+    @FXML private VBox sidebarContent;
+    @FXML private Region dragHandle;
+
+    private double dragStartX;
+    private double dragStartWidth;
+    private boolean sidebarCollapsed = false;
+    private double sidebarRatio = -1.0;
 
     private Canvas canvas;
     private GraphicsContext gc;
@@ -44,12 +56,62 @@ public class BoardController implements NetworkListener {
         boardContainer.widthProperty().addListener((obs, o, n) -> resizeBoard());
         boardContainer.heightProperty().addListener((obs, o, n) -> resizeBoard());
 
-        canvas = new Canvas();
+        canvas = new Canvas() {
+            @Override
+            public boolean isResizable() {
+                return true;
+            }
+            @Override
+            public double minWidth(double height) {
+                return 10;
+            }
+            @Override
+            public double minHeight(double width) {
+                return 10;
+            }
+            @Override
+            public double prefWidth(double height) {
+                return 100;
+            }
+            @Override
+            public double prefHeight(double width) {
+                return 100;
+            }
+            @Override
+            public double maxWidth(double height) {
+                return 4096;
+            }
+            @Override
+            public double maxHeight(double width) {
+                return 4096;
+            }
+        };
         gc = canvas.getGraphicsContext2D();
         boardContainer.getChildren().add(canvas);
 
         canvas.setOnMouseClicked(this::handleMouseClick);
         ClientMain.getConnector().addListener(this);
+
+        // 双向拖拽拉伸侧边栏
+        dragHandle.setOnMousePressed(e -> {
+            dragStartX = e.getScreenX();
+            dragStartWidth = sidebarContent.getWidth();
+        });
+        dragHandle.setOnMouseDragged(e -> {
+            double totalW = rootPane.getWidth() - 60;
+            if (totalW <= 0) return;
+            double deltaX = e.getScreenX() - dragStartX;
+            double newWidth = dragStartWidth - deltaX;
+            newWidth = clampSidebarWidth(newWidth, totalW);
+            sidebarContent.setPrefWidth(newWidth);
+            sidebarContent.setMinWidth(newWidth);
+            sidebarContent.setMaxWidth(newWidth);
+            sidebarRatio = newWidth / totalW;
+        });
+
+        // 窗口拉伸时，侧边栏基于比例自适应调整
+        rootPane.widthProperty().addListener((obs, o, n) -> adjustSidebarSize());
+        boardContainer.heightProperty().addListener((obs, o, n) -> adjustSidebarSize());
     }
 
     /** 根据容器尺寸重新计算 cellSize 并重绘全盘 */
@@ -186,6 +248,9 @@ public class BoardController implements NetworkListener {
 
     private void drawBoard() {
         if (cellSize == 0) return;
+        // 清除画布上的旧内容，防止尺寸变化时留下残影
+        gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+
         int boardPx = (SIZE - 1) * cellSize + MARGIN * 2;
         gc.setFill(Color.rgb(222, 184, 135));
         gc.fillRect(0, 0, boardPx, boardPx);
@@ -268,5 +333,56 @@ public class BoardController implements NetworkListener {
             // 自动滚动到底部
             chatArea.setScrollTop(Double.MAX_VALUE);
         }
+    }
+
+    @FXML
+    private void toggleSidebar() {
+        sidebarCollapsed = !sidebarCollapsed;
+        if (sidebarCollapsed) {
+            sidebarContent.setVisible(false);
+            sidebarContent.setManaged(false);
+            dragHandle.setVisible(false);
+            dragHandle.setManaged(false);
+            toggleSidebarBtn.setText("«");
+        } else {
+            sidebarContent.setVisible(true);
+            sidebarContent.setManaged(true);
+            dragHandle.setVisible(true);
+            dragHandle.setManaged(true);
+            toggleSidebarBtn.setText("»");
+            // 展开时立即计算应用最新比例尺寸
+            adjustSidebarSize();
+        }
+    }
+
+    private void adjustSidebarSize() {
+        if (sidebarCollapsed) return;
+        double totalW = rootPane.getWidth() - 60;
+        if (totalW <= 0) return;
+        if (sidebarRatio <= 0) {
+            sidebarRatio = 220.0 / totalW;
+        }
+        double newWidth = totalW * sidebarRatio;
+        newWidth = clampSidebarWidth(newWidth, totalW);
+        sidebarContent.setPrefWidth(newWidth);
+        sidebarContent.setMinWidth(newWidth);
+        sidebarContent.setMaxWidth(newWidth);
+    }
+
+    private double clampSidebarWidth(double width, double totalW) {
+        double minW = 150.0;
+        double maxHeight = boardContainer.getHeight();
+        if (maxHeight <= 0) {
+            maxHeight = rootPane.getHeight() - 40;
+            if (maxHeight <= 0) maxHeight = 400.0;
+        }
+        // 侧栏最大宽度 = 总可用宽度 - 按钮及拉手总宽(30px) - 棋盘自适应物理高度(棋盘是正方形)
+        double maxW = totalW - 30 - maxHeight;
+        if (maxW < minW) {
+            maxW = minW;
+        }
+        if (width < minW) return minW;
+        if (width > maxW) return maxW;
+        return width;
     }
 }

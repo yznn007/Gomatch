@@ -8,33 +8,50 @@
             styleClass="page-root">
     <top>
         <VBox spacing="0">
-            <VBox spacing="4">
-                <Label fx:id="roomTitleLabel" styleClass="title"/>
-                <Label fx:id="statusLabel" text="等待其他玩家加入..." styleClass="subtitle"/>
-            </VBox>
-            <Separator styleClass="section-divider" prefWidth="Infinity" style="-fx-padding: 12 0 0 0;"/>
+            <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 0 0 10 0;">
+                <Button text="« 离开房间" onAction="#handleLeave" styleClass="icon-btn"/>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label fx:id="roomTitleLabel" styleClass="title" style="-fx-font-size: 20px;"/>
+                    <Label fx:id="statusLabel" text="等待其他玩家加入..." styleClass="subtitle" style="-fx-font-size: 13px;"/>
+                </VBox>
+            </HBox>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
         </VBox>
     </top>
     <center>
-        <VBox spacing="8" VBox.vgrow="ALWAYS">
-            <Label text="玩家列表" styleClass="section-label" style="-fx-padding: 8 0;"/>
-            <ListView fx:id="playerList" VBox.vgrow="ALWAYS" minHeight="120"/>
-            <Separator styleClass="section-divider" prefWidth="Infinity"/>
-            <Label text="聊天" styleClass="section-label" style="-fx-padding: 8 0;"/>
-            <TextArea fx:id="chatArea" editable="false" prefHeight="100" styleClass="chat-area"/>
-            <HBox spacing="8">
-                <TextField fx:id="chatInput" promptText="输入聊天消息..." HBox.hgrow="ALWAYS" styleClass="field"/>
-                <Button text="发送" onAction="#handleSendChat" styleClass="btn-primary"/>
-            </HBox>
-        </VBox>
+        <HBox spacing="24" alignment="TOP_CENTER" style="-fx-padding: 18 0 0 0;">
+            
+            <!-- 左侧导航栏 VBox -->
+            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10; -fx-background-color: rgba(245, 247, 250, 0.65);">
+                <Button fx:id="menuPlayersBtn" text="👥 房间玩家" onAction="#showPlayersTab" styleClass="sidebar-menu-btn"/>
+                <Button fx:id="menuChatBtn" text="💬 房间聊天" onAction="#showChatTab" styleClass="sidebar-menu-btn"/>
+            </VBox>
+
+            <!-- 右侧内容区域 -->
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" HBox.hgrow="ALWAYS">
+                <StackPane alignment="CENTER" style="-fx-background-color: transparent;">
+                    
+                    <!-- 面板 1: 玩家列表 -->
+                    <VBox fx:id="playersPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                        <Label text="当前房间玩家" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
+                        <ListView fx:id="playerList" prefHeight="240" minHeight="200" styleClass="list-view"/>
+                        <HBox alignment="CENTER" style="-fx-padding: 10 0 0 0;">
+                            <Button text="开始游戏" fx:id="startBtn" onAction="#handleStart" visible="false" styleClass="btn-primary" prefWidth="160" prefHeight="36"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- 面板 2: 房间聊天 -->
+                    <VBox fx:id="chatPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                        <Label text="房间局内聊天" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
+                        <TextArea fx:id="chatArea" editable="false" prefHeight="200" styleClass="chat-area"/>
+                        <HBox spacing="8" alignment="CENTER_LEFT" prefWidth="560">
+                            <TextField fx:id="chatInput" promptText="输入聊天消息..." HBox.hgrow="ALWAYS" styleClass="field"/>
+                            <Button text="发送" onAction="#handleSendChat" styleClass="btn-primary" prefWidth="80"/>
+                        </HBox>
+                    </VBox>
+                    
+                </StackPane>
+            </ScrollPane>
+        </HBox>
     </center>
-    <bottom>
-        <VBox spacing="0">
-            <Separator styleClass="section-divider" prefWidth="Infinity"/>
-            <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 16 0 0 0;">
-                <Button text="开始游戏" fx:id="startBtn" onAction="#handleStart" visible="false" styleClass="btn-primary"/>
-                <Button text="离开房间" onAction="#handleLeave" styleClass="btn-secondary"/>
-            </HBox>
-        </VBox>
-    </bottom>
 </BorderPane>

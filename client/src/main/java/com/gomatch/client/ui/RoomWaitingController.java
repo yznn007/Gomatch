@@ -9,6 +9,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
 
 public class RoomWaitingController implements NetworkListener {
     @FXML private Label roomTitleLabel;
@@ -18,10 +19,45 @@ public class RoomWaitingController implements NetworkListener {
     @FXML private TextField chatInput;
     @FXML private TextArea chatArea;
 
+    @FXML private Button menuPlayersBtn;
+    @FXML private Button menuChatBtn;
+    @FXML private VBox playersPane;
+    @FXML private VBox chatPane;
+
     private final ObservableList<String> players = FXCollections.observableArrayList();
     private RoomInfo roomInfo;
     private User currentUser;
     private boolean previewMode;
+
+    @FXML
+    private void initialize() {
+        showPlayersTab();
+    }
+
+    private void switchTab(VBox activePane, Button activeBtn) {
+        playersPane.setVisible(false);
+        playersPane.setManaged(false);
+        chatPane.setVisible(false);
+        chatPane.setManaged(false);
+
+        activePane.setVisible(true);
+        activePane.setManaged(true);
+
+        menuPlayersBtn.getStyleClass().remove("active");
+        menuChatBtn.getStyleClass().remove("active");
+
+        activeBtn.getStyleClass().add("active");
+    }
+
+    @FXML
+    private void showPlayersTab() {
+        switchTab(playersPane, menuPlayersBtn);
+    }
+
+    @FXML
+    private void showChatTab() {
+        switchTab(chatPane, menuChatBtn);
+    }
 
     /**
      * 修复时序依赖：先调 setPreviewMode(true/false)，再调 setRoomInfo()。
@@ -37,7 +73,7 @@ public class RoomWaitingController implements NetworkListener {
         roomTitleLabel.setText("房间: " + room.getRoomName() + " (#" + room.getRoomId() + ")");
         players.add(user.getUsername());
         playerList.setItems(players);
-        if (user.getUsername().equals(room.getOwnerName())) {
+        if (user.getUsername().equals(room.getOwnerName()) || previewMode) {
             startBtn.setVisible(true);
         }
         // 非预览模式才注册网络监听（时序已由 ScreenManager.clearListeners + 先 setPreviewMode 保证）
