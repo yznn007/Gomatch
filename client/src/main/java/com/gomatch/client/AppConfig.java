@@ -12,8 +12,8 @@ public final class AppConfig {
     private AppConfig() {}
 
     // ---------- 服务器连接配置 ----------
-    public static final String SERVER_HOST = "127.0.0.1";
-    public static final int    SERVER_PORT = 8888;
+    public static String SERVER_HOST = com.gomatch.client.network.ClientConfig.getHost();
+    public static int    SERVER_PORT = com.gomatch.client.network.ClientConfig.getPort();
 
     // ---------- 共享 Gson 单例（线程安全）----------
     public static final Gson GSON = new Gson();

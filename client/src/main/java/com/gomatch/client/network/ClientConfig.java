@@ -1,7 +1,6 @@
 package com.gomatch.client.network;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Properties;
 
 public class ClientConfig {
@@ -9,11 +8,19 @@ public class ClientConfig {
     private static final Properties props = new Properties();
 
     static {
-        try (InputStream is = ClientConfig.class.getClassLoader().getResourceAsStream(CONFIG_FILE)) {
-            if (is != null) {
+        // 1. 先尝试从当前工作目录加载本地配置文件
+        File localFile = new File(CONFIG_FILE);
+        if (localFile.exists()) {
+            try (InputStream is = new FileInputStream(localFile)) {
                 props.load(is);
-            }
-        } catch (IOException ignored) {
+            } catch (IOException ignored) {}
+        } else {
+            // 2. 否则从类路径加载默认配置
+            try (InputStream is = ClientConfig.class.getClassLoader().getResourceAsStream(CONFIG_FILE)) {
+                if (is != null) {
+                    props.load(is);
+                }
+            } catch (IOException ignored) {}
         }
     }
 
@@ -23,5 +30,14 @@ public class ClientConfig {
 
     public static int getPort() {
         return Integer.parseInt(props.getProperty("server.port", "8888"));
+    }
+
+    public static void saveConfig(String host, int port) {
+        props.setProperty("server.host", host);
+        props.setProperty("server.port", String.valueOf(port));
+        File localFile = new File(CONFIG_FILE);
+        try (OutputStream os = new FileOutputStream(localFile)) {
+            props.store(os, "Client configuration updated");
+        } catch (IOException ignored) {}
     }
 }

@@ -3,14 +3,19 @@ package com.gomatch.client.ui;
 import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
+import com.gomatch.client.network.ClientConfig;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
 public class SettingsController {
-    @FXML private Label serverLabel;
+    @FXML private ComboBox<String> ipComboBox;
+    @FXML private TextField portField;
     @FXML private Label statusLabel;
     @FXML private CheckBox soundCheckBox;
     @FXML private Button exitBtn;
@@ -36,7 +41,14 @@ public class SettingsController {
 
     @FXML
     private void initialize() {
-        serverLabel.setText(AppConfig.SERVER_HOST + ":" + AppConfig.SERVER_PORT);
+        // 绑定IP和端口默认值
+        String currentHost = AppConfig.SERVER_HOST;
+        if (currentHost == null || currentHost.trim().isEmpty()) {
+            currentHost = "127.0.0.1";
+        }
+        ipComboBox.setValue(currentHost);
+        portField.setText(String.valueOf(AppConfig.SERVER_PORT));
+
         if (ClientMain.getConnector().isConnected()) {
             statusLabel.setText("已连接");
             statusLabel.setStyle("-fx-text-fill: green;");
@@ -141,5 +153,44 @@ public class SettingsController {
         LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
         ctrl.setCurrentUser(currentUser);
         ctrl.setPreviewMode(previewMode);
+    }
+
+    @FXML
+    private void handleSaveConfig() {
+        String host = ipComboBox.getValue();
+        if (host == null || host.trim().isEmpty()) {
+            showAlert("错误", "服务器 IP 地址不能为空！");
+            return;
+        }
+        host = host.trim();
+        
+        int port;
+        try {
+            port = Integer.parseInt(portField.getText().trim());
+            if (port <= 0 || port > 65535) {
+                throw new NumberFormatException();
+            }
+        } catch (NumberFormatException e) {
+            showAlert("错误", "端口号必须是 1 到 65535 之间的有效整数！");
+            return;
+        }
+        
+        // 1. 保存到内存 AppConfig 中
+        AppConfig.SERVER_HOST = host;
+        AppConfig.SERVER_PORT = port;
+        
+        // 2. 保存到本地 properties 配置文件中以持久化
+        ClientConfig.saveConfig(host, port);
+        
+        // 3. 弹出应用成功提示
+        showAlert("提示", "服务器地址及端口配置已成功应用并保存！\n如需连接新服务器，请退回登录页面重新登录。");
+    }
+
+    private void showAlert(String title, String msg) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(msg);
+        alert.showAndWait();
     }
 }

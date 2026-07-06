@@ -154,18 +154,29 @@
                     <!-- 面板 5: 服务器配置 -->
                     <VBox fx:id="serverPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
                         <Label text="当前服务器环境" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
-                        <GridPane hgap="24" vgap="12" alignment="CENTER" style="-fx-padding: 10 0;">
+                        <GridPane hgap="24" vgap="16" alignment="CENTER" style="-fx-padding: 10 0;">
                             <columnConstraints>
                                 <ColumnConstraints minWidth="120" prefWidth="120" halignment="RIGHT"/>
-                                <ColumnConstraints minWidth="180" prefWidth="180" halignment="LEFT"/>
+                                <ColumnConstraints minWidth="240" prefWidth="240" halignment="LEFT"/>
                             </columnConstraints>
                             
-                            <Label text="服务器地址" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
-                            <Label fx:id="serverLabel" text="" GridPane.rowIndex="0" GridPane.columnIndex="1" styleClass="section-label"/>
+                            <Label text="服务器 IP" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
+                            <ComboBox fx:id="ipComboBox" editable="true" prefWidth="200" GridPane.rowIndex="0" GridPane.columnIndex="1">
+                                <items>
+                                    <FXCollections fx:factory="observableArrayList">
+                                        <String fx:value="127.0.0.1"/>
+                                        <String fx:value="localhost"/>
+                                    </FXCollections>
+                                </items>
+                            </ComboBox>
                             
-                            <Label text="连接状态" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
-                            <Label fx:id="statusLabel" text="" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="section-label"/>
+                            <Label text="服务器端口" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
+                            <TextField fx:id="portField" prefWidth="200" styleClass="field" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                            
+                            <Label text="连接状态" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="muted"/>
+                            <Label fx:id="statusLabel" text="" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="section-label"/>
                         </GridPane>
+                        <Button text="应用配置" onAction="#handleSaveConfig" styleClass="btn-secondary" prefWidth="150" style="-fx-margin-top: 15;"/>
                     </VBox>
 
                     <!-- 面板 6: 安全退出 -->
