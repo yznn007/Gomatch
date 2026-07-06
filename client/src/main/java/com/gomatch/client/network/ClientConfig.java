@@ -4,19 +4,21 @@ import java.io.*;
 import java.util.Properties;
 
 public class ClientConfig {
-    private static final String CONFIG_FILE = "client-config.properties";
+    private static final String DEFAULT_CONFIG = "client-config.json";
+    private static final String LOCAL_CONFIG = "config.json";
     private static final Properties props = new Properties();
 
     static {
-        // 1. 先尝试从当前工作目录加载本地配置文件
-        File localFile = new File(CONFIG_FILE);
+        // 1. 先尝试从用户主目录加载本地配置文件 (config.json)
+        File userHome = new File(System.getProperty("user.home"), ".gomatch");
+        File localFile = new File(userHome, LOCAL_CONFIG);
         if (localFile.exists()) {
             try (InputStream is = new FileInputStream(localFile)) {
                 props.load(is);
             } catch (IOException ignored) {}
         } else {
-            // 2. 否则从类路径加载默认配置
-            try (InputStream is = ClientConfig.class.getClassLoader().getResourceAsStream(CONFIG_FILE)) {
+            // 2. 否则从类路径加载默认配置 (client-config.json)
+            try (InputStream is = ClientConfig.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
                 if (is != null) {
                     props.load(is);
                 }
@@ -35,7 +37,11 @@ public class ClientConfig {
     public static void saveConfig(String host, int port) {
         props.setProperty("server.host", host);
         props.setProperty("server.port", String.valueOf(port));
-        File localFile = new File(CONFIG_FILE);
+        File userHome = new File(System.getProperty("user.home"), ".gomatch");
+        if (!userHome.exists()) {
+            userHome.mkdirs();
+        }
+        File localFile = new File(userHome, LOCAL_CONFIG);
         try (OutputStream os = new FileOutputStream(localFile)) {
             props.store(os, "Client configuration updated");
         } catch (IOException ignored) {}

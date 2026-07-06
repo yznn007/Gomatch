@@ -182,15 +182,28 @@ public class SettingsController {
         // 2. 保存到本地 properties 配置文件中以持久化
         ClientConfig.saveConfig(host, port);
         
-        // 3. 弹出应用成功提示
-        showAlert("提示", "服务器地址及端口配置已成功应用并保存！\n如需连接新服务器，请退回登录页面重新登录。");
+        // 3. 断开当前的老连接
+        ClientMain.getConnector().disconnect();
+        
+        // 4. 立即尝试连接到新 IP
+        try {
+            ClientMain.getConnector().connect(host, port);
+            
+            // 5. 连接成功，刷新界面状态
+            statusLabel.setText("已连接 (" + host + ":" + port + ")");
+            statusLabel.setStyle("-fx-text-fill: green;");
+            showAlert("配置已应用", "已成功保存服务器配置！\n\n网络检测结果：\n连接【" + host + ":" + port + "】成功！✅\n客户端已切换至新服务器环境。");
+        } catch (Exception e) {
+            // 6. 连接失败，更新状态
+            statusLabel.setText("未连接 (连接 " + host + ":" + port + " 失败)");
+            statusLabel.setStyle("-fx-text-fill: #dc2626;");
+            showAlert("配置已保存", "已成功保存服务器配置！\n\n网络检测结果：\n连接【" + host + ":" + port + "】失败！❌\n\n请确保目标服务端已启动。\n错误详情：" + e.getMessage());
+        }
     }
 
     private void showAlert(String title, String msg) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(msg);
-        alert.showAndWait();
+        MessageDialogController.pendingTitle = title;
+        MessageDialogController.pendingMessage = msg;
+        ScreenManager.showDialog("/fxml/MessageDialogUI.fxml");
     }
 }

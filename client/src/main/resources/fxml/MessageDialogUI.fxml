@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.gomatch.client.ui.MessageDialogController"
+      styleClass="card-padded" alignment="CENTER" spacing="20" prefWidth="340" maxWidth="340">
+    
+    <Label fx:id="titleLabel" text="提示" styleClass="title" style="-fx-font-size: 18px;"/>
+    <Label fx:id="messageLabel" text="消息内容" styleClass="subtitle" wrapText="true" textAlignment="CENTER" maxWidth="300"/>
+    
+    <Separator styleClass="section-divider" prefWidth="Infinity"/>
+    
+    <Button fx:id="okBtn" text="确定" onAction="#handleOk" styleClass="btn-primary" prefWidth="120"/>
+</VBox>

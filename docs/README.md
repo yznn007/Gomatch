@@ -12,6 +12,7 @@
 | [产品需求文档 (PRD)](PRD.md) | `.md` | 精简版功能列表、业务背景与实训目标定义。 |
 | [技术架构设计文档](TECHNICAL_ARCHITECTURE.md) | `.md` | 总体技术架构设计、包结构划分、网络传输层设计以及各端核心类设计示意。 |
 | [开发规范标准](DEV_STANDARD.md) | `.md` | 团队 Git Commit 规范（Conventional Commits）与 Git 分支开发约定。 |
+| [客户端前端设计规范](CLIENT_STYLE_GUIDE.md) | `.md` | 白色极简磨砂卡片、极简底线控件、8px圆角与交互反馈、自适应布局与沉浸式弹窗规范。 |
 | [AI Agent 自动化开发上手指引](../AGENTS.md) | `.md` | AI 协助开发的命令约定、UI 风格设计约束（白色极简磨砂）与文档更新约定。 |
 
 ---
