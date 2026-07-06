@@ -1,8 +1,10 @@
 package com.gomatch.client.ui;
 
+import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Protocol;
+import com.google.gson.Gson;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -13,10 +15,16 @@ public class CreateRoomController implements NetworkListener {
     @FXML private PasswordField passwordField;
     @FXML private Label errorLabel;
 
+    private final Gson gson = new Gson();
     private User currentUser;
 
     public void setCurrentUser(User user) {
         this.currentUser = user;
+    }
+
+    @FXML
+    private void initialize() {
+        ClientMain.getConnector().addListener(this);
     }
 
     @FXML
@@ -27,8 +35,7 @@ public class CreateRoomController implements NetworkListener {
             return;
         }
         String password = passwordField.getText().trim();
-        com.gomatch.client.ClientMain.getConnector()
-                .send(Protocol.CREATE_ROOM, name, password);
+        ClientMain.getConnector().send(Protocol.CREATE_ROOM, name, password);
     }
 
     @FXML
@@ -38,13 +45,12 @@ public class CreateRoomController implements NetworkListener {
 
     @Override
     public void onMessage(String command, String[] args) {
-        if ("ROOM_CREATED".equals(command)) {
-            com.gomatch.client.model.RoomInfo room =
-                    new com.google.gson.Gson().fromJson(args[0], com.gomatch.client.model.RoomInfo.class);
+        if (Protocol.ROOM_CREATED.equals(command)) {
+            com.gomatch.client.model.RoomInfo room = gson.fromJson(args[0], com.gomatch.client.model.RoomInfo.class);
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
             ctrl.setRoomInfo(room, currentUser);
         } else if (Protocol.ERROR.equals(command)) {
-            errorLabel.setText(args[0]);
+            errorLabel.setText(args.length > 0 ? args[0] : "创建失败");
         }
     }
 }

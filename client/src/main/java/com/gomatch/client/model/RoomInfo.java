@@ -7,6 +7,7 @@ public class RoomInfo {
     private int playerCount;
     private int maxPlayers = 2;
     private String status;
+    private boolean hasPassword;
 
     public RoomInfo() {}
 
@@ -28,4 +29,6 @@ public class RoomInfo {
     public void setPlayerCount(int playerCount) { this.playerCount = playerCount; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public boolean isHasPassword() { return hasPassword; }
+    public void setHasPassword(boolean hasPassword) { this.hasPassword = hasPassword; }
 }

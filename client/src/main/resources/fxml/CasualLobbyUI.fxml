@@ -15,6 +15,7 @@
                 <Button text="创建房间" onAction="#handleCreateRoom" styleClass="btn-primary"/>
                 <Button text="加入房间" onAction="#handleJoinRoom" styleClass="btn-secondary"/>
                 <Button text="快速匹配" onAction="#handleQuickMatch" styleClass="btn-secondary"/>
+                <Button text="刷新" onAction="#handleRefresh" styleClass="btn-secondary"/>
             </HBox>
             <Separator styleClass="section-divider" prefWidth="Infinity"/>
         </VBox>

@@ -22,9 +22,10 @@
                     </VBox>
                 </HBox>
                 <HBox spacing="6" alignment="CENTER_RIGHT">
-                    <Button text="排行榜" onAction="#toggleRankDrawer" styleClass="icon-btn"/>
+                    <Button text="排行榜" onAction="#handleRankingPage" styleClass="icon-btn"/>
                     <Button text="好友" onAction="#handleFriends" styleClass="icon-btn"/>
                     <Button text="设置" onAction="#handleSettings" styleClass="icon-btn"/>
+                    <Button text="退出" onAction="#handleLogout" styleClass="icon-btn"/>
                 </HBox>
             </HBox>
             <Separator styleClass="section-divider" prefWidth="Infinity"/>

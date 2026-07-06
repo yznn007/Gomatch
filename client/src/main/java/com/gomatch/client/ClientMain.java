@@ -1,12 +1,17 @@
 package com.gomatch.client;
 
 import com.gomatch.client.network.ServerConnector;
+import com.gomatch.client.network.NetworkListener;
 import com.gomatch.client.ui.ScreenManager;
+import com.gomatch.common.Protocol;
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 public class ClientMain extends Application {
     private static ServerConnector connector;
+    private static boolean disconnectHandled = false;
 
     @Override
     public void start(Stage primaryStage) {
@@ -15,6 +20,21 @@ public class ClientMain extends Application {
         javafx.scene.text.Font.loadFont(getClass().getResourceAsStream("/fonts/MapleMono-NF-CN-Bold.ttf"), 14);
 
         connector = new ServerConnector();
+        // 全局断线监听器
+        connector.addListener(new NetworkListener() {
+            @Override
+            public void onMessage(String command, String[] args) {
+                if (Protocol.DISCONNECT.equals(command) && !disconnectHandled) {
+                    disconnectHandled = true;
+                    Platform.runLater(() -> {
+                        Alert alert = new Alert(Alert.AlertType.WARNING, "与服务器断开连接，请重新登录");
+                        alert.showAndWait();
+                        ScreenManager.switchTo("/fxml/LoginUI.fxml");
+                        disconnectHandled = false;
+                    });
+                }
+            }
+        });
         ScreenManager.init(primaryStage);
         ScreenManager.switchTo("/fxml/LoginUI.fxml");
     }

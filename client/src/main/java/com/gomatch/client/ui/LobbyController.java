@@ -92,6 +92,11 @@ public class LobbyController implements NetworkListener {
     }
 
     @FXML
+    private void handleRankingPage() {
+        ScreenManager.switchTo("/fxml/RankingUI.fxml");
+    }
+
+    @FXML
     private void handleSettings() {
         showAlert(previewMode ? "预览模式：设置功能" : "设置功能开发中");
     }
@@ -99,6 +104,12 @@ public class LobbyController implements NetworkListener {
     @FXML
     private void handleAbout() {
         ScreenManager.switchTo("/fxml/AboutUI.fxml");
+    }
+
+    @FXML
+    private void handleLogout() {
+        ClientMain.getConnector().disconnect();
+        ScreenManager.switchTo("/fxml/LoginUI.fxml");
     }
 
     private void showAlert(String msg) {
