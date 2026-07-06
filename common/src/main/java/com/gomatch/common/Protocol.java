@@ -23,6 +23,19 @@ public class Protocol {
     public static final String QUICK_MATCH  = "QUICK_MATCH";
     public static final String RANKED_MATCH = "RANKED_MATCH";
     public static final String SPECTATE     = "SPECTATE";
+    public static final String ADD_FRIEND   = "ADD_FRIEND";
+    public static final String ACCEPT_FRIEND = "ACCEPT_FRIEND";
+    public static final String REJECT_FRIEND = "REJECT_FRIEND";
+    public static final String DELETE_FRIEND = "DELETE_FRIEND";
+    public static final String FRIEND_LIST  = "FRIEND_LIST";
+    public static final String FRIEND_REQUESTS = "FRIEND_REQUESTS";
+    public static final String SAVE_GAME     = "SAVE_GAME";
+    public static final String LOAD_GAME     = "LOAD_GAME";
+    public static final String DELETE_SAVE   = "DELETE_SAVE";
+    public static final String SAVE_LIST     = "SAVE_LIST";
+    public static final String CHAT_HISTORY = "CHAT_HISTORY";
+    public static final String WATCHER_HISTORY = "WATCHER_HISTORY";
+    public static final String LOGOUT = "LOGOUT";
 
     // Server -> Client
     public static final String LOGIN_OK     = "LOGIN_OK";
@@ -40,6 +53,7 @@ public class Protocol {
     public static final String RANKING_LIST = "RANKING_LIST";
     public static final String ERROR        = "ERROR";
     public static final String DISCONNECT   = "DISCONNECT";
+    public static final String LOGOUT_OK    = "LOGOUT_OK";
 
     public static String build(String... parts) {
         return String.join(SEPARATOR, parts);

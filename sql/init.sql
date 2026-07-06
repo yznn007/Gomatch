@@ -5,7 +5,7 @@ USE `gomatch`;
 CREATE TABLE IF NOT EXISTS `t_user` (
     `user_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
     `username` VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
-    `password` VARCHAR(100) NOT NULL COMMENT '密码(加密)',
+    `password` VARCHAR(100) NOT NULL COMMENT '密码(BCrypt加密)',
     `email` VARCHAR(100) UNIQUE COMMENT '邮箱',
     `avatar` VARCHAR(255) COMMENT '头像URL',
     `role` VARCHAR(20) NOT NULL DEFAULT 'PLAYER' COMMENT '角色: PLAYER/ADMIN',
@@ -27,13 +27,13 @@ CREATE TABLE IF NOT EXISTS `t_user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 
 CREATE TABLE IF NOT EXISTS `t_room` (
-    `room_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '房间ID',
+    `room_id` VARCHAR(50) PRIMARY KEY COMMENT '房间ID(UUID)',
     `room_name` VARCHAR(100) NOT NULL COMMENT '房间名称',
-    `password` VARCHAR(100) COMMENT '房间密码',
+    `password` VARCHAR(100) COMMENT '房间密码(可选)',
     `max_players` INT DEFAULT 2 COMMENT '最大人数',
     `current_players` INT DEFAULT 0 COMMENT '当前人数',
     `watcher_count` INT DEFAULT 0 COMMENT '观战人数',
-    `status` VARCHAR(20) NOT NULL DEFAULT 'waiting' COMMENT '房间状态',
+    `status` VARCHAR(20) NOT NULL DEFAULT 'waiting' COMMENT '房间状态: waiting/playing/finished',
     `host_id` BIGINT NOT NULL COMMENT '房主ID',
     `allow_watch` BOOLEAN DEFAULT TRUE COMMENT '是否允许观战',
     `version` INT DEFAULT 0 COMMENT '版本号(乐观锁)',
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS `t_game_record` (
     `record_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '记录ID',
     `player1_id` BIGINT NOT NULL COMMENT '玩家1ID',
     `player2_id` BIGINT NOT NULL COMMENT '玩家2ID',
-    `game_type` VARCHAR(20) NOT NULL DEFAULT 'PVP' COMMENT '游戏类型: PVP/PVE',
+    `game_type` VARCHAR(20) NOT NULL DEFAULT 'PVP' COMMENT '游戏类型: PVP/PVE/RANKED',
     `winner_id` BIGINT COMMENT '胜者ID(平局为NULL)',
     `result` VARCHAR(10) NOT NULL COMMENT '结果: win/lose/draw',
     `board_data` TEXT NOT NULL COMMENT '棋谱数据(JSON格式)',
@@ -84,14 +84,14 @@ CREATE TABLE IF NOT EXISTS `t_rank` (
 CREATE TABLE IF NOT EXISTS `t_socket_session` (
     `session_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '会话ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
-    `session_key` VARCHAR(64) NOT NULL UNIQUE COMMENT '会话密钥',
+    `session_key` VARCHAR(64) NOT NULL UNIQUE COMMENT '会话密钥(UUID)',
     `client_ip` VARCHAR(50) COMMENT '客户端IP',
     `connection_id` VARCHAR(64) COMMENT '连接ID',
-    `room_id` BIGINT COMMENT '当前所在房间ID',
-    `status` VARCHAR(20) NOT NULL DEFAULT 'connected' COMMENT '连接状态',
+    `room_id` VARCHAR(50) COMMENT '当前所在房间ID',
+    `status` VARCHAR(20) NOT NULL DEFAULT 'connected' COMMENT '连接状态: connected/disconnected/reconnecting',
     `last_heartbeat` DATETIME COMMENT '最后心跳时间',
     `disconnect_time` DATETIME COMMENT '断开连接时间',
-    `disconnect_reason` VARCHAR(50) COMMENT '断开原因',
+    `disconnect_reason` VARCHAR(50) COMMENT '断开原因: timeout/network/normal',
     `reconnect_attempts` INT DEFAULT 0 COMMENT '重连尝试次数',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -99,45 +99,39 @@ CREATE TABLE IF NOT EXISTS `t_socket_session` (
     INDEX `idx_status` (`status`),
     INDEX `idx_last_heartbeat` (`last_heartbeat`),
     INDEX `idx_room_id` (`room_id`),
-    INDEX `idx_room_status` (`room_id`, `status`),
-    FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE,
-    FOREIGN KEY (`room_id`) REFERENCES `t_room`(`room_id`) ON DELETE SET NULL
+    INDEX `idx_room_status` (`room_id`, `status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Socket会话表';
 
 CREATE TABLE IF NOT EXISTS `t_chat_message` (
     `message_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '消息ID',
-    `room_id` BIGINT NOT NULL COMMENT '房间ID',
+    `room_id` VARCHAR(50) NOT NULL COMMENT '房间ID',
     `user_id` BIGINT NOT NULL COMMENT '发送者ID',
     `content` VARCHAR(500) NOT NULL COMMENT '消息内容',
-    `message_type` VARCHAR(20) NOT NULL DEFAULT 'text' COMMENT '消息类型',
+    `message_type` VARCHAR(20) NOT NULL DEFAULT 'text' COMMENT '消息类型: text/system/game',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     INDEX `idx_room_id` (`room_id`),
     INDEX `idx_user_id` (`user_id`),
-    INDEX `idx_create_time` (`create_time`),
-    FOREIGN KEY (`room_id`) REFERENCES `t_room`(`room_id`) ON DELETE CASCADE,
-    FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
+    INDEX `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='聊天消息表';
 
 CREATE TABLE IF NOT EXISTS `t_room_watcher` (
     `watcher_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '观战记录ID',
-    `room_id` BIGINT NOT NULL COMMENT '房间ID',
+    `room_id` VARCHAR(50) NOT NULL COMMENT '房间ID',
     `user_id` BIGINT NOT NULL COMMENT '观战者ID',
     `join_time` DATETIME NOT NULL COMMENT '加入观战时间',
     `leave_time` DATETIME COMMENT '离开观战时间',
     INDEX `idx_room_id` (`room_id`),
     INDEX `idx_user_id` (`user_id`),
-    UNIQUE INDEX `uk_room_user` (`room_id`, `user_id`),
-    FOREIGN KEY (`room_id`) REFERENCES `t_room`(`room_id`) ON DELETE CASCADE,
-    FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
+    UNIQUE INDEX `uk_room_user` (`room_id`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='房间观战表';
 
 CREATE TABLE IF NOT EXISTS `t_game_action` (
     `action_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '操作记录ID',
-    `record_id` BIGINT NOT NULL COMMENT '关联对局ID',
+    `record_id` BIGINT COMMENT '关联对局ID(游戏进行中为NULL)',
     `user_id` BIGINT NOT NULL COMMENT '操作用户ID',
-    `action_type` VARCHAR(20) NOT NULL COMMENT '操作类型',
-    `action_status` VARCHAR(20) NOT NULL COMMENT '操作状态',
-    `move_number` INT NOT NULL COMMENT '操作时落子数',
+    `action_type` VARCHAR(20) NOT NULL COMMENT '操作类型: UNDO_REQUEST/DRAW_REQUEST',
+    `action_status` VARCHAR(20) NOT NULL COMMENT '操作状态: PENDING/ACCEPTED/REJECTED',
+    `move_number` INT DEFAULT 0 COMMENT '操作时落子数',
     `reject_reason` VARCHAR(100) COMMENT '拒绝原因',
     `opponent_response` DATETIME COMMENT '对手响应时间',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -146,27 +140,25 @@ CREATE TABLE IF NOT EXISTS `t_game_action` (
     INDEX `idx_action_type` (`action_type`),
     INDEX `idx_action_status` (`action_status`),
     INDEX `idx_record_status` (`record_id`, `action_status`),
-    FOREIGN KEY (`record_id`) REFERENCES `t_game_record`(`record_id`) ON DELETE CASCADE,
     FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='游戏操作表';
 
 CREATE TABLE IF NOT EXISTS `t_game_save` (
     `save_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '保存ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
-    `record_id` BIGINT COMMENT '关联对局ID',
+    `record_id` BIGINT COMMENT '关联对局ID(正在进行的对局为NULL)',
     `file_uri` VARCHAR(500) NOT NULL UNIQUE COMMENT '棋局文件URI',
     `save_name` VARCHAR(100) COMMENT '保存名称',
     `board_data` TEXT NOT NULL COMMENT '棋盘状态(JSON)',
-    `current_player` INT NOT NULL COMMENT '当前执子方',
-    `game_status` VARCHAR(20) NOT NULL COMMENT '游戏状态',
+    `current_player` INT NOT NULL COMMENT '当前执子方: 1(黑棋)/2(白棋)',
+    `game_status` VARCHAR(20) NOT NULL COMMENT '游戏状态: playing/paused/finished',
     `checksum` VARCHAR(64) COMMENT '文件校验和(SHA-256)',
     `file_size` INT DEFAULT 0 COMMENT '文件大小(字节)',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX `idx_user_id` (`user_id`),
     INDEX `idx_record_id` (`record_id`),
-    FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE,
-    FOREIGN KEY (`record_id`) REFERENCES `t_game_record`(`record_id`) ON DELETE SET NULL
+    FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='棋局保存表';
 
 CREATE TABLE IF NOT EXISTS `t_friend` (
@@ -188,7 +180,7 @@ CREATE TABLE IF NOT EXISTS `t_friend_request` (
     `request_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '请求ID',
     `from_user_id` BIGINT NOT NULL COMMENT '发起者ID',
     `to_user_id` BIGINT NOT NULL COMMENT '接收者ID',
-    `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT '请求状态',
+    `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT '请求状态: PENDING/ACCEPTED/REJECTED',
     `message` VARCHAR(200) COMMENT '请求附言',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `respond_time` DATETIME COMMENT '响应时间',
@@ -205,3 +197,8 @@ INSERT INTO `t_user` (`username`, `password`, `email`, `role`, `status`, `score`
 ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjzqAKL9xL5jvMFVdNJHvGCgTq/VEq', '[redacted-email]', 'ADMIN', 'ACTIVE', 9999),
 ('player1', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjzqAKL9xL5jvMFVdNJHvGCgTq/VEq', '[redacted-email]', 'PLAYER', 'ACTIVE', 1000),
 ('player2', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjzqAKL9xL5jvMFVdNJHvGCgTq/VEq', '[redacted-email]', 'PLAYER', 'ACTIVE', 1000);
+
+INSERT INTO `t_rank` (`user_id`, `rank`, `score`, `win_rate`, `ai_win_rate`) VALUES
+(1, 0, 9999, 0.00, 0.00),
+(2, 0, 1000, 0.00, 0.00),
+(3, 0, 1000, 0.00, 0.00);
