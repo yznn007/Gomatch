@@ -127,10 +127,24 @@ public class CasualLobbyController implements NetworkListener {
 
     @FXML
     private void handleBack() {
-        // 修复：返回大厅时将 currentUser 传递给新的 LobbyController 实例
         LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
         ctrl.setCurrentUser(currentUser);
         ctrl.setPreviewMode(previewMode);
+    }
+
+    @FXML
+    private void handleRefresh() {
+        if (previewMode) {
+            roomData.clear();
+            roomData.addAll(
+                new RoomInfo("1001", "五子棋切磋", "玩家A", 2, "对局中"),
+                new RoomInfo("1002", "休闲一局",  "玩家B", 1, "等待中")
+            );
+            spectateData.clear();
+            spectateData.addAll("#1001 五子棋切磋  玩家A vs 玩家D");
+        } else {
+            ClientMain.getConnector().send(Protocol.ROOM_LIST);
+        }
     }
 
     private void showAlert(String msg) {
@@ -140,16 +154,30 @@ public class CasualLobbyController implements NetworkListener {
 
     @Override
     public void onMessage(String command, String[] args) {
-        if (Protocol.ROOM_LIST.equals(command)) {
-            Type listType = new TypeToken<List<RoomInfo>>() {}.getType();
-            List<RoomInfo> rooms = AppConfig.GSON.fromJson(args[0], listType);
-            roomData.setAll(rooms);
-            spectateData.setAll(rooms.stream()
-                .filter(r -> "对局中".equals(r.getStatus()))
-                .map(r -> "#" + r.getRoomId() + " " + r.getRoomName() + "  房主: " + r.getOwnerName())
+        if (Protocol.RANKING_LIST.equals(command)) {
+            roomData.clear();
+            for (int i = 0; i < args.length; i += 5) {
+                if (i + 4 < args.length) {
+                    RoomInfo room = new RoomInfo();
+                    room.setRoomId(args[i]);
+                    room.setRoomName(args[i + 1]);
+                    room.setStatus(args[i + 2]);
+                    String[] players = args[i + 3].split("/");
+                    room.setPlayerCount(Integer.parseInt(players[0]));
+                    room.setHasPassword("1".equals(args[i + 4]));
+                    roomData.add(room);
+                }
+            }
+            spectateData.setAll(roomData.stream()
+                .filter(r -> "playing".equals(r.getStatus()))
+                .map(r -> "#" + r.getRoomId() + " " + r.getRoomName() + "  玩家: " + r.getPlayerCount() + "/2")
                 .collect(Collectors.toList()));
         } else if (Protocol.JOIN_OK.equals(command)) {
-            RoomInfo room = AppConfig.GSON.fromJson(args[0], RoomInfo.class);
+            RoomInfo room = new RoomInfo();
+            room.setRoomId(args[0]);
+            room.setRoomName(args[1]);
+            String[] players = args[2].split("/");
+            room.setPlayerCount(Integer.parseInt(players[0]));
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
             ctrl.setPreviewMode(false);
             ctrl.setRoomInfo(room, currentUser);

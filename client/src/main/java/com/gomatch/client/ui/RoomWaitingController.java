@@ -22,6 +22,8 @@ public class RoomWaitingController implements NetworkListener {
     private RoomInfo roomInfo;
     private User currentUser;
     private boolean previewMode;
+    private String lastLocalChat;
+    private long lastLocalChatTime;
 
     /**
      * 修复时序依赖：先调 setPreviewMode(true/false)，再调 setRoomInfo()。
@@ -72,28 +74,53 @@ public class RoomWaitingController implements NetworkListener {
     @FXML
     private void handleSendChat() {
         String msg = chatInput.getText().trim();
-        if (!msg.isEmpty()) {
-            if (!previewMode) {
-                ClientMain.getConnector().send(Protocol.CHAT, msg);
-            }
-            chatInput.clear();
+        if (msg.isEmpty()) return;
+
+        String display = currentUser.getUsername() + ": " + msg + "\n";
+        chatArea.appendText(display);
+        chatArea.setScrollTop(Double.MAX_VALUE);
+        lastLocalChat = display;
+        lastLocalChatTime = System.currentTimeMillis();
+
+        if (!previewMode) {
+            ClientMain.getConnector().send(Protocol.CHAT, msg);
         }
+        chatInput.clear();
     }
 
     @Override
     public void onMessage(String command, String[] args) {
         if (Protocol.PLAYER_ENTER.equals(command)) {
-            players.add(args[0]);
-            statusLabel.setText("玩家 " + args[0] + " 已加入");
+            String username = args.length > 1 ? args[1] : args[0];
+            players.add(username);
+            statusLabel.setText("玩家 " + username + " 已加入");
         } else if (Protocol.PLAYER_LEAVE.equals(command)) {
-            players.remove(args[0]);
+            String username = args.length > 1 ? args[1] : args[0];
+            players.remove(username);
         } else if (Protocol.CHAT_MSG.equals(command)) {
-            chatArea.appendText(args[0] + ": " + args[1] + "\n");
-            // 自动滚动到底部
+            String username = args.length > 1 ? args[1] : args[0];
+            String message = args.length > 2 ? args[2] : "";
+            String display = username + ": " + message + "\n";
+            // 避免服务端回显导致自己发送的消息出现两次
+            if (display.equals(lastLocalChat) &&
+                System.currentTimeMillis() - lastLocalChatTime < 2000) {
+                return;
+            }
+            chatArea.appendText(display);
             chatArea.setScrollTop(Double.MAX_VALUE);
         } else if (Protocol.GAME_START.equals(command)) {
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
             ctrl.setGameInfo(args[0], args[1], currentUser.getUsername());
+        } else if ("UNDO_REQUESTED".equals(command)) {
+            statusLabel.setText("玩家 " + args[1] + " 请求悔棋");
+        } else if ("UNDO_ACCEPTED".equals(command)) {
+            statusLabel.setText("对手同意悔棋");
+        } else if ("UNDO_REJECTED".equals(command)) {
+            statusLabel.setText("对手拒绝悔棋");
+        } else if ("DRAW_REQUESTED".equals(command)) {
+            statusLabel.setText("玩家 " + args[1] + " 请求求和");
+        } else if ("DRAW_REJECTED".equals(command)) {
+            statusLabel.setText("对手拒绝求和");
         }
     }
 }

@@ -21,6 +21,7 @@ public final class AppConfig {
     // ---------- 全局会话状态 (Session) ----------
     private static User currentUser;
     private static boolean previewMode;
+    private static boolean aiMode;
 
     public static User getCurrentUser() {
         return currentUser;
@@ -36,5 +37,13 @@ public final class AppConfig {
 
     public static void setPreviewMode(boolean preview) {
         previewMode = preview;
+    }
+
+    public static boolean isAiMode() {
+        return aiMode;
+    }
+
+    public static void setAiMode(boolean ai) {
+        aiMode = ai;
     }
 }

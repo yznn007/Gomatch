@@ -73,7 +73,7 @@ public class RecordController implements NetworkListener {
             );
         } else {
             ClientMain.getConnector().addListener(this);
-            ClientMain.getConnector().send(Protocol.GAME_RECORDS);
+            ClientMain.getConnector().send("QUERY_RECORD", "0", "10");
         }
     }
 
@@ -84,13 +84,33 @@ public class RecordController implements NetworkListener {
 
     @Override
     public void onMessage(String command, String[] args) {
-        if (Protocol.GAME_RECORDS_LIST.equals(command) && args.length > 0) {
-            try {
-                Type listType = new TypeToken<List<Map<String, String>>>() {}.getType();
-                List<Map<String, String>> list = gson.fromJson(args[0], listType);
-                records.clear();
-                records.addAll(list);
-            } catch (Exception ignored) {
+        if ("RECORD_LIST".equals(command)) {
+            records.clear();
+            for (int i = 0; i < args.length; i += 10) {
+                if (i + 9 < args.length) {
+                    long currentUserId = com.gomatch.client.AppConfig.getCurrentUser().getUserId();
+                    long player1Id = Long.parseLong(args[i + 1]);
+                    long player2Id = Long.parseLong(args[i + 3]);
+                    long winnerId = Long.parseLong(args[i + 5]);
+                    
+                    String opponentName = currentUserId == player1Id ? args[i + 4] : args[i + 2];
+                    String result;
+                    if (winnerId == 0) {
+                        result = "平局";
+                    } else if (winnerId == currentUserId) {
+                        result = "胜";
+                    } else {
+                        result = "负";
+                    }
+                    
+                    records.add(Map.of(
+                        "opponent", opponentName,
+                        "result", result,
+                        "time", args[i + 9],
+                        "replay", "回放",
+                        "moves", ""
+                    ));
+                }
             }
         }
     }

@@ -85,4 +85,6 @@
 | 2026-07-06 | Contributor| 修改 t_room.room_id 为 VARCHAR(50) |
 | 2026-07-06 | Contributor| 编译验证通过 |
 | 2026-07-06 | Contributor| 编译验证通过 |
+| 2026-07-06 | Contributor| mvn compile 通过 |
+| 2026-07-06 | Contributor| |
 

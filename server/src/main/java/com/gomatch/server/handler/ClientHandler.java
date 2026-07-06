@@ -12,6 +12,7 @@ import com.gomatch.server.room.Room;
 import com.gomatch.server.room.RoomManager;
 import com.gomatch.server.session.SessionManager;
 import com.gomatch.server.redis.RedisManager;
+import com.gomatch.server.game.Game;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,13 +98,13 @@ public class ClientHandler implements Runnable {
             case Protocol.QUICK_MATCH  -> handleQuickMatch();
             case "RANKED_MATCH"      -> handleRankedMatch();
             case Protocol.RANKING      -> handleRanking();
-            case "QUERY_RECORD"        -> handleQueryRecord(parts);
+            case Protocol.QUERY_RECORD     -> handleQueryRecord(parts);
             case Protocol.REQUEST_UNDO -> handleRequestUndo();
             case Protocol.REPLY_UNDO   -> handleReplyUndo(parts);
             case Protocol.REQUEST_DRAW -> handleRequestDraw();
             case Protocol.REPLY_DRAW   -> handleReplyDraw(parts);
             case "RECONNECT"         -> handleReconnect(parts);
-            case "CHANGE_PASSWORD" -> handleChangePassword(parts);
+            case Protocol.CHANGE_PWD -> handleChangePassword(parts);
             case Protocol.ADD_FRIEND -> handleAddFriend(parts);
             case Protocol.ACCEPT_FRIEND -> handleAcceptFriend(parts);
             case Protocol.REJECT_FRIEND -> handleRejectFriend(parts);
@@ -117,6 +118,8 @@ public class ClientHandler implements Runnable {
             case Protocol.CHAT_HISTORY -> handleChatHistory(parts);
             case Protocol.WATCHER_HISTORY -> handleWatcherHistory(parts);
             case Protocol.LOGOUT -> handleLogout();
+            case Protocol.HEARTBEAT -> handleHeartbeat();
+            case "AI_MATCH" -> handleAiMatch(parts);
 
             default -> send(Protocol.ERROR, "Unknown command: " + cmd);
         }
@@ -175,12 +178,12 @@ public class ClientHandler implements Runnable {
 
     private void handleChangePassword(String[] parts) {
         if (!authenticated) {
-            send("CHANGE_PASSWORD_FAIL", "未登录");
+            send(Protocol.ERROR, "未登录");
             return;
         }
 
         if (parts.length < 3) {
-            send("CHANGE_PASSWORD_FAIL", "缺少参数");
+            send(Protocol.ERROR, "缺少参数");
             return;
         }
 
@@ -188,18 +191,24 @@ public class ClientHandler implements Runnable {
         String newPassword = parts[2];
 
         if (newPassword.length() < 6) {
-            send("CHANGE_PASSWORD_FAIL", "新密码至少6位");
+            send(Protocol.ERROR, "新密码至少6位");
             return;
         }
 
         boolean success = userDAO.changePassword(userId, oldPassword, newPassword);
         if (success) {
-            send("CHANGE_PASSWORD_OK");
+            send(Protocol.PWD_CHANGED);
             log.info("用户 {} 修改密码成功", userId);
         } else {
-            send("CHANGE_PASSWORD_FAIL", "旧密码错误");
+            send(Protocol.ERROR, "旧密码错误");
             log.warn("用户 {} 修改密码失败: 旧密码错误", userId);
         }
+    }
+
+    // ==================== 心跳 ====================
+
+    private void handleHeartbeat() {
+        send(Protocol.HEARTBEAT_OK);
     }
 
     // ==================== 用户登录 ====================
@@ -336,6 +345,49 @@ public class ClientHandler implements Runnable {
         );
 
         log.info("Player {} created AI room: {} ({}), game started", userId, room.getRoomId(), roomName);
+    }
+
+    /**
+     * AI 对战
+     * 协议: AI_MATCH|difficulty
+     * 响应: JOIN_OK|roomId|roomName|playerCount/max
+     */
+    private void handleAiMatch(String[] parts) {
+        if (!authenticated) {
+            send(Protocol.ERROR, "未登录");
+            return;
+        }
+
+        String difficulty = "EASY";
+        if (parts.length >= 2) {
+            difficulty = parts[1];
+        }
+
+        log.info("AI对战请求: userId={}, difficulty={}", userId, difficulty);
+
+        if (currentRoom != null) {
+            roomManager.leaveRoom(this);
+        }
+
+        String roomName = "AI对战 - " + difficulty;
+        Room room = roomManager.createAiRoom(roomName, this);
+        this.currentRoom = room;
+
+        send(Protocol.JOIN_OK,
+                room.getRoomId(),
+                roomName,
+                "1/2",
+                "0"
+        );
+
+        room.startGame();
+        room.broadcastAll(
+                Protocol.GAME_START,
+                getUsername(),
+                "AI"
+        );
+
+        log.info("AI对战房间创建成功: userId={}, roomId={}, difficulty={}", userId, room.getRoomId(), difficulty);
     }
 
     /**
@@ -543,6 +595,11 @@ public class ClientHandler implements Runnable {
     // ==================== 游戏操作 ====================
 
     private void handleMove(String[] parts) {
+        log.info("handleMove called: parts={}, currentRoom={}, status={}, aiMode={}",
+                java.util.Arrays.toString(parts), currentRoom, 
+                currentRoom != null ? currentRoom.getStatus() : "null",
+                currentRoom != null ? currentRoom.isAiMode() : "null");
+
         if (currentRoom == null || currentRoom.getStatus() != Room.Status.PLAYING) {
             send(Protocol.ERROR, "不在游戏中");
             return;
@@ -563,13 +620,15 @@ public class ClientHandler implements Runnable {
         }
 
         int color = currentRoom.getGame().getCurrentPlayer();
+        log.info("Player move: x={}, y={}, color={}, aiMode={}", x, y, 
+                color == Game.BLACK ? "BLACK" : "WHITE", currentRoom.isAiMode());
+        
         boolean success = currentRoom.makeMove(x, y, this);
         if (!success) {
             send(Protocol.ERROR, "无效的移动子操作");       
             return;
         }
 
-        // 广播落子给房间内所有人
         currentRoom.broadcastAll(
             Protocol.MOVE_SYNC,
             String.valueOf(x),
@@ -577,12 +636,10 @@ public class ClientHandler implements Runnable {
             String.valueOf(color)
         );
 
-        // 检查游戏是否结束
         if (currentRoom.isGameOver()) {
             long winnerId = currentRoom.getWinnerId();
             currentRoom.endGame(winnerId, "five_in_a_row");
 
-            // 广播游戏结束
             currentRoom.broadcastAll(
                 Protocol.GAME_OVER,
                 String.valueOf(winnerId),
@@ -590,6 +647,10 @@ public class ClientHandler implements Runnable {
             );
 
             log.info("Game over in room {}: winner={}", currentRoom.getRoomId(), winnerId);
+        } else if (currentRoom.isAiMode()) {
+            log.info("Calling makeAiMove() for room {}", currentRoom.getRoomId());
+            currentRoom.makeAiMove();
+            log.info("makeAiMove() completed for room {}", currentRoom.getRoomId());
         }
     }
 
@@ -747,7 +808,7 @@ public class ClientHandler implements Runnable {
             UserDAO.UserInfo player2 = userDAO.getUserById(player2Id);
             
             String player1Name = player1 != null ? player1.getUsername() : "未知";
-            String player2Name = player2 != null ? player2.getUsername() : "未知";
+            String player2Name = player2 != null ? player2.getUsername() : (player2Id == -1 ? "AI" : "未知");
             
             sb.append("|").append(record[0])      // recordId
               .append("|").append(player1Id)     // player1Id
@@ -761,7 +822,7 @@ public class ClientHandler implements Runnable {
               .append("|").append(record[7]);    // createTime
         }
         send(sb.toString());
-        log.info("Sent record list to {}: {} records", socket.getPort(), records.size());
+        log.info("Sent record list to user {} ({} records)", userId, records.size());
     }
 
     /**
@@ -777,6 +838,18 @@ public class ClientHandler implements Runnable {
 
         if (currentRoom.isObserver(this)) {
             send(Protocol.ERROR, "观战者不能请求悔棋");
+            return;
+        }
+
+        // AI 模式下直接悔棋，不发送请求
+        if (currentRoom.isAiMode()) {
+            boolean undone = currentRoom.directUndo(userId);
+            if (undone) {
+                currentRoom.broadcastAll("UNDO_ACCEPTED");
+                log.info("Player {} undid move in AI mode", userId);
+            } else {
+                send(Protocol.ERROR, "无法悔棋");
+            }
             return;
         }
 
@@ -843,6 +916,14 @@ public class ClientHandler implements Runnable {
 
         if (currentRoom.isObserver(this)) {
             send(Protocol.ERROR, "观战者不能请求求和");
+            return;
+        }
+
+        // AI 模式下直接判平局，不发送请求
+        if (currentRoom.isAiMode()) {
+            currentRoom.directDraw(userId);
+            currentRoom.broadcastAll(Protocol.GAME_OVER, "0", "双方平局(求和)");
+            log.info("Player {} drew game in AI mode", userId);
             return;
         }
 
