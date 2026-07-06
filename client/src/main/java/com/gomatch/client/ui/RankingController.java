@@ -94,16 +94,17 @@ public class RankingController implements NetworkListener {
     @Override
     public void onMessage(String command, String[] args) {
         if (com.gomatch.common.Protocol.RANKING_LIST.equals(command)) {
-            Type listType = new TypeToken<List<User>>() {}.getType();
-            List<User> list = AppConfig.GSON.fromJson(args[0], listType);
-            DecimalFormat df = new DecimalFormat("0.0%");
-            for (int i = 0; i < list.size(); i++) {
-                User u = list.get(i);
-                u.setRank(i + 1);
-                int total = u.getWinCount() + u.getLoseCount();
-                u.setWinRate(total > 0 ? df.format((double) u.getWinCount() / total) : "0%");
+            rankingData.clear();
+            for (int i = 0; i < args.length; i += 4) {
+                if (i + 3 < args.length) {
+                    User u = new User();
+                    u.setRank(Integer.parseInt(args[i]));
+                    u.setUsername(args[i + 1]);
+                    u.setScore(Integer.parseInt(args[i + 2]));
+                    u.setWinRate(args[i + 3]);
+                    rankingData.add(u);
+                }
             }
-            rankingData.setAll(list);
         }
     }
 }

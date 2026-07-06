@@ -40,19 +40,28 @@
             <!-- 主内容层：匹配 / 排位入口 -->
             <VBox styleClass="page-root" spacing="0" alignment="BOTTOM_CENTER" style="-fx-padding: 0 0 80 0;">
                 <Region VBox.vgrow="ALWAYS"/>
-                <HBox styleClass="lobby-center" spacing="50" alignment="BOTTOM_CENTER">
+                <HBox styleClass="lobby-center" spacing="36" alignment="BOTTOM_CENTER">
                     <!-- 匹配 -->
                     <StackPane styleClass="arena-btn, arena-casual" onMouseClicked="#handleCasual"
-                               prefWidth="300" prefHeight="180" minWidth="300" minHeight="180" maxWidth="300" maxHeight="180">
+                               prefWidth="260" prefHeight="160" minWidth="260" minHeight="160" maxWidth="260" maxHeight="160">
                         <VBox alignment="CENTER" spacing="8">
                             <Label text="⚔" styleClass="arena-icon"/>
                             <Label text="匹  配" styleClass="arena-title"/>
                             <Label text="MATCH" styleClass="arena-sub"/>
                         </VBox>
                     </StackPane>
+                    <!-- AI 对战 -->
+                    <StackPane styleClass="arena-btn, arena-casual" onMouseClicked="#handleAiMatch"
+                               prefWidth="260" prefHeight="160" minWidth="260" minHeight="160" maxWidth="260" maxHeight="160">
+                        <VBox alignment="CENTER" spacing="8">
+                            <Label text="🤖" styleClass="arena-icon"/>
+                            <Label text="AI 对战" styleClass="arena-title"/>
+                            <Label text="VS AI" styleClass="arena-sub"/>
+                        </VBox>
+                    </StackPane>
                     <!-- 排位 -->
                     <StackPane styleClass="arena-btn, arena-ranked" onMouseClicked="#handleRanked"
-                               prefWidth="300" prefHeight="180" minWidth="300" minHeight="180" maxWidth="300" maxHeight="180">
+                               prefWidth="260" prefHeight="160" minWidth="260" minHeight="160" maxWidth="260" maxHeight="160">
                         <VBox alignment="CENTER" spacing="8">
                             <Label text="♛" styleClass="arena-icon"/>
                             <Label text="排  位" styleClass="arena-title"/>

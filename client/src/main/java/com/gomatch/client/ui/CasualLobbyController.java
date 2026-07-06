@@ -96,18 +96,7 @@ public class CasualLobbyController implements NetworkListener {
         handleRefresh();
     }
 
-    @FXML
-    private void handleRefresh() {
-        if (ClientMain.getConnector().isConnected()) {
-            ClientMain.getConnector().send(Protocol.ROOM_LIST);
-        } else {
-            roomData.setAll(
-                new RoomInfo("1001", "五子棋切磋", "玩家A", 2, "对局中"),
-                new RoomInfo("1002", "休闲一局",  "玩家B", 1, "等待中")
-            );
-            spectateData.setAll("#1001 五子棋切磋  玩家A vs 玩家D");
-        }
-    }
+
 
     public void setPreviewMode(boolean previewMode) { this.previewMode = previewMode; }
 
@@ -179,6 +168,21 @@ public class CasualLobbyController implements NetworkListener {
         ctrl.setPreviewMode(previewMode);
     }
 
+    @FXML
+    private void handleRefresh() {
+        if (previewMode) {
+            roomData.clear();
+            roomData.addAll(
+                new RoomInfo("1001", "五子棋切磋", "玩家A", 2, "对局中"),
+                new RoomInfo("1002", "休闲一局",  "玩家B", 1, "等待中")
+            );
+            spectateData.clear();
+            spectateData.addAll("#1001 五子棋切磋  玩家A vs 玩家D");
+        } else {
+            ClientMain.getConnector().send(Protocol.ROOM_LIST);
+        }
+    }
+
     private void showAlert(String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION, msg);
         alert.showAndWait();
@@ -186,31 +190,33 @@ public class CasualLobbyController implements NetworkListener {
 
     @Override
     public void onMessage(String command, String[] args) {
-        if (Protocol.ROOM_LIST.equals(command)) {
-            Type listType = new TypeToken<List<RoomInfo>>() {}.getType();
-            List<RoomInfo> rooms = AppConfig.GSON.fromJson(args[0], listType);
-            roomData.setAll(rooms);
-            spectateData.setAll(rooms.stream()
-                .filter(r -> "对局中".equals(r.getStatus()))
-                .map(r -> "#" + r.getRoomId() + " " + r.getRoomName() + "  房主: " + r.getOwnerName())
+        if (Protocol.RANKING_LIST.equals(command)) {
+            roomData.clear();
+            for (int i = 0; i < args.length; i += 5) {
+                if (i + 4 < args.length) {
+                    RoomInfo room = new RoomInfo();
+                    room.setRoomId(args[i]);
+                    room.setRoomName(args[i + 1]);
+                    room.setStatus(args[i + 2]);
+                    String[] players = args[i + 3].split("/");
+                    room.setPlayerCount(Integer.parseInt(players[0]));
+                    room.setHasPassword("1".equals(args[i + 4]));
+                    roomData.add(room);
+                }
+            }
+            spectateData.setAll(roomData.stream()
+                .filter(r -> "playing".equals(r.getStatus()))
+                .map(r -> "#" + r.getRoomId() + " " + r.getRoomName() + "  玩家: " + r.getPlayerCount() + "/2")
                 .collect(Collectors.toList()));
         } else if (Protocol.JOIN_OK.equals(command)) {
-            RoomInfo room;
-            try {
-                room = AppConfig.GSON.fromJson(args[0], RoomInfo.class);
-                if (room == null || room.getRoomId() == null) {
-                    throw new Exception();
-                }
-            } catch (Exception e) {
-                room = new RoomInfo();
-                if (args.length > 0) room.setRoomId(args[0]);
-                if (args.length > 1) room.setRoomName(args[1]);
-                if (args.length > 2) {
-                    String[] pc = args[2].split("/");
-                    try {
-                        room.setPlayerCount(Integer.parseInt(pc[0]));
-                    } catch (Exception ignored) {}
-                }
+            RoomInfo room = new RoomInfo();
+            if (args.length > 0) room.setRoomId(args[0]);
+            if (args.length > 1) room.setRoomName(args[1]);
+            if (args.length > 2) {
+                String[] pc = args[2].split("/");
+                try {
+                    room.setPlayerCount(Integer.parseInt(pc[0]));
+                } catch (Exception ignored) {}
             }
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
             ctrl.setPreviewMode(false);

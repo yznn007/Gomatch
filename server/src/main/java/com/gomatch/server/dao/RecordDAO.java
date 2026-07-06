@@ -17,6 +17,12 @@ public class RecordDAO {
     public long saveRecord(String roomId, long player1Id, long player2Id,
                            Long winnerId, String result,
                            List<MoveRecord> moves, Instant startTime) {
+        return saveRecord(roomId, player1Id, player2Id, winnerId, result, moves, startTime, "PVP");
+    }
+
+    public long saveRecord(String roomId, long player1Id, long player2Id,
+                           Long winnerId, String result,
+                           List<MoveRecord> moves, Instant startTime, String gameType) {
         int duration = (int) Duration.between(startTime, Instant.now()).getSeconds();
         int moveCount = moves.size();
 
@@ -25,21 +31,22 @@ public class RecordDAO {
         String sql = "INSERT INTO t_game_record " +
                      "(player1_id, player2_id, game_type, winner_id, result, " +
                      "board_data, duration, move_count, create_time) " +
-                     "VALUES (?, ?, 'PVP', ?, ?, ?, ?, ?, NOW())";
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, player1Id);
             ps.setLong(2, player2Id);
+            ps.setString(3, gameType);
             if (winnerId != null) {
-                ps.setLong(3, winnerId);
+                ps.setLong(4, winnerId);
             } else {
-                ps.setNull(3, Types.BIGINT);
+                ps.setNull(4, Types.BIGINT);
             }
-            ps.setString(4, result);
-            ps.setString(5, boardData);
-            ps.setInt(6, duration);
-            ps.setInt(7, moveCount);
+            ps.setString(5, result);
+            ps.setString(6, boardData);
+            ps.setInt(7, duration);
+            ps.setInt(8, moveCount);
             ps.executeUpdate();
 
             try (ResultSet rs = ps.getGeneratedKeys()) {

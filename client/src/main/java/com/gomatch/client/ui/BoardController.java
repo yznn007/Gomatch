@@ -1,5 +1,6 @@
 package com.gomatch.client.ui;
 
+import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Protocol;
@@ -14,6 +15,9 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class BoardController implements NetworkListener {
     private static final int SIZE   = 15;
@@ -48,11 +52,17 @@ public class BoardController implements NetworkListener {
     private String blackName = "";
     private String whiteName = "";
     private boolean previewMode;
+    private boolean aiMode;
+    private boolean gameOver;
     private int cellSize; // 动态计算
+    private final List<int[]> moveHistory = new ArrayList<>();
+    private String lastLocalChat;
+    private long lastLocalChatTime;
 
     @FXML
     private void initialize() {
-        // 棋盘大小跟随容器动态调整
+        ClientMain.getConnector().addListener(this);
+        
         boardContainer.widthProperty().addListener((obs, o, n) -> resizeBoard());
         boardContainer.heightProperty().addListener((obs, o, n) -> resizeBoard());
 
@@ -143,8 +153,11 @@ public class BoardController implements NetworkListener {
         this.blackName  = blackId;
         this.whiteName  = whiteId;
         this.myUsername = username;
+        this.aiMode = "AI".equals(whiteId) || "-1".equals(whiteId);
+        this.gameOver = false;
+        AppConfig.setAiMode(this.aiMode);
         blackLabel.setText("黑方: " + blackId);
-        whiteLabel.setText("白方: " + whiteId);
+        whiteLabel.setText("白方: " + (aiMode ? "AI" : whiteId));
         myColor = username.equals(blackId) ? "black" : "white";
         myTurn  = myColor.equals("black");
         updateTurnLabel();
@@ -176,6 +189,7 @@ public class BoardController implements NetworkListener {
     }
 
     private void handleMouseClick(MouseEvent e) {
+        if (gameOver) return;
         if (!myTurn) return;
         if (cellSize == 0) return;
         int x = (int) Math.round((e.getX() - MARGIN) / cellSize);
@@ -186,12 +200,18 @@ public class BoardController implements NetworkListener {
         if (previewMode) {
             int color = currentTurn;
             drawStone(x, y, color);
+            moveHistory.add(new int[]{x, y, color});
             currentTurn = (color == 1) ? 2 : 1;
             updateTurnLabel();
             chatArea.appendText("[本地] " + (color == 1 ? "黑" : "白") + "方落子 (" + x + "," + y + ")\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
             return;
         }
+        int color = myColor.equals("black") ? 1 : 2;
+        drawStone(x, y, color);
+        moveHistory.add(new int[]{x, y, color});
+        myTurn = false;
+        updateTurnLabel();
         ClientMain.getConnector().send(Protocol.MOVE, String.valueOf(x), String.valueOf(y));
     }
 
@@ -298,6 +318,23 @@ public class BoardController implements NetworkListener {
         ClientMain.getConnector().send(Protocol.SURRENDER);
     }
 
+    @FXML
+    private void handleSendChat() {
+        String msg = chatInput.getText().trim();
+        if (msg.isEmpty()) return;
+
+        String display = myUsername + ": " + msg + "\n";
+        chatArea.appendText(display);
+        chatArea.setScrollTop(Double.MAX_VALUE);
+        lastLocalChat = display;
+        lastLocalChatTime = System.currentTimeMillis();
+
+        if (!previewMode) {
+            ClientMain.getConnector().send(Protocol.CHAT, msg);
+        }
+        chatInput.clear();
+    }
+
     /** 棋谱回放：解析 "x,y,color;x,y,color;..." 格式依次落子 */
     public void replayMoves(String moves) {
         String[] steps = moves.split(";");
@@ -316,21 +353,89 @@ public class BoardController implements NetworkListener {
 
     @Override
     public void onMessage(String command, String[] args) {
-        if (Protocol.MOVE_SYNC.equals(command)) {
+        if (Protocol.GAME_START.equals(command)) {
+            moveHistory.clear();
+            if (args.length >= 2) {
+                setGameInfo(args[0], args[1], myUsername);
+            }
+        } else if (Protocol.MOVE_SYNC.equals(command)) {
             int x     = Integer.parseInt(args[0]);
             int y     = Integer.parseInt(args[1]);
             int color = Integer.parseInt(args[2]);
             drawStone(x, y, color);
+            moveHistory.add(new int[]{x, y, color});
             currentTurn = (color == 1) ? 2 : 1;
+            myTurn = (myColor.equals("black") && currentTurn == 1) ||
+                     (myColor.equals("white") && currentTurn == 2);
             updateTurnLabel();
         } else if (Protocol.GAME_OVER.equals(command)) {
-            String result = args[0];
+            gameOver = true;
+            myTurn = false;
+            String winnerId = args[0];
             String reason = args.length > 1 ? args[1] : "";
+            String result;
+            if ("0".equals(winnerId)) {
+                result = "平局";
+            } else if ("black".equals(myColor) && blackName.equals(winnerId)) {
+                result = "黑方胜";
+            } else if ("white".equals(myColor) && whiteName.equals(winnerId)) {
+                result = "白方胜";
+            } else if ("black".equals(myColor) && whiteName.equals(winnerId)) {
+                result = "对手胜";
+            } else if ("white".equals(myColor) && blackName.equals(winnerId)) {
+                result = "对手胜";
+            } else {
+                result = "游戏结束";
+            }
+            updateTurnLabel();
             GameOverController ctrl = ScreenManager.showDialog("/fxml/GameOverUI.fxml");
             ctrl.setResult(result, reason);
         } else if (Protocol.CHAT_MSG.equals(command)) {
-            chatArea.appendText(args[0] + ": " + args[1] + "\n");
-            // 自动滚动到底部
+            String username = args.length > 1 ? args[1] : args[0];
+            String message = args.length > 2 ? args[2] : "";
+            String display = username + ": " + message + "\n";
+            // 避免服务端回显导致自己发送的消息出现两次
+            if (display.equals(lastLocalChat) &&
+                System.currentTimeMillis() - lastLocalChatTime < 2000) {
+                return;
+            }
+            chatArea.appendText(display);
+            chatArea.setScrollTop(Double.MAX_VALUE);
+        } else if ("UNDO_REQUESTED".equals(command)) {
+            chatArea.appendText("[系统] 玩家 " + args[1] + " 请求悔棋\n");
+            chatArea.setScrollTop(Double.MAX_VALUE);
+        } else if ("UNDO_ACCEPTED".equals(command)) {
+            if (aiMode) {
+                // AI 模式撤销两步：AI 的落子 + 玩家的上一步
+                if (moveHistory.size() >= 2) {
+                    int[] aiMove = moveHistory.remove(moveHistory.size() - 1);
+                    board[aiMove[0]][aiMove[1]] = 0;
+                    int[] myMove = moveHistory.remove(moveHistory.size() - 1);
+                    board[myMove[0]][myMove[1]] = 0;
+                    currentTurn = myMove[2]; // 回到玩家回合
+                    myTurn = true;
+                    updateTurnLabel();
+                    redrawAll();
+                }
+            } else if (!moveHistory.isEmpty()) {
+                int[] last = moveHistory.remove(moveHistory.size() - 1);
+                board[last[0]][last[1]] = 0;
+                currentTurn = last[2];
+                myTurn = (myColor.equals("black") && currentTurn == 1) ||
+                         (myColor.equals("white") && currentTurn == 2);
+                updateTurnLabel();
+                redrawAll();
+            }
+            chatArea.appendText("[系统] 悔棋成功\n");
+            chatArea.setScrollTop(Double.MAX_VALUE);
+        } else if ("UNDO_REJECTED".equals(command)) {
+            chatArea.appendText("[系统] 对手拒绝悔棋\n");
+            chatArea.setScrollTop(Double.MAX_VALUE);
+        } else if ("DRAW_REQUESTED".equals(command)) {
+            chatArea.appendText("[系统] 玩家 " + args[1] + " 请求求和\n");
+            chatArea.setScrollTop(Double.MAX_VALUE);
+        } else if ("DRAW_REJECTED".equals(command)) {
+            chatArea.appendText("[系统] 对手拒绝求和\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
         }
     }

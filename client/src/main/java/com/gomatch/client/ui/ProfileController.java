@@ -58,8 +58,7 @@ public class ProfileController implements NetworkListener {
                 new GameRecord("玩家B", "负", "2026-07-04 16:10", "查看")
             );
         } else {
-            // 联网时向服务端请求对战记录（需服务端支持 RECORD_LIST 协议）
-            // ClientMain.getConnector().send("RECORD_LIST");
+            ClientMain.getConnector().send(Protocol.QUERY_RECORD, "0", "20");
         }
 
         // 初始化激活默认标签页 (个人信息)
@@ -118,6 +117,7 @@ public class ProfileController implements NetworkListener {
     private void handleChangePwd() {
         String oldPwd = oldPwdField.getText().trim();
         String newPwd = newPwdField.getText().trim();
+        errorLabel.setStyle("-fx-text-fill: red;");
         if (oldPwd.isEmpty() || newPwd.isEmpty()) {
             errorLabel.setText("密码不能为空");
             return;
@@ -134,6 +134,7 @@ public class ProfileController implements NetworkListener {
         }
     }
 
+
     @FXML
     private void handleBack() {
         LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
@@ -146,8 +147,45 @@ public class ProfileController implements NetworkListener {
         if (Protocol.PWD_CHANGED.equals(command)) {
             errorLabel.setStyle("-fx-text-fill: green;");
             errorLabel.setText("密码修改成功");
+            oldPwdField.clear();
+            newPwdField.clear();
         } else if (Protocol.ERROR.equals(command)) {
-            errorLabel.setText(args[0]);
+            errorLabel.setStyle("-fx-text-fill: red;");
+            errorLabel.setText(args.length > 0 ? args[0] : "操作失败");
+        } else if (Protocol.RECORD_LIST.equals(command)) {
+            recordData.clear();
+            // 格式: RECORD_LIST|recordId|p1Id|p1Name|p2Id|p2Name|winnerId|result|moveCount|duration|time|...
+            int i = 0;
+            while (i + 10 <= args.length) {
+                // String recordId = args[i];    // 暂未用到
+                // String p1Id     = args[i + 1];
+                String p1Name   = args[i + 2];
+                // String p2Id     = args[i + 3];
+                String p2Name   = args[i + 4];
+                String winnerId = args[i + 5];
+                // String result   = args[i + 6];
+                // String moveCnt  = args[i + 7];
+                // String duration = args[i + 8];
+                String time     = args[i + 9];
+
+                // 判断结果：比较 winnerId 与当前用户 ID
+                String result;
+                if ("0".equals(winnerId)) {
+                    result = "平局";
+                } else if (String.valueOf(currentUser.getUserId()).equals(winnerId)) {
+                    result = "胜";
+                } else {
+                    result = "负";
+                }
+
+                // 对手名：当前用户是 p1 则对手是 p2，反之亦然
+                String opponent = p1Name.equals(currentUser.getUsername()) ? p2Name : p1Name;
+
+                recordData.add(new GameRecord(opponent, result, time, "查看"));
+                i += 10;
+            }
         }
     }
+
+
 }

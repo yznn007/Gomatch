@@ -32,7 +32,7 @@
                 <!-- 聊天窗口：启用自动换行，禁止出现左右滚动条 -->
                 <TextArea fx:id="chatArea" editable="false" wrapText="true" VBox.vgrow="ALWAYS" styleClass="chat-area"/>
                 
-                <TextField fx:id="chatInput" promptText="输入消息..." styleClass="field"/>
+                <TextField fx:id="chatInput" promptText="输入消息..." onAction="#handleSendChat" styleClass="field"/>
                 <Button text="悔棋" fx:id="undoBtn" onAction="#handleUndo" styleClass="btn-secondary" maxWidth="Infinity"/>
                 <Button text="求和" fx:id="drawBtn" onAction="#handleDraw" styleClass="btn-secondary" maxWidth="Infinity"/>
                 <Button text="认输" fx:id="surrenderBtn" onAction="#handleSurrender" styleClass="btn-danger" maxWidth="Infinity"/>
