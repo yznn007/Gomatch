@@ -23,6 +23,7 @@ public class Protocol {
     public static final String QUICK_MATCH  = "QUICK_MATCH";
     public static final String RANKED_MATCH = "RANKED_MATCH";
     public static final String SPECTATE     = "SPECTATE";
+    public static final String HEARTBEAT    = "HEARTBEAT";
 
     // Server -> Client
     public static final String LOGIN_OK     = "LOGIN_OK";
@@ -40,6 +41,9 @@ public class Protocol {
     public static final String RANKING_LIST = "RANKING_LIST";
     public static final String ERROR        = "ERROR";
     public static final String DISCONNECT   = "DISCONNECT";
+    public static final String ROOM_CREATED     = "ROOM_CREATED";
+    public static final String GAME_RECORDS     = "GAME_RECORDS";
+    public static final String GAME_RECORDS_LIST = "GAME_RECORDS_LIST";
 
     public static String build(String... parts) {
         return String.join(SEPARATOR, parts);

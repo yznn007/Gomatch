@@ -233,6 +233,22 @@ public class BoardController implements NetworkListener {
         ClientMain.getConnector().send(Protocol.SURRENDER);
     }
 
+    /** 棋谱回放：解析 "x,y,color;x,y,color;..." 格式依次落子 */
+    public void replayMoves(String moves) {
+        String[] steps = moves.split(";");
+        for (String step : steps) {
+            String[] parts = step.split(",");
+            if (parts.length >= 3) {
+                int x = Integer.parseInt(parts[0]);
+                int y = Integer.parseInt(parts[1]);
+                int color = Integer.parseInt(parts[2]);
+                drawStone(x, y, color);
+                currentTurn = (color == 1) ? 2 : 1;
+            }
+        }
+        updateTurnLabel();
+    }
+
     @Override
     public void onMessage(String command, String[] args) {
         if (Protocol.MOVE_SYNC.equals(command)) {
