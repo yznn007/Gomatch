@@ -57,10 +57,13 @@
 ### 启动步骤
 
 ```powershell
-# 1. 启动服务端（先启动）
+# 1. 安装 common 到本地 Maven 仓库（首次或 common 变更后必须执行）
+mvn install -pl common -am
+
+# 2. 启动服务端（先启动）
 .\scripts\run-server.ps1
 
-# 2. 启动客户端（后启动）
+# 3. 启动客户端（后启动）
 .\scripts\run-client.ps1
 ```
 
