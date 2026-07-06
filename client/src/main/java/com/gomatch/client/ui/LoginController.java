@@ -62,9 +62,14 @@ public class LoginController implements NetworkListener {
     @Override
     public void onMessage(String command, String[] args) {
         if (Protocol.LOGIN_OK.equals(command)) {
-            User user = AppConfig.GSON.fromJson(args[0], User.class);
+            User user = new User();
+            user.setUserId(Long.parseLong(args[0]));
+            user.setUsername(args[1]);
+            user.setScore(Integer.parseInt(args[2]));
+            user.setWinCount(Integer.parseInt(args[3]));
+            user.setLoseCount(Integer.parseInt(args[4]));
+            user.setDrawCount(Integer.parseInt(args[5]));
             
-            // 存入全局会话
             AppConfig.setCurrentUser(user);
             AppConfig.setPreviewMode(false);
             

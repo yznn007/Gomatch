@@ -105,6 +105,8 @@
 | 2026-07-06 | Contributor| RoomDAO 每1分钟同步，修改 t_room.room_id 为 VARCHAR(50) |
 | 2026-07-06 | Contributor| 减少约190行，编译验证通过 |
 | 2026-07-06 | Contributor| 编译验证通过 |
+| 2026-07-06 | Contributor| AI占位用户外键约束、NPE、gameOver阻断、再来一局状态传递 |
+| 2026-07-06 | Contributor| |
 
 ---
 

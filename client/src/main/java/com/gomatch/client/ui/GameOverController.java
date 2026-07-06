@@ -34,9 +34,15 @@ public class GameOverController {
     @FXML
     private void handleReplay() {
         closeDialog();
-        LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
-        ctrl.setCurrentUser(AppConfig.getCurrentUser());
-        ctrl.setPreviewMode(AppConfig.isPreviewMode());
+        if (AppConfig.isAiMode()) {
+            AiLobbyController ctrl = ScreenManager.switchTo("/fxml/AiLobbyUI.fxml");
+            ctrl.setCurrentUser(AppConfig.getCurrentUser());
+            ctrl.setPreviewMode(AppConfig.isPreviewMode());
+        } else {
+            LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+            ctrl.setCurrentUser(AppConfig.getCurrentUser());
+            ctrl.setPreviewMode(AppConfig.isPreviewMode());
+        }
     }
 
     private void closeDialog() {

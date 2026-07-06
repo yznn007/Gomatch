@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS `t_game_record` (
     `player2_id` BIGINT NOT NULL COMMENT '玩家2ID',
     `game_type` VARCHAR(20) NOT NULL DEFAULT 'PVP' COMMENT '游戏类型: PVP/PVE/RANKED',
     `winner_id` BIGINT COMMENT '胜者ID(平局为NULL)',
-    `result` VARCHAR(10) NOT NULL COMMENT '结果: win/lose/draw',
+    `result` VARCHAR(30) NOT NULL COMMENT '结果: five_in_a_row/surrender/draw',
     `board_data` TEXT NOT NULL COMMENT '棋谱数据(JSON格式)',
     `duration` INT COMMENT '对局时长(秒)',
     `move_count` INT DEFAULT 0 COMMENT '落子总数',
@@ -197,6 +197,10 @@ INSERT INTO `t_user` (`username`, `password`, `email`, `role`, `status`, `score`
 ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjzqAKL9xL5jvMFVdNJHvGCgTq/VEq', '[redacted-email]', 'ADMIN', 'ACTIVE', 9999),
 ('player1', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjzqAKL9xL5jvMFVdNJHvGCgTq/VEq', '[redacted-email]', 'PLAYER', 'ACTIVE', 1000),
 ('player2', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjzqAKL9xL5jvMFVdNJHvGCgTq/VEq', '[redacted-email]', 'PLAYER', 'ACTIVE', 1000);
+
+-- AI 占位用户，用于满足对战记录表的外键约束
+INSERT INTO `t_user` (`user_id`, `username`, `password`, `email`, `role`, `status`, `score`) VALUES
+(-1, 'AI', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjzqAKL9xL5jvMFVdNJHvGCgTq/VEq', '[redacted-email]', 'PLAYER', 'ACTIVE', 0);
 
 INSERT INTO `t_rank` (`user_id`, `rank`, `score`, `win_rate`, `ai_win_rate`) VALUES
 (1, 0, 9999, 0.00, 0.00),

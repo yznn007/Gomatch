@@ -150,3 +150,125 @@ git push origin main --tags
 | v1.0.0 | 全部开发完成，首次发布 |
 
 > **所有功能全部开发完成并通过测试后，dev 一次性合并到 main 并打 tag，严禁在开发过程中合并main。**
+
+---
+
+## 四、代码规范
+
+### 4.1 命名规范
+
+| 类别 | 规范 | 示例 |
+|------|------|------|
+| Java 类名 | 大驼峰 | `BoardController`, `GameRecord` |
+| Java 方法/变量 | 小驼峰 | `handleReplay()`, `myUsername` |
+| Java 常量 | 全大写下划线 | `QUICK_MATCH`, `GAME_OVER` |
+| FXML 文件 | 大驼峰 + UI 后缀 | `LoginUI.fxml`, `LobbyUI.fxml` |
+| Controller 类 | 大驼峰 + Controller 后缀 | `LoginController`, `BoardController` |
+| 包名 | 全小写 | `com.gomatch.client.ui` |
+
+### 4.2 FXML ↔ Controller 映射
+
+```
+fx:id="xxx"    ↔  @FXML private Type xxx;
+onAction="#handleXxx"  ↔  @FXML private void handleXxx()
+fx:controller="com.gomatch.client.ui.XxxController"
+```
+
+FXML 命名空间**不带版本号**：`xmlns="http://javafx.com/javafx"`（写 `/21` 会导致 FXML LoadException）。
+
+### 4.3 NPE 防御
+
+- 所有从外部获取的对象（网络消息、用户输入、回调参数）使用前必须做 null 检查
+- `@FXML` 注入的控件在 `initialize()` 中确保引用非空
+- 网络回调中 `currentUser` / `myUsername` 等状态变量先判空再使用
+
+```java
+// ✅ 正确示例
+String username = (currentUser != null) ? currentUser.getUsername() : "player1";
+```
+
+### 4.4 状态管理
+
+- 跨 Controller 传递状态：使用 `AppConfig` 全局静态变量，避免依赖时序
+- `ScreenManager.showDialog()` 是阻塞调用（`dialog.showAndWait()`），对话框关闭后才执行后续代码，**不要**在 `showDialog()` 之后通过 setter 传递参数给即将显示的 Controller
+
+```java
+// ❌ 错误：showDialog 阻塞，setter 来不及时执行
+ctrl = ScreenManager.showDialog("GameOverUI.fxml");
+ctrl.setAiMode(aiMode);  // 此时对话框已关闭，handleReplay 已执行完毕
+
+// ✅ 正确：提前设置全局状态
+AppConfig.setAiMode(this.aiMode);
+ScreenManager.showDialog("GameOverUI.fxml");
+// GameOverController 内部读取 AppConfig.isAiMode()
+```
+
+### 4.5 UI 操作线程安全
+
+- 所有 JavaFX UI 更新必须在 JavaFX Application Thread 中执行
+- 网络回调使用 `Platform.runLater()` 包裹 UI 更新
+- 避免在非 UI 线程直接操作 `@FXML` 控件
+
+### 4.6 协议通信
+
+- 服务端客户端通信使用自定义文本协议：`COMMAND|param1|param2`
+- 协议常量统一在 `common` 模块的 `Protocol.java` 中定义
+- 禁止在 Controller 或 Handler 中硬编码协议字符串（魔法字符串）
+
+### 4.7 预览模式
+
+每个 Controller 需支持 `setPreviewMode(true)` 绕过网络调用，用假数据填充：
+
+```java
+public void setPreviewMode(boolean preview) {
+    this.isPreview = preview;
+    if (preview) {
+        // 填充假数据
+    }
+}
+```
+
+---
+
+## 五、UI 样式规范
+
+### 5.1 全局风格
+
+- **白色极简风格**：乳白色透明磨砂质感卡片（`.glass-card`、`.card`）
+- **极简底划线控件**：文本框和按钮仅保留底部 1.5px 下划线描边，去除四面外边框与卡片阴影
+- **8px 圆角**：按钮统一使用 8px 圆角结构
+
+### 5.2 交互反馈
+
+| 状态 | 效果 |
+|------|------|
+| hover | 背景填充板岩灰 Cover 遮罩 `rgba(148, 163, 184, 0.35)` |
+| pressed (armed) | 高亮聚焦实白 `rgba(255, 255, 255, 0.95)` |
+| focused | 无天蓝色，统一归化为中性无色系 |
+
+### 5.3 颜色约束
+
+- **禁止**使用鲜活的蓝色系（如 `#3B82F6`、`#60A5FA`）
+- 统一使用板岩灰（slate）、木炭黑（charcoal）等中性无色系
+
+---
+
+## 六、文档维护
+
+| 文档 | 触发时机 |
+|------|----------|
+| `docs/DEV_LOG.md` | 每次完成任务后追加日志 |
+| `docs/requirements.md` | 需求/设计变更时同步 |
+| `docs/DEV_STANDARD.md` | 规范/约定变化时 |
+| `AGENTS.md` | 命令/架构/约定变化时 |
+| `README.md` | 项目信息变化时 |
+
+### 日志格式
+
+```
+| YYYY-MM-DD | 工作内容简述 | 问题/备注 |
+```
+
+- 日期精确到天
+- 工作内容简洁描述做了什么
+- 备注记录遇到的问题或注意事项

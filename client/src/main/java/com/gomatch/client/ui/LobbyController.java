@@ -87,6 +87,13 @@ public class LobbyController implements NetworkListener {
     }
 
     @FXML
+    private void handleAiMatch() {
+        AiLobbyController ctrl = ScreenManager.switchTo("/fxml/AiLobbyUI.fxml");
+        ctrl.setCurrentUser(currentUser);
+        ctrl.setPreviewMode(previewMode);
+    }
+
+    @FXML
     private void handleFriends() {
         showAlert(previewMode ? "预览模式：好友功能" : "好友功能开发中");
     }
@@ -121,9 +128,9 @@ public class LobbyController implements NetworkListener {
     public void onMessage(String command, String[] args) {
         if (Protocol.RANKING_LIST.equals(command)) {
             drawerRanks.clear();
-            for (int i = 0; i < args.length; i++) {
-                if (args[i] != null && !args[i].isEmpty()) {
-                    drawerRanks.add((i + 1) + ". " + args[i]);
+            for (int i = 0; i < args.length; i += 4) {
+                if (i + 3 < args.length) {
+                    drawerRanks.add(args[i] + ". " + args[i + 1] + "  " + args[i + 2]);
                 }
             }
         }

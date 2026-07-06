@@ -17,7 +17,7 @@ public class Protocol {
     public static final String REQUEST_DRAW = "REQUEST_DRAW";
     public static final String REPLY_UNDO   = "REPLY_UNDO";
     public static final String REPLY_DRAW   = "REPLY_DRAW";
-    public static final String CHANGE_PWD   = "CHANGE_PWD";
+    public static final String CHANGE_PWD   = "CHANGE_PASSWORD";
     public static final String RANKING      = "RANKING";
     public static final String ROOM_LIST    = "ROOM_LIST";
     public static final String QUICK_MATCH  = "QUICK_MATCH";
@@ -35,8 +35,10 @@ public class Protocol {
     public static final String SAVE_LIST     = "SAVE_LIST";
     public static final String CHAT_HISTORY = "CHAT_HISTORY";
     public static final String WATCHER_HISTORY = "WATCHER_HISTORY";
+    public static final String QUERY_RECORD = "QUERY_RECORD";
     public static final String LOGOUT = "LOGOUT";
     public static final String HEARTBEAT    = "HEARTBEAT";
+    public static final String HEARTBEAT_OK = "HEARTBEAT_OK";
 
     // Server -> Client
     public static final String LOGIN_OK     = "LOGIN_OK";
@@ -57,6 +59,7 @@ public class Protocol {
     public static final String ROOM_CREATED     = "ROOM_CREATED";
     public static final String GAME_RECORDS     = "GAME_RECORDS";
     public static final String GAME_RECORDS_LIST = "GAME_RECORDS_LIST";
+    public static final String RECORD_LIST = "RECORD_LIST";
     public static final String LOGOUT_OK    = "LOGOUT_OK";
 
     public static String build(String... parts) {

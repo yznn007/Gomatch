@@ -45,8 +45,13 @@ public class CreateRoomController implements NetworkListener {
 
     @Override
     public void onMessage(String command, String[] args) {
-        if (Protocol.ROOM_CREATED.equals(command)) {
-            com.gomatch.client.model.RoomInfo room = gson.fromJson(args[0], com.gomatch.client.model.RoomInfo.class);
+        if (Protocol.JOIN_OK.equals(command)) {
+            com.gomatch.client.model.RoomInfo room = new com.gomatch.client.model.RoomInfo();
+            room.setRoomId(args[0]);
+            room.setRoomName(args[1]);
+            String[] players = args[2].split("/");
+            room.setPlayerCount(Integer.parseInt(players[0]));
+            room.setHasPassword("1".equals(args[3]));
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
             ctrl.setRoomInfo(room, currentUser);
         } else if (Protocol.ERROR.equals(command)) {

@@ -64,13 +64,21 @@ public class RankedLobbyController implements NetworkListener {
     @Override
     public void onMessage(String command, String[] args) {
         if (Protocol.JOIN_OK.equals(command)) {
-            RoomInfo room = AppConfig.GSON.fromJson(args[0], RoomInfo.class);
+            RoomInfo room = new RoomInfo();
+            room.setRoomId(args[0]);
+            room.setRoomName(args[1]);
+            String[] players = args[2].split("/");
+            room.setPlayerCount(Integer.parseInt(players[0]));
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
             ctrl.setPreviewMode(false);
             ctrl.setRoomInfo(room, currentUser);
         } else if (Protocol.GAME_START.equals(command)) {
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
             ctrl.setGameInfo(args[0], args[1], currentUser.getUsername());
+        } else if ("RANKED_MATCH_WAIT".equals(command)) {
+            matchStatus.setText(args[0]);
+        } else if (Protocol.ERROR.equals(command)) {
+            matchStatus.setText(args[0]);
         }
     }
 }

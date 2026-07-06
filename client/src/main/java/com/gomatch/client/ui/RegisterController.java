@@ -66,7 +66,7 @@ public class RegisterController implements NetworkListener {
             errorLabel.setText("注册成功，请登录");
             ClientMain.getConnector().disconnect();
             ScreenManager.switchTo("/fxml/LoginUI.fxml");
-        } else if (Protocol.LOGIN_FAIL.equals(command)) {
+        } else if ("REGISTER_FAIL".equals(command)) {
             errorLabel.setText(args[0]);
             ClientMain.getConnector().disconnect();
         }

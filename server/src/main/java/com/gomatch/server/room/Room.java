@@ -1,5 +1,6 @@
 package com.gomatch.server.room;
 
+import com.gomatch.common.Protocol;
 import com.gomatch.server.game.AIPlayer;
 import com.gomatch.server.game.Game;
 import com.gomatch.server.redis.RedisManager;
@@ -295,7 +296,7 @@ public class Room {
         boolean success = game.move(x, y, -1);
         if (success) {
             broadcastAll(
-                    "MOVE",
+                    Protocol.MOVE_SYNC,
                     String.valueOf(x),
                     String.valueOf(y),
                     String.valueOf(Game.WHITE)
@@ -305,7 +306,7 @@ public class Room {
                 long winnerId = whiteUserId;
                 endGame(winnerId, "five_in_a_row");
                 broadcastAll(
-                        "GAME_OVER",
+                        Protocol.GAME_OVER,
                         String.valueOf(winnerId),
                         "AI 获胜!"
                 );
@@ -338,50 +339,56 @@ public class Room {
                     roomId, blackUserId, whiteUserId, winnerId, reason, moves.size(), gameStartTime);
 
             currentRecordId = recordDAO.saveRecord(roomId, blackUserId, whiteUserId,
-                    winnerId == 0 ? null : winnerId, reason, moves, gameStartTime);
+                    winnerId == 0 ? null : winnerId, reason, moves, gameStartTime,
+                    aiMode ? "AI" : "PVP");
             log.info("Game record saved successfully for room {}: recordId={}, {} moves recorded", roomId, currentRecordId, moves.size());
         } catch (Exception e) {
             log.error("Failed to save game record for room {}: {}", roomId, e.getMessage(), e);
         }
 
-        try {
-            if (winnerId != 0) {
-                log.debug("Updating scores for win: winnerId={}, blackUserId={}, whiteUserId={}, gameType={}",
-                        winnerId, blackUserId, whiteUserId, gameType);
+        // AI 模式下不更新积分和胜负场次
+        if (!aiMode) {
+            try {
+                if (winnerId != 0) {
+                    log.debug("Updating scores for win: winnerId={}, blackUserId={}, whiteUserId={}, gameType={}",
+                            winnerId, blackUserId, whiteUserId, gameType);
 
-                long loserId = (winnerId == blackUserId) ? whiteUserId : blackUserId;
+                    long loserId = (winnerId == blackUserId) ? whiteUserId : blackUserId;
 
-                if (gameType == GameType.RANKED) {
-                    updateRankedScore(winnerId, loserId, true);
-                } else {
-                    boolean winnerScoreUpdated = userDAO.updateScore(winnerId, 10);
-                    userDAO.updateWinCount(winnerId);
-                    boolean loserScoreUpdated = userDAO.updateScore(loserId, -5);
-                    userDAO.updateLoseCount(loserId);
-
-                    if (winnerScoreUpdated && loserScoreUpdated) {
-                        log.info("Score updated successfully: winner={}(+10), loser={}(-5)", winnerId, loserId);
+                    if (gameType == GameType.RANKED) {
+                        updateRankedScore(winnerId, loserId, true);
                     } else {
-                        log.warn("Score update partially failed: winner={}(success={}), loser={}(success={})",
-                                winnerId, winnerScoreUpdated, loserId, loserScoreUpdated);
+                        boolean winnerScoreUpdated = userDAO.updateScore(winnerId, 10);
+                        userDAO.updateWinCount(winnerId);
+                        boolean loserScoreUpdated = userDAO.updateScore(loserId, -5);
+                        userDAO.updateLoseCount(loserId);
+
+                        if (winnerScoreUpdated && loserScoreUpdated) {
+                            log.info("Score updated successfully: winner={}(+10), loser={}(-5)", winnerId, loserId);
+                        } else {
+                            log.warn("Score update partially failed: winner={}(success={}), loser={}(success={})",
+                                    winnerId, winnerScoreUpdated, loserId, loserScoreUpdated);
+                        }
                     }
+                } else {
+                    log.debug("Updating scores for draw: blackUserId={}, whiteUserId={}, gameType={}",
+                            blackUserId, whiteUserId, gameType);
+
+                    userDAO.updateDrawCount(blackUserId);
+                    userDAO.updateDrawCount(whiteUserId);
+
+                    if (gameType == GameType.RANKED) {
+                        updateRankedScore(blackUserId, whiteUserId, false);
+                    }
+
+                    log.info("Draw count updated successfully for both players: black={}, white={}",
+                            blackUserId, whiteUserId);
                 }
-            } else {
-                log.debug("Updating scores for draw: blackUserId={}, whiteUserId={}, gameType={}",
-                        blackUserId, whiteUserId, gameType);
-
-                userDAO.updateDrawCount(blackUserId);
-                userDAO.updateDrawCount(whiteUserId);
-
-                if (gameType == GameType.RANKED) {
-                    updateRankedScore(blackUserId, whiteUserId, false);
-                }
-
-                log.info("Draw count updated successfully for both players: black={}, white={}",
-                        blackUserId, whiteUserId);
+            } catch (Exception e) {
+                log.error("Failed to update user stats for room {}: {}", roomId, e.getMessage(), e);
             }
-        } catch (Exception e) {
-            log.error("Failed to update user stats for room {}: {}", roomId, e.getMessage(), e);
+        } else {
+            log.info("AI mode: skipping score/win-loss update for room {}", roomId);
         }
 
         try {
@@ -629,6 +636,86 @@ public class Room {
             pendingDrawActionId = null;
             return true;
         }
+    }
+
+    /**
+     * AI 模式下直接悔棋（不经过请求/确认流程）
+     */
+    public synchronized boolean directUndo(long userId) {
+        log.debug("directUndo called for room {}: userId={}", roomId, userId);
+
+        if (status != Status.PLAYING) {
+            log.warn("directUndo rejected: room {} status is {}", roomId, status);
+            return false;
+        }
+
+        if (game.getMoveCount() < 2) {
+            log.warn("directUndo rejected: not enough moves (need at least 2)");
+            return false;
+        }
+
+        if (!isValidPlayer(userId)) {
+            log.warn("directUndo rejected: {} is not a valid player", userId);
+            return false;
+        }
+
+        // 清空可能存在的待处理请求，避免冲突
+        undoRequesterId = null;
+        drawRequesterId = null;
+        pendingUndoActionId = null;
+        pendingDrawActionId = null;
+
+        // AI 模式下需要撤销两步：AI的最后一步 + 玩家上一步
+        int moveNumberBeforeUndo = game.getMoveCount();
+        game.undo(); // 撤销 AI 的下子
+        game.undo(); // 撤销玩家的下子
+        log.info("Direct undo executed by {} in room {}: reverted {} moves", userId, roomId,
+                moveNumberBeforeUndo - game.getMoveCount());
+        try {
+            long actionId = gameActionDAO.recordAction(
+                    currentRecordId > 0 ? currentRecordId : null,
+                    userId, "undo", moveNumberBeforeUndo);
+            gameActionDAO.updateActionStatus(actionId, "accepted");
+        } catch (Exception e) {
+            log.error("Failed to record AI undo action in room {}: {}", roomId, e.getMessage(), e);
+        }
+        return true;
+    }
+
+    /**
+     * AI 模式下直接判平局（不经过请求/确认流程）
+     */
+    public synchronized boolean directDraw(long userId) {
+        log.debug("directDraw called for room {}: userId={}", roomId, userId);
+
+        if (status != Status.PLAYING) {
+            log.warn("directDraw rejected: room {} status is {}", roomId, status);
+            return false;
+        }
+
+        if (!isValidPlayer(userId)) {
+            log.warn("directDraw rejected: {} is not a valid player", userId);
+            return false;
+        }
+
+        // 清空可能存在的待处理请求，避免冲突
+        undoRequesterId = null;
+        drawRequesterId = null;
+        pendingUndoActionId = null;
+        pendingDrawActionId = null;
+
+        try {
+            long actionId = gameActionDAO.recordAction(
+                    currentRecordId > 0 ? currentRecordId : null,
+                    userId, "draw", game.getMoveCount());
+            gameActionDAO.updateActionStatus(actionId, "accepted");
+        } catch (Exception e) {
+            log.error("Failed to record AI draw action in room {}: {}", roomId, e.getMessage(), e);
+        }
+
+        log.info("Direct draw executed by {} in room {}", userId, roomId);
+        endGame(0, "draw");
+        return true;
     }
 
     private synchronized boolean isValidPlayer(long userId) {
