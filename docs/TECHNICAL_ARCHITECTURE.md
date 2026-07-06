@@ -537,7 +537,7 @@ mvn clean compile -pl server -am
 mvn -f server/pom.xml exec:java -Dexec.mainClass="com.gomatch.server.ServerMain"
 
 # 4. 运行客户端
-.\run-client.ps1
+.\scripts\run-client.ps1
 ```
 
-**注意**：JavaFX 21 依赖 JDK 17+，需要设置 `JAVA_HOME` 指向 JDK 21。
+**注意**：JavaFX 21 依赖 JDK 17+，若系统默认 Java 不是 JDK 21，请确保 `JAVA_HOME` 指向 JDK 21，或直接使用 `scripts/` 目录下的启动脚本（已内置自动检测逻辑）。

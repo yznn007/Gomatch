@@ -13,15 +13,8 @@
 
 ### 1.2 环境变量配置
 
-确保以下环境变量已正确配置：
+确保 `JAVA_HOME` 已指向 JDK 21，`mvn` 可通过命令行执行。验证配置：
 
-```powershell
-# Windows 配置示例
-$env:JAVA_HOME = "D:\develop\Java\jdk21"
-$env:Path = "$env:JAVA_HOME\bin;" + $env:Path
-```
-
-验证配置：
 ```powershell
 java -version
 # 输出示例：openjdk version "21" 2023-09-19
@@ -107,10 +100,6 @@ powershell -ExecutionPolicy Bypass -File run-server.ps1
 ### 4.2 手动启动
 
 ```powershell
-# 设置 JDK 21 环境
-$env:JAVA_HOME = "D:\develop\Java\jdk21"
-$env:Path = "$env:JAVA_HOME\bin;" + $env:Path
-
 # 启动服务端
 mvn -f server/pom.xml exec:java -Dexec.mainClass="com.gomatch.server.ServerMain"
 ```
@@ -140,9 +129,6 @@ mvn -f server/pom.xml exec:java -Dexec.mainClass="com.gomatch.server.ServerMain"
 ### 5.2 手动启动
 
 ```powershell
-$env:JAVA_HOME = "D:\develop\Java\jdk21"
-$env:Path = "$env:JAVA_HOME\bin;" + $env:Path
-
 mvn -f client/pom.xml javafx:run
 ```
 
@@ -178,12 +164,7 @@ mvn clean
 Error: JavaFX runtime components are missing, and are required to run this application.
 ```
 
-**解决方案**：
-```powershell
-# 确保使用 JDK 21
-$env:JAVA_HOME = "D:\develop\Java\jdk21"
-$env:Path = "$env:JAVA_HOME\bin;" + $env:Path
-```
+**解决方案**：确保系统 `JAVA_HOME` 已指向 JDK 21，或直接使用 `scripts/run-client.ps1` 启动脚本（已内置自动查找逻辑）。
 
 ### 7.2 数据库连接失败
 

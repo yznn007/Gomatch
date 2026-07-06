@@ -14,16 +14,16 @@
 
 ```powershell
 # 1. 安装 common 到本地 Maven 仓库（首次或 common 变更后）
-$env:JAVA_HOME = "C:\Users\31816\scoop\apps\openjdk21\current"; mvn install -pl common -am
+mvn install -pl common -am
 
 # 2. 启动客户端
-.\run-client.ps1
+.\scripts\run-client.ps1
 
 # 或手动：
 mvn -f client/pom.xml javafx:run
 ```
 
-**关键**：JavaFX 21 依赖 JDK 17+，Maven 默认跑在 JDK 11（scoop 默认），必须设 `JAVA_HOME` 指向 JDK 21。`run-client.ps1` 已内置此逻辑。
+**关键**：JavaFX 21 依赖 JDK 17+，若系统默认 Java 不是 JDK 21，请确保 `JAVA_HOME` 指向 JDK 21。`scripts/run-client.ps1` 已内置此逻辑。
 
 ## 客户端架构
 
@@ -90,3 +90,32 @@ LobbyUI → 排行榜按钮 → 左侧抽屉展开
 | `docs/requirements.md` | 需求/设计变更时同步 |
 | `AGENTS.md` | 命令/架构/约定变化时 |
 | `README.md` | 项目信息变化时 |
+
+## 文档编写规范
+
+### 命令示例中的环境变量
+
+> **禁止**在任何文档（`.md`）的命令示例中写入硬编码的环境变量设置语句。
+
+**❌ 错误写法**（禁止）：
+
+```powershell
+$env:JAVA_HOME = "D:\develop\Java\jdk21"
+$env:Path = "$env:JAVA_HOME\bin;" + $env:Path
+mvn -f server/pom.xml exec:java ...
+```
+
+**✅ 正确写法**（允许）：
+
+```powershell
+# 直接写命令，前提条件用文字说明
+mvn -f server/pom.xml exec:java ...
+```
+
+**原因**：项目是**多人协作**团队项目，每位成员的 JDK 安装路径各不相同（`D:\develop\Java\jdk21`、`$HOME\scoop\apps\openjdk21\current` 等）。文档中写死路径会导致其他成员照抄后报错，增加协作摩擦。
+
+**约定**：
+
+- 若某命令依赖 JDK 21，**用文字注明前提**（如"需确保 JDK 21 已配置"），而非内嵌 `$env:JAVA_HOME=...` 设置
+- 推荐用户使用 `scripts/` 目录下的启动脚本，脚本内已内置跨平台的 JDK 自动检测逻辑
+- 若确实需要展示环境变量设置方式，用**占位符**而非具体路径，例如：`$env:JAVA_HOME = "<你的JDK21路径>"`

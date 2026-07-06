@@ -58,19 +58,15 @@
 
 ```powershell
 # 1. 启动服务端（先启动）
-.\run-server.ps1
+.\scripts\run-server.ps1
 
 # 2. 启动客户端（后启动）
-.\run-client.ps1
+.\scripts\run-client.ps1
 ```
 
 ### 手动启动
 
 ```powershell
-# 设置 JDK 21 环境
-$env:JAVA_HOME = "D:\develop\Java\jdk21"
-$env:Path = "$env:JAVA_HOME\bin;" + $env:Path
-
 # 编译项目
 mvn clean compile -pl server -am
 
@@ -108,15 +104,29 @@ Gomatch/
 ├── database/                    # 数据库模块（工具类）
 ├── sql/                         # SQL 脚本
 ├── docs/                        # 文档目录
-├── run-client.ps1               # 客户端启动脚本
-├── run-server.ps1               # 服务端启动脚本
+├── scripts/                     # 启动脚本目录
+│   ├── run-client.ps1           # 客户端启动脚本
+│   ├── run-server.ps1           # 服务端启动脚本
+│   ├── ssc_client.ps1           # 客户端启动脚本 (ssc)
+│   └── ssc_server.ps1           # 服务端启动脚本 (ssc)
 └── pom.xml                      # Maven 父 POM
 ```
 
 ## 文档索引
 
+### 模块详细文档
+
+| 文件 | 说明 |
+|------|------|
+| [docs/MODULE_COMMON.md](docs/MODULE_COMMON.md) | **common 模块**：协议常量全览、报文格式、编解码工具方法 |
+| [docs/MODULE_CLIENT.md](docs/MODULE_CLIENT.md) | **client 模块**：JavaFX 界面、网络层、场景管理、Controller 一览、AI 说明 |
+| [docs/MODULE_SERVER.md](docs/MODULE_SERVER.md) | **server 模块**：服务器架构、DAO 层、房间管理、Session、Redis 缓存、游戏流程 |
+
+### 项目文档
+
 | 文件/目录 | 说明 |
 |-----------|------|
+| [docs/README.md](docs/README.md) | **项目文档中心索引** (全文档总揽与索引导航) |
 | [docs/requirements.md](docs/requirements.md) | 需求与系统设计文档 |
 | [docs/TECHNICAL_ARCHITECTURE.md](docs/TECHNICAL_ARCHITECTURE.md) | 技术架构文档（协议、类设计、数据库） |
 | [docs/DEV_LOG.md](docs/DEV_LOG.md) | 详细开发过程与更新记录 |
@@ -124,8 +134,10 @@ Gomatch/
 | [AGENTS.md](AGENTS.md) | AI Agent 自动化开发上手指引与约定 |
 | [docs/SERVER_STARTUP.md](docs/SERVER_STARTUP.md) | 服务端启动指南（环境配置、启动命令、常见问题） |
 | [sql/init.sql](sql/init.sql) | MySQL 数据库初始化建表脚本 |
-| [run-client.ps1](run-client.ps1) | 客户端一键启动脚本 |
-| [run-server.ps1](run-server.ps1) | 服务端一键启动脚本 |
+| [scripts/run-client.ps1](scripts/run-client.ps1) | 客户端一键启动脚本 |
+| [scripts/run-server.ps1](scripts/run-server.ps1) | 服务端一键启动脚本 |
+| [scripts/ssc_client.ps1](scripts/ssc_client.ps1) | 客户端一键启动脚本 (ssc) |
+| [scripts/ssc_server.ps1](scripts/ssc_server.ps1) | 服务端一键启动脚本 (ssc) |
 
 ## 开发命令
 
