@@ -29,6 +29,12 @@
     -fx-text-fill: #64748b;
 }
 
+.timer-label {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #334155;
+}
+
 .section-label {
     -fx-font-size: 14px;
     -fx-font-weight: bold;

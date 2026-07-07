@@ -860,7 +860,8 @@ public class ClientHandler implements Runnable {
 
         boolean success = currentRoom.requestUndo(userId);
         if (success) {
-            currentRoom.broadcastAll(
+            // 只通知对手，不通知请求者本人
+            currentRoom.broadcastToPlayersExcept(userId,
                 "UNDO_REQUESTED",
                 String.valueOf(userId),
                 getUsername()
@@ -934,7 +935,8 @@ public class ClientHandler implements Runnable {
 
         boolean success = currentRoom.requestDraw(userId);
         if (success) {
-            currentRoom.broadcastAll(
+            // 只通知对手，不通知请求者本人
+            currentRoom.broadcastToPlayersExcept(userId,
                 "DRAW_REQUESTED",
                 String.valueOf(userId),
                 getUsername()

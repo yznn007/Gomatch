@@ -61,6 +61,7 @@ public class Protocol {
     public static final String GAME_RECORDS_LIST = "GAME_RECORDS_LIST";
     public static final String RECORD_LIST = "RECORD_LIST";
     public static final String LOGOUT_OK    = "LOGOUT_OK";
+    public static final String TURN_TIMEOUT = "TURN_TIMEOUT";
 
     public static String build(String... parts) {
         return String.join(SEPARATOR, parts);
