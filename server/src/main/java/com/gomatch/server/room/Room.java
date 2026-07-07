@@ -117,6 +117,12 @@ public class Room {
     public long getWhiteUserId() { return whiteUserId; }
 
     public int getPlayerCount() { return players.size(); }
+    public String getPlayerUsername(long userId) {
+        for (ClientHandler p : players) {
+            if (p.getUserId() == userId) return p.getUsername();
+        }
+        return String.valueOf(userId);
+    }
     public int getObserverCount() { return observers.size(); }
 
     public synchronized boolean isObserver(ClientHandler handler) {

@@ -70,10 +70,11 @@ public class AiLobbyController implements NetworkListener {
         if (Protocol.JOIN_OK.equals(command)) {
         } else if (Protocol.GAME_START.equals(command)) {
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-            if (currentUser != null) {
-                ctrl.setGameInfo(args[0], args[1], currentUser.getUsername());
+            String uname = currentUser != null ? currentUser.getUsername() : "player1";
+            if (args.length >= 4) {
+                ctrl.setGameInfo(args[0], args[1], args[2], args[3], uname);
             } else {
-                ctrl.setGameInfo(args[0], args[1], "player1");
+                ctrl.setGameInfo(args[0], args[1], uname);
             }
         } else if (Protocol.ERROR.equals(command)) {
             matchStatus.setText(args[0]);

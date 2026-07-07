@@ -32,8 +32,8 @@ public class BoardController implements NetworkListener {
 
     @FXML private BorderPane rootPane;
     @FXML private StackPane boardContainer;
-    @FXML private Label blackLabel;
-    @FXML private Label whiteLabel;
+    @FXML private VBox blackPlayerBox;
+    @FXML private VBox whitePlayerBox;
     @FXML private Label turnLabel;
     @FXML private Label timerLabel;
     @FXML private TextArea chatArea;
@@ -77,6 +77,15 @@ public class BoardController implements NetworkListener {
     private long lastLocalChatTime;
     private int lastMoveX = -1;
     private int lastMoveY = -1;
+
+    private Label blackPlayerNameLabel;
+    private Label whitePlayerNameLabel;
+    private Label blackPlayerIdLabel;
+    private Label whitePlayerIdLabel;
+    private Label blackPlayerScoreLabel;
+    private Label whitePlayerScoreLabel;
+    private javafx.scene.layout.HBox blackCardRoot;
+    private javafx.scene.layout.HBox whiteCardRoot;
 
     // 本地倒计时
     private Timeline countdownTimeline;
@@ -124,6 +133,8 @@ public class BoardController implements NetworkListener {
 
         canvas.setOnMouseClicked(this::handleMouseClick);
         ClientMain.getConnector().addListener(this);
+
+        buildPlayerCards();
 
         // 双向拖拽拉伸侧边栏
         dragHandle.setOnMousePressed(e -> {
@@ -174,21 +185,24 @@ public class BoardController implements NetworkListener {
     }
 
     public void setGameInfo(String blackId, String whiteId, String username) {
-        this.blackName  = blackId;
-        this.whiteName  = whiteId;
+        setGameInfo(blackId, blackId, whiteId, whiteId, username);
+    }
+
+    public void setGameInfo(String blackId, String blackDisplayName, String whiteId, String whiteDisplayName, String username) {
+        this.blackName  = blackDisplayName;
+        this.whiteName  = whiteDisplayName;
         this.myUsername = username;
-        this.aiMode = "AI".equals(whiteId) || "-1".equals(whiteId);
+        this.aiMode = "AI".equals(whiteDisplayName) || "-1".equals(whiteId);
         this.gameOver = false;
         AppConfig.setAiMode(this.aiMode);
-        blackLabel.setText("黑方: " + blackId);
-        whiteLabel.setText("白方: " + (aiMode ? "AI" : whiteId));
-        
-        // 判断我方颜色：同时支持数字 userId（PvP 模式）和用户名（AI 模式）
+
         User cu = AppConfig.getCurrentUser();
+        String myIdStr = cu != null ? String.valueOf(cu.getUserId()) : "";
+        int myScore = cu != null ? cu.getScore() : 0;
+
         boolean isBlack = false;
         this.spectatorMode = false;
         if (cu != null) {
-            String myIdStr = String.valueOf(cu.getUserId());
             isBlack = myIdStr.equals(blackId) || (username != null && username.equals(blackId));
             // 观战检测：当前用户既不是黑方也不是白方
             if (!isBlack && !myIdStr.equals(whiteId)
@@ -201,6 +215,19 @@ public class BoardController implements NetworkListener {
                 this.spectatorMode = true;
             }
         }
+
+        if (isBlack) {
+            setPlayerCardLabels(blackPlayerNameLabel, blackPlayerIdLabel, blackPlayerScoreLabel,
+                    username != null ? username : blackDisplayName, myIdStr, myScore);
+            setPlayerCardLabels(whitePlayerNameLabel, whitePlayerIdLabel, whitePlayerScoreLabel,
+                    whiteDisplayName, whiteId, -1);
+        } else {
+            setPlayerCardLabels(blackPlayerNameLabel, blackPlayerIdLabel, blackPlayerScoreLabel,
+                    blackDisplayName, blackId, -1);
+            setPlayerCardLabels(whitePlayerNameLabel, whitePlayerIdLabel, whitePlayerScoreLabel,
+                    username != null ? username : whiteDisplayName, myIdStr, myScore);
+        }
+
         myColor = isBlack ? "black" : "white";
         myTurn  = isBlack;
         updateTurnLabel();
@@ -228,6 +255,21 @@ public class BoardController implements NetworkListener {
         }
         if (chatArea != null) {
             chatArea.appendText("[系统] 观战模式 - 无法落子或操作\n");
+        }
+    }
+
+    private void setPlayerCardLabels(Label nameLbl, Label idLbl, Label scoreLbl,
+                                      String name, String id, int score) {
+        if (nameLbl != null) nameLbl.setText(name);
+        if (idLbl != null) idLbl.setText(id.isEmpty() ? "#---" : "#" + id);
+        if (scoreLbl != null) {
+            if (score >= 0) {
+                scoreLbl.setText(score + "分");
+                scoreLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
+            } else {
+                scoreLbl.setText("?");
+                scoreLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
+            }
         }
     }
 
@@ -267,8 +309,12 @@ public class BoardController implements NetworkListener {
             whiteName = "白方";
             myColor = "black";
             currentTurn = 1;
-            blackLabel.setText("黑方: " + blackName);
-            whiteLabel.setText("白方: " + whiteName);
+            if (blackPlayerNameLabel != null) blackPlayerNameLabel.setText(blackName);
+            if (whitePlayerNameLabel != null) whitePlayerNameLabel.setText(whiteName);
+            if (blackPlayerIdLabel != null) blackPlayerIdLabel.setText("#---");
+            if (whitePlayerIdLabel != null) whitePlayerIdLabel.setText("#---");
+            if (blackPlayerScoreLabel != null) blackPlayerScoreLabel.setText("?");
+            if (whitePlayerScoreLabel != null) whitePlayerScoreLabel.setText("?");
             updateTurnLabel();
 
             if (gameControls != null) {
@@ -404,23 +450,91 @@ public class BoardController implements NetworkListener {
     }
 
     private void updateTurnLabel() {
+        if (blackName == null) blackName = "黑方";
+        if (whiteName == null) whiteName = "白方";
         if (currentTurn == 1) {
-            turnLabel.setText("当前回合: 黑方 (" + blackName + ")");
+            turnLabel.setText("⚫ " + blackName + " 回合");
         } else {
-            turnLabel.setText("当前回合: 白方 (" + whiteName + ")");
+            turnLabel.setText("⚪ " + whiteName + " 回合");
         }
-        updatePlayerLabelStyles();
+        updatePlayerCardHighlight();
     }
 
-    private void updatePlayerLabelStyles() {
-        if (blackLabel == null || whiteLabel == null) return;
-        if (currentTurn == 1) {
-            blackLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #334155;");
-            whiteLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: normal; -fx-text-fill: #64748b;");
-        } else {
-            blackLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: normal; -fx-text-fill: #64748b;");
-            whiteLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #334155;");
+    private void updatePlayerCardHighlight() {
+        boolean blackActive = currentTurn == 1;
+        if (blackCardRoot != null) {
+            blackCardRoot.getStyleClass().remove("player-info-card-active");
+            if (blackActive) blackCardRoot.getStyleClass().add("player-info-card-active");
         }
+        if (whiteCardRoot != null) {
+            whiteCardRoot.getStyleClass().remove("player-info-card-active");
+            if (!blackActive) whiteCardRoot.getStyleClass().add("player-info-card-active");
+        }
+    }
+
+    private void buildPlayerCards() {
+        blackCardRoot = buildOnePlayerCard(blackPlayerBox, "⚫", "黑方", "#1e293b");
+        whiteCardRoot = buildOnePlayerCard(whitePlayerBox, "⚪", "白方", "#cbd5e1");
+    }
+
+    private javafx.scene.layout.HBox buildOnePlayerCard(VBox container, String stone, String colorLabel, String avatarBg) {
+        if (container == null) return null;
+
+        javafx.scene.layout.HBox card = new javafx.scene.layout.HBox();
+        card.getStyleClass().add("player-info-card-inner");
+        card.setSpacing(10);
+        card.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        javafx.scene.layout.StackPane avatar = new javafx.scene.layout.StackPane();
+        avatar.getStyleClass().add("avatar-badge");
+        avatar.setStyle("-fx-background-color: " + avatarBg + "; -fx-min-width: 28px; -fx-max-width: 28px; -fx-min-height: 28px; -fx-max-height: 28px;");
+        javafx.scene.control.Label avatarText = new javafx.scene.control.Label(colorLabel.substring(0, 1));
+        avatarText.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        avatarText.getStyleClass().add("avatar-badge-text");
+        avatarText.setStyle("-fx-font-size: 12px;");
+        avatar.getChildren().add(avatarText);
+
+        VBox infoBox = new VBox(2);
+        infoBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        javafx.scene.layout.HBox.setHgrow(infoBox, javafx.scene.layout.Priority.ALWAYS);
+
+        javafx.scene.control.Label nameLabel = new javafx.scene.control.Label("---");
+        nameLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1e293b;");
+
+        javafx.scene.layout.HBox detailRow = new javafx.scene.layout.HBox(6);
+        detailRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        javafx.scene.control.Label idLabel = new javafx.scene.control.Label("#---");
+        idLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
+
+        javafx.scene.control.Label scoreLabel = new javafx.scene.control.Label("---");
+        scoreLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        scoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
+
+        javafx.scene.control.Label roleLabel = new javafx.scene.control.Label(colorLabel);
+        roleLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        roleLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ("黑方".equals(colorLabel) ? "#1e293b" : "#94a3b8") + ";");
+
+        detailRow.getChildren().addAll(idLabel, scoreLabel, roleLabel);
+        infoBox.getChildren().addAll(nameLabel, detailRow);
+        card.getChildren().addAll(avatar, infoBox);
+
+        container.getChildren().clear();
+        container.getChildren().add(card);
+
+        if ("黑方".equals(colorLabel)) {
+            blackPlayerNameLabel = nameLabel;
+            blackPlayerIdLabel = idLabel;
+            blackPlayerScoreLabel = scoreLabel;
+        } else {
+            whitePlayerNameLabel = nameLabel;
+            whitePlayerIdLabel = idLabel;
+            whitePlayerScoreLabel = scoreLabel;
+        }
+
+        return card;
     }
 
     private void startCountdown() {
@@ -582,7 +696,9 @@ public class BoardController implements NetworkListener {
     public void onMessage(String command, String[] args) {
         if (Protocol.GAME_START.equals(command)) {
             moveHistory.clear();
-            if (args.length >= 2) {
+            if (args.length >= 4) {
+                setGameInfo(args[0], args[1], args[2], args[3], myUsername);
+            } else if (args.length >= 2) {
                 setGameInfo(args[0], args[1], myUsername);
             }
             startCountdown();

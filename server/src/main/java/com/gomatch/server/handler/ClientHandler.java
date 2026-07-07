@@ -348,7 +348,9 @@ public class ClientHandler implements Runnable {
         room.broadcastAll(
                 Protocol.GAME_START,
                 String.valueOf(room.getBlackUserId()),
-                String.valueOf(room.getWhiteUserId())
+                room.getPlayerUsername(room.getBlackUserId()),
+                String.valueOf(room.getWhiteUserId()),
+                room.getPlayerUsername(room.getWhiteUserId())
         );
 
         log.info("Player {} created AI room: {} ({}), game started", userId, room.getRoomId(), roomName);
@@ -391,6 +393,8 @@ public class ClientHandler implements Runnable {
         room.broadcastAll(
                 Protocol.GAME_START,
                 String.valueOf(userId),
+                username,
+                "-1",
                 "AI"
         );
 
@@ -459,7 +463,9 @@ public class ClientHandler implements Runnable {
                 room.broadcastAll(
                     Protocol.GAME_START,
                     String.valueOf(room.getBlackUserId()),
-                    String.valueOf(room.getWhiteUserId())
+                    room.getPlayerUsername(room.getBlackUserId()),
+                    String.valueOf(room.getWhiteUserId()),
+                    room.getPlayerUsername(room.getWhiteUserId())
                 );
                 log.info("房间 {} 已满，游戏开始: BLACK={}, WHITE={}",
                         roomId, room.getBlackUserId(), room.getWhiteUserId());
@@ -542,7 +548,9 @@ public class ClientHandler implements Runnable {
             room.broadcastAll(
                 Protocol.GAME_START,
                 String.valueOf(room.getBlackUserId()),
-                String.valueOf(room.getWhiteUserId())
+                room.getPlayerUsername(room.getBlackUserId()),
+                String.valueOf(room.getWhiteUserId()),
+                room.getPlayerUsername(room.getWhiteUserId())
             );
 
             send(Protocol.JOIN_OK,
@@ -585,7 +593,9 @@ public class ClientHandler implements Runnable {
             room.broadcastAll(
                 Protocol.GAME_START,
                 String.valueOf(room.getBlackUserId()),
-                String.valueOf(room.getWhiteUserId())
+                room.getPlayerUsername(room.getBlackUserId()),
+                String.valueOf(room.getWhiteUserId()),
+                room.getPlayerUsername(room.getWhiteUserId())
             );
 
             send(Protocol.JOIN_OK,

@@ -148,7 +148,11 @@ public class RoomWaitingController implements NetworkListener {
             chatArea.setScrollTop(Double.MAX_VALUE);
         } else if (Protocol.GAME_START.equals(command)) {
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-            ctrl.setGameInfo(args[0], args[1], currentUser.getUsername());
+            if (args.length >= 4) {
+                ctrl.setGameInfo(args[0], args[1], args[2], args[3], currentUser.getUsername());
+            } else {
+                ctrl.setGameInfo(args[0], args[1], currentUser.getUsername());
+            }
         } else if ("UNDO_REQUESTED".equals(command)) {
             statusLabel.setText("玩家 " + args[1] + " 请求悔棋");
         } else if ("UNDO_ACCEPTED".equals(command)) {

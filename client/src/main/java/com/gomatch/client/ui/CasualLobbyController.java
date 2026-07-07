@@ -208,7 +208,12 @@ public class CasualLobbyController implements NetworkListener {
         } else if (Protocol.GAME_START.equals(command)) {
             setStatus("", false);
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-            ctrl.setGameInfo(args[0], args[1], currentUser != null ? currentUser.getUsername() : "unknown");
+            String username = currentUser != null ? currentUser.getUsername() : "unknown";
+            if (args.length >= 4) {
+                ctrl.setGameInfo(args[0], args[1], args[2], args[3], username);
+            } else {
+                ctrl.setGameInfo(args[0], args[1], username);
+            }
         } else if (Protocol.ERROR.equals(command)) {
             String msg = args.length > 0 ? args[0] : "未知错误";
             if (msg.contains("等待对手")) {

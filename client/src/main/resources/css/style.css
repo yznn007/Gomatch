@@ -1116,6 +1116,37 @@
     -fx-font-size: 11px;
 }
 
+/* ---------- Board: 玩家信息卡片 ---------- */
+.player-info-card {
+    -fx-padding: 0;
+    -fx-min-height: 0;
+}
+.player-info-card-inner {
+    -fx-background-color: rgba(255, 255, 255, 0.28);
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: transparent;
+    -fx-border-width: 1px;
+    -fx-padding: 8px 12px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.03), 8, 0.06, 0, 3);
+}
+.player-info-card-active {
+    -fx-background-color: rgba(255, 255, 255, 0.55);
+    -fx-border-color: rgba(71, 85, 105, 0.35);
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 14, 0.08, 0, 5);
+}
+
+/* ---------- Board: 回合指示器 ---------- */
+.turn-indicator {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #334155;
+    -fx-padding: 4 0 2 0;
+    -fx-alignment: CENTER_LEFT;
+}
+
 /* ---------- Dialog / Alert Custom Styling ---------- */
 .dialog-pane {
     -fx-background-color: rgba(255, 255, 255, 0.96);
