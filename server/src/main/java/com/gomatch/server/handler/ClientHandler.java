@@ -226,6 +226,13 @@ public class ClientHandler implements Runnable {
 
         UserDAO.UserInfo userInfo = userDAO.login(username, password);
         if (userInfo != null) {
+            SessionManager.Session existingSession = sessionManager.getSessionByUserId(userInfo.getUserId());
+            if (existingSession != null && existingSession.handler != null) {
+                send(Protocol.LOGIN_FAIL, "该账号已在其他设备登录");
+                log.warn("登录失败: 用户 {} 已在线", username);
+                return;
+            }
+
             this.userId = userInfo.getUserId();
             this.username = userInfo.getUsername();
             this.authenticated = true;

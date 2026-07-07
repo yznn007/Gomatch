@@ -5,6 +5,7 @@ import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Protocol;
+import com.gomatch.client.ui.LobbyController;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import javafx.fxml.FXML;
@@ -463,7 +464,8 @@ public class BoardController implements NetworkListener {
 
     @FXML
     private void handleReplayExit() {
-        ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        ctrl.setCurrentUser(AppConfig.getCurrentUser());
     }
 
 
