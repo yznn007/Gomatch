@@ -5,7 +5,6 @@ import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Protocol;
-import com.gomatch.client.ui.LobbyController;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import javafx.animation.KeyFrame;
@@ -67,6 +66,7 @@ public class BoardController implements NetworkListener {
     private String whiteName = "";
     private boolean previewMode;
     private boolean aiMode;
+    private boolean spectatorMode;
     private boolean replayMode;
     private boolean gameOver;
     private int cellSize; // 动态计算
@@ -75,6 +75,8 @@ public class BoardController implements NetworkListener {
     private int replayIndex = 0;
     private String lastLocalChat;
     private long lastLocalChatTime;
+    private int lastMoveX = -1;
+    private int lastMoveY = -1;
 
     // 本地倒计时
     private Timeline countdownTimeline;
@@ -168,6 +170,7 @@ public class BoardController implements NetworkListener {
                 }
             }
         }
+        drawLastMoveMarker();
     }
 
     public void setGameInfo(String blackId, String whiteId, String username) {
@@ -183,15 +186,49 @@ public class BoardController implements NetworkListener {
         // 判断我方颜色：同时支持数字 userId（PvP 模式）和用户名（AI 模式）
         User cu = AppConfig.getCurrentUser();
         boolean isBlack = false;
+        this.spectatorMode = false;
         if (cu != null) {
             String myIdStr = String.valueOf(cu.getUserId());
             isBlack = myIdStr.equals(blackId) || (username != null && username.equals(blackId));
+            // 观战检测：当前用户既不是黑方也不是白方
+            if (!isBlack && !myIdStr.equals(whiteId)
+                    && !(username != null && username.equals(whiteId))) {
+                this.spectatorMode = true;
+            }
         } else if (username != null) {
             isBlack = username.equals(blackId);
+            if (!isBlack && !username.equals(whiteId)) {
+                this.spectatorMode = true;
+            }
         }
         myColor = isBlack ? "black" : "white";
         myTurn  = isBlack;
         updateTurnLabel();
+
+        // 观战模式：禁用落子和游戏操作
+        if (spectatorMode) {
+            myTurn = false;
+            myColor = "spectator";
+            applySpectatorMode();
+        }
+
+        if (!replayMode) {
+            startCountdown();
+        }
+    }
+
+    private void applySpectatorMode() {
+        if (gameControls != null) {
+            gameControls.setVisible(false);
+            gameControls.setManaged(false);
+        }
+        if (chatInput != null) {
+            chatInput.setVisible(false);
+            chatInput.setManaged(false);
+        }
+        if (chatArea != null) {
+            chatArea.appendText("[系统] 观战模式 - 无法落子或操作\n");
+        }
     }
 
     public void setPreviewMode(boolean previewMode) {
@@ -210,6 +247,8 @@ public class BoardController implements NetworkListener {
                     drawStone(4, 4, 1);
                     drawStone(4, 5, 2);
                     drawStone(5, 5, 1);
+                    lastMoveX = 5;
+                    lastMoveY = 5;
                     currentTurn = 2;
                     updateTurnLabel();
                 }
@@ -245,11 +284,12 @@ public class BoardController implements NetworkListener {
                 chatInput.setManaged(false);
             }
             chatArea.appendText("[系统] 棋谱回放模式\n");
+            stopCountdown();
         }
     }
 
     private void handleMouseClick(MouseEvent e) {
-        if (replayMode || gameOver) return;
+        if (replayMode || gameOver || spectatorMode) return;
         if (!myTurn) return;
         if (cellSize == 0) return;
         int x = (int) Math.round((e.getX() - MARGIN) / cellSize);
@@ -275,8 +315,10 @@ public class BoardController implements NetworkListener {
     }
 
     private void drawStone(int x, int y, int color) {
-        drawStoneOnCanvas(x, y, color);
         board[x][y] = color;
+        lastMoveX = x;
+        lastMoveY = y;
+        redrawAll();
     }
 
     private void drawStoneOnCanvas(int x, int y, int color) {
@@ -325,6 +367,20 @@ public class BoardController implements NetworkListener {
         gc.setLineWidth(1.0); // 恢复默认
     }
 
+    private void drawLastMoveMarker() {
+        if (lastMoveX < 0 || lastMoveY < 0 || lastMoveX >= SIZE || lastMoveY >= SIZE || cellSize == 0) return;
+        if (board[lastMoveX][lastMoveY] == 0) return;
+
+        double cx = MARGIN + lastMoveX * cellSize;
+        double cy = MARGIN + lastMoveY * cellSize;
+        double radius = cellSize / 2.0 - 2;
+        double markerRadius = radius + 3.5;
+
+        gc.setStroke(Color.rgb(220, 38, 38, 0.95));
+        gc.setLineWidth(2.8);
+        gc.strokeOval(cx - markerRadius, cy - markerRadius, markerRadius * 2, markerRadius * 2);
+        gc.setLineWidth(1.0);
+    }
     private void drawBoard() {
         if (cellSize == 0) return;
         // 清除画布上的旧内容，防止尺寸变化时留下残影
@@ -487,8 +543,12 @@ public class BoardController implements NetworkListener {
         }
         if (limit > 0) {
             int[] last = replayMoveList.get(limit - 1);
+            lastMoveX = last[0];
+            lastMoveY = last[1];
             currentTurn = (last[2] == 1) ? 2 : 1;
         } else {
+            lastMoveX = -1;
+            lastMoveY = -1;
             currentTurn = 1;
         }
         redrawAll();
@@ -594,6 +654,14 @@ public class BoardController implements NetworkListener {
                 int[] myMove = moveHistory.remove(moveHistory.size() - 1);
                 board[myMove[0]][myMove[1]] = 0;
                 currentTurn = myMove[2]; // 回到请求悔棋者的回合
+                if (moveHistory.isEmpty()) {
+                    lastMoveX = -1;
+                    lastMoveY = -1;
+                } else {
+                    int[] last = moveHistory.get(moveHistory.size() - 1);
+                    lastMoveX = last[0];
+                    lastMoveY = last[1];
+                }
                 myTurn = (myColor.equals("black") && currentTurn == 1) ||
                          (myColor.equals("white") && currentTurn == 2);
                 updateTurnLabel();

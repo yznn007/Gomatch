@@ -25,7 +25,6 @@ public class RoomWaitingController implements NetworkListener {
     @FXML private VBox chatPane;
 
     private final ObservableList<String> players = FXCollections.observableArrayList();
-    private RoomInfo roomInfo;
     private User currentUser;
     private boolean previewMode;
     private String lastLocalChat;
@@ -70,7 +69,6 @@ public class RoomWaitingController implements NetworkListener {
     }
 
     public void setRoomInfo(RoomInfo room, User user) {
-        this.roomInfo    = room;
         this.currentUser = user;
         roomTitleLabel.setText("房间: " + room.getRoomName() + " (#" + room.getRoomId() + ")");
         if (user != null) {

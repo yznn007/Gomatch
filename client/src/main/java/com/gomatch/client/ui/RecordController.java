@@ -2,9 +2,6 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.network.NetworkListener;
-import com.gomatch.common.Protocol;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -15,10 +12,9 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
-import java.lang.reflect.Type;
-import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("unchecked")
 public class RecordController implements NetworkListener {
     @FXML private TableView<Map<String, String>> recordTable;
     @FXML private TableColumn<Map<String, String>, String> opponentCol;
@@ -27,8 +23,6 @@ public class RecordController implements NetworkListener {
     @FXML private TableColumn<Map<String, String>, String> replayCol;
 
     private final ObservableList<Map<String, String>> records = FXCollections.observableArrayList();
-    private final Gson gson = new Gson();
-    private String movesData; // 用于棋谱回放
 
     @FXML
     private void initialize() {
@@ -37,7 +31,7 @@ public class RecordController implements NetworkListener {
         timeCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().get("time")));
         replayCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getOrDefault("replay", "回放")));
         // 回放按钮列
-        replayCol.setCellFactory(col -> new TableCell<>() {
+        replayCol.setCellFactory(col -> new TableCell<Map<String, String>, String>() {
             final Button btn = new Button("回放");
             {
                 btn.setOnAction(e -> {
@@ -94,7 +88,6 @@ public class RecordController implements NetworkListener {
             for (int i = 0; i < args.length; i += 11) {
                 if (i + 10 < args.length) {
                     long player1Id = Long.parseLong(args[i + 1]);
-                    long player2Id = Long.parseLong(args[i + 3]);
                     long winnerId = Long.parseLong(args[i + 5]);
                     
                     String opponentName = currentUserId == player1Id ? args[i + 4] : args[i + 2];

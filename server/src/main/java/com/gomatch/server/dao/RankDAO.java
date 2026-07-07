@@ -212,7 +212,7 @@ public class RankDAO {
                      "CASE WHEN (win_count + lose_count + draw_count) > 0 THEN " +
                      "ROUND(win_count * 100.0 / (win_count + lose_count + draw_count), 2) ELSE 0.00 END " +
                      "FROM t_user WHERE status = 'ACTIVE' " +
-                     "ON DUPLICATE KEY UPDATE score = VALUES(score), win_rate = VALUES(win_rate), version = version + 1";
+                     "ON DUPLICATE KEY UPDATE score = VALUES(score), win_rate = VALUES(win_rate), t_rank.version = t_rank.version + 1";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

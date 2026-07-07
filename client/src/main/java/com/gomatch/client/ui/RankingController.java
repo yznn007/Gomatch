@@ -1,9 +1,7 @@
 package com.gomatch.client.ui;
 
-import com.gomatch.client.AppConfig;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
-import com.google.gson.reflect.TypeToken;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -12,10 +10,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
-
-import java.lang.reflect.Type;
-import java.text.DecimalFormat;
-import java.util.List;
 
 public class RankingController implements NetworkListener {
     @FXML private TableView<User>          rankingTable;

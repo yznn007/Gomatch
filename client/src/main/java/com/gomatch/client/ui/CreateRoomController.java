@@ -4,7 +4,6 @@ import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Protocol;
-import com.google.gson.Gson;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -15,7 +14,6 @@ public class CreateRoomController implements NetworkListener {
     @FXML private PasswordField passwordField;
     @FXML private Label errorLabel;
 
-    private final Gson gson = new Gson();
     private User currentUser;
 
     public void setCurrentUser(User user) {

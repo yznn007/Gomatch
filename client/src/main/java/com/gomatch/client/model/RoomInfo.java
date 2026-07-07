@@ -5,7 +5,6 @@ public class RoomInfo {
     private String roomName;
     private String ownerName;
     private int playerCount;
-    private int maxPlayers = 2;
     private String status;
     private boolean hasPassword;
 

@@ -1,12 +1,10 @@
 package com.gomatch.client.ui;
 
-import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.RoomInfo;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Protocol;
-import com.google.gson.reflect.TypeToken;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -14,8 +12,6 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
-import java.lang.reflect.Type;
-import java.util.List;
 import java.util.stream.Collectors;
 
 public class CasualLobbyController implements NetworkListener {
@@ -229,7 +225,7 @@ public class CasualLobbyController implements NetworkListener {
                 }
             }
             spectateData.setAll(roomData.stream()
-                .filter(r -> "playing".equals(r.getStatus()))
+                .filter(r -> "PLAYING".equalsIgnoreCase(r.getStatus()))
                 .map(r -> "#" + r.getRoomId() + " " + r.getRoomName() + "  玩家: " + r.getPlayerCount() + "/2")
                 .collect(Collectors.toList()));
         } else if (Protocol.JOIN_OK.equals(command)) {

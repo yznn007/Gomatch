@@ -1,5 +1,6 @@
 package com.gomatch.server.room;
 
+import com.gomatch.server.game.AIPlayer;
 import com.gomatch.server.handler.ClientHandler;
 import com.gomatch.server.redis.RedisManager;
 import com.gomatch.server.session.SessionManager;
@@ -55,17 +56,33 @@ public class RoomManager {
      * 创建人机对战房间
      * @param name 房间名称
      * @param owner 房主（唯一玩家）
+     * @param difficulty AI 难度
      * @return 创建的 Room 对象
      */
-    public Room createAiRoom(String name, ClientHandler owner) {
+    public Room createAiRoom(String name, ClientHandler owner, String difficulty) {
         String id = UUID.randomUUID().toString().substring(0, 8);
         Room room = new Room(id, name, owner, null, true);
         rooms.put(id, room);
         
+        // 设置 AI 难度
+        try {
+            room.setAiDifficulty(AIPlayer.Difficulty.valueOf(difficulty.toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            log.warn("Unknown AI difficulty '{}', fallback to MEDIUM", difficulty);
+            room.setAiDifficulty(AIPlayer.Difficulty.MEDIUM);
+        }
+        
         room.join(owner);
         
-        log.info("人机对战房间创建成功: {} 由用户 {} 创建", id, owner.getUserId());
+        log.info("人机对战房间创建成功: {} 由用户 {} 创建, 难度={}", id, owner.getUserId(), difficulty);
         return room;
+    }
+
+    /**
+     * 创建人机对战房间（默认中等难度）
+     */
+    public Room createAiRoom(String name, ClientHandler owner) {
+        return createAiRoom(name, owner, "MEDIUM");
     }
 
     public Room createRankedRoom(String name, ClientHandler owner) {

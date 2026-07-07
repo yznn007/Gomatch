@@ -53,6 +53,7 @@ public class Room {
 
     private boolean aiMode;
     private AIPlayer aiPlayer;
+    private AIPlayer.Difficulty aiDifficulty = AIPlayer.Difficulty.MEDIUM;
     private GameType gameType = GameType.NORMAL;
 
     // 回合计时器
@@ -89,6 +90,10 @@ public class Room {
         this.gameType = gameType;
         log.info("Room created: roomId={}, roomName={}, owner={}, hasPassword={}, aiMode={}, gameType={}", roomId, roomName,
                 owner != null ? owner.getUserId() : "null", password != null && !password.isEmpty(), aiMode, gameType);
+    }
+
+    public void setAiDifficulty(AIPlayer.Difficulty difficulty) {
+        this.aiDifficulty = difficulty;
     }
 
     public String getRoomId() { return roomId; }
@@ -279,9 +284,9 @@ public class Room {
 
         if (aiMode) {
             whiteUserId = -1;
-            aiPlayer = new AIPlayer(Game.WHITE);
-            log.info("AI game started in room {}: BLACK={}, AI=WHITE, startTime={}",
-                    roomId, blackUserId, gameStartTime);
+            aiPlayer = new AIPlayer(Game.WHITE, aiDifficulty);
+            log.info("AI game started in room {}: BLACK={}, AI=WHITE, difficulty={}, startTime={}",
+                    roomId, blackUserId, aiDifficulty, gameStartTime);
         } else {
             if (whiteUserId == 0) {
                 log.error("startGame rejected: whiteUserId={} is not set", whiteUserId);
@@ -948,36 +953,5 @@ public class Room {
         }
         log.debug("getRoomListInfo completed: {} rooms listed", list.size());
         return list;
-    }
-
-    private void saveStateToRedis() {
-        log.debug("saveStateToRedis called for room {}", roomId);
-        try {
-            StringBuilder json = new StringBuilder("{");
-            json.append('"').append("board").append('"').append(":");
-            json.append("[");
-            int[][] board = game.getBoard();
-            for (int i = 0; i < Game.SIZE; i++) {
-                json.append("[");
-                for (int j = 0; j < Game.SIZE; j++) {
-                    if (j > 0) json.append(",");
-                    json.append(board[i][j]);
-                }
-                json.append("]");
-            }
-            json.append("],");
-            json.append('"').append("currentPlayer").append('"').append(":");
-            json.append(game.getCurrentPlayer());
-            json.append(",");
-            json.append('"').append("moveCount").append('"').append(":");
-            json.append(game.getMoveCount());
-            json.append("}");
-
-            RedisManager.getInstance().saveGameState(roomId, json.toString());
-            log.debug("saveStateToRedis completed for room {}", roomId);
-        } catch (Exception e) {
-            log.error("Failed to save game state to Redis for room {}: {}",
-                    roomId, e.getMessage(), e);
-        }
     }
 }

@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.Statement;
-import java.util.Properties;
 import java.util.Scanner;
 
 public class DatabaseBootstrap {
@@ -18,7 +17,7 @@ public class DatabaseBootstrap {
         logger.info("Starting Gomatch Database Module...");
         
         try {
-            Properties props = ConfigLoader.loadProperties("database.properties");
+            ConfigLoader.loadProperties("database.properties");
             logger.info("Loaded database configuration");
             
             DatabaseConnectionManager dbManager = DatabaseConnectionManager.getInstance();
@@ -43,17 +42,18 @@ public class DatabaseBootstrap {
                 return;
             }
             
-            Scanner scanner = new Scanner(is, "UTF-8");
-            scanner.useDelimiter(";");
-            
-            while (scanner.hasNext()) {
-                String sql = scanner.next().trim();
-                if (!sql.isEmpty()) {
-                    try {
-                        stmt.execute(sql);
-                        logger.debug("Executed SQL: {}", sql.length() > 50 ? sql.substring(0, 50) + "..." : sql);
-                    } catch (Exception e) {
-                        logger.warn("SQL execution warning: {}", e.getMessage());
+            try (Scanner scanner = new Scanner(is, "UTF-8")) {
+                scanner.useDelimiter(";");
+                
+                while (scanner.hasNext()) {
+                    String sql = scanner.next().trim();
+                    if (!sql.isEmpty()) {
+                        try {
+                            stmt.execute(sql);
+                            logger.debug("Executed SQL: {}", sql.length() > 50 ? sql.substring(0, 50) + "..." : sql);
+                        } catch (Exception e) {
+                            logger.warn("SQL execution warning: {}", e.getMessage());
+                        }
                     }
                 }
             }
