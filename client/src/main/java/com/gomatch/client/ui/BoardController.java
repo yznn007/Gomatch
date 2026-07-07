@@ -2,8 +2,11 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Protocol;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -16,8 +19,10 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class BoardController implements NetworkListener {
     private static final int SIZE   = 15;
@@ -33,6 +38,11 @@ public class BoardController implements NetworkListener {
     @FXML private Button undoBtn;
     @FXML private Button drawBtn;
     @FXML private Button surrenderBtn;
+    @FXML private VBox gameControls;
+    @FXML private VBox replayControls;
+    @FXML private Button prevBtn;
+    @FXML private Button nextBtn;
+    @FXML private Button exitBtn;
     @FXML private Button toggleSidebarBtn;
     @FXML private VBox sidebarContent;
     @FXML private Region dragHandle;
@@ -53,9 +63,12 @@ public class BoardController implements NetworkListener {
     private String whiteName = "";
     private boolean previewMode;
     private boolean aiMode;
+    private boolean replayMode;
     private boolean gameOver;
     private int cellSize; // 动态计算
     private final List<int[]> moveHistory = new ArrayList<>();
+    private final List<int[]> replayMoveList = new ArrayList<>();
+    private int replayIndex = 0;
     private String lastLocalChat;
     private long lastLocalChatTime;
 
@@ -158,8 +171,18 @@ public class BoardController implements NetworkListener {
         AppConfig.setAiMode(this.aiMode);
         blackLabel.setText("黑方: " + blackId);
         whiteLabel.setText("白方: " + (aiMode ? "AI" : whiteId));
-        myColor = username.equals(blackId) ? "black" : "white";
-        myTurn  = myColor.equals("black");
+        
+        // 判断我方颜色：同时支持数字 userId（PvP 模式）和用户名（AI 模式）
+        User cu = AppConfig.getCurrentUser();
+        boolean isBlack = false;
+        if (cu != null) {
+            String myIdStr = String.valueOf(cu.getUserId());
+            isBlack = myIdStr.equals(blackId) || (username != null && username.equals(blackId));
+        } else if (username != null) {
+            isBlack = username.equals(blackId);
+        }
+        myColor = isBlack ? "black" : "white";
+        myTurn  = isBlack;
         updateTurnLabel();
     }
 
@@ -188,8 +211,37 @@ public class BoardController implements NetworkListener {
         }
     }
 
+    public void setReplayMode(boolean replayMode) {
+        this.replayMode = replayMode;
+        if (replayMode) {
+            gameOver = true;
+            myTurn = false;
+            blackName = "黑方";
+            whiteName = "白方";
+            myColor = "black";
+            currentTurn = 1;
+            blackLabel.setText("黑方: " + blackName);
+            whiteLabel.setText("白方: " + whiteName);
+            updateTurnLabel();
+
+            if (gameControls != null) {
+                gameControls.setVisible(false);
+                gameControls.setManaged(false);
+            }
+            if (replayControls != null) {
+                replayControls.setVisible(true);
+                replayControls.setManaged(true);
+            }
+            if (chatInput != null) {
+                chatInput.setVisible(false);
+                chatInput.setManaged(false);
+            }
+            chatArea.appendText("[系统] 棋谱回放模式\n");
+        }
+    }
+
     private void handleMouseClick(MouseEvent e) {
-        if (gameOver) return;
+        if (replayMode || gameOver) return;
         if (!myTurn) return;
         if (cellSize == 0) return;
         int x = (int) Math.round((e.getX() - MARGIN) / cellSize);
@@ -291,10 +343,8 @@ public class BoardController implements NetworkListener {
     private void updateTurnLabel() {
         if (currentTurn == 1) {
             turnLabel.setText("当前回合: 黑方 (" + blackName + ")");
-            myTurn = "black".equals(myColor);
         } else {
             turnLabel.setText("当前回合: 白方 (" + whiteName + ")");
-            myTurn = "white".equals(myColor);
         }
     }
 
@@ -335,21 +385,87 @@ public class BoardController implements NetworkListener {
         chatInput.clear();
     }
 
-    /** 棋谱回放：解析 "x,y,color;x,y,color;..." 格式依次落子 */
+    /** 棋谱回放：解析落子序列并支持上一步/下一步浏览 */
     public void replayMoves(String moves) {
-        String[] steps = moves.split(";");
-        for (String step : steps) {
-            String[] parts = step.split(",");
-            if (parts.length >= 3) {
-                int x = Integer.parseInt(parts[0]);
-                int y = Integer.parseInt(parts[1]);
-                int color = Integer.parseInt(parts[2]);
-                drawStone(x, y, color);
-                currentTurn = (color == 1) ? 2 : 1;
+        replayMoveList.clear();
+        if (moves == null || moves.isEmpty()) return;
+
+        try {
+            if (moves.startsWith("[")) {
+                Gson gson = new Gson();
+                Type moveListType = new TypeToken<List<Map<String, Object>>>() {}.getType();
+                List<Map<String, Object>> moveList = gson.fromJson(moves, moveListType);
+                for (Map<String, Object> move : moveList) {
+                    int x = ((Number) move.get("x")).intValue();
+                    int y = ((Number) move.get("y")).intValue();
+                    int color = ((Number) move.get("color")).intValue();
+                    replayMoveList.add(new int[]{x, y, color});
+                }
+            } else {
+                String[] steps = moves.split(";");
+                for (String step : steps) {
+                    String[] parts = step.split(",");
+                    if (parts.length >= 3) {
+                        int x = Integer.parseInt(parts[0]);
+                        int y = Integer.parseInt(parts[1]);
+                        int color = Integer.parseInt(parts[2]);
+                        replayMoveList.add(new int[]{x, y, color});
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // 默认显示完整棋局
+        replayIndex = replayMoveList.size();
+        showReplayStep(replayIndex);
+    }
+
+    private void showReplayStep(int step) {
+        // 清空棋盘
+        for (int x = 0; x < SIZE; x++) {
+            for (int y = 0; y < SIZE; y++) {
+                board[x][y] = 0;
             }
         }
+        // 重绘到第 step 步
+        int limit = Math.max(0, Math.min(step, replayMoveList.size()));
+        for (int i = 0; i < limit; i++) {
+            int[] m = replayMoveList.get(i);
+            board[m[0]][m[1]] = m[2];
+        }
+        if (limit > 0) {
+            int[] last = replayMoveList.get(limit - 1);
+            currentTurn = (last[2] == 1) ? 2 : 1;
+        } else {
+            currentTurn = 1;
+        }
+        redrawAll();
         updateTurnLabel();
+        chatArea.appendText("[系统] 第 " + limit + " / " + replayMoveList.size() + " 步\n");
+        chatArea.setScrollTop(Double.MAX_VALUE);
     }
+
+    @FXML
+    private void handleReplayPrev() {
+        if (!replayMode || replayIndex <= 0) return;
+        replayIndex--;
+        showReplayStep(replayIndex);
+    }
+
+    @FXML
+    private void handleReplayNext() {
+        if (!replayMode || replayIndex >= replayMoveList.size()) return;
+        replayIndex++;
+        showReplayStep(replayIndex);
+    }
+
+    @FXML
+    private void handleReplayExit() {
+        ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+    }
+
 
     @Override
     public void onMessage(String command, String[] args) {
@@ -376,11 +492,13 @@ public class BoardController implements NetworkListener {
             String result;
             if ("0".equals(winnerId)) {
                 result = "平局";
+            } else if (aiMode && "-1".equals(winnerId)) {
+                result = "对手胜";
             } else if ("black".equals(myColor) && blackName.equals(winnerId)) {
                 result = "黑方胜";
             } else if ("white".equals(myColor) && whiteName.equals(winnerId)) {
                 result = "白方胜";
-            } else if ("black".equals(myColor) && whiteName.equals(winnerId)) {
+            } else if ("black".equals(myColor) && (whiteName.equals(winnerId) || ("-1".equals(winnerId) && aiMode))) {
                 result = "对手胜";
             } else if ("white".equals(myColor) && blackName.equals(winnerId)) {
                 result = "对手胜";

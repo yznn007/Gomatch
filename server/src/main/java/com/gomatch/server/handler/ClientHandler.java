@@ -503,7 +503,8 @@ public class ClientHandler implements Runnable {
               .append("|").append(info[1])   // roomName
               .append("|").append(info[2])   // status
               .append("|").append(info[3])   // players
-              .append("|").append(info[4]);  // max
+              .append("|").append(info[4])   // max
+              .append("|").append(info[5]);  // hasPassword
         }
         send(sb.toString());
         log.info("Sent room list to {}: {} rooms", socket.getPort(), roomList.size());
@@ -810,6 +811,9 @@ public class ClientHandler implements Runnable {
             String player1Name = player1 != null ? player1.getUsername() : "未知";
             String player2Name = player2 != null ? player2.getUsername() : (player2Id == -1 ? "AI" : "未知");
             
+            String boardData = record.length > 8 ? record[8] : "";
+            boardData = boardData.replace("|", "\\|");
+            
             sb.append("|").append(record[0])      // recordId
               .append("|").append(player1Id)     // player1Id
               .append("|").append(player1Name)   // player1Name
@@ -819,7 +823,8 @@ public class ClientHandler implements Runnable {
               .append("|").append(record[4])     // result
               .append("|").append(record[5])     // moveCount
               .append("|").append(record[6])     // duration
-              .append("|").append(record[7]);    // createTime
+              .append("|").append(record[7])     // createTime
+              .append("|").append(boardData);    // boardData
         }
         send(sb.toString());
         log.info("Sent record list to user {} ({} records)", userId, records.size());
@@ -966,6 +971,7 @@ public class ClientHandler implements Runnable {
         boolean success = currentRoom.replyDraw(userId, accept);
         if (success) {
             if (accept) {
+                currentRoom.broadcastAll(Protocol.GAME_OVER, "0", "双方平局(求和)");
                 log.info("玩家 {} 同意求和，游戏平局结束", userId);
             } else {
                 currentRoom.broadcastAll("DRAW_REJECTED");

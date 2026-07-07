@@ -8,6 +8,7 @@ public class GameRecord {
     private String result;
     private String time;
     private String replay;
+    private String moves;   // 棋盘数据（JSON），用于回放
 
     public GameRecord() {}
 
@@ -16,6 +17,14 @@ public class GameRecord {
         this.result   = result;
         this.time     = time;
         this.replay   = replay;
+    }
+
+    public GameRecord(String opponent, String result, String time, String replay, String moves) {
+        this.opponent = opponent;
+        this.result   = result;
+        this.time     = time;
+        this.replay   = replay;
+        this.moves    = moves;
     }
 
     public String getOpponent() { return opponent; }
@@ -29,4 +38,7 @@ public class GameRecord {
 
     public String getReplay() { return replay; }
     public void setReplay(String replay) { this.replay = replay; }
+
+    public String getMoves() { return moves; }
+    public void setMoves(String moves) { this.moves = moves; }
 }

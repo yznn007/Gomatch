@@ -32,10 +32,20 @@
                 <!-- 聊天窗口：启用自动换行，禁止出现左右滚动条 -->
                 <TextArea fx:id="chatArea" editable="false" wrapText="true" VBox.vgrow="ALWAYS" styleClass="chat-area"/>
                 
-                <TextField fx:id="chatInput" promptText="输入消息..." onAction="#handleSendChat" styleClass="field"/>
-                <Button text="悔棋" fx:id="undoBtn" onAction="#handleUndo" styleClass="btn-secondary" maxWidth="Infinity"/>
-                <Button text="求和" fx:id="drawBtn" onAction="#handleDraw" styleClass="btn-secondary" maxWidth="Infinity"/>
-                <Button text="认输" fx:id="surrenderBtn" onAction="#handleSurrender" styleClass="btn-danger" maxWidth="Infinity"/>
+                <!-- 对局操作区 -->
+                <VBox fx:id="gameControls" spacing="12" maxWidth="Infinity">
+                    <TextField fx:id="chatInput" promptText="输入消息..." onAction="#handleSendChat" styleClass="field"/>
+                    <Button text="悔棋" fx:id="undoBtn" onAction="#handleUndo" styleClass="btn-secondary" maxWidth="Infinity"/>
+                    <Button text="求和" fx:id="drawBtn" onAction="#handleDraw" styleClass="btn-secondary" maxWidth="Infinity"/>
+                    <Button text="认输" fx:id="surrenderBtn" onAction="#handleSurrender" styleClass="btn-danger" maxWidth="Infinity"/>
+                </VBox>
+
+                <!-- 回放控制区 -->
+                <VBox fx:id="replayControls" spacing="12" maxWidth="Infinity" visible="false" managed="false">
+                    <Button text="上一步" fx:id="prevBtn" onAction="#handleReplayPrev" styleClass="btn-secondary" maxWidth="Infinity"/>
+                    <Button text="下一步" fx:id="nextBtn" onAction="#handleReplayNext" styleClass="btn-secondary" maxWidth="Infinity"/>
+                    <Button text="退出回放" fx:id="exitBtn" onAction="#handleReplayExit" styleClass="btn-danger" maxWidth="Infinity"/>
+                </VBox>
             </VBox>
         </HBox>
     </right>

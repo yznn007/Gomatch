@@ -1,6 +1,5 @@
 package com.gomatch.client.ui;
 
-import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.GameRecord;
 import com.gomatch.client.model.User;
@@ -49,17 +48,39 @@ public class ProfileController implements NetworkListener {
         resultCol.setCellValueFactory(new PropertyValueFactory<>("result"));
         timeCol.setCellValueFactory(new PropertyValueFactory<>("time"));
         replayCol.setCellValueFactory(new PropertyValueFactory<>("replay"));
+        
+        // 回放按钮列
+        replayCol.setCellFactory(col -> new TableCell<GameRecord, String>() {
+            final Button btn = new Button("查看");
+            {
+                btn.getStyleClass().add("control-button");
+                btn.setOnAction(e -> {
+                    GameRecord item = getTableView().getItems().get(getIndex());
+                    String moves = item.getMoves();
+                    if (moves != null && !moves.isEmpty()) {
+                        BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
+                        ctrl.setReplayMode(true);
+                        ctrl.replayMoves(moves);
+                    } else {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION, "暂无棋谱数据");
+                        alert.showAndWait();
+                    }
+                });
+            }
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getIndex() < 0 || getTableView() == null) {
+                    setGraphic(null);
+                } else {
+                    setGraphic(btn);
+                }
+            }
+        });
+        
         recordTable.setItems(recordData);
 
         ClientMain.getConnector().addListener(this);
-        if (!ClientMain.getConnector().isConnected()) {
-            recordData.addAll(
-                new GameRecord("玩家A", "胜", "2026-07-04 15:30", "查看"),
-                new GameRecord("玩家B", "负", "2026-07-04 16:10", "查看")
-            );
-        } else {
-            ClientMain.getConnector().send(Protocol.QUERY_RECORD, "0", "20");
-        }
 
         // 初始化激活默认标签页 (个人信息)
         showInfoTab();
@@ -107,6 +128,16 @@ public class ProfileController implements NetworkListener {
         winLabel.setText(String.valueOf(user.getWinCount()));
         loseLabel.setText(String.valueOf(user.getLoseCount()));
         drawLabel.setText(String.valueOf(user.getDrawCount()));
+
+        // 用户信息设置完成后再查询战绩，避免 currentUser 为空时解析异常
+        if (ClientMain.getConnector().isConnected()) {
+            ClientMain.getConnector().send(Protocol.QUERY_RECORD, "0", "20");
+        } else {
+            recordData.addAll(
+                new GameRecord("玩家A", "胜", "2026-07-04 15:30", "查看"),
+                new GameRecord("玩家B", "负", "2026-07-04 16:10", "查看")
+            );
+        }
     }
 
     public void setPreviewMode(boolean previewMode) {
@@ -153,20 +184,23 @@ public class ProfileController implements NetworkListener {
             errorLabel.setStyle("-fx-text-fill: red;");
             errorLabel.setText(args.length > 0 ? args[0] : "操作失败");
         } else if (Protocol.RECORD_LIST.equals(command)) {
+            if (currentUser == null) {
+                return;
+            }
             recordData.clear();
-            // 格式: RECORD_LIST|recordId|p1Id|p1Name|p2Id|p2Name|winnerId|result|moveCount|duration|time|...
+            // 格式：服务端发 11 个字段：recordId|p1Id|p1Name|p2Id|p2Name|winnerId|result|moveCount|duration|createTime|boardData
             int i = 0;
             while (i + 10 <= args.length) {
-                // String recordId = args[i];    // 暂未用到
-                // String p1Id     = args[i + 1];
-                String p1Name   = args[i + 2];
-                // String p2Id     = args[i + 3];
-                String p2Name   = args[i + 4];
-                String winnerId = args[i + 5];
-                // String result   = args[i + 6];
-                // String moveCnt  = args[i + 7];
-                // String duration = args[i + 8];
-                String time     = args[i + 9];
+                // String recordId = args[i];    // 0
+                // String p1Id     = args[i + 1]; // 1
+                String p1Name   = args[i + 2];   // 2
+                // String p2Id     = args[i + 3]; // 3
+                String p2Name   = args[i + 4];   // 4
+                String winnerId = args[i + 5];   // 5
+                // String moveCnt  = args[i + 7]; // 7
+                // String duration = args[i + 8]; // 8
+                String time     = args[i + 9];   // 9
+                String boardData = i + 10 < args.length ? args[i + 10].replace("\\|", "|") : ""; // 10
 
                 // 判断结果：比较 winnerId 与当前用户 ID
                 String result;
@@ -181,8 +215,8 @@ public class ProfileController implements NetworkListener {
                 // 对手名：当前用户是 p1 则对手是 p2，反之亦然
                 String opponent = p1Name.equals(currentUser.getUsername()) ? p2Name : p1Name;
 
-                recordData.add(new GameRecord(opponent, result, time, "查看"));
-                i += 10;
+                recordData.add(new GameRecord(opponent, result, time, "查看", boardData));
+                i += 11;  // 每条记录 11 个字段
             }
         }
     }

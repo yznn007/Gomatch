@@ -102,7 +102,8 @@ public class RecordDAO {
                         rs.getString("result"),
                         String.valueOf(rs.getInt("move_count")),
                         String.valueOf(rs.getInt("duration")),
-                        rs.getString("create_time")
+                        rs.getString("create_time"),
+                        rs.getString("board_data")
                     });
                 }
             }

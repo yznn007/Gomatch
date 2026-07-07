@@ -45,7 +45,7 @@ public class RecordController implements NetworkListener {
                     String moves = row.get("moves");
                     if (moves != null && !moves.isEmpty()) {
                         BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-                        ctrl.setPreviewMode(true);
+                        ctrl.setReplayMode(true);
                         ctrl.replayMoves(moves);
                     } else {
                         Alert alert = new Alert(Alert.AlertType.INFORMATION, "暂无棋谱数据");
@@ -86,9 +86,13 @@ public class RecordController implements NetworkListener {
     public void onMessage(String command, String[] args) {
         if ("RECORD_LIST".equals(command)) {
             records.clear();
-            for (int i = 0; i < args.length; i += 10) {
-                if (i + 9 < args.length) {
-                    long currentUserId = com.gomatch.client.AppConfig.getCurrentUser().getUserId();
+            com.gomatch.client.model.User currentUser = com.gomatch.client.AppConfig.getCurrentUser();
+            if (currentUser == null) {
+                return;
+            }
+            long currentUserId = currentUser.getUserId();
+            for (int i = 0; i < args.length; i += 11) {
+                if (i + 10 < args.length) {
                     long player1Id = Long.parseLong(args[i + 1]);
                     long player2Id = Long.parseLong(args[i + 3]);
                     long winnerId = Long.parseLong(args[i + 5]);
@@ -103,12 +107,15 @@ public class RecordController implements NetworkListener {
                         result = "负";
                     }
                     
+                    String boardData = args[i + 10];
+                    boardData = boardData.replace("\\|", "|");
+                    
                     records.add(Map.of(
                         "opponent", opponentName,
                         "result", result,
                         "time", args[i + 9],
                         "replay", "回放",
-                        "moves", ""
+                        "moves", boardData
                     ));
                 }
             }
