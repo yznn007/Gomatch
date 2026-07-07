@@ -94,15 +94,24 @@ public class ServerConnector {
                     break;
                 }
             }
-            Platform.runLater(() -> {
-                // 尝试重连
-                if (lastHost != null && tryReconnect()) {
-                    return; // 重连成功，不发 DISCONNECT
-                }
-                for (NetworkListener l : listeners) {
-                    l.onMessage("DISCONNECT", new String[0]);
+            // 接收线程退出后的处理
+            if (!running) {
+                // 是主动调用 disconnect()，不触发重连
+                return;
+            }
+            // 意外断线：在后台线程重连，避免 Thread.sleep 卡死 FX 线程
+            Thread reconnectThread = new Thread(() -> {
+                boolean reconnected = lastHost != null && tryReconnect();
+                if (!reconnected) {
+                    Platform.runLater(() -> {
+                        for (NetworkListener l : listeners) {
+                            l.onMessage("DISCONNECT", new String[0]);
+                        }
+                    });
                 }
             });
+            reconnectThread.setDaemon(true);
+            reconnectThread.start();
         });
         receiveThread.setDaemon(true);
         receiveThread.start();

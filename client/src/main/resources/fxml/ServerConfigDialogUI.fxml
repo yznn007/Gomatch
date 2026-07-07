@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.collections.FXCollections?>
+<?import java.lang.String?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.gomatch.client.ui.ServerConfigDialogController"
+      styleClass="card-padded" alignment="CENTER" spacing="20" prefWidth="380" maxWidth="380">
+
+    <Label text="服务器配置" styleClass="title" style="-fx-font-size: 18px;"/>
+
+    <Separator styleClass="section-divider" prefWidth="Infinity"/>
+
+    <GridPane hgap="24" vgap="16" alignment="CENTER" style="-fx-padding: 4 0;">
+        <columnConstraints>
+            <ColumnConstraints minWidth="90" prefWidth="90" halignment="RIGHT"/>
+            <ColumnConstraints minWidth="200" prefWidth="200" halignment="LEFT"/>
+        </columnConstraints>
+
+        <Label text="服务器 IP" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
+        <ComboBox fx:id="ipComboBox" editable="true" prefWidth="200" GridPane.rowIndex="0" GridPane.columnIndex="1">
+            <items>
+                <FXCollections fx:factory="observableArrayList">
+                    <String fx:value="127.0.0.1"/>
+                </FXCollections>
+            </items>
+        </ComboBox>
+
+        <Label text="端口" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
+        <TextField fx:id="portField" prefWidth="200" styleClass="field" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+        <Label text="连接状态" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="muted"/>
+        <Label fx:id="statusLabel" text="" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="section-label"/>
+    </GridPane>
+
+    <Separator styleClass="section-divider" prefWidth="Infinity"/>
+
+    <Button fx:id="applyBtn" text="应用配置" onAction="#handleApply" styleClass="btn-secondary" prefWidth="150"/>
+
+</VBox>

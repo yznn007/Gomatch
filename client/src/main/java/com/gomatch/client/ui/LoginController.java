@@ -21,6 +21,12 @@ public class LoginController implements NetworkListener {
         // 这里不提前注册，避免未连接时空转以及来回切换重复注册。
     }
 
+    /** 打开服务器配置二级弹窗 */
+    @FXML
+    private void handleOpenServerConfig() {
+        ScreenManager.showDialog("/fxml/ServerConfigDialogUI.fxml");
+    }
+
     @FXML
     private void handleLogin() {
         String username = usernameField.getText().trim();
@@ -49,11 +55,10 @@ public class LoginController implements NetworkListener {
     private void handlePreview() {
         User fakeUser = new User(0, "游客");
         fakeUser.setScore(1000);
-        
-        // 存入全局会话
+
         AppConfig.setCurrentUser(fakeUser);
         AppConfig.setPreviewMode(true);
-        
+
         LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
         ctrl.setCurrentUser(fakeUser);
         ctrl.setPreviewMode(true);
@@ -69,10 +74,10 @@ public class LoginController implements NetworkListener {
             user.setWinCount(Integer.parseInt(args[3]));
             user.setLoseCount(Integer.parseInt(args[4]));
             user.setDrawCount(Integer.parseInt(args[5]));
-            
+
             AppConfig.setCurrentUser(user);
             AppConfig.setPreviewMode(false);
-            
+
             LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
             ctrl.setCurrentUser(user);
             ctrl.setPreviewMode(false);
