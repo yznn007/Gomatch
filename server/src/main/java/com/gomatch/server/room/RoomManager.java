@@ -258,9 +258,15 @@ public class RoomManager {
     public void leaveRoom(ClientHandler player) {
         Room room = player.getCurrentRoom();
         if (room != null) {
+            String roomId = room.getRoomId();
             room.leave(player);
-            log.info("玩家 {} 离开房间 {}", player.getUserId(), room.getRoomId());
+            log.info("玩家 {} 离开房间 {}", player.getUserId(), roomId);
             player.setCurrentRoom(null);
+            // 游戏已结束且无玩家时，自动清理房间
+            if (room.getStatus() == Room.Status.FINISHED && room.getPlayerCount() == 0) {
+                removeRoom(roomId);
+                log.info("房间 {} 已结束且无玩家，自动清理", roomId);
+            }
         }
     }
 }

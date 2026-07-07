@@ -161,7 +161,10 @@ public class Room {
         if (removedFromPlayers) {
             log.info("Player {} left room {}: remaining players {}/2",
                     handler.getUserId(), roomId, players.size());
-            if (resetRoom && players.size() < 2) {
+            // 游戏已结束的房间不再重置，等待清理
+            if (status == Status.FINISHED) {
+                log.info("Room {} is finished, skip reset", roomId);
+            } else if (resetRoom && players.size() < 2) {
                 log.info("Room {} reset: less than 2 players, status changed to WAITING", roomId);
                 status = Status.WAITING;
                 gameStarted = false;
@@ -833,6 +836,8 @@ public class Room {
         log.debug("getRoomListInfo called: room count={}", rooms.size());
         List<String[]> list = new ArrayList<>();
         for (Room room : rooms.values()) {
+            // 不对外暴露已结束的房间
+            if (room.getStatus() == Status.FINISHED) continue;
             list.add(new String[]{
                 room.getRoomId(),
                 room.getRoomName(),
