@@ -18,6 +18,10 @@ public final class AppConfig {
     // ---------- 共享 Gson 单例（线程安全）----------
     public static final Gson GSON = new Gson();
 
+    // ---------- 游戏配置 ----------
+    /** 每回合限时（秒），默认 30 秒 */
+    public static final int TURN_TIME_LIMIT = 30;
+
     // ---------- 全局会话状态 (Session) ----------
     private static User currentUser;
     private static boolean previewMode;

@@ -26,6 +26,7 @@
                 <Label fx:id="blackLabel" text="黑方" styleClass="section-label"/>
                 <Label fx:id="whiteLabel" text="白方" styleClass="subtitle"/>
                 <Label fx:id="turnLabel" text="当前回合: 黑方" styleClass="subtitle"/>
+                <Label fx:id="timerLabel" text="剩余: 30s" styleClass="timer-label"/>
                 <Separator styleClass="section-divider" prefWidth="Infinity"/>
                 <Label text="聊天" styleClass="section-label" style="-fx-padding: 8 0;"/>
                 
