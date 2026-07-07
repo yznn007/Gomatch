@@ -7,6 +7,8 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.Cursor;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.transform.Scale;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
@@ -22,8 +24,8 @@ import javafx.stage.StageStyle;
 import java.io.IOException;
 
 public class ScreenManager {
-    private static final int WIDTH = 900;
-    private static final int HEIGHT = 640;
+    private static final int WIDTH = 1280;
+    private static final int HEIGHT = 720;
     private static final String STYLE_PATH = "/css/style.css";
     private static Stage stage;
     private static boolean firstShow = true;
@@ -87,11 +89,43 @@ public class ScreenManager {
             VBox.setVgrow(root, Priority.ALWAYS);
             mainLayout.getChildren().addAll(customTitleBar, root);
 
+            // 锁定 mainLayout 的设计参考尺寸为 1920 x 1080 (绝对 16:9)
+            mainLayout.setMinWidth(WIDTH);
+            mainLayout.setMinHeight(HEIGHT);
+            mainLayout.setPrefWidth(WIDTH);
+            mainLayout.setPrefHeight(HEIGHT);
+            mainLayout.setMaxWidth(WIDTH);
+            mainLayout.setMaxHeight(HEIGHT);
+
+            // 对 mainLayout 应用等比自适应缩放 Scale 变换，以 1920x1080 几何中心为 Pivot
+            Scale scale = new Scale(1.0, 1.0, WIDTH / 2.0, HEIGHT / 2.0);
+            mainLayout.getTransforms().add(scale);
+
             // 3. 包装一层 StackPane，将 ShapeGridBackground 动态粒子点阵放在最底层，主 UI 在上层
             StackPane wrapper = new StackPane();
             wrapper.setStyle("-fx-background-color: transparent;");
             ShapeGridBackground bg = new ShapeGridBackground();
             wrapper.getChildren().addAll(bg, mainLayout);
+
+            // 监听 wrapper 实际宽高变化（窗口大小变化），基于最窄边对 mainLayout 进行平滑缩放，实现绝对等比
+            wrapper.widthProperty().addListener((obs, oldVal, newVal) -> {
+                double cw = newVal.doubleValue();
+                double ch = wrapper.getHeight();
+                if (cw > 0 && ch > 0) {
+                    double sf = Math.min(cw / WIDTH, ch / HEIGHT);
+                    scale.setX(sf);
+                    scale.setY(sf);
+                }
+            });
+            wrapper.heightProperty().addListener((obs, oldVal, newVal) -> {
+                double cw = wrapper.getWidth();
+                double ch = newVal.doubleValue();
+                if (cw > 0 && ch > 0) {
+                    double sf = Math.min(cw / WIDTH, ch / HEIGHT);
+                    scale.setX(sf);
+                    scale.setY(sf);
+                }
+            });
 
             // 4. 监听鼠标移动，将其坐标转发给底层的 ShapeGridBackground
             wrapper.setOnMouseMoved(e -> {
@@ -100,20 +134,32 @@ public class ScreenManager {
             });
             wrapper.setOnMouseExited(e -> bg.setMousePosition(-1000, -1000));
 
-            // 5. 监听鼠标压下以准备调整窗口大小
-            wrapper.setOnMousePressed(e -> {
-                dragStartX = e.getScreenX();
-                dragStartY = e.getScreenY();
-                stageStartX = stage.getX();
-                stageStartY = stage.getY();
-                stageStartWidth = stage.getWidth();
-                stageStartHeight = stage.getHeight();
-                resizeMode = getResizeMode(e.getX(), e.getY());
+            // 5. 使用事件过滤器（Event Filter）在事件到达子节点（卡片或按钮）前拦截并消费边框拉伸事件
+            wrapper.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
+                ResizeMode mode = getResizeMode(e.getX(), e.getY());
+                if (mode != ResizeMode.NONE) {
+                    dragStartX = e.getScreenX();
+                    dragStartY = e.getScreenY();
+                    stageStartX = stage.getX();
+                    stageStartY = stage.getY();
+                    stageStartWidth = stage.getWidth();
+                    stageStartHeight = stage.getHeight();
+                    resizeMode = mode;
+                    e.consume(); // 拦截并消费事件，避免传递给子节点（卡片或按钮）
+                }
             });
 
-            wrapper.setOnMouseDragged(e -> {
+            wrapper.addEventFilter(MouseEvent.MOUSE_DRAGGED, e -> {
                 if (resizeMode != ResizeMode.NONE) {
                     handleResize(e.getScreenX(), e.getScreenY());
+                    e.consume(); // 拦截并消费事件，避免子卡片物理晃动产生异常
+                }
+            });
+
+            wrapper.addEventFilter(MouseEvent.MOUSE_RELEASED, e -> {
+                if (resizeMode != ResizeMode.NONE) {
+                    resizeMode = ResizeMode.NONE;
+                    e.consume(); // 拦截并消费事件
                 }
             });
 
@@ -121,9 +167,10 @@ public class ScreenManager {
             double w = oldScene == null ? WIDTH : oldScene.getWidth();
             double h = oldScene == null ? HEIGHT : oldScene.getHeight();
             Scene scene = new Scene(wrapper, w, h);
+            scene.setCamera(new javafx.scene.PerspectiveCamera(false));
             
-            // 核心绑定：将标题栏宽度绑定至 Scene 宽度，避免绑定 Stage 导致的循环布局计算（圆形依赖）
-            customTitleBar.prefWidthProperty().bind(scene.widthProperty());
+            // 核心绑定：将标题栏宽度绑定至 mainLayout 宽度，保证在缩放时仍与主界面容器完美贴合
+            customTitleBar.prefWidthProperty().bind(mainLayout.widthProperty());
             
             applyStylesheet(scene);
             stage.setScene(scene);
@@ -140,10 +187,17 @@ public class ScreenManager {
     }
 
     public static <T> T showDialog(String fxmlPath) {
+        return showDialog(fxmlPath, controller -> {});
+    }
+
+    public static <T> T showDialog(String fxmlPath, java.util.function.Consumer<T> setupCallback) {
         try {
             FXMLLoader loader = new FXMLLoader(ScreenManager.class.getResource(fxmlPath));
             Parent root = loader.load();
             T controller = loader.getController();
+            if (setupCallback != null) {
+                setupCallback.accept(controller);
+            }
             Stage dialog = new Stage();
             dialog.initOwner(stage);
             dialog.initModality(Modality.WINDOW_MODAL);
@@ -168,6 +222,7 @@ public class ScreenManager {
             dialogWrapper.setOnMouseExited(e -> bg.setMousePosition(-1000, -1000));
 
             Scene scene = new Scene(dialogWrapper);
+            scene.setCamera(new javafx.scene.PerspectiveCamera(false));
             
             // 绑定弹窗标题栏宽度
             dialogTitleBar.prefWidthProperty().bind(scene.widthProperty());

@@ -29,6 +29,12 @@
     -fx-text-fill: #64748b;
 }
 
+.timer-label {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #334155;
+}
+
 .section-label {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
@@ -523,6 +529,9 @@
     -fx-pref-height: 1;
 }
 
+.section-divider {
+    -fx-padding: 0;
+}
 .section-divider:horizontal *.line {
     -fx-border-color: rgba(203, 213, 225, 0.70);
     -fx-border-width: 1 0 0 0;
@@ -604,26 +613,47 @@
 .arena-btn {
     -fx-cursor: hand;
 }
-.arena-icon  { -fx-font-size: 40px; }
-.arena-title { -fx-font-size: 20px; -fx-font-weight: bold; }
-.arena-sub   { -fx-font-size: 11px; -fx-font-weight: normal; -fx-letter-spacing: 4px; }
+.arena-icon  { -fx-font-size: 54px; }
+.arena-title { -fx-font-size: 24px; -fx-font-weight: bold; }
+.arena-sub   { -fx-font-size: 13px; -fx-font-weight: normal; -fx-letter-spacing: 4px; }
 
 /* 匹配 & 排位按钮 — 统一为下划线底线卡片，彻底实现极简 */
 .arena-casual, .arena-ranked {
+    -fx-background-color: transparent; /* 父卡片背景设为透明以展现吊绳 */
+    -fx-border-color: transparent;
+    -fx-effect: none; /* 去除卡片投影，保持白色极简 */
+}
+.pixel-card-body {
     -fx-background-color: rgba(255, 255, 255, 0.50); /* 统一为半透底色，与卡片/输入框同步 */
     -fx-background-radius: 8;
     -fx-border-radius: 8;
     -fx-border-color: transparent transparent rgba(100, 116, 139, 0.20) transparent; /* 仅底线 */
     -fx-border-width: 0 0 1.5 0;
-    -fx-effect: none; /* 去除卡片投影，保持白色极简 */
+    -fx-effect: dropshadow(gaussian, rgba(100, 116, 139, 0.12), 20, 0, 0, 6); /* 添加极简阴影 */
 }
 .arena-casual:hover, .arena-ranked:hover {
-    -fx-background-color: rgba(148, 163, 184, 0.35); /* 统一板岩灰 Cover */
-    -fx-border-color: transparent transparent rgba(100, 116, 139, 0.40) transparent;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
 }
-.arena-casual:pressed, .arena-ranked:pressed {
+.arena-match:hover .pixel-card-body {
+    -fx-background-color: rgba(14, 165, 233, 0.12); /* 匹配卡片：淡蓝色透明 hover */
+    -fx-border-color: transparent transparent rgba(14, 165, 233, 0.35) transparent;
+    -fx-effect: dropshadow(gaussian, rgba(14, 165, 233, 0.18), 24, 0, 0, 8); /* 匹配专属淡蓝色投影 */
+}
+.arena-ai:hover .pixel-card-body {
+    -fx-background-color: rgba(234, 179, 8, 0.12); /* AI卡片：淡黄色透明 hover */
+    -fx-border-color: transparent transparent rgba(234, 179, 8, 0.35) transparent;
+    -fx-effect: dropshadow(gaussian, rgba(234, 179, 8, 0.18), 24, 0, 0, 8); /* AI专属淡黄色投影 */
+}
+.arena-ranked:hover .pixel-card-body {
+    -fx-background-color: rgba(225, 29, 72, 0.12); /* 排位卡片：淡粉色透明 hover */
+    -fx-border-color: transparent transparent rgba(225, 29, 72, 0.35) transparent;
+    -fx-effect: dropshadow(gaussian, rgba(225, 29, 72, 0.18), 24, 0, 0, 8); /* 排位专属淡红色投影 */
+}
+.arena-casual:pressed .pixel-card-body, .arena-ranked:pressed .pixel-card-body {
     -fx-background-color: rgba(255, 255, 255, 0.95); /* 按下变为聚焦实白 */
     -fx-border-color: transparent transparent #475569 transparent;
+    -fx-effect: dropshadow(gaussian, rgba(71, 85, 105, 0.22), 12, 0, 0, 3); /* 按下时阴影略微收紧变暗 */
 }
 
 /* 文字颜色全部替换为上方导航栏的无色系（暗板岩灰） */
@@ -645,7 +675,24 @@
     -fx-text-fill: #0f172a;
 }
 
+.arena-casual .arena-desc, .arena-ranked .arena-desc {
+    -fx-text-fill: #94a3b8;
+}
+.arena-casual:hover .arena-desc, .arena-ranked:hover .arena-desc {
+    -fx-text-fill: #64748b;
+}
+
+.arena-desc {
+    -fx-font-size: 11px;
+    -fx-font-weight: normal;
+    -fx-padding: 4 16 0 16;
+}
+
 .mode-mark { -fx-font-size: 36px; -fx-text-fill: inherit; }
+
+.pixel-canvas {
+    -fx-mouse-transparent: true;
+}
 
 /* ---------- 侧边抽屉（排行榜）---------- */
 .side-drawer {

@@ -18,6 +18,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class Room {
     private static final Logger log = LoggerFactory.getLogger(Room.class);
@@ -50,6 +54,16 @@ public class Room {
     private boolean aiMode;
     private AIPlayer aiPlayer;
     private GameType gameType = GameType.NORMAL;
+
+    // 回合计时器
+    private static final int TURN_TIMEOUT_SECONDS = 30;
+    private static final ScheduledExecutorService turnTimerPool =
+            Executors.newScheduledThreadPool(2, r -> {
+                Thread t = new Thread(r, "turn-timer");
+                t.setDaemon(true);
+                return t;
+            });
+    private ScheduledFuture<?> turnTimerFuture;
 
     private static final RecordDAO recordDAO = new RecordDAO();
     private static final UserDAO userDAO = new UserDAO();
@@ -161,8 +175,12 @@ public class Room {
         if (removedFromPlayers) {
             log.info("Player {} left room {}: remaining players {}/2",
                     handler.getUserId(), roomId, players.size());
-            if (resetRoom && players.size() < 2) {
+            // 游戏已结束的房间不再重置，等待清理
+            if (status == Status.FINISHED) {
+                log.info("Room {} is finished, skip reset", roomId);
+            } else if (resetRoom && players.size() < 2) {
                 log.info("Room {} reset: less than 2 players, status changed to WAITING", roomId);
+                cancelTurnTimer();
                 status = Status.WAITING;
                 gameStarted = false;
                 game.reset();
@@ -273,6 +291,7 @@ public class Room {
                     roomId, blackUserId, whiteUserId, gameStartTime);
         }
 
+        startTurnTimer();
         return true;
     }
 
@@ -303,14 +322,20 @@ public class Room {
             );
 
             if (game.isFinished()) {
-                long winnerId = whiteUserId;
-                endGame(winnerId, "five_in_a_row");
+                int winnerColor = game.getWinner();
+                long winnerId = winnerColor == Game.EMPTY ? 0 : whiteUserId;
+                String reason = winnerColor == Game.EMPTY ? "draw" : "five_in_a_row";
+                String msg = winnerColor == Game.EMPTY ? "棋盘已满，平局" : "AI 获胜!";
+                endGame(winnerId, reason);
                 broadcastAll(
                         Protocol.GAME_OVER,
                         String.valueOf(winnerId),
-                        "AI 获胜!"
+                        msg
                 );
-                log.info("AI won in room {}: winner={}", roomId, winnerId);
+                log.info("AI game ended in room {}: winnerColor={}, winnerId={}, reason={}",
+                        roomId, winnerColor == Game.BLACK ? "BLACK" : winnerColor == Game.WHITE ? "WHITE" : "DRAW", winnerId, reason);
+            } else {
+                startTurnTimer(); // AI 走完后轮到人类，重新计时
             }
         }
     }
@@ -319,6 +344,7 @@ public class Room {
         log.info("endGame called for room {}: winnerId={}, reason={}, currentStatus={}",
                 roomId, winnerId, reason, status);
 
+        cancelTurnTimer();
         status = Status.FINISHED;
         gameStarted = false;
 
@@ -358,17 +384,10 @@ public class Room {
                     if (gameType == GameType.RANKED) {
                         updateRankedScore(winnerId, loserId, true);
                     } else {
-                        boolean winnerScoreUpdated = userDAO.updateScore(winnerId, 10);
+                        // 普通匹配只记录胜负场次，不增减积分
                         userDAO.updateWinCount(winnerId);
-                        boolean loserScoreUpdated = userDAO.updateScore(loserId, -5);
                         userDAO.updateLoseCount(loserId);
-
-                        if (winnerScoreUpdated && loserScoreUpdated) {
-                            log.info("Score updated successfully: winner={}(+10), loser={}(-5)", winnerId, loserId);
-                        } else {
-                            log.warn("Score update partially failed: winner={}(success={}), loser={}(success={})",
-                                    winnerId, winnerScoreUpdated, loserId, loserScoreUpdated);
-                        }
+                        log.info("Normal match result recorded: winner={}, loser={}", winnerId, loserId);
                     }
                 } else {
                     log.debug("Updating scores for draw: blackUserId={}, whiteUserId={}, gameType={}",
@@ -389,6 +408,30 @@ public class Room {
             }
         } else {
             log.info("AI mode: skipping score/win-loss update for room {}", roomId);
+        }
+
+        // 对局结束后主动推送双方最新积分到客户端
+        if (!aiMode) {
+            try {
+                UserDAO.UserInfo blackInfo = userDAO.getUserById(blackUserId);
+                UserDAO.UserInfo whiteInfo = userDAO.getUserById(whiteUserId);
+                for (ClientHandler handler : players) {
+                    long id = handler.getUserId();
+                    UserDAO.UserInfo info = id == blackUserId ? blackInfo : (id == whiteUserId ? whiteInfo : null);
+                    if (info != null) {
+                        handler.send(Protocol.USER_SCORE_UPDATE,
+                            String.valueOf(info.getScore()),
+                            String.valueOf(info.getWinCount()),
+                            String.valueOf(info.getLoseCount()),
+                            String.valueOf(info.getDrawCount()));
+                    }
+                }
+                log.info("Score update pushed to players in room {}: black={}(score={}), white={}(score={})",
+                        roomId, blackUserId, blackInfo != null ? blackInfo.getScore() : "N/A",
+                        whiteUserId, whiteInfo != null ? whiteInfo.getScore() : "N/A");
+            } catch (Exception e) {
+                log.error("Failed to push score update in room {}: {}", roomId, e.getMessage(), e);
+            }
         }
 
         try {
@@ -487,6 +530,7 @@ public class Room {
             drawRequesterId = null;
             pendingUndoActionId = null;
             pendingDrawActionId = null;
+            startTurnTimer();
 
             if (aiMode && !game.isFinished()) {
                 new Thread(() -> {
@@ -505,6 +549,38 @@ public class Room {
                     roomId, x, y, handler.getUserId());
         }
         return success;
+    }
+
+    // ==================== 回合计时器 ====================
+
+    private synchronized void startTurnTimer() {
+        cancelTurnTimer();
+        if (status != Status.PLAYING) return;
+
+        // AI 模式下只对人类玩家（黑方）计时，AI 几乎立即落子不需要计时
+        if (aiMode && game.getCurrentPlayer() != Game.BLACK) return;
+
+        long currentPlayerId = (game.getCurrentPlayer() == Game.BLACK) ? blackUserId : whiteUserId;
+        log.debug("Starting turn timer for room {}: currentPlayer={}, timeout={}s", roomId, currentPlayerId, TURN_TIMEOUT_SECONDS);
+
+        turnTimerFuture = turnTimerPool.schedule(() -> {
+            synchronized (Room.this) {
+                if (status != Status.PLAYING) return;
+                long timedOutPlayerId = (game.getCurrentPlayer() == Game.BLACK) ? blackUserId : whiteUserId;
+                long winnerId = (timedOutPlayerId == blackUserId) ? whiteUserId : blackUserId;
+                log.info("Turn timeout in room {}: player {} ran out of time, winner={}", roomId, timedOutPlayerId, winnerId);
+                endGame(winnerId, "timeout");
+                broadcastAll(Protocol.TURN_TIMEOUT, String.valueOf(winnerId));
+            }
+        }, TURN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    }
+
+    private synchronized void cancelTurnTimer() {
+        if (turnTimerFuture != null && !turnTimerFuture.isDone()) {
+            turnTimerFuture.cancel(false);
+            turnTimerFuture = null;
+            log.debug("Turn timer cancelled for room {}", roomId);
+        }
     }
 
     public synchronized boolean requestUndo(long requesterId) {
@@ -527,6 +603,13 @@ public class Room {
 
         if (!isValidPlayer(requesterId)) {
             log.warn("requestUndo rejected: {} is not a valid player", requesterId);
+            return false;
+        }
+
+        // 只有当前回合方（尚未落子的一方）才能请求悔棋
+        int requesterColor = (requesterId == blackUserId) ? Game.BLACK : Game.WHITE;
+        if (game.getCurrentPlayer() != requesterColor) {
+            log.warn("requestUndo rejected: requester {} is not the current player", requesterId);
             return false;
         }
 
@@ -555,16 +638,19 @@ public class Room {
         }
 
         if (accept) {
-            boolean success = game.undo();
-            if (success) {
-                log.info("Undo accepted by {} in room {}", replierId, roomId);
-                if (pendingUndoActionId != null) {
-                    gameActionDAO.updateActionStatus(pendingUndoActionId, "accepted");
-                }
+            // 撤销两步：对手最后一步 + 请求者上一步
+            int movesBefore = game.getMoveCount();
+            game.undo(); // 撤销对手的最后一步
+            game.undo(); // 撤销请求者的上一步
+            log.info("Undo accepted by {} in room {}: reverted {} moves",
+                    replierId, roomId, movesBefore - game.getMoveCount());
+            if (pendingUndoActionId != null) {
+                gameActionDAO.updateActionStatus(pendingUndoActionId, "accepted");
             }
             undoRequesterId = null;
             pendingUndoActionId = null;
-            return success;
+            startTurnTimer(); // 悔棋后回合变更，重新计时
+            return true;
         } else {
             log.info("Undo rejected by {} in room {}", replierId, roomId);
             if (pendingUndoActionId != null) {
@@ -805,6 +891,22 @@ public class Room {
         log.debug("broadcastAll completed for room {}", roomId);
     }
 
+    /**
+     * 向除指定玩家外的所有人广播（用于悔棋/求和请求等场景，避免请求者自己也收到弹窗）
+     */
+    public synchronized void broadcastToPlayersExcept(long excludeUserId, String... msg) {
+        String message = com.gomatch.common.Protocol.build(msg);
+        log.debug("broadcastToPlayersExcept room {}: exclude={}, message={}", roomId, excludeUserId, message);
+
+        for (ClientHandler player : players) {
+            if (player != null && player.getUserId() != excludeUserId) {
+                player.send(message);
+            }
+        }
+        // 观战者也应该看到请求通知
+        broadcastToObservers(msg);
+    }
+
     public synchronized void sendToPlayer(ClientHandler handler, String... msg) {
         log.debug("sendToPlayer room {}: handler={}, message parts={}",
                 roomId, handler != null ? handler.getUserId() : "null", msg.length);
@@ -833,6 +935,8 @@ public class Room {
         log.debug("getRoomListInfo called: room count={}", rooms.size());
         List<String[]> list = new ArrayList<>();
         for (Room room : rooms.values()) {
+            // 不对外暴露已结束的房间
+            if (room.getStatus() == Status.FINISHED) continue;
             list.add(new String[]{
                 room.getRoomId(),
                 room.getRoomName(),

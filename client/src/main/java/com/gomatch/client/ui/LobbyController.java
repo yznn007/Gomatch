@@ -133,6 +133,18 @@ public class LobbyController implements NetworkListener {
                     drawerRanks.add(args[i] + ". " + args[i + 1] + "  " + args[i + 2]);
                 }
             }
+        } else if (Protocol.USER_SCORE_UPDATE.equals(command)) {
+            if (args.length >= 4 && currentUser != null) {
+                currentUser.setScore(Integer.parseInt(args[0]));
+                currentUser.setWinCount(Integer.parseInt(args[1]));
+                currentUser.setLoseCount(Integer.parseInt(args[2]));
+                currentUser.setDrawCount(Integer.parseInt(args[3]));
+                if (currentUser.getScore() > 0) {
+                    userScoreLabel.setText(currentUser.getScore() + " 分");
+                } else {
+                    userScoreLabel.setText("未定级");
+                }
+            }
         }
     }
 }

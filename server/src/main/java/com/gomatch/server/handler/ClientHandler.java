@@ -226,6 +226,13 @@ public class ClientHandler implements Runnable {
 
         UserDAO.UserInfo userInfo = userDAO.login(username, password);
         if (userInfo != null) {
+            SessionManager.Session existingSession = sessionManager.getSessionByUserId(userInfo.getUserId());
+            if (existingSession != null && existingSession.handler != null) {
+                send(Protocol.LOGIN_FAIL, "该账号已在其他设备登录");
+                log.warn("登录失败: 用户 {} 已在线", username);
+                return;
+            }
+
             this.userId = userInfo.getUserId();
             this.username = userInfo.getUsername();
             this.authenticated = true;
@@ -383,7 +390,7 @@ public class ClientHandler implements Runnable {
         room.startGame();
         room.broadcastAll(
                 Protocol.GAME_START,
-                getUsername(),
+                String.valueOf(userId),
                 "AI"
         );
 
@@ -639,15 +646,18 @@ public class ClientHandler implements Runnable {
 
         if (currentRoom.isGameOver()) {
             long winnerId = currentRoom.getWinnerId();
-            currentRoom.endGame(winnerId, "five_in_a_row");
+            boolean isDraw = winnerId == 0;
+            String reason = isDraw ? "board_full" : "five_in_a_row";
+            String msg = isDraw ? "棋盘已满，平局" : "五子连珠!";
+            currentRoom.endGame(winnerId, reason);
 
             currentRoom.broadcastAll(
                 Protocol.GAME_OVER,
                 String.valueOf(winnerId),
-                "五子连珠!"
+                msg
             );
 
-            log.info("Game over in room {}: winner={}", currentRoom.getRoomId(), winnerId);
+            log.info("Game over in room {}: winner={}, reason={}", currentRoom.getRoomId(), winnerId, reason);
         } else if (currentRoom.isAiMode()) {
             log.info("Calling makeAiMove() for room {}", currentRoom.getRoomId());
             currentRoom.makeAiMove();
@@ -860,7 +870,8 @@ public class ClientHandler implements Runnable {
 
         boolean success = currentRoom.requestUndo(userId);
         if (success) {
-            currentRoom.broadcastAll(
+            // 只通知对手，不通知请求者本人
+            currentRoom.broadcastToPlayersExcept(userId,
                 "UNDO_REQUESTED",
                 String.valueOf(userId),
                 getUsername()
@@ -934,7 +945,8 @@ public class ClientHandler implements Runnable {
 
         boolean success = currentRoom.requestDraw(userId);
         if (success) {
-            currentRoom.broadcastAll(
+            // 只通知对手，不通知请求者本人
+            currentRoom.broadcastToPlayersExcept(userId,
                 "DRAW_REQUESTED",
                 String.valueOf(userId),
                 getUsername()

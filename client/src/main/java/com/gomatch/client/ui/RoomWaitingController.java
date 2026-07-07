@@ -73,9 +73,11 @@ public class RoomWaitingController implements NetworkListener {
         this.roomInfo    = room;
         this.currentUser = user;
         roomTitleLabel.setText("房间: " + room.getRoomName() + " (#" + room.getRoomId() + ")");
-        players.add(user.getUsername());
+        if (user != null) {
+            players.add(user.getUsername());
+        }
         playerList.setItems(players);
-        if (user.getUsername().equals(room.getOwnerName()) || previewMode) {
+        if (user != null && (user.getUsername().equals(room.getOwnerName()) || previewMode)) {
             startBtn.setVisible(true);
         }
         // 非预览模式才注册网络监听（时序已由 ScreenManager.clearListeners + 先 setPreviewMode 保证）
@@ -103,7 +105,9 @@ public class RoomWaitingController implements NetworkListener {
         }
         // 返回大厅时传递用户信息
         LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
-        ctrl.setCurrentUser(currentUser);
+        if (currentUser != null) {
+            ctrl.setCurrentUser(currentUser);
+        }
         ctrl.setPreviewMode(previewMode);
     }
 

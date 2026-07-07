@@ -31,6 +31,7 @@ public class CasualLobbyController implements NetworkListener {
     @FXML private Button menuSpectateBtn;
     @FXML private VBox roomsPane;
     @FXML private VBox spectatePane;
+    @FXML private Label statusLabel;
 
     private final ObservableList<RoomInfo> roomData    = FXCollections.observableArrayList();
     private final ObservableList<String>   spectateData = FXCollections.observableArrayList();
@@ -154,6 +155,7 @@ public class CasualLobbyController implements NetworkListener {
             return;
         }
         ClientMain.getConnector().send(Protocol.QUICK_MATCH);
+        setStatus("正在匹配中，请稍候...", true);
     }
 
     @FXML
@@ -174,12 +176,15 @@ public class CasualLobbyController implements NetworkListener {
     @FXML
     private void handleBack() {
         LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
-        ctrl.setCurrentUser(currentUser);
+        if (currentUser != null) {
+            ctrl.setCurrentUser(currentUser);
+        }
         ctrl.setPreviewMode(previewMode);
     }
 
     @FXML
     private void handleRefresh() {
+        setStatus("", false);
         if (previewMode) {
             roomData.clear();
             roomData.addAll(
@@ -196,6 +201,14 @@ public class CasualLobbyController implements NetworkListener {
     private void showAlert(String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION, msg);
         alert.showAndWait();
+    }
+
+    private void setStatus(String text, boolean visible) {
+        if (statusLabel != null) {
+            statusLabel.setText(text);
+            statusLabel.setVisible(visible);
+            statusLabel.setManaged(visible);
+        }
     }
 
     @Override
@@ -220,6 +233,7 @@ public class CasualLobbyController implements NetworkListener {
                 .map(r -> "#" + r.getRoomId() + " " + r.getRoomName() + "  玩家: " + r.getPlayerCount() + "/2")
                 .collect(Collectors.toList()));
         } else if (Protocol.JOIN_OK.equals(command)) {
+            setStatus("", false);
             RoomInfo room = new RoomInfo();
             if (args.length > 0) room.setRoomId(args[0]);
             if (args.length > 1) room.setRoomName(args[1]);
@@ -231,12 +245,23 @@ public class CasualLobbyController implements NetworkListener {
             }
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
             ctrl.setPreviewMode(false);
-            ctrl.setRoomInfo(room, currentUser);
+            ctrl.setRoomInfo(room, currentUser != null ? currentUser : new com.gomatch.client.model.User());
         } else if (Protocol.JOIN_FAIL.equals(command)) {
             showAlert("加入失败: " + args[0]);
         } else if (Protocol.GAME_START.equals(command)) {
+            setStatus("", false);
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-            ctrl.setGameInfo(args[0], args[1], currentUser.getUsername());
+            ctrl.setGameInfo(args[0], args[1], currentUser != null ? currentUser.getUsername() : "unknown");
+        } else if (Protocol.ERROR.equals(command)) {
+            String msg = args.length > 0 ? args[0] : "未知错误";
+            if (msg.contains("等待对手")) {
+                int idx = msg.lastIndexOf('(');
+                String suffix = idx >= 0 ? " " + msg.substring(idx) : "";
+                setStatus("等待对手中..." + suffix, true);
+            } else {
+                setStatus("", false);
+                showAlert(msg);
+            }
         }
     }
 }

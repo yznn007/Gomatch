@@ -2,44 +2,59 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import com.gomatch.client.ui.PixelCard?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.gomatch.client.ui.AiLobbyController"
-            styleClass="page-root">
+            styleClass="page-root"
+            style="-fx-padding: 10 32 24 32;">
     <top>
-        <VBox spacing="0">
-            <HBox alignment="CENTER_LEFT" spacing="18">
+        <VBox spacing="0" cache="true" cacheHint="QUALITY" viewOrder="-2.0">
+            <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 0 0 4 0;">
                 <Button text="« 返回" onMouseClicked="#handleBack" styleClass="icon-btn"/>
-                <Label text="AI 对战" styleClass="title"/>
+                <Label text="AI 对战难度" styleClass="title"/>
             </HBox>
-            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+            <Separator styleClass="section-divider" prefWidth="Infinity" mouseTransparent="true"/>
         </VBox>
     </top>
     <center>
-        <VBox styleClass="page-root" spacing="24" alignment="CENTER">
-            <Region VBox.vgrow="ALWAYS"/>
-            
-            <VBox styleClass="card-padded" spacing="20" prefWidth="400">
-                <Label text="选择难度" styleClass="section-label"/>
+        <VBox styleClass="page-root" spacing="0" alignment="CENTER" style="-fx-padding: 16 0 16 0;">
+            <HBox styleClass="lobby-center" spacing="36" alignment="CENTER" VBox.vgrow="ALWAYS">
+                <!-- 简单 -->
+                <PixelCard variant="blue" styleClass="arena-btn, arena-casual, arena-match" onMouseClicked="#handleEasy"
+                           HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
+                    <VBox alignment="CENTER" spacing="12">
+                        <Label text="🌱" styleClass="arena-icon"/>
+                        <Label text="简  单" styleClass="arena-title"/>
+                        <Label text="EASY" styleClass="arena-sub"/>
+                        <Label text="AI 会做出基础的防守和进攻&#10;适合新手入门练习" styleClass="arena-desc" wrapText="true" textAlignment="CENTER"/>
+                    </VBox>
+                </PixelCard>
                 
-                <VBox spacing="12">
-                    <Button text="简单" onAction="#handleEasy"
-                            styleClass="btn-primary" prefWidth="Infinity" style="-fx-font-size: 16px;"/>
-                    <Label text="AI 会做出基础的防守和进攻，适合新手练习" styleClass="subtitle" style="-fx-padding: 0 0 8 0;"/>
-                    
-                    <Button text="中等" onAction="#handleMedium"
-                            styleClass="btn-primary" prefWidth="Infinity" style="-fx-font-size: 16px;"/>
-                    <Label text="AI 会评估局势，做出策略性选择，有一定挑战性" styleClass="subtitle" style="-fx-padding: 0 0 8 0;"/>
-                    
-                    <Button text="困难" onAction="#handleHard"
-                            styleClass="btn-primary" prefWidth="Infinity" style="-fx-font-size: 16px;"/>
-                    <Label text="AI 采用启发式评分算法，难以战胜" styleClass="subtitle"/>
-                </VBox>
-            </VBox>
+                <!-- 中等 -->
+                <PixelCard variant="yellow" styleClass="arena-btn, arena-casual, arena-ai" onMouseClicked="#handleMedium"
+                           HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
+                    <VBox alignment="CENTER" spacing="12">
+                        <Label text="⚡" styleClass="arena-icon"/>
+                        <Label text="中  等" styleClass="arena-title"/>
+                        <Label text="MEDIUM" styleClass="arena-sub"/>
+                        <Label text="AI 会评估局势做出策略选择&#10;具备一定挑战性" styleClass="arena-desc" wrapText="true" textAlignment="CENTER"/>
+                    </VBox>
+                </PixelCard>
+                
+                <!-- 困难 -->
+                <PixelCard variant="pink" styleClass="arena-btn, arena-ranked" onMouseClicked="#handleHard"
+                           HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
+                    <VBox alignment="CENTER" spacing="12">
+                        <Label text="🔥" styleClass="arena-icon"/>
+                        <Label text="困  难" styleClass="arena-title"/>
+                        <Label text="HARD" styleClass="arena-sub"/>
+                        <Label text="AI 采用启发式评分算法&#10;智商极高，难以战胜" styleClass="arena-desc" wrapText="true" textAlignment="CENTER"/>
+                    </VBox>
+                </PixelCard>
+            </HBox>
             
-            <Label fx:id="matchStatus" text="" styleClass="subtitle" style="-fx-padding: 10 0 0 0;"/>
-            
-            <Region VBox.vgrow="ALWAYS"/>
+            <Label fx:id="matchStatus" text="" styleClass="subtitle" style="-fx-padding: 16 0 0 0;"/>
         </VBox>
     </center>
 </BorderPane>

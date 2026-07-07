@@ -37,6 +37,8 @@
                             <Region HBox.hgrow="ALWAYS"/>
                             <Button text="刷新" onAction="#handleRefresh" styleClass="btn-secondary"/>
                         </HBox>
+                        <Label fx:id="statusLabel" text="" visible="false" managed="false"
+                               style="-fx-text-fill: #64748b; -fx-font-size: 13px; -fx-padding: 4 0 0 0;"/>
                         <TableView fx:id="roomTable" prefHeight="320" minHeight="240" styleClass="table-view" editable="false">
                             <columns>
                                 <TableColumn text="房间号" fx:id="roomIdCol" prefWidth="90"/>

@@ -127,39 +127,54 @@ public class RoomManager {
     // ==================== 快速匹配（Redis队列）====================
 
     public Room quickMatch(ClientHandler player) {
-        log.info("玩家 {} 加入快速匹配队列", player.getUserId());
+        log.info("玩家 {} 请求快速匹配", player.getUserId());
         SessionManager.Session session = SessionManager.getInstance().getSessionByUserId(player.getUserId());
         int score = session != null ? session.score : 1000;
-        RedisManager.getInstance().addMatchQueue(player.getUserId(), score);
 
-        String opponentData = RedisManager.getInstance().pollMatchQueue();
-        if (opponentData != null) {
+        // 先尝试从队列中取出等待的玩家，避免把自己刚 push 进去的元素 pop 出来
+        while (true) {
+            String opponentData = RedisManager.getInstance().pollMatchQueue();
+            if (opponentData == null) {
+                break;
+            }
+
             String[] parts = opponentData.split(":");
-            if (parts.length >= 2) {
-                long opponentId = Long.parseLong(parts[0]);
-                int opponentScore = Integer.parseInt(parts[1]);
+            if (parts.length < 2) {
+                continue;
+            }
 
-                if (opponentId != player.getUserId()) {
-                    ClientHandler opponentHandler = findClientHandler(opponentId);
-                    if (opponentHandler != null) {
-                        String roomName = "快速匹配 #" + (getActiveRoomCount() + 1);
-                        Room room = createRoom(roomName, player);
-                        
-                        room.join(opponentHandler);
-                        player.setCurrentRoom(room);
-                        opponentHandler.setCurrentRoom(room);
-                        room.startGame();
+            long opponentId = Long.parseLong(parts[0]);
+            int opponentScore = Integer.parseInt(parts[1]);
 
-                        log.info("快速匹配成功: 玩家 {} vs 玩家 {}", 
-                                player.getUserId(), opponentId);
-                        return room;
-                    } else {
-                        log.warn("对手已离线: userId={}", opponentId);
-                    }
-                }
+            if (opponentId == player.getUserId()) {
+                // 队列中只有该玩家自己，重新放回并继续等待
+                RedisManager.getInstance().addMatchQueue(player.getUserId(), score);
+                log.info("快速匹配队列仅含自己，继续等待: userId={}", player.getUserId());
+                return null;
+            }
+
+            ClientHandler opponentHandler = findClientHandler(opponentId);
+            if (opponentHandler != null) {
+                String roomName = "快速匹配 #" + (getActiveRoomCount() + 1);
+                Room room = createRoom(roomName, player);
+
+                room.join(opponentHandler);
+                player.setCurrentRoom(room);
+                opponentHandler.setCurrentRoom(room);
+                room.startGame();
+
+                log.info("快速匹配成功: 玩家 {}(score={}) vs 玩家 {}(score={})",
+                        player.getUserId(), score, opponentId, opponentScore);
+                return room;
+            } else {
+                log.warn("对手已离线，继续寻找: userId={}", opponentId);
+                // 继续循环，尝试下一个等待的玩家
             }
         }
 
+        // 没有可用对手，把自己加入队列等待
+        RedisManager.getInstance().addMatchQueue(player.getUserId(), score);
+        log.info("玩家 {} 进入快速匹配队列等待", player.getUserId());
         return null;
     }
 
@@ -258,9 +273,15 @@ public class RoomManager {
     public void leaveRoom(ClientHandler player) {
         Room room = player.getCurrentRoom();
         if (room != null) {
+            String roomId = room.getRoomId();
             room.leave(player);
-            log.info("玩家 {} 离开房间 {}", player.getUserId(), room.getRoomId());
+            log.info("玩家 {} 离开房间 {}", player.getUserId(), roomId);
             player.setCurrentRoom(null);
+            // 游戏已结束且无玩家时，自动清理房间
+            if (room.getStatus() == Room.Status.FINISHED && room.getPlayerCount() == 0) {
+                removeRoom(roomId);
+                log.info("房间 {} 已结束且无玩家，自动清理", roomId);
+            }
         }
     }
 }

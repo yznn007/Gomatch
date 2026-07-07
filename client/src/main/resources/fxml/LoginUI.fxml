@@ -35,7 +35,7 @@
 
                 <!-- 记住我 与 忘记密码 行 -->
                 <HBox spacing="10" alignment="CENTER_LEFT" prefWidth="320" maxWidth="320">
-                    <CheckBox text="记住密码" styleClass="remember-checkbox"/>
+                    <CheckBox fx:id="rememberCheckBox" text="记住密码" styleClass="remember-checkbox"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Button text="忘记密码？" styleClass="btn-link" style="-fx-font-size: 13px; -fx-padding: 0;"/>
                 </HBox>

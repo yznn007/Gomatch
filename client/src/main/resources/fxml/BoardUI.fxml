@@ -23,9 +23,10 @@
             
             <!-- 侧边栏内容 VBox -->
             <VBox fx:id="sidebarContent" spacing="12" prefWidth="220" minWidth="150" maxWidth="400" style="-fx-padding: 0 0 0 10;">
-                <Label fx:id="blackLabel" text="黑方" styleClass="section-label"/>
+                <Label fx:id="blackLabel" text="黑方" styleClass="subtitle"/>
                 <Label fx:id="whiteLabel" text="白方" styleClass="subtitle"/>
                 <Label fx:id="turnLabel" text="当前回合: 黑方" styleClass="subtitle"/>
+                <Label fx:id="timerLabel" text="剩余: 30s" styleClass="timer-label"/>
                 <Separator styleClass="section-divider" prefWidth="Infinity"/>
                 <Label text="聊天" styleClass="section-label" style="-fx-padding: 8 0;"/>
                 

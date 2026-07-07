@@ -26,14 +26,15 @@ public class ShapeGridBackground extends Pane {
     private static final int CELL_SIZE = 65; // 点阵间距稍微拉开一点
     private static final double MAX_REACTION_DIST = 180.0; // 鼠标影响半径
     
-    // 向左上角滚动的速度（像素/帧）
-    private static final double SPEED_X = 0.28; 
-    private static final double SPEED_Y = 0.28;
+    // 向左上角滚动的速度（每秒像素数，代替原先的每帧固定像素，确保流速恒定）
+    private static final double SPEED_X_PER_SEC = 17.0; 
+    private static final double SPEED_Y_PER_SEC = 17.0;
 
     // 扁平点阵数据与无缝包裹尺寸
     private GridPoint[] points;
     private double totalWidth = 0;
     private double totalHeight = 0;
+    private long lastTime = 0;
 
     public ShapeGridBackground() {
         canvas = new Canvas();
@@ -50,13 +51,26 @@ public class ShapeGridBackground extends Pane {
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                if (points == null) return;
-                
+                if (points == null) {
+                    lastTime = now;
+                    return;
+                }
+                if (lastTime == 0) {
+                    lastTime = now;
+                }
+                double dt = (now - lastTime) / 1_000_000_000.0;
+                lastTime = now;
+
+                // 限制最大帧时间，避免挂起后产生突跃
+                if (dt > 0.1) {
+                    dt = 0.1;
+                }
+
                 // 缓动鼠标位置，让轨迹跟随更平滑
                 mouseX += (targetMouseX - mouseX) * 0.15;
                 mouseY += (targetMouseY - mouseY) * 0.15;
 
-                updateAndRender();
+                updateAndRender(dt);
             }
         };
         timer.start();
@@ -99,16 +113,19 @@ public class ShapeGridBackground extends Pane {
         }
     }
 
-    private void updateAndRender() {
+    private void updateAndRender(double dt) {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+
+        double moveX = SPEED_X_PER_SEC * dt;
+        double moveY = SPEED_Y_PER_SEC * dt;
 
         for (GridPoint p : points) {
             if (p == null) continue;
 
-            // 1. 无缝向左上角移动
-            p.x -= SPEED_X;
-            p.y -= SPEED_Y;
+            // 1. 无缝向左上角移动 (基于时间步长)
+            p.x -= moveX;
+            p.y -= moveY;
 
             // 越界向右下角包裹
             if (p.x < -CELL_SIZE) {

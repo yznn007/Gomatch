@@ -5,10 +5,12 @@ import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Protocol;
+import com.gomatch.client.ui.LobbyController;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.fxml.FXML;
-import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
@@ -18,6 +20,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
+import javafx.util.Duration;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -33,6 +36,7 @@ public class BoardController implements NetworkListener {
     @FXML private Label blackLabel;
     @FXML private Label whiteLabel;
     @FXML private Label turnLabel;
+    @FXML private Label timerLabel;
     @FXML private TextArea chatArea;
     @FXML private TextField chatInput;
     @FXML private Button undoBtn;
@@ -71,6 +75,10 @@ public class BoardController implements NetworkListener {
     private int replayIndex = 0;
     private String lastLocalChat;
     private long lastLocalChatTime;
+
+    // 本地倒计时
+    private Timeline countdownTimeline;
+    private int remainingSeconds;
 
     @FXML
     private void initialize() {
@@ -261,7 +269,6 @@ public class BoardController implements NetworkListener {
         }
         int color = myColor.equals("black") ? 1 : 2;
         drawStone(x, y, color);
-        moveHistory.add(new int[]{x, y, color});
         myTurn = false;
         updateTurnLabel();
         ClientMain.getConnector().send(Protocol.MOVE, String.valueOf(x), String.valueOf(y));
@@ -346,6 +353,50 @@ public class BoardController implements NetworkListener {
         } else {
             turnLabel.setText("当前回合: 白方 (" + whiteName + ")");
         }
+        updatePlayerLabelStyles();
+    }
+
+    private void updatePlayerLabelStyles() {
+        if (blackLabel == null || whiteLabel == null) return;
+        if (currentTurn == 1) {
+            blackLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #334155;");
+            whiteLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: normal; -fx-text-fill: #64748b;");
+        } else {
+            blackLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: normal; -fx-text-fill: #64748b;");
+            whiteLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #334155;");
+        }
+    }
+
+    private void startCountdown() {
+        stopCountdown();
+        remainingSeconds = AppConfig.TURN_TIME_LIMIT;
+        updateTimerLabel();
+        countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
+            remainingSeconds--;
+            updateTimerLabel();
+            if (remainingSeconds <= 0) {
+                stopCountdown();
+            }
+        }));
+        countdownTimeline.setCycleCount(AppConfig.TURN_TIME_LIMIT);
+        countdownTimeline.play();
+    }
+
+    private void stopCountdown() {
+        if (countdownTimeline != null) {
+            countdownTimeline.stop();
+            countdownTimeline = null;
+        }
+    }
+
+    private void updateTimerLabel() {
+        if (timerLabel == null) return;
+        timerLabel.setText("剩余: " + remainingSeconds + "s");
+        if (remainingSeconds <= 10) {
+            timerLabel.setStyle("-fx-text-fill: #dc2626; -fx-font-size: 18px; -fx-font-weight: bold;");
+        } else {
+            timerLabel.setStyle("-fx-text-fill: #334155; -fx-font-size: 18px; -fx-font-weight: bold;");
+        }
     }
 
     @FXML
@@ -361,8 +412,7 @@ public class BoardController implements NetworkListener {
     @FXML
     private void handleSurrender() {
         if (previewMode) {
-            GameOverController ctrl = ScreenManager.showDialog("/fxml/GameOverUI.fxml");
-            ctrl.setResult("2", "预览模式 - 平局");
+            ScreenManager.showDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult("2", "预览模式 - 平局"));
             return;
         }
         ClientMain.getConnector().send(Protocol.SURRENDER);
@@ -463,7 +513,8 @@ public class BoardController implements NetworkListener {
 
     @FXML
     private void handleReplayExit() {
-        ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        ctrl.setCurrentUser(AppConfig.getCurrentUser());
     }
 
 
@@ -474,6 +525,7 @@ public class BoardController implements NetworkListener {
             if (args.length >= 2) {
                 setGameInfo(args[0], args[1], myUsername);
             }
+            startCountdown();
         } else if (Protocol.MOVE_SYNC.equals(command)) {
             int x     = Integer.parseInt(args[0]);
             int y     = Integer.parseInt(args[1]);
@@ -484,16 +536,18 @@ public class BoardController implements NetworkListener {
             myTurn = (myColor.equals("black") && currentTurn == 1) ||
                      (myColor.equals("white") && currentTurn == 2);
             updateTurnLabel();
+            startCountdown();
         } else if (Protocol.GAME_OVER.equals(command)) {
             gameOver = true;
             myTurn = false;
+            stopCountdown();
             String winnerId = args[0];
             String reason = args.length > 1 ? args[1] : "";
             String result;
             if ("0".equals(winnerId)) {
                 result = "平局";
             } else if (aiMode && "-1".equals(winnerId)) {
-                result = "对手胜";
+                result = "白方胜";
             } else if ("black".equals(myColor) && blackName.equals(winnerId)) {
                 result = "黑方胜";
             } else if ("white".equals(myColor) && whiteName.equals(winnerId)) {
@@ -506,8 +560,7 @@ public class BoardController implements NetworkListener {
                 result = "游戏结束";
             }
             updateTurnLabel();
-            GameOverController ctrl = ScreenManager.showDialog("/fxml/GameOverUI.fxml");
-            ctrl.setResult(result, reason);
+            ScreenManager.showDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult(result, reason));
         } else if (Protocol.CHAT_MSG.equals(command)) {
             String username = args.length > 1 ? args[1] : args[0];
             String message = args.length > 2 ? args[2] : "";
@@ -522,28 +575,31 @@ public class BoardController implements NetworkListener {
         } else if ("UNDO_REQUESTED".equals(command)) {
             chatArea.appendText("[系统] 玩家 " + args[1] + " 请求悔棋\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
-        } else if ("UNDO_ACCEPTED".equals(command)) {
-            if (aiMode) {
-                // AI 模式撤销两步：AI 的落子 + 玩家的上一步
-                if (moveHistory.size() >= 2) {
-                    int[] aiMove = moveHistory.remove(moveHistory.size() - 1);
-                    board[aiMove[0]][aiMove[1]] = 0;
-                    int[] myMove = moveHistory.remove(moveHistory.size() - 1);
-                    board[myMove[0]][myMove[1]] = 0;
-                    currentTurn = myMove[2]; // 回到玩家回合
-                    myTurn = true;
-                    updateTurnLabel();
-                    redrawAll();
+            // 弹出确认对话框
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("悔棋请求");
+            alert.setHeaderText("玩家 " + args[1] + " 请求悔棋");
+            alert.setContentText("是否同意悔棋？");
+            alert.showAndWait().ifPresent(response -> {
+                if (response == ButtonType.OK) {
+                    ClientMain.getConnector().send(Protocol.REPLY_UNDO, "1");
+                } else {
+                    ClientMain.getConnector().send(Protocol.REPLY_UNDO, "0");
                 }
-            } else if (!moveHistory.isEmpty()) {
-                int[] last = moveHistory.remove(moveHistory.size() - 1);
-                board[last[0]][last[1]] = 0;
-                currentTurn = last[2];
+            });
+        } else if ("UNDO_ACCEPTED".equals(command)) {
+            if (moveHistory.size() >= 2) {
+                int[] opponentMove = moveHistory.remove(moveHistory.size() - 1);
+                board[opponentMove[0]][opponentMove[1]] = 0;
+                int[] myMove = moveHistory.remove(moveHistory.size() - 1);
+                board[myMove[0]][myMove[1]] = 0;
+                currentTurn = myMove[2]; // 回到请求悔棋者的回合
                 myTurn = (myColor.equals("black") && currentTurn == 1) ||
                          (myColor.equals("white") && currentTurn == 2);
                 updateTurnLabel();
                 redrawAll();
             }
+            startCountdown();
             chatArea.appendText("[系统] 悔棋成功\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
         } else if ("UNDO_REJECTED".equals(command)) {
@@ -552,9 +608,41 @@ public class BoardController implements NetworkListener {
         } else if ("DRAW_REQUESTED".equals(command)) {
             chatArea.appendText("[系统] 玩家 " + args[1] + " 请求求和\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
+            // 弹出确认对话框
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("求和请求");
+            alert.setHeaderText("玩家 " + args[1] + " 请求求和");
+            alert.setContentText("是否同意平局？");
+            alert.showAndWait().ifPresent(response -> {
+                if (response == ButtonType.OK) {
+                    ClientMain.getConnector().send(Protocol.REPLY_DRAW, "1");
+                } else {
+                    ClientMain.getConnector().send(Protocol.REPLY_DRAW, "0");
+                }
+            });
         } else if ("DRAW_REJECTED".equals(command)) {
             chatArea.appendText("[系统] 对手拒绝求和\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
+        } else if (Protocol.TURN_TIMEOUT.equals(command)) {
+            gameOver = true;
+            stopCountdown();
+            // 超时的是当前回合方 → myTurn=true 表示我超时
+            String result = myTurn ? "超时负" : "对手超时";
+            myTurn = false;
+            updateTurnLabel();
+            ScreenManager.showDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult(result, "timeout"));
+            chatArea.appendText("[系统] " + result + "\n");
+            chatArea.setScrollTop(Double.MAX_VALUE);
+        } else if (Protocol.USER_SCORE_UPDATE.equals(command)) {
+            if (args.length >= 4) {
+                User cu = AppConfig.getCurrentUser();
+                if (cu != null) {
+                    cu.setScore(Integer.parseInt(args[0]));
+                    cu.setWinCount(Integer.parseInt(args[1]));
+                    cu.setLoseCount(Integer.parseInt(args[2]));
+                    cu.setDrawCount(Integer.parseInt(args[3]));
+                }
+            }
         }
     }
 
