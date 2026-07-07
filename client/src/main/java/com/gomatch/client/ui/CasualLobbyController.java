@@ -132,7 +132,17 @@ public class CasualLobbyController implements NetworkListener {
             ctrl.setRoomInfo(room, currentUser);
             return;
         }
-        ClientMain.getConnector().send(Protocol.JOIN_ROOM, room.getRoomId(), "");
+        if (room.isHasPassword()) {
+            TextInputDialog dialog = new TextInputDialog();
+            dialog.setTitle("密码验证");
+            dialog.setHeaderText("该房间需要密码");
+            dialog.setContentText("请输入房间密码:");
+            dialog.showAndWait().ifPresent(password ->
+                ClientMain.getConnector().send(Protocol.JOIN_ROOM, room.getRoomId(), password.trim())
+            );
+        } else {
+            ClientMain.getConnector().send(Protocol.JOIN_ROOM, room.getRoomId(), "");
+        }
     }
 
     @FXML
@@ -192,15 +202,16 @@ public class CasualLobbyController implements NetworkListener {
     public void onMessage(String command, String[] args) {
         if (Protocol.RANKING_LIST.equals(command)) {
             roomData.clear();
-            for (int i = 0; i < args.length; i += 5) {
-                if (i + 4 < args.length) {
+            for (int i = 0; i < args.length; i += 6) {
+                if (i + 5 < args.length) {
                     RoomInfo room = new RoomInfo();
                     room.setRoomId(args[i]);
                     room.setRoomName(args[i + 1]);
                     room.setStatus(args[i + 2]);
                     String[] players = args[i + 3].split("/");
                     room.setPlayerCount(Integer.parseInt(players[0]));
-                    room.setHasPassword("1".equals(args[i + 4]));
+                    // args[i+4] is max (always "2"), skip
+                    room.setHasPassword("1".equals(args[i + 5]));
                     roomData.add(room);
                 }
             }
