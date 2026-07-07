@@ -179,5 +179,7 @@
 | 2026-07-06 | Contributor| GomokuAI 启发式评分 |
 | 2026-07-06 | Contributor| |
 | 2026-07-06 | Contributor| 采用可编辑的 ComboBox，解耦本地存储路径，并适配项目磨砂极简风格的 MessageDialogUI 弹窗 |
+| 2026-07-07 | Contributor| 1. 登录页新增服务器配置独立二级弹窗(ServerConfigDialogUI)；2. 将连接逻辑迁移至后台守护线程，去除嵌套弹窗，彻底解决 JavaFX 主线程卡死；3. 修复服务端断开连接后 connectionCount 不递减导致达 100 限制后拒绝服务的 Bug |
+
 
 

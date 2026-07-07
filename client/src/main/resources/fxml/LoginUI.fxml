@@ -8,15 +8,16 @@
             styleClass="page-root">
     <center>
         <HBox spacing="40" alignment="CENTER">
-            <!-- Left: brand area (minimal & elegant, no Chinese subtitle) -->
+            <!-- Left: brand area -->
             <StackPane HBox.hgrow="ALWAYS" minWidth="320">
                 <VBox styleClass="brand-panel" alignment="CENTER" maxWidth="360" prefHeight="500">
                     <Label text="Gomatch" styleClass="brand-logo"/>
                 </VBox>
             </StackPane>
 
-            <!-- Right: login card (CodingNepal Glassmorphism Theme - Chinese) -->
-            <VBox styleClass="glass-card" alignment="CENTER" spacing="22" prefWidth="400" prefHeight="500" maxWidth="400" maxHeight="500">
+            <!-- Right: login card (fixed size, never changes) -->
+            <VBox styleClass="glass-card" alignment="CENTER" spacing="22"
+                  prefWidth="400" prefHeight="500" maxWidth="400" maxHeight="500">
                 <Label text="登录" styleClass="title" style="-fx-font-size: 26px; -fx-padding: 0 0 10 0;"/>
 
                 <!-- 输入框组 1: 用户名/邮箱 -->
@@ -51,6 +52,10 @@
                     </HBox>
                     <Button text="以游客身份进入 »" onAction="#handlePreview" styleClass="btn-link" style="-fx-padding: 4 0 0 0; -fx-font-size: 13px;"/>
                 </VBox>
+
+                <!-- 服务器地址入口（打开二级弹窗） -->
+                <Button text="⚙ 服务器地址" onAction="#handleOpenServerConfig"
+                        styleClass="btn-link" style="-fx-font-size: 12px; -fx-text-fill: #94a3b8; -fx-padding: 0;"/>
             </VBox>
         </HBox>
     </center>

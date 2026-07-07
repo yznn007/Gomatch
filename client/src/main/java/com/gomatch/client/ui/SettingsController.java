@@ -159,11 +159,12 @@ public class SettingsController {
     private void handleSaveConfig() {
         String host = ipComboBox.getValue();
         if (host == null || host.trim().isEmpty()) {
-            showAlert("错误", "服务器 IP 地址不能为空！");
+            statusLabel.setText("错误：IP 地址不能为空");
+            statusLabel.setStyle("-fx-text-fill: #dc2626;");
             return;
         }
         host = host.trim();
-        
+
         int port;
         try {
             port = Integer.parseInt(portField.getText().trim());
@@ -171,39 +172,39 @@ public class SettingsController {
                 throw new NumberFormatException();
             }
         } catch (NumberFormatException e) {
-            showAlert("错误", "端口号必须是 1 到 65535 之间的有效整数！");
+            statusLabel.setText("错误：端口须为 1-65535 的整数");
+            statusLabel.setStyle("-fx-text-fill: #dc2626;");
             return;
         }
-        
-        // 1. 保存到内存 AppConfig 中
+
+        // 1. 保存到内存 AppConfig 与本地配置文件
         AppConfig.SERVER_HOST = host;
         AppConfig.SERVER_PORT = port;
-        
-        // 2. 保存到本地 properties 配置文件中以持久化
         ClientConfig.saveConfig(host, port);
-        
-        // 3. 断开当前的老连接
-        ClientMain.getConnector().disconnect();
-        
-        // 4. 立即尝试连接到新 IP
-        try {
-            ClientMain.getConnector().connect(host, port);
-            
-            // 5. 连接成功，刷新界面状态
-            statusLabel.setText("已连接 (" + host + ":" + port + ")");
-            statusLabel.setStyle("-fx-text-fill: green;");
-            showAlert("配置已应用", "已成功保存服务器配置！\n\n网络检测结果：\n连接【" + host + ":" + port + "】成功！✅\n客户端已切换至新服务器环境。");
-        } catch (Exception e) {
-            // 6. 连接失败，更新状态
-            statusLabel.setText("未连接 (连接 " + host + ":" + port + " 失败)");
-            statusLabel.setStyle("-fx-text-fill: #dc2626;");
-            showAlert("配置已保存", "已成功保存服务器配置！\n\n网络检测结果：\n连接【" + host + ":" + port + "】失败！❌\n\n请确保目标服务端已启动。\n错误详情：" + e.getMessage());
-        }
-    }
 
-    private void showAlert(String title, String msg) {
-        MessageDialogController.pendingTitle = title;
-        MessageDialogController.pendingMessage = msg;
-        ScreenManager.showDialog("/fxml/MessageDialogUI.fxml");
+        // 2. 显示连接中，禁用按钮防止重复点击
+        statusLabel.setText("连接中...");
+        statusLabel.setStyle("-fx-text-fill: #64748b;");
+
+        // 3. 在后台线程执行阻塞的 disconnect + connect，避免卡死 UI
+        final String finalHost = host;
+        final int finalPort = port;
+        Thread connectThread = new Thread(() -> {
+            ClientMain.getConnector().disconnect();
+            try {
+                ClientMain.getConnector().connect(finalHost, finalPort);
+                javafx.application.Platform.runLater(() -> {
+                    statusLabel.setText("✅ 已连接 (" + finalHost + ":" + finalPort + ")");
+                    statusLabel.setStyle("-fx-text-fill: green;");
+                });
+            } catch (Exception e) {
+                javafx.application.Platform.runLater(() -> {
+                    statusLabel.setText("❌ 连接失败：" + e.getMessage());
+                    statusLabel.setStyle("-fx-text-fill: #dc2626;");
+                });
+            }
+        });
+        connectThread.setDaemon(true);
+        connectThread.start();
     }
 }
