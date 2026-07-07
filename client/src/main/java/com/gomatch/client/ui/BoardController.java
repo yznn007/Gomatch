@@ -376,11 +376,13 @@ public class BoardController implements NetworkListener {
             String result;
             if ("0".equals(winnerId)) {
                 result = "平局";
+            } else if (aiMode && "-1".equals(winnerId)) {
+                result = "对手胜";
             } else if ("black".equals(myColor) && blackName.equals(winnerId)) {
                 result = "黑方胜";
             } else if ("white".equals(myColor) && whiteName.equals(winnerId)) {
                 result = "白方胜";
-            } else if ("black".equals(myColor) && whiteName.equals(winnerId)) {
+            } else if ("black".equals(myColor) && (whiteName.equals(winnerId) || ("-1".equals(winnerId) && aiMode))) {
                 result = "对手胜";
             } else if ("white".equals(myColor) && blackName.equals(winnerId)) {
                 result = "对手胜";

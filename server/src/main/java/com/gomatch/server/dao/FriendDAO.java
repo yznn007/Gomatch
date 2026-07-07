@@ -99,13 +99,21 @@ public class FriendDAO {
             return false;
         }
 
-        String sql = "INSERT INTO t_friend_request (from_user_id, to_user_id, status, message) VALUES (?, ?, 'PENDING', ?)";
+        String deleteOldRequestSql = "DELETE FROM t_friend_request WHERE (from_user_id = ? AND to_user_id = ?) OR (from_user_id = ? AND to_user_id = ?)";
+        String insertSql = "INSERT INTO t_friend_request (from_user_id, to_user_id, status, message) VALUES (?, ?, 'PENDING', ?)";
         try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, fromUserId);
-            ps.setLong(2, toUserId);
-            ps.setString(3, message);
-            ps.executeUpdate();
+             PreparedStatement deletePs = conn.prepareStatement(deleteOldRequestSql);
+             PreparedStatement insertPs = conn.prepareStatement(insertSql)) {
+            deletePs.setLong(1, fromUserId);
+            deletePs.setLong(2, toUserId);
+            deletePs.setLong(3, toUserId);
+            deletePs.setLong(4, fromUserId);
+            deletePs.executeUpdate();
+            
+            insertPs.setLong(1, fromUserId);
+            insertPs.setLong(2, toUserId);
+            insertPs.setString(3, message);
+            insertPs.executeUpdate();
             log.info("Friend request sent: fromUserId={}, toUserId={}", fromUserId, toUserId);
             return true;
         } catch (SQLException e) {
@@ -187,14 +195,23 @@ public class FriendDAO {
     }
 
     public boolean deleteFriend(long userId, long friendUserId) {
-        String sql = "DELETE FROM t_friend WHERE (user_id = ? AND friend_user_id = ?) OR (user_id = ? AND friend_user_id = ?)";
+        String deleteFriendSql = "DELETE FROM t_friend WHERE (user_id = ? AND friend_user_id = ?) OR (user_id = ? AND friend_user_id = ?)";
+        String deleteRequestSql = "DELETE FROM t_friend_request WHERE (from_user_id = ? AND to_user_id = ?) OR (from_user_id = ? AND to_user_id = ?)";
         try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, userId);
-            ps.setLong(2, friendUserId);
-            ps.setLong(3, friendUserId);
-            ps.setLong(4, userId);
-            int affected = ps.executeUpdate();
+             PreparedStatement deleteFriendPs = conn.prepareStatement(deleteFriendSql);
+             PreparedStatement deleteRequestPs = conn.prepareStatement(deleteRequestSql)) {
+            deleteFriendPs.setLong(1, userId);
+            deleteFriendPs.setLong(2, friendUserId);
+            deleteFriendPs.setLong(3, friendUserId);
+            deleteFriendPs.setLong(4, userId);
+            int affected = deleteFriendPs.executeUpdate();
+            
+            deleteRequestPs.setLong(1, userId);
+            deleteRequestPs.setLong(2, friendUserId);
+            deleteRequestPs.setLong(3, friendUserId);
+            deleteRequestPs.setLong(4, userId);
+            deleteRequestPs.executeUpdate();
+            
             if (affected > 0) {
                 log.info("Friend deleted: userId={}, friendUserId={}", userId, friendUserId);
                 return true;
