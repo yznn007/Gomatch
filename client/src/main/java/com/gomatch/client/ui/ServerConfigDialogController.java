@@ -8,7 +8,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.stage.Stage;
 
 public class ServerConfigDialogController {
 
@@ -92,8 +91,4 @@ public class ServerConfigDialogController {
         t.start();
     }
 
-    private void closeDialog() {
-        Stage stage = (Stage) ipComboBox.getScene().getWindow();
-        stage.close();
-    }
 }

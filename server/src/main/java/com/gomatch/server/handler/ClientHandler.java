@@ -377,7 +377,7 @@ public class ClientHandler implements Runnable {
         }
 
         String roomName = "AI对战 - " + difficulty;
-        Room room = roomManager.createAiRoom(roomName, this);
+        Room room = roomManager.createAiRoom(roomName, this, difficulty);
         this.currentRoom = room;
 
         send(Protocol.JOIN_OK,
@@ -727,7 +727,7 @@ public class ClientHandler implements Runnable {
     /**
      * 观战加入
      * 协议: SPECTATE|roomId
-     * 响应: JOIN_OK|roomId|SPECTATOR
+     * 响应: GAME_START|blackUserId|whiteUserId + MOVE_SYNC 回放已有落子
      */
     private void handleSpectate(String[] parts) {
         if (!authenticated) {
@@ -761,8 +761,21 @@ public class ClientHandler implements Runnable {
             "SPECTATOR"
         );
 
-        send("JOIN_OK", roomId, "SPECTATOR");
-        log.info("玩家 {} 开始观战房间 {}", userId, roomId);
+        // 发送 GAME_START 让客户端切换到棋盘界面
+        send(Protocol.GAME_START,
+            String.valueOf(room.getBlackUserId()),
+            String.valueOf(room.getWhiteUserId()));
+
+        // 回放所有已有落子，让观战者看到当前棋盘
+        for (Game.MoveRecord mr : room.getGame().getMoveHistory()) {
+            send(Protocol.MOVE_SYNC,
+                String.valueOf(mr.x),
+                String.valueOf(mr.y),
+                String.valueOf(mr.color));
+        }
+
+        log.info("玩家 {} 开始观战房间 {} (已回放 {} 步)", 
+                userId, roomId, room.getGame().getMoveHistory().size());
     }
 
     private void handleRanking() {

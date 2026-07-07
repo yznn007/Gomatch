@@ -1,13 +1,11 @@
 package com.gomatch.client.ui;
 
 import com.gomatch.client.ClientMain;
-import com.gomatch.client.model.RoomInfo;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Protocol;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
-import javafx.scene.control.Button;
 
 public class AiLobbyController implements NetworkListener {
     @FXML private Label matchStatus;
@@ -58,15 +56,6 @@ public class AiLobbyController implements NetworkListener {
         }
         
         ClientMain.getConnector().send("AI_MATCH", difficulty);
-    }
-
-    private String getDifficultyName(String difficulty) {
-        switch (difficulty) {
-            case "EASY": return "简单";
-            case "MEDIUM": return "中等";
-            case "HARD": return "困难";
-            default: return difficulty;
-        }
     }
 
     @FXML
