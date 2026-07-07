@@ -17,6 +17,7 @@ import java.util.Map;
  */
 public class RoomDAO {
     private static final Logger log = LoggerFactory.getLogger(RoomDAO.class);
+    private static final UserDAO userDAO = new UserDAO();
 
     /**
      * 保存房间到数据库（INSERT）
@@ -24,6 +25,17 @@ public class RoomDAO {
      * @return 是否成功
      */
     public boolean saveRoom(Room room) {
+        // 检查房主是否存在于数据库，避免外键约束失败
+        if (room.getOwner() == null) {
+            log.warn("Skip saving room {}: owner is null", room.getRoomId());
+            return false;
+        }
+        long hostId = room.getOwner().getUserId();
+        if (userDAO.getUserById(hostId) == null) {
+            log.warn("Skip saving room {}: host_id={} does not exist in t_user", room.getRoomId(), hostId);
+            return false;
+        }
+
         String sql = "INSERT INTO t_room " +
                      "(room_id, room_name, password, max_players, current_players, " +
                      "watcher_count, status, host_id, allow_watch, create_time) " +
@@ -47,7 +59,7 @@ public class RoomDAO {
             ps.setInt(5, room.getPlayerCount());
             ps.setInt(6, room.getObserverCount());
             ps.setString(7, room.getStatus().toString().toLowerCase());
-            ps.setLong(8, room.getOwner().getUserId());
+            ps.setLong(8, hostId);
             ps.setBoolean(9, true); // allow_watch 默认允许观战
 
             int affected = ps.executeUpdate();

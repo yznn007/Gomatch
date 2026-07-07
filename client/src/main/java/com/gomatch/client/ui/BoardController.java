@@ -522,6 +522,18 @@ public class BoardController implements NetworkListener {
         } else if ("UNDO_REQUESTED".equals(command)) {
             chatArea.appendText("[系统] 玩家 " + args[1] + " 请求悔棋\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
+            // 弹出确认对话框
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("悔棋请求");
+            alert.setHeaderText("玩家 " + args[1] + " 请求悔棋");
+            alert.setContentText("是否同意悔棋？");
+            alert.showAndWait().ifPresent(response -> {
+                if (response == ButtonType.OK) {
+                    ClientMain.getConnector().send(Protocol.REPLY_UNDO, "1");
+                } else {
+                    ClientMain.getConnector().send(Protocol.REPLY_UNDO, "0");
+                }
+            });
         } else if ("UNDO_ACCEPTED".equals(command)) {
             if (aiMode) {
                 // AI 模式撤销两步：AI 的落子 + 玩家的上一步
@@ -552,6 +564,18 @@ public class BoardController implements NetworkListener {
         } else if ("DRAW_REQUESTED".equals(command)) {
             chatArea.appendText("[系统] 玩家 " + args[1] + " 请求求和\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
+            // 弹出确认对话框
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("求和请求");
+            alert.setHeaderText("玩家 " + args[1] + " 请求求和");
+            alert.setContentText("是否同意平局？");
+            alert.showAndWait().ifPresent(response -> {
+                if (response == ButtonType.OK) {
+                    ClientMain.getConnector().send(Protocol.REPLY_DRAW, "1");
+                } else {
+                    ClientMain.getConnector().send(Protocol.REPLY_DRAW, "0");
+                }
+            });
         } else if ("DRAW_REJECTED".equals(command)) {
             chatArea.appendText("[系统] 对手拒绝求和\n");
             chatArea.setScrollTop(Double.MAX_VALUE);

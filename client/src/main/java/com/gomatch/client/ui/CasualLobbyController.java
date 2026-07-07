@@ -174,7 +174,9 @@ public class CasualLobbyController implements NetworkListener {
     @FXML
     private void handleBack() {
         LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
-        ctrl.setCurrentUser(currentUser);
+        if (currentUser != null) {
+            ctrl.setCurrentUser(currentUser);
+        }
         ctrl.setPreviewMode(previewMode);
     }
 
@@ -231,12 +233,12 @@ public class CasualLobbyController implements NetworkListener {
             }
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
             ctrl.setPreviewMode(false);
-            ctrl.setRoomInfo(room, currentUser);
+            ctrl.setRoomInfo(room, currentUser != null ? currentUser : new com.gomatch.client.model.User());
         } else if (Protocol.JOIN_FAIL.equals(command)) {
             showAlert("加入失败: " + args[0]);
         } else if (Protocol.GAME_START.equals(command)) {
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-            ctrl.setGameInfo(args[0], args[1], currentUser.getUsername());
+            ctrl.setGameInfo(args[0], args[1], currentUser != null ? currentUser.getUsername() : "unknown");
         }
     }
 }
