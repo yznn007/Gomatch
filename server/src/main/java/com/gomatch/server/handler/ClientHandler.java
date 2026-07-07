@@ -1473,6 +1473,10 @@ public class ClientHandler implements Runnable {
         this.username = null;
         this.currentRoom = null;
         this.authenticated = false;
+
+        // 递减服务器端全局连接计数
+        com.gomatch.server.ServerMain.decrementConnections();
+        log.info("Active connections decremented. Current: {}", com.gomatch.server.ServerMain.getActiveConnections());
     }
 
     // ==================== Getter ====================

@@ -206,4 +206,11 @@ public class ServerMain {
     public static int getActiveConnections() {
         return connectionCount.get();
     }
+
+    public static void decrementConnections() {
+        int count = connectionCount.decrementAndGet();
+        if (count < 0) {
+            connectionCount.set(0);
+        }
+    }
 }
