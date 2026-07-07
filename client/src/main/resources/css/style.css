@@ -51,32 +51,33 @@
 
 /* ---------- 磨砂玻璃卡片（核心设计语言）---------- */
 .card {
-    -fx-background-color: rgba(255, 255, 255, 0.72); /* 恢复纯白微透 */
+    -fx-background-color: rgba(255, 255, 255, 0.32); /* 超清透液态玻璃 */
     -fx-background-radius: 16;
-    -fx-border-color: rgba(255, 255, 255, 0.90);
+    /* 使用四色渐变折射边框来模拟液态玻璃折射 (左/上白色高光，右/下带极轻微的蓝粉色偏色) */
+    -fx-border-color: rgba(255, 255, 255, 0.80) rgba(236, 72, 153, 0.20) rgba(59, 130, 246, 0.25) rgba(255, 255, 255, 0.80);
     -fx-border-radius: 16;
-    -fx-border-width: 1;
-    -fx-effect: dropshadow(gaussian, rgba(100, 116, 139, 0.14), 20, 0, 0, 6);
+    -fx-border-width: 1.2;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 24, 0, 0, 8);
 }
 
 .card-padded {
-    -fx-background-color: rgba(255, 255, 255, 0.72); /* 恢复纯白微透 */
+    -fx-background-color: rgba(255, 255, 255, 0.32); /* 超清透液态玻璃 */
     -fx-background-radius: 16;
-    -fx-border-color: rgba(255, 255, 255, 0.90);
+    -fx-border-color: rgba(255, 255, 255, 0.80) rgba(236, 72, 153, 0.20) rgba(59, 130, 246, 0.25) rgba(255, 255, 255, 0.80);
     -fx-border-radius: 16;
-    -fx-border-width: 1;
-    -fx-effect: dropshadow(gaussian, rgba(100, 116, 139, 0.14), 20, 0, 0, 6);
+    -fx-border-width: 1.2;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 24, 0, 0, 8);
     -fx-padding: 28 32;
 }
 
-/* 登录/注册页专用玻璃卡片（白色极简风：卡片设为清透白，按钮设为实白，互换密度） */
+/* 登录/注册页专用玻璃卡片 */
 .glass-card {
-    -fx-background-color: rgba(255, 255, 255, 0.40); /* 卡片变更为超轻量清透白，降低不透明度 */
+    -fx-background-color: rgba(255, 255, 255, 0.28); /* 超轻量清透液态玻璃 */
     -fx-background-radius: 12;
-    -fx-border-color: rgba(255, 255, 255, 0.90);
+    -fx-border-color: rgba(255, 255, 255, 0.85) rgba(236, 72, 153, 0.25) rgba(59, 130, 246, 0.30) rgba(255, 255, 255, 0.85);
     -fx-border-radius: 12;
     -fx-border-width: 1.5;
-    -fx-effect: dropshadow(gaussian, rgba(100, 116, 139, 0.12), 30, 0, 0, 12); /* 恢复轻量投影 */
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.10), 30, 0, 0, 12);
     -fx-padding: 40;
 }
 
@@ -624,12 +625,12 @@
     -fx-effect: none; /* 去除卡片投影，保持白色极简 */
 }
 .pixel-card-body {
-    -fx-background-color: rgba(255, 255, 255, 0.50); /* 统一为半透底色，与卡片/输入框同步 */
+    -fx-background-color: rgba(255, 255, 255, 0.32); /* 超清透液态玻璃 */
     -fx-background-radius: 8;
     -fx-border-radius: 8;
-    -fx-border-color: transparent transparent rgba(100, 116, 139, 0.20) transparent; /* 仅底线 */
-    -fx-border-width: 0 0 1.5 0;
-    -fx-effect: dropshadow(gaussian, rgba(100, 116, 139, 0.12), 20, 0, 0, 6); /* 添加极简阴影 */
+    -fx-border-color: rgba(255, 255, 255, 0.80) rgba(236, 72, 153, 0.20) rgba(59, 130, 246, 0.25) rgba(255, 255, 255, 0.80);
+    -fx-border-width: 1.2;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 20, 0, 0, 6);
 }
 .arena-casual:hover, .arena-ranked:hover {
     -fx-background-color: transparent;
@@ -986,5 +987,180 @@
     -fx-text-fill: #1e293b;
     -fx-font-weight: bold;
 }
+
+/* ---------- Card-based custom list style ---------- */
+.list-item-card {
+    -fx-background-color: rgba(255, 255, 255, 0.32); /* 超清透液态玻璃 */
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: rgba(255, 255, 255, 0.75) rgba(236, 72, 153, 0.15) rgba(59, 130, 246, 0.20) rgba(255, 255, 255, 0.75);
+    -fx-border-width: 1px;
+    -fx-padding: 10px 16px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.04), 12, 0, 0, 4);
+}
+.list-item-card:hover {
+    -fx-background-color: rgba(148, 163, 184, 0.20); /* 悬浮高亮 */
+}
+.list-item-card-highlight {
+    -fx-background-color: rgba(255, 255, 255, 0.95); /* 排行高亮 */
+    -fx-border-color: transparent transparent #475569 transparent;
+}
+.list-item-card-highlight:hover {
+    -fx-background-color: rgba(255, 255, 255, 1.0);
+}
+
+/* 头像徽章 */
+.avatar-badge {
+    -fx-background-color: #0ea5e9;
+    -fx-background-radius: 50%;
+    -fx-min-width: 32px;
+    -fx-max-width: 32px;
+    -fx-min-height: 32px;
+    -fx-max-height: 32px;
+    -fx-alignment: CENTER;
+}
+.avatar-badge-text {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+
+/* 在线状态指示灯 */
+.status-dot {
+    -fx-min-width: 8px;
+    -fx-max-width: 8px;
+    -fx-min-height: 8px;
+    -fx-max-height: 8px;
+    -fx-background-radius: 4px;
+}
+.status-dot-online {
+    -fx-background-color: #22c55e;
+}
+.status-dot-offline {
+    -fx-background-color: #94a3b8;
+}
+
+/* 标签通用样式 */
+.tag-badge {
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-border-width: 1px;
+    -fx-padding: 2px 10px;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+.tag-badge-green {
+    -fx-background-color: rgba(34, 197, 94, 0.12);
+    -fx-text-fill: #15803d;
+    -fx-border-color: rgba(34, 197, 94, 0.35);
+}
+.tag-badge-grey {
+    -fx-background-color: rgba(148, 163, 184, 0.12);
+    -fx-text-fill: #475569;
+    -fx-border-color: rgba(148, 163, 184, 0.35);
+}
+.tag-badge-blue {
+    -fx-background-color: rgba(14, 165, 233, 0.12);
+    -fx-text-fill: #0369a1;
+    -fx-border-color: rgba(14, 165, 233, 0.35);
+}
+
+/* 段位徽章 */
+.rank-badge {
+    -fx-background-radius: 4px;
+    -fx-padding: 1px 6px;
+    -fx-font-size: 11px;
+    -fx-text-fill: #475569;
+    -fx-background-color: rgba(148, 163, 184, 0.15);
+}
+
+/* 胜负平战绩徽章 */
+.result-badge {
+    -fx-background-radius: 50%;
+    -fx-min-width: 24px;
+    -fx-max-width: 24px;
+    -fx-min-height: 24px;
+    -fx-max-height: 24px;
+    -fx-alignment: CENTER;
+}
+.result-badge-win {
+    -fx-background-color: #22c55e;
+}
+.result-badge-lose {
+    -fx-background-color: #ef4444;
+}
+.result-badge-draw {
+    -fx-background-color: #94a3b8;
+}
+.result-badge-text {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 11px;
+}
+
+/* 排行榜名次徽章 */
+.rank-number-badge {
+    -fx-background-radius: 50%;
+    -fx-min-width: 22px;
+    -fx-max-width: 22px;
+    -fx-min-height: 22px;
+    -fx-max-height: 22px;
+    -fx-alignment: CENTER;
+    -fx-background-color: rgba(71, 85, 105, 0.15);
+}
+.rank-number-text {
+    -fx-text-fill: #475569;
+    -fx-font-weight: bold;
+    -fx-font-size: 11px;
+}
+
+/* ---------- Dialog / Alert Custom Styling ---------- */
+.dialog-pane {
+    -fx-background-color: rgba(255, 255, 255, 0.96);
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-border-color: rgba(148, 163, 184, 0.25);
+    -fx-border-width: 1px;
+    -fx-padding: 16px;
+    -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.10), 20, 0, 0, 6);
+}
+.dialog-pane .header-panel {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 8px 0;
+}
+.dialog-pane .header-panel .label {
+    -fx-text-fill: #1e293b;
+    -fx-font-weight: bold;
+    -fx-font-size: 15px;
+}
+.dialog-pane .content {
+    -fx-text-fill: #475569;
+    -fx-font-size: 13px;
+    -fx-padding: 8px 0 14px 0;
+}
+.dialog-pane .button-bar {
+    -fx-padding: 6px 0 0 0;
+}
+.dialog-pane .button {
+    -fx-background-color: rgba(255, 255, 255, 0.50);
+    -fx-text-fill: #334155;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: transparent transparent rgba(100, 116, 139, 0.20) transparent;
+    -fx-border-width: 0 0 1.5px 0;
+    -fx-padding: 6px 16px;
+    -fx-cursor: hand;
+}
+.dialog-pane .button:hover {
+    -fx-background-color: rgba(148, 163, 184, 0.35);
+}
+.dialog-pane .button:pressed {
+    -fx-background-color: rgba(255, 255, 255, 0.95);
+    -fx-border-color: transparent transparent #475569 transparent;
+}
+
 
 

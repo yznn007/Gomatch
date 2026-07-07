@@ -10,18 +10,14 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.util.stream.Collectors;
 
 public class CasualLobbyController implements NetworkListener {
-    @FXML private TableView<RoomInfo> roomTable;
-    @FXML private TableColumn<RoomInfo, String>  roomIdCol;
-    @FXML private TableColumn<RoomInfo, String>  roomNameCol;
-    @FXML private TableColumn<RoomInfo, String>  ownerCol;
-    @FXML private TableColumn<RoomInfo, Integer> playerCountCol;
-    @FXML private TableColumn<RoomInfo, String>  statusCol;
-    @FXML private ListView<String> spectateList;
+    @FXML private VBox roomsContainer;
+    @FXML private VBox spectateContainer;
 
     @FXML private Button menuRoomsBtn;
     @FXML private Button menuSpectateBtn;
@@ -36,22 +32,8 @@ public class CasualLobbyController implements NetworkListener {
 
     @FXML
     private void initialize() {
-        roomIdCol.setCellValueFactory(new PropertyValueFactory<>("roomId"));
-        roomNameCol.setCellValueFactory(new PropertyValueFactory<>("roomName"));
-        ownerCol.setCellValueFactory(new PropertyValueFactory<>("ownerName"));
-        playerCountCol.setCellValueFactory(new PropertyValueFactory<>("playerCount"));
-        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
-        roomTable.setItems(roomData);
-        roomTable.setRowFactory(tv -> {
-            TableRow<RoomInfo> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && !row.isEmpty()) {
-                    joinRoom(row.getItem());
-                }
-            });
-            return row;
-        });
-        spectateList.setItems(spectateData);
+        roomData.addListener((javafx.collections.ListChangeListener<RoomInfo>) c -> renderRoomCards());
+        spectateData.addListener((javafx.collections.ListChangeListener<String>) c -> renderSpectateCards());
         ClientMain.getConnector().addListener(this);
         if (!ClientMain.getConnector().isConnected()) {
             roomData.addAll(
@@ -112,15 +94,7 @@ public class CasualLobbyController implements NetworkListener {
         ctrl.setCurrentUser(currentUser);
     }
 
-    @FXML
-    private void handleJoinRoom() {
-        RoomInfo selected = roomTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            showAlert("请先选择一个房间");
-            return;
-        }
-        joinRoom(selected);
-    }
+    // handleJoinRoom 已被内嵌卡片按钮取代
 
     private void joinRoom(RoomInfo room) {
         if (previewMode) {
@@ -154,20 +128,7 @@ public class CasualLobbyController implements NetworkListener {
         setStatus("正在匹配中，请稍候...", true);
     }
 
-    @FXML
-    private void handleSpectate() {
-        String selected = spectateList.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            showAlert(previewMode ? "预览模式：观战" : "请先选择一个对局");
-            return;
-        }
-        if (previewMode) {
-            showAlert("预览模式：观战功能需要服务器");
-            return;
-        }
-        String roomId = selected.split(" ")[0].replace("#", "");
-        ClientMain.getConnector().send(Protocol.SPECTATE, roomId);
-    }
+    // handleSpectate 已被内嵌卡片按钮取代
 
     @FXML
     private void handleBack() {
@@ -196,7 +157,7 @@ public class CasualLobbyController implements NetworkListener {
 
     private void showAlert(String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION, msg);
-        alert.showAndWait();
+        ScreenManager.showStyledAlert(alert);
     }
 
     private void setStatus(String text, boolean visible) {
@@ -259,5 +220,176 @@ public class CasualLobbyController implements NetworkListener {
                 showAlert(msg);
             }
         }
+    }
+
+    private void renderRoomCards() {
+        if (roomsContainer == null) return;
+        javafx.application.Platform.runLater(() -> {
+            roomsContainer.getChildren().clear();
+            if (roomData.isEmpty()) {
+                Label noRoomLabel = new Label("暂无活动房间，您可以创建一个！");
+                noRoomLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
+                roomsContainer.getChildren().add(noRoomLabel);
+                return;
+            }
+
+            for (RoomInfo room : roomData) {
+                // Card Root HBox
+                javafx.scene.layout.HBox card = new javafx.scene.layout.HBox();
+                card.getStyleClass().add("list-item-card");
+                card.setSpacing(14);
+                card.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                javafx.scene.layout.HBox.setHgrow(card, javafx.scene.layout.Priority.ALWAYS);
+
+                // Double click handler
+                card.setOnMouseClicked(event -> {
+                    if (event.getClickCount() == 2) {
+                        joinRoom(room);
+                    }
+                });
+
+                // Avatar Circle
+                javafx.scene.layout.StackPane avatar = new javafx.scene.layout.StackPane();
+                avatar.getStyleClass().add("avatar-badge");
+                String hostName = room.getOwnerName() != null ? room.getOwnerName() : "未知";
+                String charVal = hostName.isEmpty() ? "R" : hostName.substring(0, 1).toUpperCase();
+                Label avatarText = new Label(charVal);
+                avatarText.getStyleClass().add("avatar-badge-text");
+                avatar.getChildren().add(avatarText);
+
+                // Info VBox
+                VBox infoBox = new VBox(4);
+                infoBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                javafx.scene.layout.HBox.setHgrow(infoBox, javafx.scene.layout.Priority.ALWAYS);
+
+                HBox nameRow = new HBox(8);
+                nameRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                Label nameLabel = new Label(room.getRoomName());
+                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
+                Label idLabel = new Label("#" + room.getRoomId());
+                idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
+                nameRow.getChildren().addAll(nameLabel, idLabel);
+
+                if (room.isHasPassword()) {
+                    Label lockIcon = new Label("[密]");
+                    lockIcon.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                    lockIcon.setStyle("-fx-font-size: 11px; -fx-text-fill: #ef4444; -fx-font-weight: bold;");
+                    nameRow.getChildren().add(lockIcon);
+                }
+
+                Label ownerLabel = new Label("房主: " + hostName);
+                ownerLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #475569;");
+                infoBox.getChildren().addAll(nameRow, ownerLabel);
+
+                // Slots HBox (human figures)
+                HBox slots = new HBox(4);
+                slots.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                int pc = room.getPlayerCount();
+                Label slotLabel = new Label("人数: " + pc + "/2");
+                slotLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                slotLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #475569; -fx-font-weight: bold;");
+                slots.getChildren().add(slotLabel);
+
+                // Status Badge
+                Label statusTag = new Label();
+                statusTag.getStyleClass().add("tag-badge");
+                if ("对局中".equals(room.getStatus()) || "playing".equalsIgnoreCase(room.getStatus())) {
+                    statusTag.setText("对局中");
+                    statusTag.getStyleClass().add("tag-badge-grey");
+                } else {
+                    statusTag.setText("等待中");
+                    statusTag.getStyleClass().add("tag-badge-green");
+                }
+
+                // Join Button
+                Button actionBtn = new Button("加入");
+                actionBtn.getStyleClass().add("btn-primary");
+                actionBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                actionBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
+                actionBtn.setOnAction(e -> joinRoom(room));
+
+                // Add to card
+                card.getChildren().addAll(avatar, infoBox, slots, statusTag, actionBtn);
+                roomsContainer.getChildren().add(card);
+            }
+        });
+    }
+
+    private void renderSpectateCards() {
+        if (spectateContainer == null) return;
+        javafx.application.Platform.runLater(() -> {
+            spectateContainer.getChildren().clear();
+            if (spectateData.isEmpty()) {
+                Label noSpectateLabel = new Label("当前暂无进行中的精彩对局。");
+                noSpectateLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
+                spectateContainer.getChildren().add(noSpectateLabel);
+                return;
+            }
+
+            for (String specItem : spectateData) {
+                // Card Root HBox
+                javafx.scene.layout.HBox card = new javafx.scene.layout.HBox();
+                card.getStyleClass().add("list-item-card");
+                card.setSpacing(14);
+                card.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                javafx.scene.layout.HBox.setHgrow(card, javafx.scene.layout.Priority.ALWAYS);
+
+                // Parse spectate string
+                String roomId = "";
+                String roomName = "对局";
+                String matchDetails = "";
+                try {
+                    int firstSpace = specItem.indexOf(' ');
+                    if (firstSpace > 0) {
+                        roomId = specItem.substring(1, firstSpace);
+                        int secondPart = specItem.indexOf("  ", firstSpace);
+                        if (secondPart > 0) {
+                            roomName = specItem.substring(firstSpace + 1, secondPart);
+                            matchDetails = specItem.substring(secondPart + 2);
+                        } else {
+                            roomName = specItem.substring(firstSpace + 1);
+                        }
+                    }
+                } catch (Exception ignored) {}
+
+                // Avatar Icon (Eye 👁️)
+                javafx.scene.layout.StackPane avatar = new javafx.scene.layout.StackPane();
+                avatar.getStyleClass().add("avatar-badge");
+                avatar.setStyle("-fx-background-color: #a78bfa;"); // Purple for spectating
+                Label avatarText = new Label("观");
+                avatarText.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                avatarText.getStyleClass().add("avatar-badge-text");
+                avatar.getChildren().add(avatarText);
+
+                // Info VBox
+                VBox infoBox = new VBox(4);
+                infoBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                javafx.scene.layout.HBox.setHgrow(infoBox, javafx.scene.layout.Priority.ALWAYS);
+
+                Label titleLabel = new Label(roomName);
+                titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
+                
+                Label detailLabel = new Label(matchDetails.isEmpty() ? "对局编号: #" + roomId : matchDetails);
+                detailLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
+                infoBox.getChildren().addAll(titleLabel, detailLabel);
+
+                // Spectate Button
+                Button actionBtn = new Button("观战");
+                actionBtn.getStyleClass().add("btn-primary");
+                actionBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                actionBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
+                final String finalRoomId = roomId;
+                actionBtn.setOnAction(e -> {
+                    if (previewMode) {
+                        showAlert("预览模式：观战功能需要服务器");
+                        return;
+                    }
+                    ClientMain.getConnector().send(Protocol.SPECTATE, finalRoomId);
+                });
+
+                card.getChildren().addAll(avatar, infoBox, actionBtn);
+                spectateContainer.getChildren().add(card);
+            }
+        });
     }
 }

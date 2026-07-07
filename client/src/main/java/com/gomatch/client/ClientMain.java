@@ -28,7 +28,7 @@ public class ClientMain extends Application {
                     disconnectHandled = true;
                     Platform.runLater(() -> {
                         Alert alert = new Alert(Alert.AlertType.WARNING, "与服务器断开连接，请重新登录");
-                        alert.showAndWait();
+                        com.gomatch.client.ui.ScreenManager.showStyledAlert(alert);
                         ScreenManager.switchTo("/fxml/LoginUI.fxml");
                         disconnectHandled = false;
                     });

@@ -498,4 +498,18 @@ public class ScreenManager {
     public static Stage getStage() {
         return stage;
     }
+
+    public static java.util.Optional<javafx.scene.control.ButtonType> showStyledAlert(javafx.scene.control.Alert alert) {
+        if (alert != null) {
+            javafx.scene.control.DialogPane dialogPane = alert.getDialogPane();
+            if (dialogPane != null) {
+                dialogPane.getStylesheets().add(ScreenManager.class.getResource("/css/style.css").toExternalForm());
+            }
+            if (stage != null) {
+                alert.initOwner(stage);
+            }
+            return alert.showAndWait();
+        }
+        return java.util.Optional.empty();
+    }
 }

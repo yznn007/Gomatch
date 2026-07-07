@@ -640,7 +640,7 @@ public class BoardController implements NetworkListener {
             alert.setTitle("悔棋请求");
             alert.setHeaderText("玩家 " + args[1] + " 请求悔棋");
             alert.setContentText("是否同意悔棋？");
-            alert.showAndWait().ifPresent(response -> {
+            ScreenManager.showStyledAlert(alert).ifPresent(response -> {
                 if (response == ButtonType.OK) {
                     ClientMain.getConnector().send(Protocol.REPLY_UNDO, "1");
                 } else {
@@ -681,7 +681,7 @@ public class BoardController implements NetworkListener {
             alert.setTitle("求和请求");
             alert.setHeaderText("玩家 " + args[1] + " 请求求和");
             alert.setContentText("是否同意平局？");
-            alert.showAndWait().ifPresent(response -> {
+            ScreenManager.showStyledAlert(alert).ifPresent(response -> {
                 if (response == ButtonType.OK) {
                     ClientMain.getConnector().send(Protocol.REPLY_DRAW, "1");
                 } else {

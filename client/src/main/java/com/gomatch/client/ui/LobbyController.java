@@ -1,5 +1,6 @@
 package com.gomatch.client.ui;
 
+import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
@@ -9,6 +10,10 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+
+import java.lang.reflect.Type;
+import com.google.gson.reflect.TypeToken;
+import java.util.List;
 
 public class LobbyController implements NetworkListener {
     @FXML private Label userInfoLabel;
@@ -112,6 +117,11 @@ public class LobbyController implements NetworkListener {
     @FXML
     private void handleAbout() {
         ScreenManager.switchTo("/fxml/AboutUI.fxml");
+    }
+
+    private void showAlert(String msg) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, msg);
+        ScreenManager.showStyledAlert(alert);
     }
 
     @Override

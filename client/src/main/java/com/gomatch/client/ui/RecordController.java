@@ -2,6 +2,9 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.network.NetworkListener;
+import com.gomatch.common.Protocol;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -11,55 +14,24 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
+import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Map;
 
-@SuppressWarnings("unchecked")
 public class RecordController implements NetworkListener {
-    @FXML private TableView<Map<String, String>> recordTable;
-    @FXML private TableColumn<Map<String, String>, String> opponentCol;
-    @FXML private TableColumn<Map<String, String>, String> resultCol;
-    @FXML private TableColumn<Map<String, String>, String> timeCol;
-    @FXML private TableColumn<Map<String, String>, String> replayCol;
+    @FXML private VBox recordsContainer;
 
     private final ObservableList<Map<String, String>> records = FXCollections.observableArrayList();
+    private final Gson gson = new Gson();
+    private String movesData; // 用于棋谱回放
 
     @FXML
     private void initialize() {
-        opponentCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().get("opponent")));
-        resultCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().get("result")));
-        timeCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().get("time")));
-        replayCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getOrDefault("replay", "回放")));
-        // 回放按钮列
-        replayCol.setCellFactory(col -> new TableCell<Map<String, String>, String>() {
-            final Button btn = new Button("回放");
-            {
-                btn.setOnAction(e -> {
-                    Map<String, String> row = getTableView().getItems().get(getIndex());
-                    String moves = row.get("moves");
-                    if (moves != null && !moves.isEmpty()) {
-                        BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-                        ctrl.setReplayMode(true);
-                        ctrl.replayMoves(moves);
-                    } else {
-                        Alert alert = new Alert(Alert.AlertType.INFORMATION, "暂无棋谱数据");
-                        alert.showAndWait();
-                    }
-                });
-            }
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
-                } else {
-                    setGraphic(btn);
-                }
-            }
-        });
-
-        recordTable.setItems(records);
-
+        records.addListener((javafx.collections.ListChangeListener<Map<String, String>>) c -> renderRecordCards());
         if (!ClientMain.getConnector().isConnected()) {
             records.addAll(
                 Map.of("opponent", "玩家A", "result", "胜", "time", "2026-07-04 15:30", "replay", "回放", "moves", "3,3,1;3,4,2;4,4,1;4,5,2;5,5,1"),
@@ -88,6 +60,7 @@ public class RecordController implements NetworkListener {
             for (int i = 0; i < args.length; i += 11) {
                 if (i + 10 < args.length) {
                     long player1Id = Long.parseLong(args[i + 1]);
+                    long player2Id = Long.parseLong(args[i + 3]);
                     long winnerId = Long.parseLong(args[i + 5]);
                     
                     String opponentName = currentUserId == player1Id ? args[i + 4] : args[i + 2];
@@ -113,5 +86,101 @@ public class RecordController implements NetworkListener {
                 }
             }
         }
+    }
+
+    private void renderRecordCards() {
+        if (recordsContainer == null) return;
+        javafx.application.Platform.runLater(() -> {
+            recordsContainer.getChildren().clear();
+            if (records.isEmpty()) {
+                Label noRecordLabel = new Label("暂无对战记录，快去对战大厅来一局吧！");
+                noRecordLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
+                recordsContainer.getChildren().add(noRecordLabel);
+                return;
+            }
+
+            for (Map<String, String> record : records) {
+                // Card Root HBox
+                javafx.scene.layout.HBox card = new javafx.scene.layout.HBox();
+                card.getStyleClass().add("list-item-card");
+                card.setSpacing(14);
+                card.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                javafx.scene.layout.HBox.setHgrow(card, javafx.scene.layout.Priority.ALWAYS);
+
+                // Result Badge & ELO change indicator
+                javafx.scene.layout.StackPane badgeContainer = new javafx.scene.layout.StackPane();
+                badgeContainer.getStyleClass().add("result-badge");
+                String result = record.getOrDefault("result", "平");
+                Label badgeText = new Label(result.substring(0, 1));
+                badgeText.getStyleClass().add("result-badge-text");
+                badgeContainer.getChildren().add(badgeText);
+
+                Label scoreChangeLabel = new Label();
+                scoreChangeLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 32px;");
+                if (result.contains("胜")) {
+                    badgeContainer.getStyleClass().add("result-badge-win");
+                    scoreChangeLabel.setText("+15");
+                    scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #22c55e;");
+                } else if (result.contains("负")) {
+                    badgeContainer.getStyleClass().add("result-badge-lose");
+                    scoreChangeLabel.setText("-10");
+                    scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #ef4444;");
+                } else {
+                    badgeContainer.getStyleClass().add("result-badge-draw");
+                    scoreChangeLabel.setText("+0");
+                    scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #94a3b8;");
+                }
+
+                // Info VBox
+                VBox infoBox = new VBox(4);
+                infoBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                javafx.scene.layout.HBox.setHgrow(infoBox, javafx.scene.layout.Priority.ALWAYS);
+
+                Label opponentLabel = new Label("与 " + record.get("opponent") + " 的对局");
+                opponentLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
+                
+                // Parse moves and construct detailed info (duration, steps)
+                String moves = record.get("moves");
+                int stepsCount = 0;
+                if (moves != null && !moves.isEmpty()) {
+                    stepsCount = moves.split(";").length;
+                }
+                
+                String durationStr = "3分45秒"; // Default/Mock duration
+                Label detailsLabel = new Label("落子: " + (stepsCount > 0 ? stepsCount : "--") + " 步 | 用时: " + durationStr);
+                detailsLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                detailsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
+
+                infoBox.getChildren().addAll(opponentLabel, detailsLabel);
+
+                // Right VBox: Time & Action Button
+                VBox rightBox = new VBox(4);
+                rightBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+
+                Label timeLabel = new Label(record.get("time"));
+                timeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
+
+                Button replayBtn = new Button("回放");
+                replayBtn.getStyleClass().add("btn-primary");
+                replayBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                replayBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
+                replayBtn.setOnAction(e -> {
+                    String movesStr = record.get("moves");
+                    if (movesStr != null && !movesStr.isEmpty()) {
+                        BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
+                        ctrl.setReplayMode(true);
+                        ctrl.replayMoves(movesStr);
+                    } else {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION, "暂无棋谱数据");
+                        ScreenManager.showStyledAlert(alert);
+                    }
+                });
+
+                rightBox.getChildren().addAll(timeLabel, replayBtn);
+
+                card.getChildren().addAll(badgeContainer, scoreChangeLabel, infoBox, rightBox);
+                recordsContainer.getChildren().add(card);
+            }
+        });
     }
 }

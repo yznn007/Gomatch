@@ -57,6 +57,7 @@ public class PixelCard extends StackPane {
     private final ObjectProperty<Integer> speed = new SimpleObjectProperty<>(this, "speed", null);
     private final StringProperty colors = new SimpleStringProperty(this, "colors", null);
     private final ObjectProperty<Boolean> noFocus = new SimpleObjectProperty<>(this, "noFocus", null);
+    private final BooleanProperty showParticles = new SimpleBooleanProperty(this, "showParticles", true);
 
     // 变体默认配置结构
     private static class VariantConfig {
@@ -107,6 +108,10 @@ public class PixelCard extends StackPane {
     public boolean isNoFocus() { return noFocus.get() == null ? false : noFocus.get(); }
     public void setNoFocus(boolean value) { noFocus.set(value); }
     public ObjectProperty<Boolean> noFocusProperty() { return noFocus; }
+
+    public boolean isShowParticles() { return showParticles.get(); }
+    public void setShowParticles(boolean value) { showParticles.set(value); }
+    public BooleanProperty showParticlesProperty() { return showParticles; }
 
     // 获取融合了变体与单独属性配置后的最终生效值
     private int getFinalGap() {
@@ -345,6 +350,10 @@ public class PixelCard extends StackPane {
     }
 
     private void initPixels() {
+        if (!isShowParticles()) {
+            pixels.clear();
+            return;
+        }
         double width = canvas.getWidth();
         double height = canvas.getHeight();
         if (width <= 0 || height <= 0) {
@@ -442,14 +451,16 @@ public class PixelCard extends StackPane {
 
         // 2. 绘制像素微尘粒子
         boolean allIdle = true;
-        for (Pixel pixel : pixels) {
-            if ("appear".equals(animationMode)) {
-                pixel.appear(gc);
-            } else {
-                pixel.disappear(gc);
-            }
-            if (!pixel.isIdle()) {
-                allIdle = false;
+        if (isShowParticles()) {
+            for (Pixel pixel : pixels) {
+                if ("appear".equals(animationMode)) {
+                    pixel.appear(gc);
+                } else {
+                    pixel.disappear(gc);
+                }
+                if (!pixel.isIdle()) {
+                    allIdle = false;
+                }
             }
         }
 

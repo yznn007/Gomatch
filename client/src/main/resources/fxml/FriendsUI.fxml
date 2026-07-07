@@ -32,28 +32,17 @@
                     <!-- 面板 1: 我的好友 -->
                     <VBox fx:id="myFriendsPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
                         <Label text="好友列表" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
-                        <TableView fx:id="friendsTable" prefHeight="320" minHeight="240" styleClass="table-view">
-                            <columns>
-                                <TableColumn text="用户ID" fx:id="friendIdCol" prefWidth="120"/>
-                                <TableColumn text="用户名" fx:id="friendNameCol" prefWidth="220"/>
-                                <TableColumn text="积分" fx:id="friendScoreCol" prefWidth="100"/>
-                                <TableColumn text="操作" fx:id="friendActionCol" prefWidth="100"/>
-                            </columns>
-                        </TableView>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" prefHeight="320" minHeight="240" VBox.vgrow="ALWAYS">
+                            <VBox fx:id="friendsContainer" spacing="10" style="-fx-padding: 8; -fx-background-color: transparent;"/>
+                        </ScrollPane>
                     </VBox>
-
+ 
                     <!-- 面板 2: 好友请求 -->
                     <VBox fx:id="requestsPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
                         <Label text="待处理好友请求" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
-                        <TableView fx:id="requestsTable" prefHeight="320" minHeight="240" styleClass="table-view">
-                            <columns>
-                                <TableColumn text="申请人ID" fx:id="reqUserIdCol" prefWidth="100"/>
-                                <TableColumn text="申请人" fx:id="reqNameCol" prefWidth="140"/>
-                                <TableColumn text="积分" fx:id="reqScoreCol" prefWidth="80"/>
-                                <TableColumn text="留言" fx:id="reqMsgCol" prefWidth="140"/>
-                                <TableColumn text="操作" fx:id="reqActionCol" prefWidth="100"/>
-                            </columns>
-                        </TableView>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" prefHeight="320" minHeight="240" VBox.vgrow="ALWAYS">
+                            <VBox fx:id="requestsContainer" spacing="10" style="-fx-padding: 8; -fx-background-color: transparent;"/>
+                        </ScrollPane>
                     </VBox>
 
                     <!-- 面板 3: 添加好友 -->

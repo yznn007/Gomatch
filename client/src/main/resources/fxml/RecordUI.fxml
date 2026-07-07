@@ -13,14 +13,9 @@
         </VBox>
     </top>
     <center>
-        <TableView fx:id="recordTable" VBox.vgrow="ALWAYS" style="-fx-padding: 8 0;">
-            <columns>
-                <TableColumn text="对手" fx:id="opponentCol" prefWidth="160"/>
-                <TableColumn text="结果" fx:id="resultCol" prefWidth="100"/>
-                <TableColumn text="时间" fx:id="timeCol" prefWidth="220"/>
-                <TableColumn text="棋谱回放" fx:id="replayCol" prefWidth="120"/>
-            </columns>
-        </TableView>
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" VBox.vgrow="ALWAYS" minHeight="240" prefHeight="320">
+            <VBox fx:id="recordsContainer" spacing="10" style="-fx-padding: 8; -fx-background-color: transparent;"/>
+        </ScrollPane>
     </center>
     <bottom>
         <VBox spacing="0">

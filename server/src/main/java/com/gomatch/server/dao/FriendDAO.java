@@ -238,7 +238,12 @@ public class FriendDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     long friendUserId = rs.getLong("friend_user_id");
-                    boolean online = RedisManager.getInstance().isOnline(friendUserId);
+                    boolean online = false;
+                    if (RedisManager.getInstance().isConnected()) {
+                        online = RedisManager.getInstance().isOnline(friendUserId);
+                    } else {
+                        online = com.gomatch.server.session.SessionManager.getInstance().getSessionByUserId(friendUserId) != null;
+                    }
                     result.add(new FriendInfo(
                             rs.getLong("friend_id"),
                             rs.getLong("user_id"),

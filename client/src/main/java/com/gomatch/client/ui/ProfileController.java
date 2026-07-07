@@ -9,25 +9,25 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 public class ProfileController implements NetworkListener {
     @FXML private Label userIdLabel;
     @FXML private Label usernameLabel;
+    @FXML private Label profileAvatarLabel;
     @FXML private Label scoreLabel;
     @FXML private Label winLabel;
     @FXML private Label loseLabel;
     @FXML private Label drawLabel;
+    @FXML private Label rankLabel;
+    @FXML private Label totalGamesLabel;
+    @FXML private Label winRateLabel;
     @FXML private PasswordField oldPwdField;
     @FXML private PasswordField newPwdField;
     @FXML private Label errorLabel;
 
-    @FXML private TableView<GameRecord> recordTable;
-    @FXML private TableColumn<GameRecord, String> opponentCol;
-    @FXML private TableColumn<GameRecord, String> resultCol;
-    @FXML private TableColumn<GameRecord, String> timeCol;
-    @FXML private TableColumn<GameRecord, String> replayCol;
+    @FXML private VBox recordsContainer;
 
     // 新增：左侧菜单按钮与右侧面板 FXML 绑定
     @FXML private Button menuInfoBtn;
@@ -43,47 +43,107 @@ public class ProfileController implements NetworkListener {
 
     @FXML
     private void initialize() {
-        // 绑定列
-        opponentCol.setCellValueFactory(new PropertyValueFactory<>("opponent"));
-        resultCol.setCellValueFactory(new PropertyValueFactory<>("result"));
-        timeCol.setCellValueFactory(new PropertyValueFactory<>("time"));
-        replayCol.setCellValueFactory(new PropertyValueFactory<>("replay"));
-        
-        // 回放按钮列
-        replayCol.setCellFactory(col -> new TableCell<GameRecord, String>() {
-            final Button btn = new Button("查看");
-            {
-                btn.getStyleClass().add("control-button");
-                btn.setOnAction(e -> {
-                    GameRecord item = getTableView().getItems().get(getIndex());
-                    String moves = item.getMoves();
-                    if (moves != null && !moves.isEmpty()) {
-                        BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-                        ctrl.setReplayMode(true);
-                        ctrl.replayMoves(moves);
-                    } else {
-                        Alert alert = new Alert(Alert.AlertType.INFORMATION, "暂无棋谱数据");
-                        alert.showAndWait();
-                    }
-                });
-            }
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || getIndex() < 0 || getTableView() == null) {
-                    setGraphic(null);
-                } else {
-                    setGraphic(btn);
-                }
-            }
-        });
-        
-        recordTable.setItems(recordData);
-
+        recordData.addListener((javafx.collections.ListChangeListener<GameRecord>) c -> renderRecordCards());
         ClientMain.getConnector().addListener(this);
 
         // 初始化激活默认标签页 (个人信息)
         showInfoTab();
+    }
+
+    private void renderRecordCards() {
+        if (recordsContainer == null) return;
+        javafx.application.Platform.runLater(() -> {
+            recordsContainer.getChildren().clear();
+            if (recordData.isEmpty()) {
+                Label noRecordLabel = new Label("暂无对战记录，快去对战大厅来一局吧！");
+                noRecordLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
+                recordsContainer.getChildren().add(noRecordLabel);
+                return;
+            }
+
+            for (GameRecord record : recordData) {
+                // Card Root HBox
+                javafx.scene.layout.HBox card = new javafx.scene.layout.HBox();
+                card.getStyleClass().add("list-item-card");
+                card.setSpacing(14);
+                card.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                javafx.scene.layout.HBox.setHgrow(card, javafx.scene.layout.Priority.ALWAYS);
+
+                // Result Badge & ELO change indicator
+                javafx.scene.layout.StackPane badgeContainer = new javafx.scene.layout.StackPane();
+                badgeContainer.getStyleClass().add("result-badge");
+                String result = record.getResult() != null ? record.getResult() : "平";
+                Label badgeText = new Label(result.substring(0, 1));
+                badgeText.getStyleClass().add("result-badge-text");
+                badgeContainer.getChildren().add(badgeText);
+
+                Label scoreChangeLabel = new Label();
+                scoreChangeLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 32px;");
+                if (result.contains("胜")) {
+                    badgeContainer.getStyleClass().add("result-badge-win");
+                    scoreChangeLabel.setText("+15");
+                    scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #22c55e;");
+                } else if (result.contains("负")) {
+                    badgeContainer.getStyleClass().add("result-badge-lose");
+                    scoreChangeLabel.setText("-10");
+                    scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #ef4444;");
+                } else {
+                    badgeContainer.getStyleClass().add("result-badge-draw");
+                    scoreChangeLabel.setText("+0");
+                    scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #94a3b8;");
+                }
+
+                // Info VBox
+                VBox infoBox = new VBox(4);
+                infoBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                javafx.scene.layout.HBox.setHgrow(infoBox, javafx.scene.layout.Priority.ALWAYS);
+
+                Label opponentLabel = new Label("与 " + record.getOpponent() + " 的对局");
+                opponentLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
+                
+                // Parse moves and construct detailed info (duration, steps)
+                String moves = record.getMoves();
+                int stepsCount = 0;
+                if (moves != null && !moves.isEmpty()) {
+                    stepsCount = moves.split(";").length;
+                }
+                
+                String durationStr = "3分45秒"; // Default/Mock duration
+                Label detailsLabel = new Label("落子: " + (stepsCount > 0 ? stepsCount : "--") + " 步 | 用时: " + durationStr);
+                detailsLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                detailsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
+
+                infoBox.getChildren().addAll(opponentLabel, detailsLabel);
+
+                // Right VBox: Time & Action Button
+                VBox rightBox = new VBox(4);
+                rightBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+
+                Label timeLabel = new Label(record.getTime());
+                timeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
+
+                Button replayBtn = new Button("回放");
+                replayBtn.getStyleClass().add("btn-primary");
+                replayBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                replayBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
+                replayBtn.setOnAction(e -> {
+                    String movesStr = record.getMoves();
+                    if (movesStr != null && !movesStr.isEmpty()) {
+                        BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
+                        ctrl.setReplayMode(true);
+                        ctrl.replayMoves(movesStr);
+                    } else {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION, "暂无棋谱数据");
+                        ScreenManager.showStyledAlert(alert);
+                    }
+                });
+
+                rightBox.getChildren().addAll(timeLabel, replayBtn);
+
+                card.getChildren().addAll(badgeContainer, scoreChangeLabel, infoBox, rightBox);
+                recordsContainer.getChildren().add(card);
+            }
+        });
     }
 
     // 新增：标签页动态切换逻辑
@@ -122,12 +182,40 @@ public class ProfileController implements NetworkListener {
 
     public void setCurrentUser(User user) {
         this.currentUser = user;
-        userIdLabel.setText(String.valueOf(user.getUserId()));
+        userIdLabel.setText("#" + user.getUserId());
         usernameLabel.setText(user.getUsername());
+        if (profileAvatarLabel != null) {
+            String name = user.getUsername();
+            profileAvatarLabel.setText(name == null || name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase());
+        }
         scoreLabel.setText(user.getScore() > 0 ? String.valueOf(user.getScore()) : "未定级");
         winLabel.setText(String.valueOf(user.getWinCount()));
         loseLabel.setText(String.valueOf(user.getLoseCount()));
         drawLabel.setText(String.valueOf(user.getDrawCount()));
+ 
+        // 计算并设置总局数
+        int total = user.getWinCount() + user.getLoseCount() + user.getDrawCount();
+        totalGamesLabel.setText(total + " 场");
+ 
+        // 计算并设置综合胜率
+        String winRateStr = user.getWinRate();
+        if (winRateStr == null || winRateStr.isEmpty()) {
+            if (total > 0) {
+                double rate = (double) user.getWinCount() / total * 100;
+                winRateStr = String.format("%.1f%%", rate);
+            } else {
+                winRateStr = "0.0%";
+            }
+        }
+        winRateLabel.setText(winRateStr);
+ 
+        // 设置全服排名
+        int rankVal = user.getRank();
+        if (rankVal > 0 && rankVal <= 1000) {
+            rankLabel.setText("第 " + rankVal + " 名");
+        } else {
+            rankLabel.setText("暂无排名");
+        }
 
         // 用户信息设置完成后再查询战绩，避免 currentUser 为空时解析异常
         if (ClientMain.getConnector().isConnected()) {

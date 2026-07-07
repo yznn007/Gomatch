@@ -1220,7 +1220,8 @@ public class ClientHandler implements Runnable {
         for (FriendDAO.FriendInfo friend : friends) {
             sb.append("|").append(friend.getFriendUserId())
               .append("|").append(friend.getFriendUsername())
-              .append("|").append(friend.getFriendScore());
+              .append("|").append(friend.getFriendScore())
+              .append("|").append(friend.isOnline() ? "1" : "0");
         }
         send(sb.toString());
         log.info("发送好友列表给玩家 {}: {} 个好友", userId, friends.size());
