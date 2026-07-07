@@ -629,6 +629,7 @@
     -fx-border-radius: 8;
     -fx-border-color: transparent transparent rgba(100, 116, 139, 0.20) transparent; /* 仅底线 */
     -fx-border-width: 0 0 1.5 0;
+    -fx-effect: dropshadow(gaussian, rgba(100, 116, 139, 0.12), 20, 0, 0, 6); /* 添加极简阴影 */
 }
 .arena-casual:hover, .arena-ranked:hover {
     -fx-background-color: transparent;
@@ -637,18 +638,22 @@
 .arena-match:hover .pixel-card-body {
     -fx-background-color: rgba(14, 165, 233, 0.12); /* 匹配卡片：淡蓝色透明 hover */
     -fx-border-color: transparent transparent rgba(14, 165, 233, 0.35) transparent;
+    -fx-effect: dropshadow(gaussian, rgba(14, 165, 233, 0.18), 24, 0, 0, 8); /* 匹配专属淡蓝色投影 */
 }
 .arena-ai:hover .pixel-card-body {
     -fx-background-color: rgba(234, 179, 8, 0.12); /* AI卡片：淡黄色透明 hover */
     -fx-border-color: transparent transparent rgba(234, 179, 8, 0.35) transparent;
+    -fx-effect: dropshadow(gaussian, rgba(234, 179, 8, 0.18), 24, 0, 0, 8); /* AI专属淡黄色投影 */
 }
 .arena-ranked:hover .pixel-card-body {
     -fx-background-color: rgba(225, 29, 72, 0.12); /* 排位卡片：淡粉色透明 hover */
     -fx-border-color: transparent transparent rgba(225, 29, 72, 0.35) transparent;
+    -fx-effect: dropshadow(gaussian, rgba(225, 29, 72, 0.18), 24, 0, 0, 8); /* 排位专属淡红色投影 */
 }
 .arena-casual:pressed .pixel-card-body, .arena-ranked:pressed .pixel-card-body {
     -fx-background-color: rgba(255, 255, 255, 0.95); /* 按下变为聚焦实白 */
     -fx-border-color: transparent transparent #475569 transparent;
+    -fx-effect: dropshadow(gaussian, rgba(71, 85, 105, 0.22), 12, 0, 0, 3); /* 按下时阴影略微收紧变暗 */
 }
 
 /* 文字颜色全部替换为上方导航栏的无色系（暗板岩灰） */

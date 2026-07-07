@@ -185,3 +185,4 @@
 | 2026-07-07 | Contributor| 1. 在 handleMouseMoved 中计算鼠标距离卡片身体边缘的最短像素距离，在 25px 边缘过渡区内计算 0.0~1.0 的阻尼因子，使得鼠标跨越卡片边界时 3D 偏转角平滑衰减至 0；2. 结合 setOnMouseExited 中的静态无偏转包围盒屏幕投影校验，拦截旋转位移产生的假滑出信号，彻底治愈了下边缘在鼠标滑出时的反复触发 and 抖动。 |
 | 2026-07-07 | Contributor| 1. 在 style.css 中将 .section-divider 的 -fx-padding 设为 0，彻底移除 Modena 默认主题中分割线上下各 10px 的不可见外边距死区；2. 在 LobbyUI.fxml 和 AiLobbyUI.fxml 中为 Separator 加上 mouseTransparent="true" 物理穿透，彻底根治了顶栏按钮下方边缘点击被分割线 hitbox 拦截截断的问题。 |
 | 2026-07-07 | Contributor| 1. 在 ShapeGridBackground.java 中，用 SPEED_X_PER_SEC/SPEED_Y_PER_SEC 代替每帧固定位移，引入基于时间步长 dt 的无缝包裹位移；2. 增加对最大帧时间 dt 的阈值限制 (0.1s)，避免应用挂起恢复或帧率突变时粒子产生位置瞬移，确保在不同刷新率显示器下流动速度一致恒定。 |
+| 2026-07-07 | Contributor| 1. 在 style.css 中为 .pixel-card-body 引入基础极简软投影，提供细腻的纸张悬浮深度感；2. 为匹配（蓝色）、AI对战（黄色）、排位（粉色）三个主题色分别定制专属的 hover 投影（24px gaussian blur, 18% 不透明度），增强 3D 偏转侧倾时的空间光感表现；3. 增设 pressed 状态阴影收紧收敛（12px gaussian blur），建立直观敏捷的按下触觉交互反馈。 |
