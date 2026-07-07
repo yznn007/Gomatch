@@ -269,7 +269,6 @@ public class BoardController implements NetworkListener {
         }
         int color = myColor.equals("black") ? 1 : 2;
         drawStone(x, y, color);
-        moveHistory.add(new int[]{x, y, color});
         myTurn = false;
         updateTurnLabel();
         ClientMain.getConnector().send(Protocol.MOVE, String.valueOf(x), String.valueOf(y));
@@ -354,6 +353,18 @@ public class BoardController implements NetworkListener {
         } else {
             turnLabel.setText("当前回合: 白方 (" + whiteName + ")");
         }
+        updatePlayerLabelStyles();
+    }
+
+    private void updatePlayerLabelStyles() {
+        if (blackLabel == null || whiteLabel == null) return;
+        if (currentTurn == 1) {
+            blackLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #334155;");
+            whiteLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: normal; -fx-text-fill: #64748b;");
+        } else {
+            blackLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: normal; -fx-text-fill: #64748b;");
+            whiteLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #334155;");
+        }
     }
 
     private void startCountdown() {
@@ -401,8 +412,7 @@ public class BoardController implements NetworkListener {
     @FXML
     private void handleSurrender() {
         if (previewMode) {
-            GameOverController ctrl = ScreenManager.showDialog("/fxml/GameOverUI.fxml");
-            ctrl.setResult("2", "预览模式 - 平局");
+            ScreenManager.showDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult("2", "预览模式 - 平局"));
             return;
         }
         ClientMain.getConnector().send(Protocol.SURRENDER);
@@ -537,7 +547,7 @@ public class BoardController implements NetworkListener {
             if ("0".equals(winnerId)) {
                 result = "平局";
             } else if (aiMode && "-1".equals(winnerId)) {
-                result = "对手胜";
+                result = "白方胜";
             } else if ("black".equals(myColor) && blackName.equals(winnerId)) {
                 result = "黑方胜";
             } else if ("white".equals(myColor) && whiteName.equals(winnerId)) {
@@ -550,8 +560,7 @@ public class BoardController implements NetworkListener {
                 result = "游戏结束";
             }
             updateTurnLabel();
-            GameOverController ctrl = ScreenManager.showDialog("/fxml/GameOverUI.fxml");
-            ctrl.setResult(result, reason);
+            ScreenManager.showDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult(result, reason));
         } else if (Protocol.CHAT_MSG.equals(command)) {
             String username = args.length > 1 ? args[1] : args[0];
             String message = args.length > 2 ? args[2] : "";
@@ -621,10 +630,19 @@ public class BoardController implements NetworkListener {
             String result = myTurn ? "超时负" : "对手超时";
             myTurn = false;
             updateTurnLabel();
-            GameOverController ctrl = ScreenManager.showDialog("/fxml/GameOverUI.fxml");
-            ctrl.setResult(result, "timeout");
+            ScreenManager.showDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult(result, "timeout"));
             chatArea.appendText("[系统] " + result + "\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
+        } else if (Protocol.USER_SCORE_UPDATE.equals(command)) {
+            if (args.length >= 4) {
+                User cu = AppConfig.getCurrentUser();
+                if (cu != null) {
+                    cu.setScore(Integer.parseInt(args[0]));
+                    cu.setWinCount(Integer.parseInt(args[1]));
+                    cu.setLoseCount(Integer.parseInt(args[2]));
+                    cu.setDrawCount(Integer.parseInt(args[3]));
+                }
+            }
         }
     }
 

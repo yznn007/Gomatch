@@ -390,7 +390,7 @@ public class ClientHandler implements Runnable {
         room.startGame();
         room.broadcastAll(
                 Protocol.GAME_START,
-                getUsername(),
+                String.valueOf(userId),
                 "AI"
         );
 
@@ -646,15 +646,18 @@ public class ClientHandler implements Runnable {
 
         if (currentRoom.isGameOver()) {
             long winnerId = currentRoom.getWinnerId();
-            currentRoom.endGame(winnerId, "five_in_a_row");
+            boolean isDraw = winnerId == 0;
+            String reason = isDraw ? "board_full" : "five_in_a_row";
+            String msg = isDraw ? "棋盘已满，平局" : "五子连珠!";
+            currentRoom.endGame(winnerId, reason);
 
             currentRoom.broadcastAll(
                 Protocol.GAME_OVER,
                 String.valueOf(winnerId),
-                "五子连珠!"
+                msg
             );
 
-            log.info("Game over in room {}: winner={}", currentRoom.getRoomId(), winnerId);
+            log.info("Game over in room {}: winner={}, reason={}", currentRoom.getRoomId(), winnerId, reason);
         } else if (currentRoom.isAiMode()) {
             log.info("Calling makeAiMove() for room {}", currentRoom.getRoomId());
             currentRoom.makeAiMove();

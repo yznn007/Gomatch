@@ -322,14 +322,18 @@ public class Room {
             );
 
             if (game.isFinished()) {
-                long winnerId = whiteUserId;
-                endGame(winnerId, "five_in_a_row");
+                int winnerColor = game.getWinner();
+                long winnerId = winnerColor == Game.EMPTY ? 0 : whiteUserId;
+                String reason = winnerColor == Game.EMPTY ? "draw" : "five_in_a_row";
+                String msg = winnerColor == Game.EMPTY ? "棋盘已满，平局" : "AI 获胜!";
+                endGame(winnerId, reason);
                 broadcastAll(
                         Protocol.GAME_OVER,
                         String.valueOf(winnerId),
-                        "AI 获胜!"
+                        msg
                 );
-                log.info("AI won in room {}: winner={}", roomId, winnerId);
+                log.info("AI game ended in room {}: winnerColor={}, winnerId={}, reason={}",
+                        roomId, winnerColor == Game.BLACK ? "BLACK" : winnerColor == Game.WHITE ? "WHITE" : "DRAW", winnerId, reason);
             } else {
                 startTurnTimer(); // AI 走完后轮到人类，重新计时
             }
@@ -380,17 +384,10 @@ public class Room {
                     if (gameType == GameType.RANKED) {
                         updateRankedScore(winnerId, loserId, true);
                     } else {
-                        boolean winnerScoreUpdated = userDAO.updateScore(winnerId, 10);
+                        // 普通匹配只记录胜负场次，不增减积分
                         userDAO.updateWinCount(winnerId);
-                        boolean loserScoreUpdated = userDAO.updateScore(loserId, -5);
                         userDAO.updateLoseCount(loserId);
-
-                        if (winnerScoreUpdated && loserScoreUpdated) {
-                            log.info("Score updated successfully: winner={}(+10), loser={}(-5)", winnerId, loserId);
-                        } else {
-                            log.warn("Score update partially failed: winner={}(success={}), loser={}(success={})",
-                                    winnerId, winnerScoreUpdated, loserId, loserScoreUpdated);
-                        }
+                        log.info("Normal match result recorded: winner={}, loser={}", winnerId, loserId);
                     }
                 } else {
                     log.debug("Updating scores for draw: blackUserId={}, whiteUserId={}, gameType={}",
@@ -411,6 +408,30 @@ public class Room {
             }
         } else {
             log.info("AI mode: skipping score/win-loss update for room {}", roomId);
+        }
+
+        // 对局结束后主动推送双方最新积分到客户端
+        if (!aiMode) {
+            try {
+                UserDAO.UserInfo blackInfo = userDAO.getUserById(blackUserId);
+                UserDAO.UserInfo whiteInfo = userDAO.getUserById(whiteUserId);
+                for (ClientHandler handler : players) {
+                    long id = handler.getUserId();
+                    UserDAO.UserInfo info = id == blackUserId ? blackInfo : (id == whiteUserId ? whiteInfo : null);
+                    if (info != null) {
+                        handler.send(Protocol.USER_SCORE_UPDATE,
+                            String.valueOf(info.getScore()),
+                            String.valueOf(info.getWinCount()),
+                            String.valueOf(info.getLoseCount()),
+                            String.valueOf(info.getDrawCount()));
+                    }
+                }
+                log.info("Score update pushed to players in room {}: black={}(score={}), white={}(score={})",
+                        roomId, blackUserId, blackInfo != null ? blackInfo.getScore() : "N/A",
+                        whiteUserId, whiteInfo != null ? whiteInfo.getScore() : "N/A");
+            } catch (Exception e) {
+                log.error("Failed to push score update in room {}: {}", roomId, e.getMessage(), e);
+            }
         }
 
         try {

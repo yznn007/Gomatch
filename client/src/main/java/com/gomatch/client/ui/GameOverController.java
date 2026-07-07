@@ -15,7 +15,7 @@ public class GameOverController {
             case "1" -> resultLabel.setText("白方胜!");
             case "2" -> resultLabel.setText("平局!");
             case "3" -> resultLabel.setText("对方断线，你赢了!");
-            default -> resultLabel.setText("对局结束");
+            default -> resultLabel.setText(result);
         }
         if (!reason.isEmpty()) {
             reasonLabel.setText(reason);

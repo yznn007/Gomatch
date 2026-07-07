@@ -18,6 +18,7 @@ public class Game {
     private final int[][] board = new int[SIZE][SIZE];
     private int currentPlayer = BLACK;
     private boolean finished = false;
+    private int winner = EMPTY;
     private int moveCount = 0;
 
     private final List<MoveRecord> moveHistory = new ArrayList<>();
@@ -62,6 +63,7 @@ public class Game {
         }
         currentPlayer = BLACK;
         finished = false;
+        winner = EMPTY;
         moveCount = 0;
         moveHistory.clear();
         log.info("Game reset complete: currentPlayer=BLACK, finished=false, moveCount=0");
@@ -99,8 +101,13 @@ public class Game {
 
         if (checkWin(x, y)) {
             finished = true;
+            winner = currentPlayer;
             log.info("Game ended: player {} (userId={}) won at position ({},{})",
                     currentPlayer == BLACK ? "BLACK" : "WHITE", userId, x, y);
+        } else if (moveCount == SIZE * SIZE) {
+            finished = true;
+            winner = EMPTY;
+            log.info("Game ended: board full at moveCount={}, draw", moveCount);
         } else {
             currentPlayer = (currentPlayer == BLACK) ? WHITE : BLACK;
             log.debug("Turn switched to: {}", currentPlayer == BLACK ? "BLACK" : "WHITE");
@@ -109,9 +116,6 @@ public class Game {
     }
 
     public int getWinner() {
-        int winner = finished ? (currentPlayer == BLACK ? BLACK : WHITE) : EMPTY;
-        log.debug("getWinner() called: finished={}, winner={}", finished,
-                winner == BLACK ? "BLACK" : winner == WHITE ? "WHITE" : "NONE");
         return winner;
     }
 

@@ -140,10 +140,17 @@ public class ScreenManager {
     }
 
     public static <T> T showDialog(String fxmlPath) {
+        return showDialog(fxmlPath, controller -> {});
+    }
+
+    public static <T> T showDialog(String fxmlPath, java.util.function.Consumer<T> setupCallback) {
         try {
             FXMLLoader loader = new FXMLLoader(ScreenManager.class.getResource(fxmlPath));
             Parent root = loader.load();
             T controller = loader.getController();
+            if (setupCallback != null) {
+                setupCallback.accept(controller);
+            }
             Stage dialog = new Stage();
             dialog.initOwner(stage);
             dialog.initModality(Modality.WINDOW_MODAL);
