@@ -118,7 +118,7 @@ public class SessionManager {
 
         RedisManager.SessionData sessionData = new RedisManager.SessionData(
                 userId, username, score, winCount, loseCount, drawCount,
-                null, System.currentTimeMillis());
+                null, role, System.currentTimeMillis());
         RedisManager.getInstance().saveSession(token, sessionData);
         RedisManager.getInstance().setOnline(userId, token);
 
@@ -132,12 +132,12 @@ public class SessionManager {
             session.updateLastActive();
             socketSessionDAO.updateHeartbeat(token);
             RedisManager.getInstance().updateSessionActivity(token);
-            } else {
-                RedisManager.SessionData redisSession = RedisManager.getInstance().getSession(token);
-                if (redisSession != null) {
-                    session = new Session(token, redisSession.userId, redisSession.username,
-                            redisSession.score, redisSession.winCount, redisSession.loseCount,
-                            redisSession.drawCount, "PLAYER");
+        } else {
+            RedisManager.SessionData redisSession = RedisManager.getInstance().getSession(token);
+            if (redisSession != null) {
+                session = new Session(token, redisSession.userId, redisSession.username,
+                        redisSession.score, redisSession.winCount, redisSession.loseCount,
+                        redisSession.drawCount, redisSession.role != null ? redisSession.role : "PLAYER");
                 session.roomId = redisSession.roomId;
                 session.lastActiveTime = Instant.ofEpochMilli(redisSession.lastActiveTime);
                 sessionsByToken.put(token, session);
@@ -208,3 +208,6 @@ public class SessionManager {
         return sessionsByUserId.size();
     }
 }
+
+
+

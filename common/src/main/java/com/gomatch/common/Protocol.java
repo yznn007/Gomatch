@@ -1,8 +1,6 @@
 package com.gomatch.common;
 
 public class Protocol {
-    public static final String SEPARATOR = "|";
-
     // Client -> Server
     public static final String LOGIN        = "LOGIN";
     public static final String REGISTER     = "REGISTER";
@@ -38,6 +36,10 @@ public class Protocol {
     public static final String QUERY_RECORD = "QUERY_RECORD";
     public static final String LOGOUT = "LOGOUT";
     public static final String HEARTBEAT = "HEARTBEAT";
+    public static final String HEARTBEAT_OK = "HEARTBEAT_OK";
+    public static final String CREATE_AI_ROOM = "CREATE_AI_ROOM";
+    public static final String AI_MATCH = "AI_MATCH";
+    public static final String RECONNECT = "RECONNECT";
     // Admin commands
     public static final String BAN_USER         = "BAN_USER";
     public static final String UNBAN_USER       = "UNBAN_USER";
@@ -71,11 +73,6 @@ public class Protocol {
     public static final String CANCEL_MATCH  = "CANCEL_MATCH";
     public static final String MATCH_TIMEOUT = "MATCH_TIMEOUT";
 
-    public static String build(String... parts) {
-        return String.join(SEPARATOR, parts);
-    }
-
-    public static String[] parse(String msg) {
-        return msg.split("\\" + SEPARATOR, -1);
-    }
 }
+
+

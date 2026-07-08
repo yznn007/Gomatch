@@ -186,7 +186,7 @@ public class ServerConnector {
                 // 重连后发送 RECONNECT 消息恢复认证状态
                 String token = com.gomatch.client.AppConfig.getAuthToken();
                 if (token != null && !token.isEmpty()) {
-                    writer.println(Message.of("RECONNECT", "token", token).toJson());
+                    writer.println(Message.of(Protocol.RECONNECT, "token", token).toJson());
                 }
 
                 running = true;
@@ -230,3 +230,4 @@ public class ServerConnector {
     }
 
 }
+

@@ -43,6 +43,7 @@ public class ClientHandler implements Runnable {
     private long userId;
     private String username;
     private String role = "PLAYER";
+    private String sessionToken;
     private boolean authenticated;
     private volatile long lastMessageTime = System.currentTimeMillis();
     private volatile boolean heartbeatTimeout = false;
@@ -120,7 +121,7 @@ public class ClientHandler implements Runnable {
             case Protocol.LOGIN           -> handleLogin(msg);
             case Protocol.REGISTER        -> handleRegister(msg);
             case Protocol.CREATE_ROOM     -> handleCreateRoom(msg);
-            case "CREATE_AI_ROOM"         -> handleCreateAiRoom(msg);
+            case Protocol.CREATE_AI_ROOM  -> handleCreateAiRoom(msg);
             case Protocol.JOIN_ROOM       -> handleJoinRoom(msg);
             case Protocol.LEAVE_ROOM      -> handleLeaveRoom();
             case Protocol.MOVE            -> handleMove(msg);
@@ -130,14 +131,14 @@ public class ClientHandler implements Runnable {
             case Protocol.ROOM_LIST       -> handleRoomList();
             case Protocol.QUICK_MATCH     -> handleQuickMatch();
             case Protocol.CANCEL_MATCH    -> handleCancelMatch();
-            case "RANKED_MATCH"           -> handleRankedMatch();
+            case Protocol.RANKED_MATCH    -> handleRankedMatch();
             case Protocol.RANKING         -> handleRanking(msg);
             case Protocol.QUERY_RECORD    -> handleQueryRecord(msg);
             case Protocol.REQUEST_UNDO    -> handleRequestUndo();
             case Protocol.REPLY_UNDO      -> handleReplyUndo(msg);
             case Protocol.REQUEST_DRAW    -> handleRequestDraw();
             case Protocol.REPLY_DRAW      -> handleReplyDraw(msg);
-            case "RECONNECT"              -> handleReconnect(msg);
+            case Protocol.RECONNECT       -> handleReconnect(msg);
             case Protocol.CHANGE_PWD      -> handleChangePassword(msg);
             case Protocol.ADD_FRIEND      -> handleAddFriend(msg);
             case Protocol.ACCEPT_FRIEND   -> handleAcceptFriend(msg);
@@ -153,7 +154,7 @@ public class ClientHandler implements Runnable {
             case Protocol.WATCHER_HISTORY -> handleWatcherHistory(msg);
             case Protocol.LOGOUT          -> handleLogout();
             case Protocol.HEARTBEAT       -> handleHeartbeat();
-            case "AI_MATCH"               -> handleAiMatch(msg);
+            case Protocol.AI_MATCH        -> handleAiMatch(msg);
             // Admin commands
             case Protocol.BAN_USER         -> handleBanUser(msg);
             case Protocol.UNBAN_USER       -> handleUnbanUser(msg);
@@ -245,6 +246,7 @@ public class ClientHandler implements Runnable {
                     userInfo.getScore(), userInfo.getWinCount(),
                     userInfo.getLoseCount(), userInfo.getDrawCount(),
                     userInfo.getRole());
+            this.sessionToken = session.token;
             sessionManager.updateSessionHandler(userInfo.getUserId(), this);
 
             int rank = 0;
@@ -999,6 +1001,7 @@ public class ClientHandler implements Runnable {
         this.userId = session.userId;
         this.username = session.username;
         this.role = session.role;
+        this.sessionToken = token;
         this.authenticated = true;
 
         sessionManager.updateSessionHandler(session.userId, this);
@@ -1374,8 +1377,10 @@ public class ClientHandler implements Runnable {
     // ==================== 心跳 ====================
 
     private void handleHeartbeat() {
-        // 心跳包仅用于保活，不返回响应以节省流量
-        // lastMessageTime 已在 run() 循环头部更新
+        if (authenticated && sessionToken != null) {
+            RedisManager.getInstance().updateSessionActivity(sessionToken);
+        }
+        send(Message.cmdOnly(Protocol.HEARTBEAT_OK));
         log.trace("Heartbeat from userId={}", userId);
     }
 
@@ -1655,3 +1660,8 @@ public class ClientHandler implements Runnable {
         this.currentRoom = currentRoom;
     }
 }
+
+
+
+
+

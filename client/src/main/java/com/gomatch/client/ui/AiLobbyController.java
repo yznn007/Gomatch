@@ -56,7 +56,7 @@ public class AiLobbyController implements NetworkListener {
             return;
         }
         
-        ClientMain.getConnector().send(Message.of("AI_MATCH", "difficulty", difficulty));
+        ClientMain.getConnector().send(Message.of(Protocol.AI_MATCH, "difficulty", difficulty));
     }
 
     @FXML

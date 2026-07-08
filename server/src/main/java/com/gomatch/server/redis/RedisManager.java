@@ -76,8 +76,8 @@ public class RedisManager {
             }
 
         } catch (Exception e) {
-            log.error("Failed to initialize Redis: {}", e.getMessage());
             connected = false;
+            throw new IllegalStateException("Redis is required but could not be initialized", e);
         }
     }
 
@@ -125,7 +125,7 @@ public class RedisManager {
     }
 
     public boolean acquireLock(String roomId) {
-        if (!isConnected()) return true;
+        if (!isConnected()) return false;
         try {
             String luaScript =
                 "if redis.call('SET', KEYS[1], ARGV[1], 'NX', 'EX', 5) then " +
@@ -139,7 +139,7 @@ public class RedisManager {
             return result != null && result == 1;
         } catch (Exception e) {
             log.warn("Failed to acquire lock: {}", e.getMessage());
-            return true;
+            return false;
         }
     }
 
@@ -184,12 +184,13 @@ public class RedisManager {
         public int loseCount;
         public int drawCount;
         public String roomId;
+        public String role;
         public long lastActiveTime;
 
         public SessionData() {}
 
         public SessionData(long userId, String username, int score, int winCount,
-                          int loseCount, int drawCount, String roomId, long lastActiveTime) {
+                          int loseCount, int drawCount, String roomId, String role, long lastActiveTime) {
             this.userId = userId;
             this.username = username;
             this.score = score;
@@ -197,6 +198,7 @@ public class RedisManager {
             this.loseCount = loseCount;
             this.drawCount = drawCount;
             this.roomId = roomId;
+            this.role = role;
             this.lastActiveTime = lastActiveTime;
         }
     }
@@ -449,8 +451,8 @@ public class RedisManager {
                 String excludeIdStr = String.valueOf(excludeUserId);
                 for (String opponentId : results) {
                     if (!opponentId.equals(excludeIdStr)) {
-                        syncCommands.zrem("match:ranked", opponentId);
                         Double opponentScore = syncCommands.zscore("match:ranked", opponentId);
+                        syncCommands.zrem("match:ranked", opponentId);
                         return opponentId + ":" + (opponentScore != null ? opponentScore.intValue() : 0);
                     }
                 }
@@ -512,3 +514,4 @@ public class RedisManager {
         }
     }
 }
+
