@@ -112,6 +112,7 @@ public class FriendsController implements NetworkListener {
     private void handleAddFriend() {
         String targetIdStr = friendIdField.getText().trim();
         String msg = addMsgField.getText().trim();
+        errorLabel.setText("");
         if (targetIdStr.isEmpty()) {
             errorLabel.setText("用户ID不能为空");
             return;

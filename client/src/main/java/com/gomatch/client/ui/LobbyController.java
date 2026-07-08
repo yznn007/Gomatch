@@ -50,6 +50,9 @@ public class LobbyController implements NetworkListener {
 
     public void setCurrentUser(User user) {
         this.currentUser = user;
+        if (user == null) {
+            return;
+        }
         String name = user.getUsername();
         userInfoLabel.setText(name);
         if (user.getScore() > 0) {

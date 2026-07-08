@@ -95,6 +95,7 @@ public class ClientHandler implements Runnable {
             case Protocol.SPECTATE        -> handleSpectate(msg);
             case Protocol.ROOM_LIST       -> handleRoomList();
             case Protocol.QUICK_MATCH     -> handleQuickMatch();
+            case Protocol.CANCEL_MATCH    -> handleCancelMatch();
             case "RANKED_MATCH"           -> handleRankedMatch();
             case Protocol.RANKING         -> handleRanking(msg);
             case Protocol.QUERY_RECORD    -> handleQueryRecord(msg);
@@ -143,6 +144,9 @@ public class ClientHandler implements Runnable {
     // ==================== 心跳 ====================
 
     private void handleHeartbeat() {
+        if (authenticated) {
+            RedisManager.getInstance().setOnline(userId, "heartbeat");
+        }
         send(Message.cmdOnly(Protocol.HEARTBEAT_OK));
     }
 
@@ -477,6 +481,15 @@ public class ClientHandler implements Runnable {
         } else {
             send(Message.of(Protocol.ERROR, "msg", "等待对手... (" + roomManager.getMatchQueueSize() + "/2)"));
         }
+    }
+
+    // ==================== 取消匹配 ====================
+
+    private void handleCancelMatch() {
+        if (!authenticated) return;
+        roomManager.cancelMatch(userId);
+        send(Message.of(Protocol.CANCEL_MATCH, "msg", "已取消匹配"));
+        log.info("玩家 {} 取消匹配", userId);
     }
 
     // ==================== 排位匹配 ====================
@@ -892,6 +905,7 @@ public class ClientHandler implements Runnable {
         this.authenticated = true;
 
         sessionManager.updateSessionHandler(session.userId, this);
+        RedisManager.getInstance().setOnline(session.userId, token);
 
         Room room = roomManager.findRoomByUserId(session.userId);
         if (room != null) {
@@ -948,22 +962,47 @@ public class ClientHandler implements Runnable {
 
         long friendUserId = msg.getLong("friendUserId");
         if (friendUserId == 0) {
-            send(Message.of(Protocol.ERROR, "msg", "好友ID无效"));
+            send(Message.of("ADD_FRIEND_FAIL", "msg", "好友ID无效"));
             return;
         }
         if (friendUserId == userId) {
-            send(Message.of(Protocol.ERROR, "msg", "不能添加自己为好友"));
+            send(Message.of("ADD_FRIEND_FAIL", "msg", "不能添加自己为好友"));
+            return;
+        }
+
+        if (!userDAO.existsActiveUser(friendUserId)) {
+            send(Message.of("ADD_FRIEND_FAIL", "msg", "目标用户不存在或账号异常"));
+            log.warn("玩家 {} 发送好友请求失败: 目标用户 {} 不存在或状态异常", userId, friendUserId);
             return;
         }
 
         String message = msg.has("message") ? msg.getString("message") : "";
+
+        if (friendDAO.isFriend(userId, friendUserId)) {
+            send(Message.of("ADD_FRIEND_FAIL", "msg", "你们已经是好友了"));
+            log.warn("玩家 {} 发送好友请求失败: 与 {} 已是好友", userId, friendUserId);
+            return;
+        }
+
+        if (friendDAO.hasPendingRequest(userId, friendUserId)) {
+            send(Message.of("ADD_FRIEND_FAIL", "msg", "已向对方发送过好友申请，请勿重复发送"));
+            log.warn("玩家 {} 发送好友请求失败: 对 {} 的请求仍在pending", userId, friendUserId);
+            return;
+        }
+
+        // 检查对方是否已向当前用户发送了好友请求
+        if (friendDAO.hasPendingRequest(friendUserId, userId)) {
+            send(Message.of("ADD_FRIEND_FAIL", "msg", "对方已向您发送了好友申请，请在好友请求中处理"));
+            log.warn("玩家 {} 发送好友请求失败: 对方 {} 已有pending请求发向自己", userId, friendUserId);
+            return;
+        }
 
         boolean success = friendDAO.sendFriendRequest(userId, friendUserId, message);
         if (success) {
             send(Message.cmdOnly("ADD_FRIEND_OK"));
             log.info("玩家 {} 发送好友请求给 {}", userId, friendUserId);
         } else {
-            send(Message.of("ADD_FRIEND_FAIL", "msg", "发送失败（可能已为好友或请求已存在）"));
+            send(Message.of("ADD_FRIEND_FAIL", "msg", "发送失败，请稍后重试"));
             log.warn("玩家 {} 发送好友请求失败: {}", userId, friendUserId);
         }
     }
@@ -1029,9 +1068,10 @@ public class ClientHandler implements Runnable {
         JSONArray arr = new JSONArray();
         for (FriendDAO.FriendInfo f : friends) {
             JSONObject obj = new JSONObject();
-            obj.put("friendUserId", f.getFriendUserId());
+            obj.put("friendUserId", String.valueOf(f.getFriendUserId()));
             obj.put("friendUsername", f.getFriendUsername());
-            obj.put("friendScore", f.getFriendScore());
+            obj.put("friendScore", String.valueOf(f.getFriendScore()));
+            obj.put("online", f.isOnline());
             arr.put(obj);
         }
         send(Message.builder("FRIEND_LIST").set("friends", arr).build());
@@ -1255,7 +1295,9 @@ public class ClientHandler implements Runnable {
         }
 
         if (authenticated && userId > 0) {
+            roomManager.cancelMatch(userId);
             sessionManager.updateSessionHandler(userId, null);
+            RedisManager.getInstance().setOffline(userId);
             log.info("用户 {} 断开连接，保留会话等待重连", userId);
         }
 

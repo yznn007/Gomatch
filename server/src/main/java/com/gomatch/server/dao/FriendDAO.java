@@ -99,26 +99,43 @@ public class FriendDAO {
             return false;
         }
 
-        String deleteOldRequestSql = "DELETE FROM t_friend_request WHERE (from_user_id = ? AND to_user_id = ?) OR (from_user_id = ? AND to_user_id = ?)";
+        // 若对方已有反向pending请求，也不允许发送（避免双向请求互相覆盖）
+        if (hasPendingRequest(toUserId, fromUserId)) {
+            log.warn("Target user already sent a request to sender: fromUserId={}, toUserId={}", fromUserId, toUserId);
+            return false;
+        }
+
+        // 只删除同方向的旧请求记录（不删除反向的，避免误删对方的pending请求）
+        String deleteOldRequestSql = "DELETE FROM t_friend_request WHERE from_user_id = ? AND to_user_id = ?";
         String insertSql = "INSERT INTO t_friend_request (from_user_id, to_user_id, status, message) VALUES (?, ?, 'PENDING', ?)";
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement deletePs = conn.prepareStatement(deleteOldRequestSql);
-             PreparedStatement insertPs = conn.prepareStatement(insertSql)) {
-            deletePs.setLong(1, fromUserId);
-            deletePs.setLong(2, toUserId);
-            deletePs.setLong(3, toUserId);
-            deletePs.setLong(4, fromUserId);
-            deletePs.executeUpdate();
-            
-            insertPs.setLong(1, fromUserId);
-            insertPs.setLong(2, toUserId);
-            insertPs.setString(3, message);
-            insertPs.executeUpdate();
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement deletePs = conn.prepareStatement(deleteOldRequestSql)) {
+                deletePs.setLong(1, fromUserId);
+                deletePs.setLong(2, toUserId);
+                deletePs.executeUpdate();
+            }
+            try (PreparedStatement insertPs = conn.prepareStatement(insertSql)) {
+                insertPs.setLong(1, fromUserId);
+                insertPs.setLong(2, toUserId);
+                insertPs.setString(3, message);
+                insertPs.executeUpdate();
+            }
+            conn.commit();
             log.info("Friend request sent: fromUserId={}, toUserId={}", fromUserId, toUserId);
             return true;
         } catch (SQLException e) {
             log.error("Send friend request error: fromUserId={}, toUserId={}", fromUserId, toUserId, e);
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { log.error("Rollback failed", ex); }
+            }
             return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) { log.error("Close connection failed", e); }
+            }
         }
     }
 
@@ -148,7 +165,10 @@ public class FriendDAO {
         String insertFriend1 = "INSERT INTO t_friend (user_id, friend_user_id, relation_type) VALUES (?, ?, 'FRIEND')";
         String insertFriend2 = "INSERT INTO t_friend (user_id, friend_user_id, relation_type) VALUES (?, ?, 'FRIEND')";
 
-        try (Connection conn = DBUtil.getConnection()) {
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false);
             try (PreparedStatement ps1 = conn.prepareStatement(acceptSql)) {
                 ps1.setLong(1, requestId);
                 ps1.executeUpdate();
@@ -166,11 +186,19 @@ public class FriendDAO {
                 ps3.executeUpdate();
             }
 
+            conn.commit();
             log.info("Friend request accepted: fromUserId={}, toUserId={}", fromUserId, toUserId);
             return true;
         } catch (SQLException e) {
             log.error("Accept friend request error: requestId={}", requestId, e);
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { log.error("Rollback failed", ex); }
+            }
             return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) { log.error("Close connection failed", e); }
+            }
         }
     }
 
@@ -197,23 +225,30 @@ public class FriendDAO {
     public boolean deleteFriend(long userId, long friendUserId) {
         String deleteFriendSql = "DELETE FROM t_friend WHERE (user_id = ? AND friend_user_id = ?) OR (user_id = ? AND friend_user_id = ?)";
         String deleteRequestSql = "DELETE FROM t_friend_request WHERE (from_user_id = ? AND to_user_id = ?) OR (from_user_id = ? AND to_user_id = ?)";
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement deleteFriendPs = conn.prepareStatement(deleteFriendSql);
-             PreparedStatement deleteRequestPs = conn.prepareStatement(deleteRequestSql)) {
-            deleteFriendPs.setLong(1, userId);
-            deleteFriendPs.setLong(2, friendUserId);
-            deleteFriendPs.setLong(3, friendUserId);
-            deleteFriendPs.setLong(4, userId);
-            int affected = deleteFriendPs.executeUpdate();
-            
-            deleteRequestPs.setLong(1, userId);
-            deleteRequestPs.setLong(2, friendUserId);
-            deleteRequestPs.setLong(3, friendUserId);
-            deleteRequestPs.setLong(4, userId);
-            deleteRequestPs.executeUpdate();
-            
-            if (affected > 0) {
-                log.info("Friend deleted: userId={}, friendUserId={}", userId, friendUserId);
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false);
+            int friendDeleted;
+            try (PreparedStatement deleteFriendPs = conn.prepareStatement(deleteFriendSql)) {
+                deleteFriendPs.setLong(1, userId);
+                deleteFriendPs.setLong(2, friendUserId);
+                deleteFriendPs.setLong(3, friendUserId);
+                deleteFriendPs.setLong(4, userId);
+                friendDeleted = deleteFriendPs.executeUpdate();
+            }
+
+            try (PreparedStatement deleteRequestPs = conn.prepareStatement(deleteRequestSql)) {
+                deleteRequestPs.setLong(1, userId);
+                deleteRequestPs.setLong(2, friendUserId);
+                deleteRequestPs.setLong(3, friendUserId);
+                deleteRequestPs.setLong(4, userId);
+                deleteRequestPs.executeUpdate();
+            }
+
+            conn.commit();
+            if (friendDeleted > 0) {
+                log.info("Friend deleted: userId={}, friendUserId={}, rows={}", userId, friendUserId, friendDeleted);
                 return true;
             } else {
                 log.warn("Friend relationship not found: userId={}, friendUserId={}", userId, friendUserId);
@@ -221,7 +256,23 @@ public class FriendDAO {
             }
         } catch (SQLException e) {
             log.error("Delete friend error: userId={}, friendUserId={}", userId, friendUserId, e);
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    log.error("Rollback failed", ex);
+                }
+            }
             return false;
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    log.error("Close connection failed", e);
+                }
+            }
         }
     }
 
@@ -307,7 +358,7 @@ public class FriendDAO {
         return false;
     }
 
-    private boolean hasPendingRequest(long fromUserId, long toUserId) {
+    public boolean hasPendingRequest(long fromUserId, long toUserId) {
         String sql = "SELECT 1 FROM t_friend_request WHERE from_user_id = ? AND to_user_id = ? AND status = 'PENDING'";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

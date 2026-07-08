@@ -31,6 +31,7 @@ public class DBUtil {
         config.setPassword(props.getProperty("mysql.password", "gomatch"));
         config.setMaximumPoolSize(Integer.parseInt(props.getProperty("mysql.pool.maxSize", "20")));
         config.setMinimumIdle(Integer.parseInt(props.getProperty("mysql.pool.minIdle", "5")));
+        config.setAutoCommit(true);
         ds = new HikariDataSource(config);
         log.info("Database pool initialized");
     }

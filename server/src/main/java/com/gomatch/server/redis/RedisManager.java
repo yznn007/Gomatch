@@ -386,6 +386,27 @@ public class RedisManager {
         }
     }
 
+    /**
+     * 从匹配队列中移除指定用户
+     */
+    public void removeFromMatchQueue(long userId) {
+        if (!isConnected()) return;
+        try {
+            // 使用 LREM 从列表中移除匹配的值
+            // 由于值格式是 userId:score，需要前缀匹配
+            List<String> all = syncCommands.lrange("match:queue", 0, -1);
+            for (String entry : all) {
+                String[] parts = entry.split(":");
+                if (parts.length >= 1 && String.valueOf(userId).equals(parts[0])) {
+                    syncCommands.lrem("match:queue", 1, entry);
+                    log.debug("Removed from match queue: userId={}", userId);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to remove from match queue: {}", e.getMessage());
+        }
+    }
+
     public int getMatchQueueSize() {
         if (!isConnected()) return 0;
         try {

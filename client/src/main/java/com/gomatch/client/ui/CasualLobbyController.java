@@ -6,6 +6,9 @@ import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -13,6 +16,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import java.util.stream.Collectors;
 
@@ -25,11 +29,15 @@ public class CasualLobbyController implements NetworkListener {
     @FXML private VBox roomsPane;
     @FXML private VBox spectatePane;
     @FXML private Label statusLabel;
+    @FXML private Button quickMatchBtn;
 
     private final ObservableList<RoomInfo> roomData    = FXCollections.observableArrayList();
     private final ObservableList<String>   spectateData = FXCollections.observableArrayList();
     private User currentUser;
     private boolean previewMode;
+    private boolean isMatching = false;
+    private int matchCountdown = 0;
+    private Timeline matchCountdownTimer;
 
     @FXML
     private void initialize() {
@@ -125,8 +133,61 @@ public class CasualLobbyController implements NetworkListener {
             ctrl.setPreviewMode(true);
             return;
         }
+        if (isMatching) {
+            cancelMatch();
+        } else {
+            startMatch();
+        }
+    }
+
+    private void startMatch() {
         ClientMain.getConnector().send(Protocol.QUICK_MATCH);
-        setStatus("正在匹配中，请稍候...", true);
+        isMatching = true;
+        matchCountdown = 60;
+        updateMatchStatus();
+        startCountdown();
+        Platform.runLater(() -> {
+            if (quickMatchBtn != null) {
+                quickMatchBtn.setText("取消匹配");
+            }
+        });
+    }
+
+    private void cancelMatch() {
+        ClientMain.getConnector().send(Protocol.CANCEL_MATCH);
+        stopMatching();
+    }
+
+    private void stopMatching() {
+        isMatching = false;
+        if (matchCountdownTimer != null) {
+            matchCountdownTimer.stop();
+            matchCountdownTimer = null;
+        }
+        setStatus("", false);
+        Platform.runLater(() -> {
+            if (quickMatchBtn != null) {
+                quickMatchBtn.setText("快速匹配");
+            }
+        });
+    }
+
+    private void startCountdown() {
+        if (matchCountdownTimer != null) {
+            matchCountdownTimer.stop();
+        }
+        matchCountdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
+            if (matchCountdown > 0) {
+                matchCountdown--;
+                updateMatchStatus();
+            }
+        }));
+        matchCountdownTimer.setCycleCount(60);
+        matchCountdownTimer.play();
+    }
+
+    private void updateMatchStatus() {
+        setStatus("正在匹配中... 倒计时: " + matchCountdown + "秒 (点击'快速匹配'取消)", true);
     }
 
     // handleSpectate 已被内嵌卡片按钮取代
@@ -172,7 +233,7 @@ public class CasualLobbyController implements NetworkListener {
     @Override
     public void onMessage(Message msg) {
         String cmd = msg.getCmd();
-        if (Protocol.RANKING_LIST.equals(cmd)) {
+        if (Protocol.ROOM_LIST.equals(cmd)) {
             // 服务端返回的 JSON 数组
             org.json.JSONArray rooms = msg.getData().optJSONArray("rooms");
             if (rooms == null) return;
@@ -192,6 +253,7 @@ public class CasualLobbyController implements NetworkListener {
                 .map(r -> "#" + r.getRoomId() + " " + r.getRoomName() + "  玩家: " + r.getPlayerCount() + "/2")
                 .collect(Collectors.toList()));
         } else if (Protocol.JOIN_OK.equals(cmd)) {
+            stopMatching();
             setStatus("", false);
             RoomInfo room = new RoomInfo();
             room.setRoomId(msg.getString("roomId"));
@@ -207,12 +269,23 @@ public class CasualLobbyController implements NetworkListener {
         } else if (Protocol.JOIN_FAIL.equals(cmd)) {
             showAlert("加入失败: " + msg.getString("msg"));
         } else if (Protocol.GAME_START.equals(cmd)) {
+            stopMatching();
             setStatus("", false);
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
             ctrl.setGameInfo(msg.getString("blackUserId"), msg.getString("whiteUserId"), currentUser != null ? currentUser.getUsername() : "unknown");
+        } else if (Protocol.MATCH_TIMEOUT.equals(cmd)) {
+            stopMatching();
+            setStatus("匹配超时，请重试", true);
+        } else if (Protocol.CANCEL_MATCH.equals(cmd)) {
+            stopMatching();
+            setStatus("已取消匹配", true);
         } else if (Protocol.ERROR.equals(cmd)) {
             String errMsg = msg.getString("msg");
             if (errMsg.contains("等待对手")) {
+                if (isMatching) {
+                    // 已在本地点动倒计时，忽略服务端等待消息
+                    return;
+                }
                 int idx = errMsg.lastIndexOf('(');
                 String suffix = idx >= 0 ? " " + errMsg.substring(idx) : "";
                 setStatus("等待对手中..." + suffix, true);

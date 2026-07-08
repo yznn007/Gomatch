@@ -32,7 +32,7 @@
                     <VBox fx:id="roomsPane" spacing="16" alignment="TOP_CENTER" maxWidth="600" prefWidth="600" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
                         <HBox spacing="10" alignment="CENTER_LEFT">
                             <Button text="创建房间" onAction="#handleCreateRoom" styleClass="btn-primary"/>
-                            <Button text="快速匹配" onAction="#handleQuickMatch" styleClass="btn-secondary"/>
+                            <Button text="快速匹配" fx:id="quickMatchBtn" onAction="#handleQuickMatch" styleClass="btn-secondary"/>
                             <Region HBox.hgrow="ALWAYS"/>
                             <Button text="刷新" onAction="#handleRefresh" styleClass="btn-secondary"/>
                         </HBox>

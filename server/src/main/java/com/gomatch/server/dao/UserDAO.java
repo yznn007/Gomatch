@@ -140,6 +140,20 @@ public class UserDAO {
         return null;
     }
 
+    public boolean existsActiveUser(long userId) {
+        String sql = "SELECT 1 FROM t_user WHERE user_id = ? AND status = 'ACTIVE'";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            log.error("Check active user error: {}", userId, e);
+        }
+        return false;
+    }
+
     public boolean updateScore(long userId, int scoreDelta) {
         String sql = "UPDATE t_user SET score = score + ? WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
