@@ -390,12 +390,12 @@ public class Room {
         }
     }
 
-    public static String buildScoreChangesJson(Map<Long, Integer> scoreChangeMap) {
+    public static JSONObject buildScoreChangesJson(Map<Long, Integer> scoreChangeMap) {
         JSONObject obj = new JSONObject();
         for (Map.Entry<Long, Integer> e : scoreChangeMap.entrySet()) {
             obj.put(String.valueOf(e.getKey()), e.getValue());
         }
-        return obj.toString();
+        return obj;
     }
 
     public synchronized void endGame(long winnerId, String reason, String message) {
@@ -430,7 +430,7 @@ public class Room {
                 UserDAO.UserInfo loserInfo = loserId == blackUserId ? blackInfo : whiteInfo;
 
                 if (gameType == GameType.RANKED) {
-                    int[] deltas = updateRankedScore(winnerInfo, loserInfo, true);
+                    int[] deltas = updateRankedScore(winnerInfo, loserInfo, true, game.getMoveCount());
                     p1ScoreChange = winnerId == blackUserId ? deltas[0] : deltas[1];
                     p2ScoreChange = winnerId == whiteUserId ? deltas[0] : deltas[1];
                 } else {
@@ -443,7 +443,7 @@ public class Room {
                 userDAO.updateDrawCount(whiteUserId);
 
                 if (gameType == GameType.RANKED) {
-                    int[] deltas = updateRankedScore(blackInfo, whiteInfo, false);
+                    int[] deltas = updateRankedScore(blackInfo, whiteInfo, false, game.getMoveCount());
                     p1ScoreChange = deltas[0];
                     p2ScoreChange = deltas[1];
                 }
@@ -588,7 +588,7 @@ public class Room {
         }
     }
 
-    private int[] updateRankedScore(UserDAO.UserInfo winnerInfo, UserDAO.UserInfo loserInfo, boolean hasWinner) {
+    private int[] updateRankedScore(UserDAO.UserInfo winnerInfo, UserDAO.UserInfo loserInfo, boolean hasWinner, int moveCount) {
         if (winnerInfo == null || loserInfo == null) {
             log.warn("updateRankedScore failed: user info not found");
             return new int[]{0, 0};
@@ -596,35 +596,30 @@ public class Room {
 
         long winnerId = winnerInfo.getUserId();
         long loserId = loserInfo.getUserId();
-        int winnerScore = winnerInfo.getScore();
-        int loserScore = loserInfo.getScore();
-        int K = 20;
-
-        double expectedWinner = 1.0 / (1.0 + Math.pow(10, (loserScore - winnerScore) / 400.0));
-        double expectedLoser = 1.0 / (1.0 + Math.pow(10, (winnerScore - loserScore) / 400.0));
 
         if (hasWinner) {
-            int winnerDelta = (int) Math.round(K * (1 - expectedWinner));
-            int loserDelta = (int) Math.round(K * (0 - expectedLoser));
+            int minSteps = 5;
+            int maxSteps = 225;
+            int minScore = 25;
+            int maxScore = 50;
 
-            userDAO.updateScore(winnerId, winnerDelta);
+            int clampedSteps = Math.max(minSteps, Math.min(moveCount, maxSteps));
+            int scoreDelta = minScore + (int) ((clampedSteps - minSteps) * (maxScore - minScore) / (maxSteps - minSteps));
+
+            userDAO.updateScore(winnerId, scoreDelta);
             userDAO.updateWinCount(winnerId);
-            userDAO.updateScore(loserId, loserDelta);
+            userDAO.updateScore(loserId, -scoreDelta);
             userDAO.updateLoseCount(loserId);
 
-            log.info("Ranked score updated: winner={}(+{}), loser=({}), K={}",
-                    winnerId, winnerDelta, loserId, loserDelta, K);
-            return new int[]{winnerDelta, loserDelta};
+            log.info("Ranked score updated: winner={}(+{}), loser=({}), moveCount={}",
+                    winnerId, scoreDelta, loserId, -scoreDelta, moveCount);
+            return new int[]{scoreDelta, -scoreDelta};
         } else {
-            int winnerDelta = (int) Math.round(K * (0.5 - expectedWinner));
-            int loserDelta = (int) Math.round(K * (0.5 - expectedLoser));
+            userDAO.updateScore(winnerId, 0);
+            userDAO.updateScore(loserId, 0);
 
-            userDAO.updateScore(winnerId, winnerDelta);
-            userDAO.updateScore(loserId, loserDelta);
-
-            log.info("Ranked draw score updated: player1={}(+{}), player2={}(+{})",
-                    winnerId, winnerDelta, loserId, loserDelta);
-            return new int[]{winnerDelta, loserDelta};
+            log.info("Ranked draw score updated: no score change");
+            return new int[]{0, 0};
         }
     }
 
