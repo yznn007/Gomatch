@@ -2,12 +2,12 @@
 
 ## 项目本质
 
-学生实训项目，JDK 21 + **JavaFX** + Socket 多线程服务端 + JDBC + MySQL。Maven 多模块。
+学生实训项目，JDK 21 + **JavaFX** + Socket 多线程服务端 + JDBC + MySQL + Redis。Maven 多模块。
 
 ## 架构
 
-- **三模块**：`client/`（JavaFX FXML + CSS）、`server/`（多线程 Socket）、`common/`（协议常量）
-- **通信**：自定义文本协议 `COMMAND|param1|param2`，TCP 长连接
+- **四模块**：`client/`（JavaFX FXML + CSS）、`server/`（多线程 Socket + 业务 DAO）、`common/`（JSON 消息与协议常量）、`database/`（数据库实体/仓储代码，当前服务端优先使用 `server/dao`）
+- **通信**：JSON 消息协议 `{"cmd":"COMMAND","data":{"key":"value"}}`，TCP 长连接
 - **并发**：每连接一个 `ClientHandler` 线程，`Room` 对象内 synchronized 隔离
 
 ## 运行命令
@@ -17,13 +17,13 @@
 mvn install -pl common -am
 
 # 2. 启动客户端
-.\scripts\run-client.ps1
+.\scripts\ssc_client.ps1
 
 # 或手动：
 mvn -f client/pom.xml javafx:run
 ```
 
-**关键**：JavaFX 21 依赖 JDK 17+，若系统默认 Java 不是 JDK 21，请确保 `JAVA_HOME` 指向 JDK 21。`scripts/run-client.ps1` 已内置此逻辑。
+**关键**：JavaFX 21 依赖 JDK 17+，若系统默认 Java 不是 JDK 21，请确保 `JAVA_HOME` 指向 JDK 21。`scripts/` 目录下按成员命名的客户端脚本已内置此逻辑。
 
 ## 客户端架构
 
@@ -78,9 +78,6 @@ LobbyUI → 排行榜按钮 → 左侧抽屉展开
 所有子页面 → 返回 → LobbyUI
 ```
 
-## 分支
-
-当前在 `feat/client-business`（前端业务开发），从 `dev` 切出。
 
 ## 文档维护
 
@@ -100,7 +97,7 @@ LobbyUI → 排行榜按钮 → 左侧抽屉展开
 **❌ 错误写法**（禁止）：
 
 ```powershell
-$env:JAVA_HOME = "D:\develop\Java\jdk21"
+$env:JAVA_HOME = "<你的JDK21路径>"
 $env:Path = "$env:JAVA_HOME\bin;" + $env:Path
 mvn -f server/pom.xml exec:java ...
 ```
@@ -112,10 +109,12 @@ mvn -f server/pom.xml exec:java ...
 mvn -f server/pom.xml exec:java ...
 ```
 
-**原因**：项目是**多人协作**团队项目，每位成员的 JDK 安装路径各不相同（`D:\develop\Java\jdk21`、`$HOME\scoop\apps\openjdk21\current` 等）。文档中写死路径会导致其他成员照抄后报错，增加协作摩擦。
+**原因**：项目是**多人协作**团队项目，每位成员的 JDK 安装路径各不相同（`<你的JDK21路径>`、`$HOME\scoop\apps\openjdk21\current` 等）。文档中写死路径会导致其他成员照抄后报错，增加协作摩擦。
 
 **约定**：
 
 - 若某命令依赖 JDK 21，**用文字注明前提**（如"需确保 JDK 21 已配置"），而非内嵌 `$env:JAVA_HOME=...` 设置
 - 推荐用户使用 `scripts/` 目录下的启动脚本，脚本内已内置跨平台的 JDK 自动检测逻辑
 - 若确实需要展示环境变量设置方式，用**占位符**而非具体路径，例如：`$env:JAVA_HOME = "<你的JDK21路径>"`
+
+

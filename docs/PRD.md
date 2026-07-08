@@ -245,7 +245,7 @@ flowchart TD
 | NFR-001 | 性能 | 局域网内落子延迟 ≤ 100ms |
 | NFR-002 | 并发 | 服务端同时支持 ≥ 50 房间或 ≥ 100 连接 |
 | NFR-003 | 可靠性 | 断线后 5 秒内完成判负或重连处理 |
-| NFR-004 | 安全性 | 密码 BCrypt 加密存储，SQL 注入通过预编译防范 |
+| NFR-004 | 安全性 | 密码明文存储（实训演示），SQL 注入通过预编译防范 |
 | NFR-005 | 可用性 | 界面操作反馈明确，异常提示友好 |
 | NFR-006 | 可维护性 | 服务端按模块分层：网络层、业务层、数据层 |
 
@@ -267,14 +267,14 @@ flowchart TD
 |------|------|------|------|
 | 语言 | Java | 21 LTS | 跨平台运行基础 |
 | 客户端 UI | JavaFX (FXML + CSS) | 21 | 桌面窗口、棋盘绘制、交互组件 |
-| 网络通信 | Java Socket（TCP） | JDK内置 | 实时双向数据传输，自定义文本协议 |
+| 网络通信 | Java Socket（TCP） | JDK内置 | 实时双向数据传输，JSON 消息协议 |
 | 并发模型 | Java原生多线程 | JDK内置 | 每连接独立ClientHandler线程 |
 | 数据持久化 | JDBC + MySQL | MySQL 8.x | 用户、战绩、排行榜等数据 |
 | 缓存 | Redis | 7.x | 会话、排行榜、匹配队列、在线状态 |
 | 连接池 | HikariCP | 5.x | 数据库连接复用 |
 | JSON序列化 | Gson | 2.10+ | 数据序列化/反序列化 |
 | 日志 | SLF4J + Logback | SLF4J 2.x / Logback 1.4+ | 日志输出与追踪 |
-| 密码加密 | BCrypt | - | 密码加盐哈希 |
+| 密码存储 | 明文 | - | 密码明文比对 |
 | Redis客户端 | Lettuce | - | Redis连接与操作 |
 
 ---
@@ -537,12 +537,12 @@ K因子 = 32
 ### 10.1 报文格式
 
 ```
-COMMAND|param1|param2|...
+{"cmd":"COMMAND","data":{"key":"value"}}
 ```
 
 | 要素 | 说明 |
 |------|------|
-| 分隔符 | \|（Protocol.SEPARATOR） |
+| 消息格式 | JSON：`{"cmd":"COMMAND","data":{"key":"value"}}` |
 | 传输层 | TCP 长连接 |
 | 编码 | UTF-8 |
 
@@ -609,7 +609,7 @@ COMMAND|param1|param2|...
 |--------|------|------|------|
 | user_id | BIGINT | PK, AUTO_INCREMENT | 用户ID |
 | username | VARCHAR(50) | UNIQUE, NOT NULL | 用户名 |
-| password | VARCHAR(100) | NOT NULL | 密码(BCrypt) |
+| password | VARCHAR(100) | NOT NULL | 密码(明文) |
 | email | VARCHAR(100) | UNIQUE | 邮箱 |
 | score | INT | DEFAULT 1000 | 积分 |
 | win_count | INT | DEFAULT 0 | 胜场数 |
@@ -756,3 +756,4 @@ COMMAND|param1|param2|...
 | v1.2 | 2026-07-05 | 迁移 UI 到 JavaFX |
 | v2.0 | 2026-07-07 | 完善功能需求、通信协议 |
 | v3.0 | 2026-07-07 | 整合客户端、服务端、数据库详细设计 |
+

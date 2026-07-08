@@ -31,12 +31,12 @@ mvn install -pl common -am
 所有消息以 **`|`（竖线）** 为分隔符，采用纯文本 TCP 流传输，每条消息占一行：
 
 ```
-COMMAND|param1|param2|...
+{"cmd":"COMMAND","data":{"key":"value"}}
 ```
 
 | 要素 | 说明 |
 |------|------|
-| 分隔符 | `|`（`Protocol.SEPARATOR`） |
+| 消息格式 | JSON：`{"cmd":"COMMAND","data":{"key":"value"}}` |
 | 传输层 | TCP 长连接，`BufferedReader.readLine()` 逐行读取 |
 | 编码 | UTF-8（平台默认） |
 
@@ -200,3 +200,5 @@ server  ──依赖──▶  common
 
 > [!NOTE]
 > `MOVE_SYNC` 常量值为 `"MOVE"`，与 `MOVE` 相同。服务端向客户端同步落子使用与客户端发送相同的命令字，由上下文（接收方 vs 发送方）区分语义。
+
+

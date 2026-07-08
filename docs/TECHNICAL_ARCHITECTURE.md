@@ -54,19 +54,19 @@ flowchart TD
 |------|------|------|------|
 | 语言 | Java | 21 LTS | 跨平台运行基础 |
 | 客户端 UI | JavaFX (FXML + CSS) | 21 | 桌面窗口、棋盘绘制、交互组件 |
-| 网络通信 | Java Socket（TCP） | JDK内置 | 实时双向数据传输，自定义文本协议 |
+| 网络通信 | Java Socket（TCP） | JDK内置 | 实时双向数据传输，JSON 消息协议 |
 | 并发模型 | Java原生多线程 | JDK内置 | 每连接独立ClientHandler线程 |
 | 数据持久化 | JDBC + MySQL | MySQL 8.x | 用户、战绩、排行榜等数据 |
 | 缓存 | Redis | 7.x | 会话、排行榜、匹配队列、在线状态 |
 | 连接池 | HikariCP | 5.x | 数据库连接复用 |
 | JSON序列化 | Gson | 2.10+ | 数据序列化/反序列化 |
 | 日志 | SLF4J + Logback | SLF4J 2.x / Logback 1.4+ | 日志输出与追踪 |
-| 密码加密 | BCrypt | - | 密码加盐哈希 |
+| 密码存储 | 明文 | - | 密码明文比对 |
 | Redis客户端 | Lettuce | - | Redis连接与操作 |
 
 ## 3. 通信协议定义
 
-格式：`COMMAND|param1|param2|...`
+格式：`{"cmd":"COMMAND","data":{"key":"value"}}`
 
 ### 3.1 客户端 → 服务端
 
@@ -537,7 +537,8 @@ mvn clean compile -pl server -am
 mvn -f server/pom.xml exec:java -Dexec.mainClass="com.gomatch.server.ServerMain"
 
 # 4. 运行客户端
-.\scripts\run-client.ps1
+.\scripts\scripts/ssc_client.ps1
 ```
 
 **注意**：JavaFX 21 依赖 JDK 17+，若系统默认 Java 不是 JDK 21，请确保 `JAVA_HOME` 指向 JDK 21，或直接使用 `scripts/` 目录下的启动脚本（已内置自动检测逻辑）。
+

@@ -9,7 +9,7 @@
 | JDK | 21 LTS | 运行环境，JavaFX 21 依赖 |
 | Maven | 3.9+ | 项目构建工具 |
 | MySQL | 8.x | 数据库存储 |
-| Redis | 7.x（可选） | 缓存、会话持久化、排行榜 |
+| Redis | 7.x（必需） | 缓存、会话持久化、排行榜 |
 
 ### 1.2 环境变量配置
 
@@ -57,7 +57,7 @@ db.pool.connectionTimeout=30000
 db.pool.idleTimeout=600000
 db.pool.maxLifetime=1800000
 
-# Redis 配置（可选，不配置则使用内存模式）
+# Redis 配置（必需，服务端启动前必须可连接）
 redis.host=localhost
 redis.port=6379
 redis.password=${GOMATCH_REDIS_PASSWORD}
@@ -91,10 +91,10 @@ mvn clean compile -pl server -am
 
 ```powershell
 # 方式一：直接运行脚本
-.\run-server.ps1
+.\\scripts\\ssc_server.ps1
 
 # 方式二：PowerShell 命令行
-powershell -ExecutionPolicy Bypass -File run-server.ps1
+powershell -ExecutionPolicy Bypass -File scripts/ssc_server.ps1
 ```
 
 ### 4.2 手动启动
@@ -123,7 +123,7 @@ mvn -f server/pom.xml exec:java -Dexec.mainClass="com.gomatch.server.ServerMain"
 ### 5.1 使用启动脚本（推荐）
 
 ```powershell
-.\run-client.ps1
+.\\scripts\\ssc_client.ps1
 ```
 
 ### 5.2 手动启动
@@ -164,7 +164,7 @@ mvn clean
 Error: JavaFX runtime components are missing, and are required to run this application.
 ```
 
-**解决方案**：确保系统 `JAVA_HOME` 已指向 JDK 21，或直接使用 `scripts/run-client.ps1` 启动脚本（已内置自动查找逻辑）。
+**解决方案**：确保系统 `JAVA_HOME` 已指向 JDK 21，或直接使用 `scripts/scripts/ssc_client.ps1` 启动脚本（已内置自动查找逻辑）。
 
 ### 7.2 数据库连接失败
 
@@ -187,7 +187,7 @@ Failed to initialize Redis: Connection refused
 
 **解决方案**：
 1. 启动 Redis 服务：`redis-server`
-2. 或修改配置使 Redis 为可选：注释掉 Redis 初始化代码
+2. 启动 Redis 后重新启动服务端
 
 ### 7.4 端口占用
 
@@ -276,3 +276,4 @@ mvn -f server/pom.xml exec:java \
 
 **文档版本**：v1.0
 **最后更新**：2026-07-06
+

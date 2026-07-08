@@ -15,7 +15,7 @@
 | 连接池 | HikariCP | 5.x |
 | JSON 序列化 | Gson | 2.10+ |
 | 日志 | SLF4J + Logback | SLF4J 2.x / Logback 1.4+ |
-| 密码加密 | BCrypt | - |
+| 密码存储 | 明文 | - |
 | Redis 客户端 | Lettuce | - |
 
 ## 快速启动
@@ -27,7 +27,7 @@
 | JDK | 21 LTS（必须） | JavaFX 21 依赖，需配置 `JAVA_HOME` |
 | Maven | 3.9+ | 项目构建工具，需配置 `PATH` |
 | MySQL | 8.x | 数据库，账号：`gomatch`，密码：`gomatch` |
-| Redis | 7.x（可选但推荐） | 会话持久化、排行榜缓存 |
+| Redis | 7.x（必须） | 会话持久化、排行榜缓存、匹配队列 |
 
 ### 启动步骤
 
@@ -35,14 +35,12 @@
 # 1. 安装 common 到本地 Maven 仓库（首次或 common 变更后必须执行）
 mvn install -pl common -am
 
-# 2. 启动服务端（先启动）
-.\scripts\run-server.ps1
-# 或使用 ssc 脚本
+# 2. 确保 MySQL 和 Redis 已启动
+
+# 3. 启动服务端（先启动，可按成员选择对应脚本）
 .\scripts\ssc_server.ps1
 
-# 3. 启动客户端（后启动）
-.\scripts\run-client.ps1
-# 或使用 ssc 脚本
+# 4. 启动客户端（后启动，可按成员选择对应脚本）
 .\scripts\ssc_client.ps1
 ```
 
@@ -75,10 +73,8 @@ Gomatch/
 ├── sql/                         # SQL 脚本
 ├── docs/                        # 文档目录
 ├── scripts/                     # 启动脚本目录
-│   ├── run-client.ps1           # 客户端启动脚本
-│   ├── run-server.ps1           # 服务端启动脚本
-│   ├── ssc_client.ps1           # 客户端启动脚本 (ssc)
-│   └── ssc_server.ps1           # 服务端启动脚本 (ssc)
+│   ├── *_client.ps1             # 客户端启动脚本（按成员命名）
+│   └── *_server.ps1             # 服务端启动脚本（按成员命名）
 └── pom.xml                      # Maven 父 POM
 ```
 
@@ -120,6 +116,6 @@ mvn -f client/pom.xml javafx:run
 
 1. **JDK 版本**：JavaFX 21 依赖 JDK 17+，必须使用 JDK 21
 2. **数据库配置**：修改 `database/src/main/resources/database.properties` 配置数据库连接
-3. **Redis 配置**：Redis 为可选配置，用于会话持久化和排行榜缓存
+3. **Redis 配置**：Redis 为必需组件，用于会话持久化、排行榜缓存和匹配队列
 4. **端口配置**：服务端默认监听 8888 端口
 

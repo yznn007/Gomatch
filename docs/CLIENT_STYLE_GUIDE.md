@@ -101,3 +101,4 @@ Gomatch 客户端的整体视觉基调为**白色极简磨砂风格**。通过�
 *   **禁用原生 Alert**：禁止使用 JDK 原生 `new Alert(...)` 展示提示信息。
 *   **使用沉浸式模态弹窗**：一律使用 `ScreenManager.showDialog("/fxml/MessageDialogUI.fxml")` 或自定义对话框 FXML。
 *   **弹窗外壳特性**：通过 `ScreenManager` 弹出的模态窗自动采用 `StageStyle.UNDECORATED`（无系统窗口栏），背景集成点阵网格粒子特效，并包含项目定制的极简关闭/关闭标题栏，整体风格完美统一。
+

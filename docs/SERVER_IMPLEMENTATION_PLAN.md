@@ -1,4 +1,4 @@
-﻿# Gomatch Server 模块实现方案
+# Gomatch Server 模块实现方案
 
 > 基于 requirements.md、DATABASE_DESIGN.md、TECHNICAL_ARCHITECTURE.md
 > 生成日期：2026-07-05
@@ -32,7 +32,7 @@ Server 模块负责：
 | 组件 | 方案 | 备注 |
 |------|------|------|
 | 网络通信 | **TCP Socket** | Java 原生 ServerSocket + Socket，每连接一线程 |
-| 密码存储 | **BCrypt** | 注册时加盐哈希，登录时比对 |
+| 密码存储 | **明文** | 注册与登录按明文比对 |
 | 会话管理 | **SessionManager** | 内存 + Redis 持久化，支持断线重连 |
 | 广播机制 | Room.broadcast() | 遍历 players + observers |
 | 步数格式 | JSON 数组（棋谱格式） | Gson 序列化 |
@@ -584,7 +584,7 @@ public void subscribe(String roomId, RedisPubSubListener<String, String> listene
 - 服务端使用 ServerSocket(8888) 监听，accept() 阻塞等待连接
 - 每个客户端连接创建独立 ClientHandler 线程
 - ClientHandler 内部使用 BufferedReader 读取、PrintWriter 写入
-- 协议格式：COMMAND|param1|param2，以 | 分隔符拼接
+- 协议格式：{"cmd":"COMMAND","data":{"key":"value"}}，以 | 分隔符拼接
 
 ### 9.2 线程安全
 - Room 的 join/leave/broadcast 方法已用 synchronized 保护
@@ -603,8 +603,8 @@ public void subscribe(String roomId, RedisPubSubListener<String, String> listene
 - 响应消息前缀命令字，客户端根据命令字分发处理
 
 ### 9.5 密码策略
-- 注册时使用 BCrypt.hashpw(password, BCrypt.gensalt())
-- 登录时使用 BCrypt.checkpw(password, hash) 验证
+- 注册时直接保存明文密码（实训演示）
+- 登录时使用明文密码比对
 
 ### 9.6 断线策略
 - 客户端断开后，保留会话 5 分钟（SessionManager + Redis）
@@ -636,7 +636,7 @@ public void subscribe(String roomId, RedisPubSubListener<String, String> listene
 | gson | JSON 序列化 | ✅ |
 | logback-classic | 日志 | ✅ |
 | lettuce-core | Redis 客户端 | ✅ |
-| jbcrypt | BCrypt 密码加密 | ✅ |
+| jbcrypt | 不使用 | - |
 
 ---
 
@@ -667,3 +667,5 @@ public void subscribe(String roomId, RedisPubSubListener<String, String> listene
 
 **文档版本**：v2.0
 **最后更新**：2026-07-06
+
+

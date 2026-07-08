@@ -47,7 +47,7 @@ server/src/main/
 ServerMain.main()
   ├─ DBUtil.init()                    → 初始化 HikariCP 连接池（localhost:3306/gomatch）
   ├─ RoomManager.getInstance()        → 初始化房间管理单例
-  ├─ RedisManager.getInstance().init()→ 连接 Redis（localhost:6379，可选）
+  ├─ RedisManager.getInstance().init()→ 连接 Redis（localhost:6379，必需）
   ├─ initRankMaterializedView()       → 刷新排行榜物化表，每 5 分钟自动刷新
   ├─ initRoomPersistence()            → 每 1 分钟同步内存房间到 DB，清理 30 分钟前结束的房间
   ├─ addShutdownHook(shutdown)        → JVM 退出时优雅关闭
@@ -329,7 +329,7 @@ public static class MoveRecord {
 | `close()` | 关闭 Lettuce 连接 |
 
 > [!NOTE]
-> Redis 为可选组件。若连接失败，`connected=false`，所有方法安全返回默认值，不影响核心游戏功能。
+> Redis 为必需组件。若连接失败，服务端启动失败，避免会话、排行榜和匹配队列进入不一致状态。
 
 ---
 
@@ -511,3 +511,4 @@ mvn -f server/pom.xml exec:java -Dexec.mainClass="com.gomatch.server.ServerMain"
 1. MySQL 已启动，数据库 `gomatch` 已初始化（执行 `sql/init.sql`）
 2. JDK 21 已配置
 3. 已执行 `mvn install -pl common -am` 安装 common 模块
+

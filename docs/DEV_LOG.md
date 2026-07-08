@@ -232,35 +232,10 @@
 | 2026-07-08 | Contributor| |
 | 2026-07-08 | Contributor| |
 | 2026-07-08 | Contributor| |
-
-### 数据库（Database）
-
-> MySQL 表结构、Redis 缓存、DAO 数据访问层
-
-| 日期 | 工作内容 | 问题/备注 |
-|------|----------|-----------|
-| 2026-07-05 | Contributor| |
-| 2026-07-05 | Contributor| 修复编译失败 |
-| 2026-07-05 | Contributor| |
-| 2026-07-06 | Contributor| 本地数据库初始化及编译验证测试通过 |
-| 2026-07-06 | Contributor| 使用 Lettuce Redis 客户端 |
-| 2026-07-06 | Contributor| 修改 t_room.room_id 为 VARCHAR(50) |
-| 2026-07-06 | Contributor| 定时任务自动刷新 |
-| 2026-07-06 | Contributor| |
-| 2026-07-08 | Contributor| 修复 RankDAO.refreshAllRanks() 中 t_rank.version 的歧义，明确限定 version 递增目标解决 SQLIntegrityConstraintViolationException 数据库异常 |
-| 2026-07-08 | Contributor| 在 RankDAO.java 中增加 SQL 查询 getFriendsRanking()，将当前用户与其好友合流并降序排序 |
-| 2026-07-08 | Contributor| |
-
-### 测试（Testing）
-
-> 编译验证、单元测试、集成测试
-
-| 日期 | 工作内容 | 问题/备注 |
-|------|----------|-----------|
-| 2026-07-05 | Contributor| 修复 JUnit 版本不匹配问题 |
-| 2026-07-06 | Contributor| mvn compile 通过 |
-| 2026-07-06 | Contributor| |
-| 2026-07-08 | Contributor| 修复 jzx-server.ps1 和 jzx-client.ps1 硬编码路径为可移植 $HOME\\.m2\\repository；在 jzx-server.ps1 和 ssc_server.ps1 中加入 compile 生命周期阶段，保证 server 最新修改在拉取后被自动编译 |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| |
+| 2026-07-08 | Contributor| ClientHandler.java: handleRegister/handleLogin/handleChangePassword/handleCreateRoom/handleCreateAiRoom 增加 String 入参 null 检查，handleReconnect token 日志行 NPE 保护；Room.java: getRankByUserId TOCTOU 重复调用风险修复 | 编译通过 |
+| 2026-07-08 | Contributor| Protocol.java 无 HEARTBEAT 常量残留清理；SessionManager 中 updateHeartbeat 蜕化为会话查询时的活跃时间维护，保留；清理 MODULE_SERVER.md / MODULE_COMMON.md / MODULE_CLIENT.md / PRD.md 中的过时心跳描述 | 文档已同步 |
+| 2026-07-08 | Contributor| 服务端 ClientHandler：处理 HEARTBEAT 命令 + 后台线程检测 90s 无消息则关闭连接；Room：对局中玩家断线启动 60s 重连计时窗口，最多 3 次重连机会，全部失败则判对方获胜（endGame reason=disconnect），重连成功后自动回放已有落子 | lint 零告警 |
+| 2026-07-08 | Contributor| BoardController：在玩家卡片右下角添加红色"断线中"角标（默认隐藏）；新增 setPlayerOnline(isBlack, online) 方法切换断线状态：断线时卡片透明度 0.55 + 名字变红 + 显示角标；监听 PLAYER_DISCONNECTED/PLAYER_RECONNECTED/RECONNECT_ATTEMPT/RECONNECT_FAILED 消息并在聊天区打印系统提示；新增 blackId/whiteId 字段用于按 userId 匹配玩家卡片 | lint 零告警 |
+| 2026-07-08 | Contributor| BoardController：新增 updateActionButtons() 仅在 myTurn && !gameOver && !spectatorMode && !replayMode 时启用 undoBtn 和 drawBtn，非己方回合时灰色禁用；在 setGameInfo / handleMouseClick / MOVE_SYNC / GAME_OVER / UNDO_ACCEPTED / TURN_TIMEOUT 等所有 myTurn/gameOver 变更点调用；CSS：新增 .btn-secondary:disabled 样式（灰底 + 低透明 + 光标 default） | lint 零告警 |
+| 2026-07-08 | Contributor| 1. 从 AGENTS.md 移除固定当前分支描述，避免多人协作时误导；2. 将项目说明补充 Redis；3. 更新 README，将 Redis 标记为必需组件，并改正启动脚本示例与目录说明，避免引用不存在的 run-client/run-server 脚本。 | 文档已同步 |
+| 2026-07-08 | Contributor| Maven 编译插件统一 3.13.0 + release 21 + fork；database 测试改为结构测试；心跳改为服务端返回 HEARTBEAT_OK 并刷新 Redis 会话活跃时间；Redis 改为服务端必需组件，匹配候选从 Redis 队列读取，锁失败不再兜底成功；会话 Redis 数据补充 role；新增管理中心页面 + 存档功能；协议常量集中化；清理 cp.txt 与 client-config.properties | 编译验证通过 |

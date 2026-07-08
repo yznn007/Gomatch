@@ -216,7 +216,7 @@ erDiagram
 |--------|------|------|------|
 | user_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | 用户唯一标识 |
 | username | VARCHAR(50) | NOT NULL, UNIQUE | 用户名 |
-| password | VARCHAR(100) | NOT NULL | 密码(BCrypt加密) |
+| password | VARCHAR(100) | NOT NULL | 密码(明文) |
 | email | VARCHAR(100) | UNIQUE | 邮箱 |
 | avatar | VARCHAR(255) | NULL | 头像URL |
 | role | VARCHAR(20) | NOT NULL, DEFAULT 'PLAYER' | 角色: PLAYER(玩家)/ADMIN(管理员) |
@@ -1807,9 +1807,9 @@ flowchart TD
 
 | 数据项 | 加密方式 | 说明 |
 |--------|----------|------|
-| 密码 | BCrypt | 单向哈希，盐值自动生成 |
+| 密码 | 明文 | 实训演示环境直接存储 |
 | 文件URI | Base64编码 | 防止敏感信息泄露 |
-| 房间密码 | BCrypt | 加密存储 |
+| 房间密码 | 明文 | 实训演示环境直接存储 |
 | 棋谱数据 | 无 | 非敏感数据 |
 
 ### 12.2 访问控制
@@ -1830,3 +1830,4 @@ flowchart TD
 | 过期会话 | 定时任务 | 超过1小时的断开会话自动清理 |
 | 旧消息 | 定时任务 | 超过30天的消息自动清理 |
 | 过期锁 | 定时任务 | 超过超时时间的锁自动释放 |
+

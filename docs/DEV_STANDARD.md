@@ -211,7 +211,7 @@ ScreenManager.showDialog("GameOverUI.fxml");
 
 ### 4.6 协议通信
 
-- 服务端客户端通信使用自定义文本协议：`COMMAND|param1|param2`
+- 服务端客户端通信使用JSON 消息协议：`{"cmd":"COMMAND","data":{"key":"value"}}`
 - 协议常量统一在 `common` 模块的 `Protocol.java` 中定义
 - 禁止在 Controller 或 Handler 中硬编码协议字符串（魔法字符串）
 

@@ -21,7 +21,7 @@ logback 将 UTF-8 字符串按 UTF-8 编码为字节流写入 stdout，但 Windo
 
 ## 修复方案
 
-在 `scripts/run-server.ps1` 中增加两项配置：
+在 `scripts/scripts/ssc_server.ps1` 中增加两项配置：
 
 ### 1. 设置终端代码页为 UTF-8
 
@@ -44,7 +44,7 @@ chcp 65001 | Out-Null
 ## 修改后的启动脚本示例
 
 ```powershell
-$env:JAVA_HOME = "D:\develop\Java\jdk21"
+$env:JAVA_HOME = "<你的JDK21路径>"
 $env:Path = "$env:JAVA_HOME\bin;" + $env:Path
 # Set console code page to UTF-8 to avoid garbled Chinese output
 chcp 65001 | Out-Null
@@ -57,3 +57,4 @@ mvn -f server/pom.xml exec:java "-Dexec.mainClass=com.gomatch.server.ServerMain"
 2. **UTF-8 代码页（65001）** 在某些旧版 Windows 上可能存在兼容问题，Win10 1809+ 已完全支持
 3. 若仍然出现乱码，请确认 logback.xml 中 ConsoleAppender 的 `<charset>UTF-8</charset>` 配置存在且生效
 4. 文件日志（`logs/gomatch-server.log`）不受终端编码影响，始终以 UTF-8 正确写入
+
