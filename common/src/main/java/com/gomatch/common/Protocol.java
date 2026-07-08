@@ -37,6 +37,7 @@ public class Protocol {
     public static final String WATCHER_HISTORY = "WATCHER_HISTORY";
     public static final String QUERY_RECORD = "QUERY_RECORD";
     public static final String LOGOUT = "LOGOUT";
+    public static final String HEARTBEAT = "HEARTBEAT";
     // Server -> Client
     public static final String LOGIN_OK     = "LOGIN_OK";
     public static final String LOGIN_FAIL   = "LOGIN_FAIL";

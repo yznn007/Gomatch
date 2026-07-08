@@ -100,7 +100,6 @@ GAME_OVER|black|alice
 | `CHAT_HISTORY` | `"CHAT_HISTORY"` | 获取房间聊天历史 |
 | `WATCHER_HISTORY` | `"WATCHER_HISTORY"` | 获取观战历史记录 |
 | `LOGOUT` | `"LOGOUT"` | 退出登录 |
-| `HEARTBEAT` | `"HEARTBEAT"` | 心跳保活（客户端每 30 秒发送） |
 
 ### 3.2 服务端 → 客户端响应常量
 

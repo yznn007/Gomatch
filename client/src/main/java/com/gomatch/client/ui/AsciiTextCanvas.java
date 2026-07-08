@@ -73,8 +73,15 @@ public class AsciiTextCanvas extends Canvas {
         double layoutW = textNode.getLayoutBounds().getWidth();
         double layoutH = textNode.getLayoutBounds().getHeight();
         
+        if (layoutW <= 0 || layoutH <= 0) {
+            layoutW = 400;  // fallback
+            layoutH = 180;
+        }
+        
         int rawW = (int) Math.ceil(layoutW) + 40;
         int rawH = (int) Math.ceil(layoutH) + 40;
+        if (rawW <= 0) rawW = 100;
+        if (rawH <= 0) rawH = 100;
 
         Canvas tempCanvas = new Canvas(rawW, rawH);
         GraphicsContext gc = tempCanvas.getGraphicsContext2D();
@@ -87,9 +94,18 @@ public class AsciiTextCanvas extends Canvas {
         double textY = rawH / 2.0 + layoutH / 4.0;
         gc.fillText(text, 20, textY);
 
-        textImage = tempCanvas.snapshot(null, null);
+        try {
+            textImage = tempCanvas.snapshot(null, null);
+        } catch (Exception e) {
+            System.err.println("[AsciiTextCanvas] snapshot failed: " + e.getMessage());
+            return;
+        }
+
+        if (textImage == null) return;
+
         textWidth = (int) textImage.getWidth();
         textHeight = (int) textImage.getHeight();
+        if (textWidth <= 0 || textHeight <= 0) return;
 
         textureReader = textImage.getPixelReader();
     }
@@ -110,6 +126,7 @@ public class AsciiTextCanvas extends Canvas {
     }
 
     private double sampleTexture(double u, double v, int channel) {
+        if (textureReader == null) return 0.0;
         if (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0) {
             return 0.0;
         }
@@ -160,7 +177,6 @@ public class AsciiTextCanvas extends Canvas {
         double[][] gridA = new double[cols][rows];
 
         double waveFactor = enableWaves ? 1.0 : 0.0;
-        double time5 = time * 5.0;
 
         double textAspect = (double) textWidth / textHeight;
 

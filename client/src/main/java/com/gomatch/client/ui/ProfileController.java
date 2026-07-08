@@ -54,6 +54,62 @@ public class ProfileController implements NetworkListener {
         return s + "秒";
     }
 
+    /**
+     * 判定棋谱数据是否可用于回放：
+     *  - null / 空串视为无效
+     *  - JSON 数组 "[]" 视为无效（无落子）
+     *  - 其他任意非空内容视为有效（JSON 数组或老格式字符串）
+     */
+    private boolean isReplayDataValid(String movesStr) {
+        if (movesStr == null) return false;
+        String trimmed = movesStr.trim();
+        if (trimmed.isEmpty()) return false;
+        if ("[]".equals(trimmed)) return false;
+        return true;
+    }
+
+    /**
+     * 从记录 JSON 中提取 boardData 棋谱数据，兼容多种存储格式：
+     *  - 字符串类型的 JSON 数组，例如 "[{"x":0,...}]"（Redis 缓存路径）
+     *  - 字符串类型的 JSON 字符串（双重编码）
+     *  - JSONArray 类型（org.json 反序列化结果）
+     *  - 老格式 "x,y,color;x,y,color" 或 "x,y,color|x,y,color"
+     * 提取失败或为空时返回空字符串，调用方据此判定"暂无棋谱数据"。
+     */
+    private String extractBoardData(JSONObject r) {
+        // 1. 优先尝试作为 JSONArray 直接获取（如果服务端传来的是数组类型）
+        JSONArray arr = r.optJSONArray("boardData");
+        if (arr != null && arr.length() > 0) {
+            return arr.toString();
+        }
+
+        // 2. 作为字符串取出（绝大多数情况）
+        String raw = r.optString("boardData", "");
+        if (raw == null || raw.isEmpty()) {
+            return "";
+        }
+
+        // 3. 标准化：去掉外层字符串包裹（双重 JSON 编码场景）
+        String trimmed = raw.trim();
+        if (trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
+            trimmed = trimmed.substring(1, trimmed.length() - 1)
+                    .replace("\\\"", "\"")
+                    .replace("\\\\", "\\");
+        }
+
+        // 4. 已是 JSON 数组形式：原样返回
+        if (trimmed.startsWith("[")) {
+            return trimmed;
+        }
+
+        // 5. 老格式兼容：管道分隔或分号分隔的 "x,y,color"
+        if (trimmed.contains("|") || trimmed.contains(";")) {
+            return trimmed.replace("\\|", "|");
+        }
+
+        return trimmed;
+    }
+
     @FXML
     private void initialize() {
         recordData.addListener((javafx.collections.ListChangeListener<GameRecord>) c -> renderRecordCards());
@@ -85,7 +141,7 @@ public class ProfileController implements NetworkListener {
                 // Result Badge & ELO change indicator
                 javafx.scene.layout.StackPane badgeContainer = new javafx.scene.layout.StackPane();
                 badgeContainer.getStyleClass().add("result-badge");
-                String result = record.getResult() != null ? record.getResult() : "平";
+                String result = record.getResult() != null && !record.getResult().isEmpty() ? record.getResult() : "平";
                 Label badgeText = new Label(result.substring(0, 1));
                 badgeText.getStyleClass().add("result-badge-text");
                 badgeContainer.getChildren().add(badgeText);
@@ -137,7 +193,7 @@ public class ProfileController implements NetworkListener {
                 replayBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
                 replayBtn.setOnAction(e -> {
                     String movesStr = record.getMoves();
-                    if (movesStr != null && !movesStr.isEmpty()) {
+                    if (isReplayDataValid(movesStr)) {
                         BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
                         ctrl.setReplayMode(true);
                         ctrl.replayMoves(movesStr);
@@ -311,6 +367,7 @@ public class ProfileController implements NetworkListener {
             }
             try {
                 recordData.clear();
+                if (msg.getData() == null) return;
                 JSONArray records = msg.getData().optJSONArray("records");
                 if (records == null) return;
                 for (int i = 0; i < records.length(); i++) {
@@ -319,7 +376,8 @@ public class ProfileController implements NetworkListener {
                     String p2Name = r.optString("player2Name", "未知");
                     String winnerId = r.optString("winnerId", "0");
                     String time = r.optString("createTime", "");
-                    String boardData = r.optString("boardData", "").replace("\\|", "|");
+                    // 兼容多种格式：JSON 数组字符串（Redis 缓存）、老格式的分号/管道分隔、JSON 字符串
+                    String boardData = extractBoardData(r);
                     int moveCount = r.optInt("moveCount", 0);
                     int duration = r.optInt("duration", 0);
                     int scoreChange = r.optInt("scoreChange", 0);

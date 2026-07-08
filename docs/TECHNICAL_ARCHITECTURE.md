@@ -319,7 +319,7 @@ erDiagram
         varchar connection_id "连接ID"
         varchar room_id FK "当前房间ID"
         varchar status "连接状态"
-        datetime last_heartbeat "最后心跳时间"
+        datetime last_heartbeat "最后活跃时间"
         datetime disconnect_time "断开时间"
         datetime create_time "创建时间"
         datetime update_time "更新时间"

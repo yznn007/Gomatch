@@ -111,7 +111,7 @@ online:{userId}  ->  String（token）
 ```
 
 **操作**：
-- 登录/心跳：SET online:{userId} token
+- 登录：SET online:{userId} token
 - 退出/断线：DEL online:{userId}
 - 检查在线：EXISTS online:{userId}
 

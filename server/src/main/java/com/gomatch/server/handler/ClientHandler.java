@@ -43,6 +43,8 @@ public class ClientHandler implements Runnable {
     private long userId;
     private String username;
     private boolean authenticated;
+    private volatile long lastMessageTime = System.currentTimeMillis();
+    private volatile boolean heartbeatTimeout = false;
     
     Room currentRoom;
 
@@ -58,9 +60,15 @@ public class ClientHandler implements Runnable {
             
             log.info("Client connected: {} from {}", socket.getLocalPort(), socket.getInetAddress());
 
+            // 启动心跳超时检测线程
+            Thread timeoutChecker = new Thread(this::checkHeartbeatTimeout, "heartbeat-timeout-" + socket.getPort());
+            timeoutChecker.setDaemon(true);
+            timeoutChecker.start();
+
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.isEmpty()) continue;
+                lastMessageTime = System.currentTimeMillis();
                 log.debug("Received from {}: {}", socket.getPort(), line);
                 try {
                     Message msg = Message.fromJson(line);
@@ -73,7 +81,33 @@ public class ClientHandler implements Runnable {
         } catch (IOException e) {
             log.warn("Client read error: {}", socket.getInetAddress());
         } finally {
+            heartbeatTimeout = true; // 停止超时检测线程
             cleanup();
+        }
+    }
+
+    /**
+     * 心跳超时检测：每 30 秒检查一次，若 90 秒未收到任何消息则判定断线
+     */
+    private void checkHeartbeatTimeout() {
+        while (!heartbeatTimeout) {
+            try {
+                Thread.sleep(30000);
+            } catch (InterruptedException e) {
+                break;
+            }
+            if (heartbeatTimeout) break;
+            long elapsed = System.currentTimeMillis() - lastMessageTime;
+            if (elapsed > 90000) {
+                log.warn("Heartbeat timeout: no message from {} for {}s, closing connection",
+                        socket.getInetAddress(), elapsed / 1000);
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    log.error("Error closing socket on timeout", e);
+                }
+                break;
+            }
         }
     }
 
@@ -117,6 +151,7 @@ public class ClientHandler implements Runnable {
             case Protocol.CHAT_HISTORY    -> handleChatHistory(msg);
             case Protocol.WATCHER_HISTORY -> handleWatcherHistory(msg);
             case Protocol.LOGOUT          -> handleLogout();
+            case Protocol.HEARTBEAT       -> handleHeartbeat();
             case "AI_MATCH"               -> handleAiMatch(msg);
             default -> send(Message.of(Protocol.ERROR, "msg", "Unknown command: " + cmd));
         }
@@ -147,7 +182,7 @@ public class ClientHandler implements Runnable {
 
         log.info("注册请求: username={}", username);
 
-        if (username.trim().isEmpty()) {
+        if (username == null || username.trim().isEmpty()) {
             send(Message.of("REGISTER_FAIL", "msg", "用户名不能为空"));
             return;
         }
@@ -155,7 +190,7 @@ public class ClientHandler implements Runnable {
             send(Message.of("REGISTER_FAIL", "msg", "用户名最多16个字符"));
             return;
         }
-        if (password.length() < 6) {
+        if (password == null || password.length() < 6) {
             send(Message.of("REGISTER_FAIL", "msg", "密码至少6位"));
             return;
         }
@@ -175,6 +210,11 @@ public class ClientHandler implements Runnable {
     private void handleLogin(Message msg) {
         String username = msg.getString("username");
         String password = msg.getString("password");
+
+        if (username == null || username.trim().isEmpty() || password == null) {
+            send(Message.of(Protocol.LOGIN_FAIL, "msg", "用户名或密码不能为空"));
+            return;
+        }
 
         log.info("登录请求: username={}", username);
 
@@ -201,6 +241,50 @@ public class ClientHandler implements Runnable {
             RankDAO.RankInfo rankInfo = rankDAO.getRankByUserId(userInfo.getUserId());
             if (rankInfo != null) {
                 rank = rankInfo.getRank();
+            }
+
+            // 检查是否有进行中的对局（断线后重开客户端）
+            Room activeRoom = roomManager.findRoomByUserId(userInfo.getUserId());
+            if (activeRoom != null && activeRoom.getStatus() == Room.Status.PLAYING
+                    && (userInfo.getUserId() == activeRoom.getBlackUserId()
+                        || userInfo.getUserId() == activeRoom.getWhiteUserId())) {
+
+                boolean reconnected = activeRoom.reconnect(this);
+                if (reconnected) {
+                    this.currentRoom = activeRoom;
+                    sessionManager.updateSessionRoom(userInfo.getUserId(), activeRoom.getRoomId());
+
+                    int currentColor = (userInfo.getUserId() == activeRoom.getBlackUserId()) ? 1 : 2;
+                    long disconnectedId = activeRoom.getDisconnectedPlayerId();
+
+                    send(Message.builder(Protocol.LOGIN_OK)
+                            .set("userId", String.valueOf(userInfo.getUserId()))
+                            .set("username", userInfo.getUsername())
+                            .set("score", String.valueOf(userInfo.getScore()))
+                            .set("winCount", String.valueOf(userInfo.getWinCount()))
+                            .set("loseCount", String.valueOf(userInfo.getLoseCount()))
+                            .set("drawCount", String.valueOf(userInfo.getDrawCount()))
+                            .set("rank", String.valueOf(rank))
+                            .set("token", session.token)
+                            .set("roomId", activeRoom.getRoomId())
+                            .set("blackUserId", String.valueOf(activeRoom.getBlackUserId()))
+                            .set("whiteUserId", String.valueOf(activeRoom.getWhiteUserId()))
+                            .set("currentColor", String.valueOf(currentColor))
+                            .set("disconnectedUserId", String.valueOf(disconnectedId))
+                            .build());
+
+                    // 回放已有落子（在 LOGIN_OK 之后发送，确保客户端先初始化对局界面）
+                    activeRoom.replayMovesTo(this);
+
+                    // 通知对手该玩家已重连
+                    activeRoom.broadcastToPlayers(Message.of(Protocol.PLAYER_ENTER,
+                            "userId", String.valueOf(userInfo.getUserId()),
+                            "username", userInfo.getUsername()));
+
+                    log.info("User logged in and reconnected to room {}: {} (id={})",
+                            activeRoom.getRoomId(), userInfo.getUsername(), userInfo.getUserId());
+                    return;
+                }
             }
 
             send(Message.builder(Protocol.LOGIN_OK)
@@ -234,7 +318,7 @@ public class ClientHandler implements Runnable {
         String oldPassword = msg.getString("oldPassword");
         String newPassword = msg.getString("newPassword");
 
-        if (newPassword.length() < 6) {
+        if (oldPassword == null || newPassword == null || newPassword.length() < 6) {
             send(Message.of(Protocol.ERROR, "msg", "新密码至少6位"));
             return;
         }
@@ -258,7 +342,7 @@ public class ClientHandler implements Runnable {
         }
 
         String roomName = msg.getString("roomName");
-        if (roomName.trim().isEmpty()) {
+        if (roomName == null || roomName.trim().isEmpty()) {
             send(Message.of(Protocol.ERROR, "msg", "房间名不能为空"));
             return;
         }
@@ -292,7 +376,7 @@ public class ClientHandler implements Runnable {
         }
 
         String roomName = msg.getString("roomName");
-        if (roomName.trim().isEmpty()) {
+        if (roomName == null || roomName.trim().isEmpty()) {
             send(Message.of(Protocol.ERROR, "msg", "房间名不能为空"));
             return;
         }
@@ -888,7 +972,8 @@ public class ClientHandler implements Runnable {
 
         if (session == null) {
             send(Message.of("RECONNECT_FAIL", "msg", "会话不存在或已过期"));
-            log.warn("Reconnect failed: session not found for token {}", token.substring(0, Math.min(8, token.length())));
+            log.warn("Reconnect failed: session not found for token {}",
+                    token != null ? token.substring(0, Math.min(8, token.length())) : "null");
             return;
         }
 
@@ -1271,6 +1356,14 @@ public class ClientHandler implements Runnable {
         log.info("发送观战记录给玩家 {}: {} 条", userId, watchers.size());
     }
 
+    // ==================== 心跳 ====================
+
+    private void handleHeartbeat() {
+        // 心跳包仅用于保活，不返回响应以节省流量
+        // lastMessageTime 已在 run() 循环头部更新
+        log.trace("Heartbeat from userId={}", userId);
+    }
+
     // ==================== 退出登录 ====================
 
     private void handleLogout() {
@@ -1340,6 +1433,7 @@ public class ClientHandler implements Runnable {
     public String getUsername() { return username != null ? username : "unknown"; }
     public boolean isAuthenticated() { return authenticated; }
     public Room getCurrentRoom() { return currentRoom; }
+    public boolean isConnected() { return socket != null && !socket.isClosed() && socket.isConnected(); }
 
     public void setUserId(long userId) {
         this.userId = userId;

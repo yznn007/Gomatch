@@ -111,15 +111,12 @@ main() → Application.launch()
 | `socket` | TCP Socket 连接 |
 | `reader/writer` | 行读/行写流 |
 | `listeners` | `CopyOnWriteArrayList<NetworkListener>` — 线程安全的监听器列表 |
-| `heartbeatTimer` | 心跳定时器（每 30 秒发送，90 秒无响应判定断线） |
 | `lastHost/lastPort` | 记录连接地址，用于断线重连 |
 
 #### 关键参数
 
 | 常量 | 值 | 说明 |
 |------|----|------|
-| `HEARTBEAT_INTERVAL_SEC` | `30` | 心跳发送间隔（秒） |
-| `HEARTBEAT_TIMEOUT_SEC` | `90` | 超时未收到响应判定断线（秒） |
 | `MAX_RECONNECT_ATTEMPTS` | `3` | 最大重连尝试次数 |
 | `RECONNECT_DELAY_SEC` | `5` | 重连间隔（秒） |
 
@@ -127,12 +124,12 @@ main() → Application.launch()
 
 | 方法 | 说明 |
 |------|------|
-| `connect(host, port)` | 建立 TCP 连接，启动接收线程和心跳 |
+| `connect(host, port)` | 建立 TCP 连接，启动接收线程 |
 | `send(String... parts)` | 构建协议报文并发送（调用 `Protocol.build`） |
 | `addListener(listener)` | 注册消息监听器（去重）|
 | `removeListener(listener)` | 移除指定监听器 |
 | `clearListeners()` | **切换页面前调用**，清除所有旧监听，防止内存泄漏 |
-| `disconnect()` | 关闭连接，停止心跳和接收线程 |
+| `disconnect()` | 关闭连接，停止接收线程 |
 | `isConnected()` | 检查当前连接状态 |
 
 #### 消息分发流程

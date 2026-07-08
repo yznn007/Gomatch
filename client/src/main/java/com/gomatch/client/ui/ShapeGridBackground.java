@@ -114,8 +114,13 @@ public class ShapeGridBackground extends Pane {
     }
 
     private void updateAndRender(double dt) {
+        double cw = canvas.getWidth();
+        double ch = canvas.getHeight();
+        if (cw <= 0 || ch <= 0) return;
+        if (points == null) return;
+
         GraphicsContext gc = canvas.getGraphicsContext2D();
-        gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        gc.clearRect(0, 0, cw, ch);
 
         double moveX = SPEED_X_PER_SEC * dt;
         double moveY = SPEED_Y_PER_SEC * dt;

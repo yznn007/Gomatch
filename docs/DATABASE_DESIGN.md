@@ -139,7 +139,7 @@ erDiagram
         varchar connection_id "连接ID"
         varchar status "连接状态"
         bigint room_id FK "当前房间ID"
-        datetime last_heartbeat "最后心跳时间"
+        datetime last_heartbeat "最后活跃时间"
         datetime disconnect_time "断开时间"
         varchar disconnect_reason "断开原因"
         int reconnect_attempts "重连尝试次数"
@@ -323,7 +323,7 @@ erDiagram
 | connection_id | VARCHAR(64) | NULL | Socket连接唯一标识 |
 | room_id | BIGINT | FK, NULL | 当前所在房间ID |
 | status | VARCHAR(20) | NOT NULL | 连接状态: connected/disconnected/reconnecting |
-| last_heartbeat | DATETIME | NULL | 最后心跳时间 |
+| last_heartbeat | DATETIME | NULL | 最后活跃时间 |
 | disconnect_time | DATETIME | NULL | 断开连接时间 |
 | disconnect_reason | VARCHAR(50) | NULL | 断开原因: timeout/network/normal |
 | reconnect_attempts | INT | DEFAULT 0 | 重连尝试次数 |
@@ -344,7 +344,7 @@ erDiagram
 **设计说明**：
 - `session_key`：用于断线重连时验证身份，客户端保存该密钥
 - `connection_id`：Socket连接的唯一标识，服务端用于管理连接
-- `last_heartbeat`：用于断线检测，超过阈值标记为disconnected
+- `last_heartbeat`：每次查询会话时自动更新，用于跟踪用户活跃状态和断线检测
 - `status`：支持状态查询，便于管理在线用户
 
 #### 2.2.6 t_chat_message（聊天消息表）
@@ -522,7 +522,7 @@ erDiagram
 | t_game_save | 用户存档列表 | user_id普通索引 |
 | t_socket_session | 断线重连 | session_key唯一索引 |
 | t_socket_session | 在线状态查询 | user_id+status联合索引 |
-| t_socket_session | 心跳检测 | last_heartbeat普通索引 |
+| t_socket_session | 活跃状态跟踪 | last_heartbeat普通索引 |
 | t_chat_message | 房间消息查询 | room_id+create_time联合索引 |
 | t_room | 大厅房间列表 | status+current_players联合索引 |
 | t_room | 观战房间查询 | allow_watch+status联合索引 |
@@ -566,30 +566,9 @@ sequenceDiagram
     end
 ```
 
-### 3.2 心跳机制
+### 3.2 会话活跃状态维护
 
-```mermaid
-sequenceDiagram
-    participant Client as 客户端
-    participant Socket as SocketServer
-    participant SessionRepo as SocketSessionRepository
-    participant DB as MySQL
-    
-    loop 每30秒
-        Client->>Socket: 发送心跳包
-        Socket->>SessionRepo: updateHeartbeat(sessionId)
-        SessionRepo->>DB: UPDATE t_socket_session SET last_heartbeat = NOW()
-    end
-    
-    loop 每60秒检查
-        Socket->>SessionRepo: findExpiredSessions(timeout)
-        SessionRepo->>DB: SELECT * FROM t_socket_session WHERE last_heartbeat < ? AND status = 'connected'
-        DB-->>SessionRepo: 返回过期会话列表
-        SessionRepo-->>Socket: 返回过期会话
-        Socket->>SessionRepo: updateStatus(sessionId, "disconnected")
-        Socket->>Socket: 执行断线逻辑(断线判负)
-    end
-```
+> 已移除独立的心跳包机制。`last_heartbeat` 字段在每次 `SessionManager.getSession*()` 查询会话时自动更新（调用 `SocketSessionDAO.updateHeartbeat()`），用于跟踪用户活跃状态。断线由 Socket 连接断开事件直接触发。
 
 ### 3.3 断线重连流程
 
@@ -805,7 +784,7 @@ flowchart TD
 | save | SocketSession session | SocketSession | 保存会话 |
 | update | SocketSession session | SocketSession | 更新会话 |
 | updateStatus | Long sessionId, String status | int | 更新连接状态 |
-| updateHeartbeat | Long sessionId | int | 更新心跳时间 |
+| updateHeartbeat | Long sessionId | int | 更新活跃时间 |
 | updateConnectionId | Long sessionId, String connectionId | int | 更新连接ID |
 | deleteById | Long sessionId | void | 删除会话 |
 | deleteByUserId | Long userId | void | 删除用户所有会话 |
@@ -1134,7 +1113,7 @@ public class FriendRequest {
 | userId | Long | 用户ID |
 | sessionKey | String | 会话密钥 |
 | status | String | 连接状态 |
-| lastHeartbeat | Date | 最后心跳时间 |
+| lastHeartbeat | Date | 最后活跃时间 |
 
 #### ChatMessageDTO（聊天消息传输对象）
 
@@ -1301,7 +1280,7 @@ CREATE TABLE IF NOT EXISTS `t_socket_session` (
     `connection_id` VARCHAR(64) COMMENT '连接ID',
     `room_id` BIGINT COMMENT '当前所在房间ID',
     `status` VARCHAR(20) NOT NULL DEFAULT 'connected' COMMENT '连接状态',
-    `last_heartbeat` DATETIME COMMENT '最后心跳时间',
+    `last_heartbeat` DATETIME COMMENT '最后活跃时间',
     `disconnect_time` DATETIME COMMENT '断开连接时间',
     `disconnect_reason` VARCHAR(50) COMMENT '断开原因',
     `reconnect_attempts` INT DEFAULT 0 COMMENT '重连尝试次数',
@@ -1466,7 +1445,6 @@ try (Connection conn = dataSource.getConnection()) {
 |----------|------|------|------------|
 | CONNECT | Client→Server | 客户端连接 | 插入/更新t_socket_session |
 | DISCONNECT | Client→Server | 客户端断开 | 更新t_socket_session状态 |
-| HEARTBEAT | Client→Server | 心跳包 | 更新t_socket_session.last_heartbeat |
 | MOVE | Client→Server | 落子请求 | 实时内存更新，对局结束后写入t_game_record |
 | CHAT | Client→Server | 聊天消息 | 插入t_chat_message |
 | CREATE_ROOM | Client→Server | 创建房间 | 插入t_room |

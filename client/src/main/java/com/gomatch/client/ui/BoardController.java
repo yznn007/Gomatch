@@ -65,6 +65,8 @@ public class BoardController implements NetworkListener {
     private String myUsername;
     private String blackName = "";
     private String whiteName = "";
+    private String blackId   = "";
+    private String whiteId   = "";
     private boolean previewMode;
     private boolean aiMode;
     private boolean spectatorMode;
@@ -87,6 +89,8 @@ public class BoardController implements NetworkListener {
     private Label whitePlayerScoreLabel;
     private javafx.scene.layout.HBox blackCardRoot;
     private javafx.scene.layout.HBox whiteCardRoot;
+    private Label blackOfflineTag;
+    private Label whiteOfflineTag;
 
     // 本地倒计时
     private Timeline countdownTimeline;
@@ -192,6 +196,8 @@ public class BoardController implements NetworkListener {
     public void setGameInfo(String blackId, String blackDisplayName, String whiteId, String whiteDisplayName, String username) {
         this.blackName  = blackDisplayName;
         this.whiteName  = whiteDisplayName;
+        this.blackId    = blackId != null ? blackId : "";
+        this.whiteId    = whiteId != null ? whiteId : "";
         this.myUsername = username;
         this.aiMode = "AI".equals(whiteDisplayName) || "-1".equals(whiteId);
         this.gameOver = false;
@@ -239,6 +245,7 @@ public class BoardController implements NetworkListener {
             myColor = "spectator";
             applySpectatorMode();
         }
+        updateActionButtons();
 
         if (!replayMode) {
             startCountdown();
@@ -256,6 +263,66 @@ public class BoardController implements NetworkListener {
         }
         if (chatArea != null) {
             chatArea.appendText("[系统] 观战模式 - 无法落子或操作\n");
+        }
+    }
+
+    /**
+     * 断线后重开客户端登录时恢复对局。
+     * 由 LoginController 在收到携带 roomId 的 LOGIN_OK 后调用。
+     */
+    public void resumeFromLogin(String blackUserId, String whiteUserId, String username,
+                                 int currentColor, String disconnectedUserId) {
+        this.blackId = blackUserId != null ? blackUserId : "";
+        this.whiteId = whiteUserId != null ? whiteUserId : "";
+        this.blackName = blackUserId != null ? blackUserId : "黑方";
+        this.whiteName = whiteUserId != null ? whiteUserId : "白方";
+        this.myUsername = username;
+        this.gameOver = false;
+        this.spectatorMode = false;
+        this.previewMode = false;
+        this.aiMode = false;
+        this.moveHistory.clear();
+
+        User cu = AppConfig.getCurrentUser();
+        String myIdStr = cu != null ? String.valueOf(cu.getUserId()) : "";
+        int myScore = cu != null ? cu.getScore() : 0;
+
+        boolean isBlack = myIdStr.equals(blackUserId)
+                || (username != null && username.equals(blackUserId));
+
+        if (isBlack) {
+            setPlayerCardLabels(blackPlayerNameLabel, blackPlayerIdLabel, blackPlayerScoreLabel,
+                    username != null ? username : blackUserId, myIdStr, myScore);
+            setPlayerCardLabels(whitePlayerNameLabel, whitePlayerIdLabel, whitePlayerScoreLabel,
+                    whiteUserId, whiteUserId, -1);
+        } else {
+            setPlayerCardLabels(blackPlayerNameLabel, blackPlayerIdLabel, blackPlayerScoreLabel,
+                    blackUserId, blackUserId, -1);
+            setPlayerCardLabels(whitePlayerNameLabel, whitePlayerIdLabel, whitePlayerScoreLabel,
+                    username != null ? username : whiteUserId, myIdStr, myScore);
+        }
+
+        myColor = isBlack ? "black" : "white";
+        this.currentTurn = currentColor;
+        myTurn = (currentColor == 1 && isBlack) || (currentColor == 2 && !isBlack);
+
+        updateTurnLabel();
+        updateActionButtons();
+
+        // 处理断线角标：如果对手仍在断线中，显示断线标记
+        if (disconnectedUserId != null && !disconnectedUserId.isEmpty()
+                && !"0".equals(disconnectedUserId)) {
+            boolean opponentIsBlack = disconnectedUserId.equals(blackUserId);
+            setPlayerOnline(opponentIsBlack, false);
+            String opponentName = opponentIsBlack ? blackName : whiteName;
+            chatArea.appendText("[系统] 对手 " + opponentName + " 已断线，等待重连...\n");
+        }
+
+        chatArea.appendText("[系统] 已恢复对局\n");
+        chatArea.setScrollTop(Double.MAX_VALUE);
+
+        if (!replayMode) {
+            startCountdown();
         }
     }
 
@@ -358,6 +425,7 @@ public class BoardController implements NetworkListener {
         drawStone(x, y, color);
         myTurn = false;
         updateTurnLabel();
+        updateActionButtons();
         ClientMain.getConnector().send(Message.of(Protocol.MOVE, "x", String.valueOf(x), "y", String.valueOf(y)));
     }
 
@@ -522,20 +590,72 @@ public class BoardController implements NetworkListener {
         infoBox.getChildren().addAll(nameLabel, detailRow);
         card.getChildren().addAll(avatar, infoBox);
 
+        // 断线角标（默认隐藏），紧贴卡片右下角
+        Label offlineTag = new Label("断线中");
+        offlineTag.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        offlineTag.setStyle(
+                "-fx-background-color: #fef2f2;"
+                + "-fx-text-fill: #dc2626;"
+                + "-fx-font-size: 10px;"
+                + "-fx-font-weight: bold;"
+                + "-fx-padding: 2 6 2 6;"
+                + "-fx-background-radius: 8;"
+                + "-fx-border-color: #fecaca;"
+                + "-fx-border-radius: 8;"
+                + "-fx-border-width: 1;"
+        );
+        offlineTag.setVisible(false);
+        offlineTag.setManaged(false);
+
+        StackPane cardWrapper = new StackPane(card, offlineTag);
+        StackPane.setAlignment(offlineTag, javafx.geometry.Pos.BOTTOM_RIGHT);
+
         container.getChildren().clear();
-        container.getChildren().add(card);
+        container.getChildren().add(cardWrapper);
 
         if ("黑方".equals(colorLabel)) {
             blackPlayerNameLabel = nameLabel;
             blackPlayerIdLabel = idLabel;
             blackPlayerScoreLabel = scoreLabel;
+            blackCardRoot = card;
+            blackOfflineTag = offlineTag;
         } else {
             whitePlayerNameLabel = nameLabel;
             whitePlayerIdLabel = idLabel;
             whitePlayerScoreLabel = scoreLabel;
+            whiteCardRoot = card;
+            whiteOfflineTag = offlineTag;
         }
 
         return card;
+    }
+
+    /**
+     * 切换玩家在线/断线视觉状态。
+     * @param isBlack true=黑方, false=白方
+     * @param online  true=正常, false=断线中
+     */
+    private void setPlayerOnline(boolean isBlack, boolean online) {
+        Label nameLabel = isBlack ? blackPlayerNameLabel : whitePlayerNameLabel;
+        Label tag = isBlack ? blackOfflineTag : whiteOfflineTag;
+        javafx.scene.layout.HBox card = isBlack ? blackCardRoot : whiteCardRoot;
+        if (nameLabel == null || card == null) return;
+
+        if (online) {
+            if (tag != null) {
+                tag.setVisible(false);
+                tag.setManaged(false);
+            }
+            nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1e293b;");
+            card.setOpacity(1.0);
+        } else {
+            if (tag != null) {
+                tag.setVisible(true);
+                tag.setManaged(true);
+            }
+            nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #dc2626;");
+            card.setOpacity(0.55);
+        }
     }
 
     private void startCountdown() {
@@ -587,6 +707,16 @@ public class BoardController implements NetworkListener {
             return;
         }
         ClientMain.getConnector().send(Protocol.SURRENDER);
+    }
+
+    /**
+     * 根据 myTurn / gameOver / spectatorMode / replayMode 控制悔棋和求和按钮的可用状态。
+     * 只有当前落子方才能提出悔棋或求和。
+     */
+    private void updateActionButtons() {
+        boolean canAct = myTurn && !gameOver && !spectatorMode && !replayMode;
+        if (undoBtn != null) undoBtn.setDisable(!canAct);
+        if (drawBtn != null) drawBtn.setDisable(!canAct);
     }
 
     @FXML
@@ -710,10 +840,12 @@ public class BoardController implements NetworkListener {
             myTurn = (myColor.equals("black") && currentTurn == 1) ||
                      (myColor.equals("white") && currentTurn == 2);
             updateTurnLabel();
+            updateActionButtons();
             startCountdown();
         } else if (Protocol.GAME_OVER.equals(cmd)) {
             gameOver = true;
             myTurn = false;
+            updateActionButtons();
             stopCountdown();
             String winnerId = msg.getString("winnerId");
             String reason = msg.getString("msg");
@@ -791,6 +923,7 @@ public class BoardController implements NetworkListener {
                 myTurn = (myColor.equals("black") && currentTurn == 1) ||
                          (myColor.equals("white") && currentTurn == 2);
                 updateTurnLabel();
+                updateActionButtons();
                 redrawAll();
             }
             startCountdown();
@@ -822,6 +955,7 @@ public class BoardController implements NetworkListener {
             stopCountdown();
             String result = myTurn ? "超时负" : "对手超时";
             myTurn = false;
+            updateActionButtons();
             updateTurnLabel();
             ScreenManager.showDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult(result, "timeout"));
             chatArea.appendText("[系统] " + result + "\n");
@@ -834,6 +968,33 @@ public class BoardController implements NetworkListener {
                 cu.setLoseCount(msg.getInt("loseCount"));
                 cu.setDrawCount(msg.getInt("drawCount"));
             }
+        } else if ("PLAYER_DISCONNECTED".equals(cmd)) {
+            String userId = msg.getString("userId");
+            if (userId == null || userId.isEmpty()) return;
+            boolean isBlack = userId.equals(blackId);
+            boolean isWhite = userId.equals(whiteId);
+            if (!isBlack && !isWhite) return;
+            setPlayerOnline(isBlack, false);
+            String name = isBlack ? blackName : whiteName;
+            int dcCount = msg.getInt("disconnectCount");
+            chatArea.appendText("[系统] 玩家 " + name + " 断线 (第" + dcCount + "/" + 3 + "次)，等待重连...\n");
+            chatArea.setScrollTop(Double.MAX_VALUE);
+        } else if ("PLAYER_RECONNECTED".equals(cmd)) {
+            String userId = msg.getString("userId");
+            if (userId == null || userId.isEmpty()) return;
+            boolean isBlack = userId.equals(blackId);
+            boolean isWhite = userId.equals(whiteId);
+            if (!isBlack && !isWhite) return;
+            setPlayerOnline(isBlack, true);
+            String name = isBlack ? blackName : whiteName;
+            chatArea.appendText("[系统] 玩家 " + name + " 已重连\n");
+            chatArea.setScrollTop(Double.MAX_VALUE);
+        } else if ("PLAYER_DISCONNECT_LIMIT".equals(cmd)) {
+            String userId = msg.getString("userId");
+            if (userId != null && (userId.equals(blackId) || userId.equals(whiteId))) {
+                setPlayerOnline(userId.equals(blackId), true);
+            }
+            // GAME_OVER 随后会触发，此处仅清理断线角标
         }
     }
 

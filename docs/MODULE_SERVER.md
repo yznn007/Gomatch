@@ -149,7 +149,6 @@ private static final SessionManager sessionManager = SessionManager.getInstance(
 | `CHAT_HISTORY` | `handleChatHistory` | 返回房间聊天历史 |
 | `WATCHER_HISTORY` | `handleWatcherHistory` | 返回观战历史 |
 | `LOGOUT` | `handleLogout` | 退出登录，清理会话，离开房间 |
-| `HEARTBEAT` | 更新 `lastResponseTime` | 保活处理 |
 
 ---
 

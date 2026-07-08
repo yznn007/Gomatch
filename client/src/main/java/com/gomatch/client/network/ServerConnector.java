@@ -1,12 +1,18 @@
 package com.gomatch.client.network;
 
 import com.gomatch.common.Message;
+import com.gomatch.common.Protocol;
 import javafx.application.Platform;
 
 import java.io.*;
 import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ServerConnector {
     private Socket socket;
@@ -17,8 +23,18 @@ public class ServerConnector {
     private final List<NetworkListener> listeners = new CopyOnWriteArrayList<>();
     private static final int MAX_RECONNECT_ATTEMPTS = 3;
     private static final long RECONNECT_DELAY_SEC = 5;
+    private static final long HEARTBEAT_INTERVAL_SEC = 30;
+    private static final long HEARTBEAT_TIMEOUT_SEC = 90;
+    private static final ScheduledExecutorService scheduler =
+            Executors.newScheduledThreadPool(2, r -> {
+                Thread t = new Thread(r, "connector-scheduler");
+                t.setDaemon(true);
+                return t;
+            });
+    private ScheduledFuture<?> heartbeatFuture;
     private String lastHost;
     private int lastPort;
+    private final AtomicLong lastServerResponseTime = new AtomicLong(System.currentTimeMillis());
 
     public void connect(String host, int port) throws IOException {
         this.lastHost = host;
@@ -26,7 +42,9 @@ public class ServerConnector {
         socket = new Socket(host, port);
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         writer = new PrintWriter(socket.getOutputStream(), true);
+        lastServerResponseTime.set(System.currentTimeMillis());
         startReceiveThread();
+        startHeartbeat();
     }
 
     // ==================== 发送 ====================
@@ -62,6 +80,7 @@ public class ServerConnector {
 
     public void disconnect() {
         running = false;
+        stopHeartbeat();
         if (receiveThread != null) {
             receiveThread.interrupt();
         }
@@ -85,6 +104,7 @@ public class ServerConnector {
                     String line = reader.readLine();
                     if (line == null) break;
                     Message msg = Message.fromJson(line);
+                    lastServerResponseTime.set(System.currentTimeMillis());
 
                     // 内部拦截重连认证响应，不转发给业务 Controller
                     if ("RECONNECT_OK".equals(msg.getCmd())) {
@@ -170,13 +190,43 @@ public class ServerConnector {
                 }
 
                 running = true;
+                lastServerResponseTime.set(System.currentTimeMillis());
                 startReceiveThread();
+                startHeartbeat();
                 return true;
             } catch (Exception e) {
                 // 重连失败，继续尝试
             }
         }
         return false;
+    }
+
+    // ==================== 心跳机制 ====================
+
+    private void startHeartbeat() {
+        stopHeartbeat();
+        heartbeatFuture = scheduler.scheduleAtFixedRate(() -> {
+            if (!running || writer == null) return;
+            // 检查上次服务端响应是否超时
+            long elapsed = System.currentTimeMillis() - lastServerResponseTime.get();
+            if (elapsed > HEARTBEAT_TIMEOUT_SEC * 1000) {
+                // 心跳超时：主动断开触发重连
+                try {
+                    running = false;
+                    if (socket != null) socket.close();
+                } catch (IOException ignored) {}
+                return;
+            }
+            // 发送心跳包
+            send(Message.cmdOnly(Protocol.HEARTBEAT));
+        }, HEARTBEAT_INTERVAL_SEC, HEARTBEAT_INTERVAL_SEC, TimeUnit.SECONDS);
+    }
+
+    private void stopHeartbeat() {
+        if (heartbeatFuture != null) {
+            heartbeatFuture.cancel(false);
+            heartbeatFuture = null;
+        }
     }
 
 }

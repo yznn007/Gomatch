@@ -60,6 +60,13 @@ public class Room {
     private AIPlayer.Difficulty aiDifficulty = AIPlayer.Difficulty.MEDIUM;
     private GameType gameType = GameType.NORMAL;
 
+    // 断线重连管理
+    private static final int MAX_DISCONNECT_COUNT = 3;   // 累计断线次数上限（超过判负）
+    private static final long RECONNECT_TIMEOUT_SEC = 60;
+    private long disconnectedPlayerId;        // 当前断线的玩家ID（0=无）
+    private final Map<Long, Integer> playerDisconnectCounts = new java.util.HashMap<>(); // 每局玩家断线次数
+    private ScheduledFuture<?> reconnectTimerFuture;
+
     // 回合计时器
     private static final int TURN_TIMEOUT_SECONDS = 60;
     private static final ScheduledExecutorService turnTimerPool =
@@ -122,6 +129,7 @@ public class Room {
     public long getWhiteUserId() { return whiteUserId; }
 
     public int getPlayerCount() { return players.size(); }
+    public long getDisconnectedPlayerId() { return disconnectedPlayerId; }
     public String getPlayerUsername(long userId) {
         for (ClientHandler p : players) {
             if (p.getUserId() == userId) return p.getUsername();
@@ -221,6 +229,38 @@ public class Room {
         if (removedFromPlayers) {
             log.info("Player {} disconnected from room {}: remaining players {}/2",
                     handler.getUserId(), roomId, players.size());
+
+            // 对局进行中玩家断线
+            if (status == Status.PLAYING && !aiMode 
+                    && (handler.getUserId() == blackUserId || handler.getUserId() == whiteUserId)) {
+                long uid = handler.getUserId();
+                int count = playerDisconnectCounts.getOrDefault(uid, 0) + 1;
+                playerDisconnectCounts.put(uid, count);
+
+                if (count >= MAX_DISCONNECT_COUNT) {
+                    // 累计断线3次，立即判负
+                    long winnerId = (uid == blackUserId) ? whiteUserId : blackUserId;
+                    String loserName = getPlayerUsername(uid);
+                    log.info("Player {} disconnected {} times in room {}, declaring {} as winner",
+                            uid, count, roomId, winnerId);
+                    endGame(winnerId, "disconnect_limit",
+                            loserName + " 累计断线" + count + "次，自动判负");
+                    broadcastAll(Message.of("PLAYER_DISCONNECT_LIMIT",
+                            "userId", String.valueOf(uid),
+                            "disconnectCount", String.valueOf(count),
+                            "msg", loserName + " 累计断线" + count + "次，自动判负"));
+                    disconnectedPlayerId = 0;
+                    return;
+                }
+
+                disconnectedPlayerId = uid;
+                startReconnectTimer();
+                broadcastToPlayers(Message.of("PLAYER_DISCONNECTED",
+                        "userId", String.valueOf(disconnectedPlayerId),
+                        "disconnectCount", String.valueOf(count)));
+                log.info("Player {} disconnected during game in room {} (disconnect #{}/{}), reconnect timer started ({}s)",
+                        disconnectedPlayerId, roomId, count, MAX_DISCONNECT_COUNT, RECONNECT_TIMEOUT_SEC);
+            }
         } else {
             boolean removedFromObservers = observers.remove(handler);
             if (removedFromObservers) {
@@ -292,6 +332,7 @@ public class Room {
         gameStarted = true;
         game.reset();
         gameStartTime = Instant.now();
+        playerDisconnectCounts.clear();
 
         if (aiMode) {
             whiteUserId = -1;
@@ -432,8 +473,9 @@ public class Room {
             log.info("Game record saved successfully for room {}: recordId={}, {} moves recorded", roomId, currentRecordId, moves.size());
 
             // 缓存对战记录到 Redis（3天TTL）
+            String boardData = new com.google.gson.Gson().toJson(moves);
             cacheGameRecordToRedis(blackUserId, whiteUserId, winnerId, reason,
-                    moves.size(), durationSeconds, p1ScoreChange, p2ScoreChange);
+                    moves.size(), durationSeconds, p1ScoreChange, p2ScoreChange, boardData);
         } catch (Exception e) {
             log.error("Failed to save game record for room {}: {}", roomId, e.getMessage(), e);
         }
@@ -446,7 +488,8 @@ public class Room {
                 long id = handler.getUserId();
                 UserDAO.UserInfo info = id == blackUserId ? blackInfo : (id == whiteUserId ? whiteInfo : null);
                 if (info != null) {
-                    int rank = rankDAO.getRankByUserId(id) != null ? rankDAO.getRankByUserId(id).getRank() : 0;
+                    RankDAO.RankInfo rankInfo = rankDAO.getRankByUserId(id);
+                    int rank = rankInfo != null ? rankInfo.getRank() : 0;
                     handler.send(Message.of(Protocol.USER_SCORE_UPDATE,
                         "score", String.valueOf(info.getScore()),
                         "winCount", String.valueOf(info.getWinCount()),
@@ -483,8 +526,8 @@ public class Room {
      * 将对战记录缓存到 Redis，双方玩家各存一份，3天后自动过期
      */
     private void cacheGameRecordToRedis(long player1Id, long player2Id, long winnerId,
-                                         String result, int moveCount, long duration,
-                                         int p1ScoreChange, int p2ScoreChange) {
+                                        String result, int moveCount, long duration,
+                                        int p1ScoreChange, int p2ScoreChange, String boardData) {
         try {
             UserDAO.UserInfo p1Info = userDAO.getUserById(player1Id);
             UserDAO.UserInfo p2Info = userDAO.getUserById(player2Id);
@@ -492,6 +535,19 @@ public class Room {
             String p2Name = p2Info != null ? p2Info.getUsername() : (aiMode ? "AI" : "未知");
             long now = System.currentTimeMillis();
             String createTime = java.time.Instant.now().toString().replace("T", " ").substring(0, 19);
+
+            // 将 boardData 字符串解析为 JSONArray 直接存入，避免双重 JSON 编码
+            // (org.json 在 put(String, String) 时会对引号转义，导致反序列化时拿到的是
+            //  "转义后字符串"，optString 后再喂给 Gson 解析会失败)
+            org.json.JSONArray movesArray = new org.json.JSONArray();
+            if (boardData != null && !boardData.isEmpty()) {
+                try {
+                    org.json.JSONArray parsed = new org.json.JSONArray(boardData);
+                    movesArray = parsed;
+                } catch (Exception parseEx) {
+                    log.warn("boardData not valid JSON array, store as empty: {}", parseEx.getMessage());
+                }
+            }
 
             // 为 player1 构建记录
             JSONObject recForP1 = new JSONObject();
@@ -506,6 +562,7 @@ public class Room {
             recForP1.put("duration", duration);
             recForP1.put("createTime", createTime);
             recForP1.put("scoreChange", p1ScoreChange);
+            recForP1.put("boardData", movesArray);
 
             // 为 player2 构建记录
             JSONObject recForP2 = new JSONObject();
@@ -520,6 +577,7 @@ public class Room {
             recForP2.put("duration", duration);
             recForP2.put("createTime", createTime);
             recForP2.put("scoreChange", p2ScoreChange);
+            recForP2.put("boardData", movesArray);
 
             RedisManager redis = RedisManager.getInstance();
             redis.saveGameRecord(player1Id, recForP1.toString(), now);
@@ -919,8 +977,64 @@ public class Room {
         }
 
         players.add(handler);
-        log.info("Player {} reconnected to room {}", userId, roomId);
+        log.info("Player {} reconnected to room {} (disconnect #{}/{})", userId, roomId,
+                playerDisconnectCounts.getOrDefault(userId, 0), MAX_DISCONNECT_COUNT);
+
+        // 重连成功：清除断线状态，停止倒计时
+        if (disconnectedPlayerId == userId) {
+            disconnectedPlayerId = 0;
+            cancelReconnectTimer();
+            broadcastToPlayers(Message.of("PLAYER_RECONNECTED",
+                    "userId", String.valueOf(userId)));
+        }
+
+        // 回放已有落子（通过 replayMovesTo 显式调用，便于调用方控制 LOGIN_OK/MOVE_SYNC 顺序）
         return true;
+    }
+
+    /**
+     * 向指定 handler 发送该房间的所有历史落子（用于重连时回放）。
+     * 注意：调用方应先发送 LOGIN_OK/RECONNECT_OK 再调本方法，保证客户端
+     * 先建立 BoardController 再收到落子。
+     */
+    public synchronized void replayMovesTo(ClientHandler handler) {
+        for (Game.MoveRecord mr : game.getMoveHistory()) {
+            handler.send(Message.of(Protocol.MOVE_SYNC,
+                    "x", String.valueOf(mr.x),
+                    "y", String.valueOf(mr.y),
+                    "color", String.valueOf(mr.color)));
+        }
+    }
+
+    // ==================== 断线重连计时器 ====================
+
+    private synchronized void startReconnectTimer() {
+        cancelReconnectTimer();
+        long targetPlayer = disconnectedPlayerId;
+        reconnectTimerFuture = turnTimerPool.schedule(() -> {
+            synchronized (Room.this) {
+                if (status != Status.PLAYING || disconnectedPlayerId != targetPlayer) return;
+                // 断线超时（60秒内未重连），判负
+                long winnerId = (disconnectedPlayerId == blackUserId) ? whiteUserId : blackUserId;
+                String loserName = getPlayerUsername(disconnectedPlayerId);
+                log.info("Player {} reconnect timed out in room {}, declaring {} as winner",
+                        disconnectedPlayerId, roomId, winnerId);
+                endGame(winnerId, "disconnect_timeout",
+                        loserName + " 断线超时未重连，自动判负");
+                broadcastAll(Message.of("RECONNECT_TIMEOUT",
+                        "userId", String.valueOf(disconnectedPlayerId),
+                        "msg", "断线超时，对方获胜"));
+                disconnectedPlayerId = 0;
+            }
+        }, RECONNECT_TIMEOUT_SEC, TimeUnit.SECONDS);
+    }
+
+    private synchronized void cancelReconnectTimer() {
+        if (reconnectTimerFuture != null && !reconnectTimerFuture.isDone()) {
+            reconnectTimerFuture.cancel(false);
+            reconnectTimerFuture = null;
+            log.debug("Reconnect timer cancelled for room {}", roomId);
+        }
     }
 
     public synchronized boolean isGameOver() {

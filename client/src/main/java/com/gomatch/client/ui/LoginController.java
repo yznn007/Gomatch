@@ -6,7 +6,6 @@ import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
-import com.gomatch.client.ui.AsciiTextCanvas;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
@@ -32,11 +31,9 @@ public class LoginController implements NetworkListener {
 
     @FXML
     private void initialize() {
-        // 加载已保存的凭据
         loadSavedCredentials();
     }
 
-    /** 加载本地保存的用户名密码 */
     private void loadSavedCredentials() {
         if (!CRED_FILE.exists()) return;
         try (Reader r = new FileReader(CRED_FILE)) {
@@ -49,7 +46,6 @@ public class LoginController implements NetworkListener {
         } catch (IOException ignored) { }
     }
 
-    /** 保存或清除记住的凭据 */
     private void saveOrClearCredentials() {
         File dir = CRED_FILE.getParentFile();
         if (!dir.exists()) dir.mkdirs();
@@ -62,7 +58,6 @@ public class LoginController implements NetworkListener {
                 AppConfig.GSON.toJson(c, w);
             } catch (IOException ignored) { }
         } else {
-            // 不记住密码时只保留用户名，密码清空
             try (Writer w = new FileWriter(CRED_FILE)) {
                 SavedCredential c = new SavedCredential();
                 c.username = usernameField.getText().trim();
@@ -72,13 +67,11 @@ public class LoginController implements NetworkListener {
         }
     }
 
-    /** 用于 JSON 序列化的简单凭据对象 */
     private static class SavedCredential {
         String username;
         String password;
     }
 
-    /** 打开服务器配置二级弹窗 */
     @FXML
     private void handleOpenServerConfig() {
         ScreenManager.showDialog("/fxml/ServerConfigDialogUI.fxml");
@@ -138,7 +131,6 @@ public class LoginController implements NetworkListener {
             AppConfig.setCurrentUser(user);
             AppConfig.setPreviewMode(false);
 
-            // 保存认证 token，用于断线重连
             String token = msg.getString("token");
             if (token != null && !token.isEmpty()) {
                 AppConfig.setAuthToken(token);
@@ -147,9 +139,23 @@ public class LoginController implements NetworkListener {
             saveOrClearCredentials();
 
             if (brandCanvas != null) brandCanvas.stop();
-            LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
-            ctrl.setCurrentUser(user);
-            ctrl.setPreviewMode(false);
+
+            String roomId = msg.getString("roomId");
+            if (roomId != null && !roomId.isEmpty()) {
+                String blackUserId   = msg.getString("blackUserId");
+                String whiteUserId   = msg.getString("whiteUserId");
+                int    currentColor  = msg.getInt("currentColor");
+                String disconnectedUserId = msg.getString("disconnectedUserId");
+                String username      = user.getUsername();
+
+                BoardController boardCtrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
+                boardCtrl.resumeFromLogin(blackUserId, whiteUserId, username,
+                        currentColor, disconnectedUserId);
+            } else {
+                LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+                ctrl.setCurrentUser(user);
+                ctrl.setPreviewMode(false);
+            }
         } else if (Protocol.LOGIN_FAIL.equals(msg.getCmd())) {
             errorLabel.setText(msg.getString("msg"));
             ClientMain.getConnector().disconnect();

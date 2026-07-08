@@ -351,12 +351,9 @@ main() → Application.launch()
 |------|------|
 | socket | TCP Socket 连接 |
 | listeners | CopyOnWriteArrayList<NetworkListener> |
-| heartbeatTimer | 心跳定时器（每 30 秒） |
 
 | 常量 | 值 | 说明 |
 |------|----|------|
-| HEARTBEAT_INTERVAL_SEC | 30 | 心跳间隔 |
-| HEARTBEAT_TIMEOUT_SEC | 90 | 超时判定断线 |
 | MAX_RECONNECT_ATTEMPTS | 3 | 最大重连次数 |
 
 #### 8.3.3 ScreenManager - 场景管理器
@@ -691,7 +688,7 @@ COMMAND|param1|param2|...
 | user_id | BIGINT | FK | 用户ID |
 | session_key | VARCHAR(64) | UNIQUE | 会话密钥 |
 | status | VARCHAR(20) | NOT NULL | 连接状态 |
-| last_heartbeat | DATETIME | NULL | 最后心跳时间 |
+| last_heartbeat | DATETIME | NULL | 最后活跃时间 |
 
 ### 11.4 索引设计
 
