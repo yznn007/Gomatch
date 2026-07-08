@@ -26,14 +26,16 @@ public class SettingsController {
     @FXML private Button menuAudioBtn;
     @FXML private Button menuStyleBtn;
     @FXML private Button menuServerBtn;
-    @FXML private Button menuExitBtn;
+    @FXML private Button menuLanguageBtn;
+    @FXML private Button menuOtherBtn;
 
     @FXML private VBox basePane;
     @FXML private VBox graphicsPane;
     @FXML private VBox audioPane;
     @FXML private VBox stylePane;
     @FXML private VBox serverPane;
-    @FXML private VBox exitPane;
+    @FXML private VBox languagePane;
+    @FXML private VBox otherPane;
 
     private User currentUser;
     private boolean previewMode;
@@ -83,8 +85,10 @@ public class SettingsController {
         stylePane.setManaged(false);
         serverPane.setVisible(false);
         serverPane.setManaged(false);
-        exitPane.setVisible(false);
-        exitPane.setManaged(false);
+        languagePane.setVisible(false);
+        languagePane.setManaged(false);
+        otherPane.setVisible(false);
+        otherPane.setManaged(false);
 
         activePane.setVisible(true);
         activePane.setManaged(true);
@@ -94,7 +98,8 @@ public class SettingsController {
         menuAudioBtn.getStyleClass().remove("active");
         menuStyleBtn.getStyleClass().remove("active");
         menuServerBtn.getStyleClass().remove("active");
-        menuExitBtn.getStyleClass().remove("active");
+        menuLanguageBtn.getStyleClass().remove("active");
+        menuOtherBtn.getStyleClass().remove("active");
 
         activeBtn.getStyleClass().add("active");
     }
@@ -125,8 +130,13 @@ public class SettingsController {
     }
 
     @FXML
-    private void showExitTab() {
-        switchTab(exitPane, menuExitBtn);
+    private void showLanguageTab() {
+        switchTab(languagePane, menuLanguageBtn);
+    }
+
+    @FXML
+    private void showOtherTab() {
+        switchTab(otherPane, menuOtherBtn);
     }
 
     @FXML
