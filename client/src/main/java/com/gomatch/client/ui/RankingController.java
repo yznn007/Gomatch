@@ -1,8 +1,12 @@
 package com.gomatch.client.ui;
 
+import com.gomatch.client.AppConfig;
+import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
+import com.gomatch.common.Protocol;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -29,8 +33,47 @@ public class RankingController implements NetworkListener {
     @FXML
     private void initialize() {
         rankingData.addListener((javafx.collections.ListChangeListener<User>) c -> renderRankingCards());
-        com.gomatch.client.ClientMain.getConnector().addListener(this);
-        showGlobalRanking();
+        ClientMain.getConnector().addListener(this);
+
+        loadRanking();
+        showRankingTab();
+        renderRankingCards();
+    }
+
+    /** 加载排行榜：预览/未连接时显示本地假数据，联网时向服务器请求。 */
+    private void loadRanking() {
+        if (isPreview() || !ClientMain.getConnector().isConnected()) {
+            loadMockRanking();
+            return;
+        }
+        ClientMain.getConnector().send(Protocol.RANKING);
+    }
+
+    private void loadMockRanking() {
+        String[][] fakeData = {
+            {"1", "棋圣",   "1500", "83.3%"},
+            {"2", "高手如云","1350", "72.7%"},
+            {"3", "五子连珠","1200", "63.6%"},
+            {"4", "新手求带","1050", "44.4%"},
+            {"5", "游客",   "1000",  "0%"  }
+        };
+        rankingData.clear();
+        for (String[] row : fakeData) {
+            User u = new User();
+            u.setRank(Integer.parseInt(row[0]));
+            u.setUsername(row[1]);
+            u.setScore(Integer.parseInt(row[2]));
+            u.setWinRate(row[3]);
+            rankingData.add(u);
+        }
+    }
+
+    private void showRankingTab() {
+        currentTab = "GLOBAL";
+        rankingTitleLabel.setText("全服积分排行榜");
+        menuGlobalBtn.getStyleClass().remove("active");
+        menuFriendsBtn.getStyleClass().remove("active");
+        menuGlobalBtn.getStyleClass().add("active");
     }
 
     private String getRankTier(int score) {
@@ -43,7 +86,7 @@ public class RankingController implements NetworkListener {
 
     private void renderRankingCards() {
         if (rankingContainer == null) return;
-        javafx.application.Platform.runLater(() -> {
+        Platform.runLater(() -> {
             rankingContainer.getChildren().clear();
             if (rankingData.isEmpty()) {
                 Label noRankLabel = new Label("暂无排行数据。");
@@ -54,11 +97,11 @@ public class RankingController implements NetworkListener {
 
             for (User user : rankingData) {
                 // Card Root HBox
-                javafx.scene.layout.HBox card = new javafx.scene.layout.HBox();
+                HBox card = new HBox();
                 card.getStyleClass().add("list-item-card");
                 card.setSpacing(14);
                 card.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-                javafx.scene.layout.HBox.setHgrow(card, javafx.scene.layout.Priority.ALWAYS);
+                HBox.setHgrow(card, javafx.scene.layout.Priority.ALWAYS);
 
                 // Highlight current user
                 boolean isMe = currentUser != null && currentUser.getUsername() != null 
@@ -103,7 +146,7 @@ public class RankingController implements NetworkListener {
                 // Info VBox
                 VBox infoBox = new VBox(4);
                 infoBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-                javafx.scene.layout.HBox.setHgrow(infoBox, javafx.scene.layout.Priority.ALWAYS);
+                HBox.setHgrow(infoBox, javafx.scene.layout.Priority.ALWAYS);
 
                 HBox nameRow = new HBox(8);
                 nameRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
@@ -116,7 +159,11 @@ public class RankingController implements NetworkListener {
                 }
                 nameRow.getChildren().addAll(nameLabel);
 
-                Label detailsLabel = new Label("积分: " + user.getScore() + " | 胜率: " + user.getWinRate());
+                String winRateStr = user.getWinRate() != null ? user.getWinRate() : "";
+                if (!winRateStr.isEmpty() && !winRateStr.contains("%")) {
+                    winRateStr = winRateStr + "%";
+                }
+                Label detailsLabel = new Label("积分: " + user.getScore() + " | 胜率: " + winRateStr);
                 detailsLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 detailsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
 
@@ -220,23 +267,50 @@ public class RankingController implements NetworkListener {
 
     @Override
     public void onMessage(Message msg) {
-        if (com.gomatch.common.Protocol.RANKING_LIST.equals(msg.getCmd())) {
-            String type = msg.getData().optString("type", "GLOBAL");
+        String cmd = msg.getCmd();
+        if (Protocol.RANKING_LIST.equals(cmd)) {
+            // 服务端返回 type 字段区分全服排行/好友排行
+            String type = msg.getData() != null ? msg.getData().optString("type", "GLOBAL") : "GLOBAL";
             if (!type.equalsIgnoreCase(currentTab)) {
                 return;
             }
+            parseRankingList(msg);
+        } else if (Protocol.ERROR.equals(cmd)) {
             rankingData.clear();
-            JSONArray users = msg.getData().optJSONArray("users");
-            if (users == null) return;
-            for (int i = 0; i < users.length(); i++) {
-                JSONObject u = users.getJSONObject(i);
+            renderRankingCards();
+        }
+    }
+
+    private void parseRankingList(Message msg) {
+        JSONArray users = msg.getData() != null ? msg.getData().optJSONArray("users") : null;
+        if (users == null) {
+            rankingData.clear();
+            renderRankingCards();
+            return;
+        }
+        ObservableList<User> parsed = FXCollections.observableArrayList();
+        for (int i = 0; i < users.length(); i++) {
+            JSONObject u = users.optJSONObject(i);
+            if (u == null) continue;
+            try {
                 User user = new User();
-                user.setRank(Integer.parseInt(u.getString("rank")));
-                user.setUsername(u.getString("username"));
-                user.setScore(Integer.parseInt(u.getString("score")));
-                user.setWinRate(u.getString("winRate"));
-                rankingData.add(user);
+                user.setRank(u.optInt("rank", i + 1));
+                user.setUsername(u.optString("username", ""));
+                user.setScore(u.optInt("score", 0));
+                // 服务端 winRate 可能是 double 或字符串，统一按字符串读取
+                Object winRateObj = u.opt("winRate");
+                String winRateStr = winRateObj != null ? String.valueOf(winRateObj) : "";
+                user.setWinRate(winRateStr);
+                parsed.add(user);
+            } catch (Exception e) {
+                // 单条记录解析失败不影响其他记录
+                System.err.println("解析排行榜用户失败: " + u);
             }
         }
+        rankingData.setAll(parsed);
+    }
+
+    private boolean isPreview() {
+        return previewMode || AppConfig.isPreviewMode();
     }
 }
