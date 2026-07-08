@@ -2,8 +2,6 @@ package com.gomatch.client.ui;
 
 import javafx.animation.AnimationTimer;
 import javafx.beans.property.*;
-import javafx.application.Platform;
-import javafx.collections.ListChangeListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;

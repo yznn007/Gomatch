@@ -1,18 +1,28 @@
-$env:JAVA_HOME = "D:\C_Work\Java"
-$env:MAVEN_HOME = "D:\Tools\maven\apache-maven-3.9.6"
-$env:Path = "$env:JAVA_HOME\bin;$env:MAVEN_HOME\bin;$env:Path"
+# Auto-detect JDK 21+
+$JDKCandidates = @(
+    "$env:JAVA_HOME",
+    "$HOME\scoop\apps\openjdk21\current"
+)
+$jdkFound = $false
+foreach ($jdk in $JDKCandidates) {
+    if ($jdk -and (Test-Path "$jdk\bin\java.exe")) {
+        $env:JAVA_HOME = $jdk
+        $env:Path = "$env:JAVA_HOME\bin;$env:Path"
+        $jdkFound = $true
+        break
+    }
+}
+if (-not $jdkFound) {
+    Write-Host "[WARN] Could not auto-detect JDK 21. Assuming java is on PATH." -ForegroundColor Yellow
+}
 
-$projectRoot = Split-Path $PSScriptRoot -Parent
-
-# Set console code page to UTF-8 to avoid garbled Chinese output
+# Set console code page to UTF-8
 chcp 65001 | Out-Null
 
+# Compile common module first
 Write-Host "[BUILD] Installing common module..." -ForegroundColor Yellow
-Push-Location $projectRoot
-mvn install -pl common -am -DskipTests
-Pop-Location
+mvn install -pl common -am -DskipTests -q
 
+# Start client
 Write-Host "[START] Starting client..." -ForegroundColor Green
-Push-Location $projectRoot
-mvn -f client/pom.xml javafx:run "-Dfile.encoding=UTF-8"
-Pop-Location
+mvn -f "$PSScriptRoot/../client/pom.xml" javafx:run "-Dfile.encoding=UTF-8"

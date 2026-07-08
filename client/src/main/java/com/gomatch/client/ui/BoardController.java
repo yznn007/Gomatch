@@ -734,7 +734,20 @@ public class BoardController implements NetworkListener {
                 result = "游戏结束";
             }
             updateTurnLabel();
-            ScreenManager.showDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult(result, reason));
+
+            // 解析本局积分变化
+            int myScoreChange = 0;
+            User currentUser = AppConfig.getCurrentUser();
+            if (currentUser != null) {
+                org.json.JSONObject scoreChanges = msg.getData() != null
+                        ? msg.getData().optJSONObject("scoreChanges") : null;
+                if (scoreChanges != null) {
+                    myScoreChange = scoreChanges.optInt(String.valueOf(currentUser.getUserId()), 0);
+                }
+            }
+
+            final int scoreChangeFinal = myScoreChange;
+            ScreenManager.showDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult(result, reason, scoreChangeFinal));
         } else if (Protocol.CHAT_MSG.equals(cmd)) {
             String username = msg.getString("username");
             String message = msg.getString("message");

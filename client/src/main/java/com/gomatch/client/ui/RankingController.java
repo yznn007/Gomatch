@@ -76,14 +76,6 @@ public class RankingController implements NetworkListener {
         menuGlobalBtn.getStyleClass().add("active");
     }
 
-    private String getRankTier(int score) {
-        if (score < 1050) return "[青铜]";
-        if (score < 1200) return "[白银]";
-        if (score < 1350) return "[黄金]";
-        if (score < 1500) return "[铂金]";
-        return "[钻石]";
-    }
-
     private void renderRankingCards() {
         if (rankingContainer == null) return;
         Platform.runLater(() -> {

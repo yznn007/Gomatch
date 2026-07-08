@@ -5,7 +5,6 @@ import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -268,19 +267,6 @@ public class FriendsController implements NetworkListener {
         public String getFromUsername() { return fromUsername; }
         public String getFromScore() { return fromScore; }
         public String getMessage() { return message; }
-    }
-
-    private String getRankTier(String scoreStr) {
-        try {
-            int score = Integer.parseInt(scoreStr);
-            if (score < 1050) return "[青铜]";
-            if (score < 1200) return "[白银]";
-            if (score < 1350) return "[黄金]";
-            if (score < 1500) return "[铂金]";
-            return "[钻石]";
-        } catch (Exception e) {
-            return "[青铜]";
-        }
     }
 
     private void renderFriendCards() {

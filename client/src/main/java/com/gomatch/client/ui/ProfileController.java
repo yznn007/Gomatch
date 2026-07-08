@@ -44,6 +44,16 @@ public class ProfileController implements NetworkListener {
     private User currentUser;
     private boolean previewMode;
 
+    private String formatDuration(int seconds) {
+        if (seconds <= 0) return "--";
+        int m = seconds / 60;
+        int s = seconds % 60;
+        if (m > 0) {
+            return m + "分" + (s > 0 ? s + "秒" : "");
+        }
+        return s + "秒";
+    }
+
     @FXML
     private void initialize() {
         recordData.addListener((javafx.collections.ListChangeListener<GameRecord>) c -> renderRecordCards());
@@ -80,19 +90,20 @@ public class ProfileController implements NetworkListener {
                 badgeText.getStyleClass().add("result-badge-text");
                 badgeContainer.getChildren().add(badgeText);
 
+                int scoreChange = record.getScoreChange();
                 Label scoreChangeLabel = new Label();
                 scoreChangeLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 32px;");
                 if (result.contains("胜")) {
                     badgeContainer.getStyleClass().add("result-badge-win");
-                    scoreChangeLabel.setText("+15");
+                    scoreChangeLabel.setText("+" + scoreChange);
                     scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #22c55e;");
                 } else if (result.contains("负")) {
                     badgeContainer.getStyleClass().add("result-badge-lose");
-                    scoreChangeLabel.setText("-10");
+                    scoreChangeLabel.setText(String.valueOf(scoreChange));
                     scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #ef4444;");
                 } else {
                     badgeContainer.getStyleClass().add("result-badge-draw");
-                    scoreChangeLabel.setText("+0");
+                    scoreChangeLabel.setText("+" + scoreChange);
                     scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #94a3b8;");
                 }
 
@@ -103,16 +114,11 @@ public class ProfileController implements NetworkListener {
 
                 Label opponentLabel = new Label("与 " + record.getOpponent() + " 的对局");
                 opponentLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
-                
-                // Parse moves and construct detailed info (duration, steps)
-                String moves = record.getMoves();
-                int stepsCount = 0;
-                if (moves != null && !moves.isEmpty()) {
-                    stepsCount = moves.split(";").length;
-                }
-                
-                String durationStr = "3分45秒"; // Default/Mock duration
-                Label detailsLabel = new Label("落子: " + (stepsCount > 0 ? stepsCount : "--") + " 步 | 用时: " + durationStr);
+
+                int moveCount = record.getMoveCount();
+                int durationSec = record.getDuration();
+                String durationStr = formatDuration(durationSec);
+                Label detailsLabel = new Label("落子: " + (moveCount > 0 ? moveCount : "--") + " 步 | 用时: " + durationStr);
                 detailsLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 detailsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
 
@@ -314,6 +320,9 @@ public class ProfileController implements NetworkListener {
                     String winnerId = r.optString("winnerId", "0");
                     String time = r.optString("createTime", "");
                     String boardData = r.optString("boardData", "").replace("\\|", "|");
+                    int moveCount = r.optInt("moveCount", 0);
+                    int duration = r.optInt("duration", 0);
+                    int scoreChange = r.optInt("scoreChange", 0);
 
                     // 判断结果：比较 winnerId 与当前用户 ID
                     String result;
@@ -329,7 +338,11 @@ public class ProfileController implements NetworkListener {
                     String currentName = currentUser.getUsername();
                     String opponent = currentName != null && currentName.equals(p1Name) ? p2Name : p1Name;
 
-                    recordData.add(new GameRecord(opponent, result, time, "查看", boardData));
+                    GameRecord gr = new GameRecord(opponent, result, time, "查看", boardData);
+                    gr.setMoveCount(moveCount);
+                    gr.setDuration(duration);
+                    gr.setScoreChange(scoreChange);
+                    recordData.add(gr);
                 }
             } catch (Exception e) {
                 e.printStackTrace();

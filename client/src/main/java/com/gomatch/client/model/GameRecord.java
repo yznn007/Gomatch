@@ -9,6 +9,9 @@ public class GameRecord {
     private String time;
     private String replay;
     private String moves;   // 棋盘数据（JSON），用于回放
+    private int moveCount;
+    private int duration;   // 对局时长（秒）
+    private int scoreChange;
 
     public GameRecord() {}
 
@@ -41,4 +44,13 @@ public class GameRecord {
 
     public String getMoves() { return moves; }
     public void setMoves(String moves) { this.moves = moves; }
+
+    public int getMoveCount() { return moveCount; }
+    public void setMoveCount(int moveCount) { this.moveCount = moveCount; }
+
+    public int getDuration() { return duration; }
+    public void setDuration(int duration) { this.duration = duration; }
+
+    public int getScoreChange() { return scoreChange; }
+    public void setScoreChange(int scoreChange) { this.scoreChange = scoreChange; }
 }

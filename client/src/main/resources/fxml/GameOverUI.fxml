@@ -9,6 +9,7 @@
     <center>
         <VBox styleClass="card-padded" alignment="CENTER" spacing="18" maxWidth="380">
             <Label fx:id="resultLabel" styleClass="title"/>
+            <Label fx:id="scoreChangeLabel" styleClass="subtitle"/>
             <Label fx:id="reasonLabel" styleClass="subtitle"/>
             <HBox spacing="12" alignment="CENTER">
                 <Button text="返回大厅" onAction="#handleBack" styleClass="btn-primary"/>

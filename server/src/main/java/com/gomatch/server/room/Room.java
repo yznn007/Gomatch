@@ -7,15 +7,18 @@ import com.gomatch.server.game.Game;
 import com.gomatch.server.redis.RedisManager;
 import com.gomatch.server.handler.ClientHandler;
 import com.gomatch.server.dao.GameActionDAO;
+import com.gomatch.server.dao.RankDAO;
 import com.gomatch.server.dao.RecordDAO;
 import com.gomatch.server.dao.RoomWatcherDAO;
 import com.gomatch.server.dao.UserDAO;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -58,7 +61,7 @@ public class Room {
     private GameType gameType = GameType.NORMAL;
 
     // 回合计时器
-    private static final int TURN_TIMEOUT_SECONDS = 30;
+    private static final int TURN_TIMEOUT_SECONDS = 60;
     private static final ScheduledExecutorService turnTimerPool =
             Executors.newScheduledThreadPool(2, r -> {
                 Thread t = new Thread(r, "turn-timer");
@@ -69,6 +72,7 @@ public class Room {
 
     private static final RecordDAO recordDAO = new RecordDAO();
     private static final UserDAO userDAO = new UserDAO();
+    private static final RankDAO rankDAO = new RankDAO();
 
     public Room(String roomId, String roomName, ClientHandler owner) {
         this(roomId, roomName, owner, null);
@@ -336,10 +340,7 @@ public class Room {
                 long winnerId = winnerColor == Game.EMPTY ? 0 : whiteUserId;
                 String reason = winnerColor == Game.EMPTY ? "draw" : "five_in_a_row";
                 String msg = winnerColor == Game.EMPTY ? "棋盘已满，平局" : "AI 获胜!";
-                endGame(winnerId, reason);
-                broadcastAll(Message.of(Protocol.GAME_OVER,
-                        "winnerId", String.valueOf(winnerId),
-                        "msg", msg));
+                endGame(winnerId, reason, msg);
                 log.info("AI game ended in room {}: winnerColor={}, winnerId={}, reason={}",
                         roomId, winnerColor == Game.BLACK ? "BLACK" : winnerColor == Game.WHITE ? "WHITE" : "DRAW", winnerId, reason);
             } else {
@@ -348,7 +349,15 @@ public class Room {
         }
     }
 
-    public synchronized void endGame(long winnerId, String reason) {
+    public static String buildScoreChangesJson(Map<Long, Integer> scoreChangeMap) {
+        JSONObject obj = new JSONObject();
+        for (Map.Entry<Long, Integer> e : scoreChangeMap.entrySet()) {
+            obj.put(String.valueOf(e.getKey()), e.getValue());
+        }
+        return obj.toString();
+    }
+
+    public synchronized void endGame(long winnerId, String reason, String message) {
         log.info("endGame called for room {}: winnerId={}, reason={}, currentStatus={}",
                 roomId, winnerId, reason, status);
 
@@ -360,6 +369,50 @@ public class Room {
         if (gameStartTime != null) {
             durationSeconds = Duration.between(gameStartTime, Instant.now()).getSeconds();
             log.info("Game duration for room {}: {} seconds", roomId, durationSeconds);
+        }
+
+        // 计算双方积分变化（所有模式统一计算，AI 模式变化为 0）
+        Map<Long, Integer> scoreChangeMap = new HashMap<>();
+        int p1ScoreChange = 0;
+        int p2ScoreChange = 0;
+
+        if (aiMode) {
+            scoreChangeMap.put(blackUserId, 0);
+            scoreChangeMap.put(whiteUserId, 0);
+        } else {
+            UserDAO.UserInfo blackInfo = userDAO.getUserById(blackUserId);
+            UserDAO.UserInfo whiteInfo = userDAO.getUserById(whiteUserId);
+
+            if (winnerId != 0) {
+                long loserId = (winnerId == blackUserId) ? whiteUserId : blackUserId;
+                UserDAO.UserInfo winnerInfo = winnerId == blackUserId ? blackInfo : whiteInfo;
+                UserDAO.UserInfo loserInfo = loserId == blackUserId ? blackInfo : whiteInfo;
+
+                if (gameType == GameType.RANKED) {
+                    int[] deltas = updateRankedScore(winnerInfo, loserInfo, true);
+                    p1ScoreChange = winnerId == blackUserId ? deltas[0] : deltas[1];
+                    p2ScoreChange = winnerId == whiteUserId ? deltas[0] : deltas[1];
+                } else {
+                    userDAO.updateWinCount(winnerId);
+                    userDAO.updateLoseCount(loserId);
+                    log.info("Normal match result recorded: winner={}, loser={}", winnerId, loserId);
+                }
+            } else {
+                userDAO.updateDrawCount(blackUserId);
+                userDAO.updateDrawCount(whiteUserId);
+
+                if (gameType == GameType.RANKED) {
+                    int[] deltas = updateRankedScore(blackInfo, whiteInfo, false);
+                    p1ScoreChange = deltas[0];
+                    p2ScoreChange = deltas[1];
+                }
+
+                log.info("Draw count updated successfully for both players: black={}, white={}",
+                        blackUserId, whiteUserId);
+            }
+
+            scoreChangeMap.put(blackUserId, p1ScoreChange);
+            scoreChangeMap.put(whiteUserId, p2ScoreChange);
         }
 
         try {
@@ -374,73 +427,46 @@ public class Room {
 
             currentRecordId = recordDAO.saveRecord(roomId, blackUserId, whiteUserId,
                     winnerId == 0 ? null : winnerId, reason, moves, gameStartTime,
-                    aiMode ? "AI" : "PVP");
+                    aiMode ? "AI" : "PVP",
+                    p1ScoreChange, p2ScoreChange);
             log.info("Game record saved successfully for room {}: recordId={}, {} moves recorded", roomId, currentRecordId, moves.size());
+
+            // 缓存对战记录到 Redis（3天TTL）
+            cacheGameRecordToRedis(blackUserId, whiteUserId, winnerId, reason,
+                    moves.size(), durationSeconds, p1ScoreChange, p2ScoreChange);
         } catch (Exception e) {
             log.error("Failed to save game record for room {}: {}", roomId, e.getMessage(), e);
         }
 
-        // AI 模式下不更新积分和胜负场次
-        if (!aiMode) {
-            try {
-                if (winnerId != 0) {
-                    log.debug("Updating scores for win: winnerId={}, blackUserId={}, whiteUserId={}, gameType={}",
-                            winnerId, blackUserId, whiteUserId, gameType);
-
-                    long loserId = (winnerId == blackUserId) ? whiteUserId : blackUserId;
-
-                    if (gameType == GameType.RANKED) {
-                        updateRankedScore(winnerId, loserId, true);
-                    } else {
-                        // 普通匹配只记录胜负场次，不增减积分
-                        userDAO.updateWinCount(winnerId);
-                        userDAO.updateLoseCount(loserId);
-                        log.info("Normal match result recorded: winner={}, loser={}", winnerId, loserId);
-                    }
-                } else {
-                    log.debug("Updating scores for draw: blackUserId={}, whiteUserId={}, gameType={}",
-                            blackUserId, whiteUserId, gameType);
-
-                    userDAO.updateDrawCount(blackUserId);
-                    userDAO.updateDrawCount(whiteUserId);
-
-                    if (gameType == GameType.RANKED) {
-                        updateRankedScore(blackUserId, whiteUserId, false);
-                    }
-
-                    log.info("Draw count updated successfully for both players: black={}, white={}",
-                            blackUserId, whiteUserId);
+        // 对局结束后主动推送双方最新积分与排名到客户端
+        try {
+            UserDAO.UserInfo blackInfo = userDAO.getUserById(blackUserId);
+            UserDAO.UserInfo whiteInfo = userDAO.getUserById(whiteUserId);
+            for (ClientHandler handler : players) {
+                long id = handler.getUserId();
+                UserDAO.UserInfo info = id == blackUserId ? blackInfo : (id == whiteUserId ? whiteInfo : null);
+                if (info != null) {
+                    int rank = rankDAO.getRankByUserId(id) != null ? rankDAO.getRankByUserId(id).getRank() : 0;
+                    handler.send(Message.of(Protocol.USER_SCORE_UPDATE,
+                        "score", String.valueOf(info.getScore()),
+                        "winCount", String.valueOf(info.getWinCount()),
+                        "loseCount", String.valueOf(info.getLoseCount()),
+                        "drawCount", String.valueOf(info.getDrawCount()),
+                        "rank", String.valueOf(rank)));
                 }
-            } catch (Exception e) {
-                log.error("Failed to update user stats for room {}: {}", roomId, e.getMessage(), e);
             }
-        } else {
-            log.info("AI mode: skipping score/win-loss update for room {}", roomId);
+            log.info("Score update pushed to players in room {}: black={}(score={}), white={}(score={})",
+                    roomId, blackUserId, blackInfo != null ? blackInfo.getScore() : "N/A",
+                    whiteUserId, whiteInfo != null ? whiteInfo.getScore() : "N/A");
+        } catch (Exception e) {
+            log.error("Failed to push score update in room {}: {}", roomId, e.getMessage(), e);
         }
 
-        // 对局结束后主动推送双方最新积分到客户端
-        if (!aiMode) {
-            try {
-                UserDAO.UserInfo blackInfo = userDAO.getUserById(blackUserId);
-                UserDAO.UserInfo whiteInfo = userDAO.getUserById(whiteUserId);
-                for (ClientHandler handler : players) {
-                    long id = handler.getUserId();
-                    UserDAO.UserInfo info = id == blackUserId ? blackInfo : (id == whiteUserId ? whiteInfo : null);
-                    if (info != null) {
-                        handler.send(Message.of(Protocol.USER_SCORE_UPDATE,
-                            "score", String.valueOf(info.getScore()),
-                            "winCount", String.valueOf(info.getWinCount()),
-                            "loseCount", String.valueOf(info.getLoseCount()),
-                            "drawCount", String.valueOf(info.getDrawCount())));
-                    }
-                }
-                log.info("Score update pushed to players in room {}: black={}(score={}), white={}(score={})",
-                        roomId, blackUserId, blackInfo != null ? blackInfo.getScore() : "N/A",
-                        whiteUserId, whiteInfo != null ? whiteInfo.getScore() : "N/A");
-            } catch (Exception e) {
-                log.error("Failed to push score update in room {}: {}", roomId, e.getMessage(), e);
-            }
-        }
+        // 广播游戏结束消息（附带每位玩家的积分变化）
+        broadcastAll(Message.of(Protocol.GAME_OVER,
+                "winnerId", String.valueOf(winnerId),
+                "msg", message != null ? message : "游戏结束",
+                "scoreChanges", buildScoreChangesJson(scoreChangeMap)));
 
         try {
             RedisManager.getInstance().deleteGameState(roomId);
@@ -453,15 +479,65 @@ public class Room {
                 roomId, winnerId, reason, durationSeconds);
     }
 
-    private void updateRankedScore(long winnerId, long loserId, boolean hasWinner) {
-        UserDAO.UserInfo winnerInfo = userDAO.getUserById(winnerId);
-        UserDAO.UserInfo loserInfo = userDAO.getUserById(loserId);
+    /**
+     * 将对战记录缓存到 Redis，双方玩家各存一份，3天后自动过期
+     */
+    private void cacheGameRecordToRedis(long player1Id, long player2Id, long winnerId,
+                                         String result, int moveCount, long duration,
+                                         int p1ScoreChange, int p2ScoreChange) {
+        try {
+            UserDAO.UserInfo p1Info = userDAO.getUserById(player1Id);
+            UserDAO.UserInfo p2Info = userDAO.getUserById(player2Id);
+            String p1Name = p1Info != null ? p1Info.getUsername() : "未知";
+            String p2Name = p2Info != null ? p2Info.getUsername() : (aiMode ? "AI" : "未知");
+            long now = System.currentTimeMillis();
+            String createTime = java.time.Instant.now().toString().replace("T", " ").substring(0, 19);
 
+            // 为 player1 构建记录
+            JSONObject recForP1 = new JSONObject();
+            recForP1.put("recordId", currentRecordId);
+            recForP1.put("player1Id", player1Id);
+            recForP1.put("player1Name", p1Name);
+            recForP1.put("player2Id", player2Id);
+            recForP1.put("player2Name", p2Name);
+            recForP1.put("winnerId", winnerId);
+            recForP1.put("result", result);
+            recForP1.put("moveCount", moveCount);
+            recForP1.put("duration", duration);
+            recForP1.put("createTime", createTime);
+            recForP1.put("scoreChange", p1ScoreChange);
+
+            // 为 player2 构建记录
+            JSONObject recForP2 = new JSONObject();
+            recForP2.put("recordId", currentRecordId);
+            recForP2.put("player1Id", player1Id);
+            recForP2.put("player1Name", p1Name);
+            recForP2.put("player2Id", player2Id);
+            recForP2.put("player2Name", p2Name);
+            recForP2.put("winnerId", winnerId);
+            recForP2.put("result", result);
+            recForP2.put("moveCount", moveCount);
+            recForP2.put("duration", duration);
+            recForP2.put("createTime", createTime);
+            recForP2.put("scoreChange", p2ScoreChange);
+
+            RedisManager redis = RedisManager.getInstance();
+            redis.saveGameRecord(player1Id, recForP1.toString(), now);
+            redis.saveGameRecord(player2Id, recForP2.toString(), now);
+            log.debug("Game record cached in Redis for room {}: p1={}, p2={}", roomId, player1Id, player2Id);
+        } catch (Exception e) {
+            log.warn("Failed to cache game record in Redis for room {}: {}", roomId, e.getMessage());
+        }
+    }
+
+    private int[] updateRankedScore(UserDAO.UserInfo winnerInfo, UserDAO.UserInfo loserInfo, boolean hasWinner) {
         if (winnerInfo == null || loserInfo == null) {
-            log.warn("updateRankedScore failed: user info not found, winnerId={}, loserId={}", winnerId, loserId);
-            return;
+            log.warn("updateRankedScore failed: user info not found");
+            return new int[]{0, 0};
         }
 
+        long winnerId = winnerInfo.getUserId();
+        long loserId = loserInfo.getUserId();
         int winnerScore = winnerInfo.getScore();
         int loserScore = loserInfo.getScore();
         int K = 20;
@@ -478,8 +554,9 @@ public class Room {
             userDAO.updateScore(loserId, loserDelta);
             userDAO.updateLoseCount(loserId);
 
-            log.info("Ranked score updated: winner={}(+{}), loser={}({}), K={}",
+            log.info("Ranked score updated: winner={}(+{}), loser=({}), K={}",
                     winnerId, winnerDelta, loserId, loserDelta, K);
+            return new int[]{winnerDelta, loserDelta};
         } else {
             int winnerDelta = (int) Math.round(K * (0.5 - expectedWinner));
             int loserDelta = (int) Math.round(K * (0.5 - expectedLoser));
@@ -489,6 +566,7 @@ public class Room {
 
             log.info("Ranked draw score updated: player1={}(+{}), player2={}(+{})",
                     winnerId, winnerDelta, loserId, loserDelta);
+            return new int[]{winnerDelta, loserDelta};
         }
     }
 
@@ -577,7 +655,7 @@ public class Room {
                 long timedOutPlayerId = (game.getCurrentPlayer() == Game.BLACK) ? blackUserId : whiteUserId;
                 long winnerId = (timedOutPlayerId == blackUserId) ? whiteUserId : blackUserId;
                 log.info("Turn timeout in room {}: player {} ran out of time, winner={}", roomId, timedOutPlayerId, winnerId);
-                endGame(winnerId, "timeout");
+                endGame(winnerId, "timeout", "回合超时，对方获胜");
                 broadcastAll(Message.of(Protocol.TURN_TIMEOUT,
                         "winnerId", String.valueOf(winnerId)));
             }
@@ -715,7 +793,7 @@ public class Room {
 
         if (accept) {
             log.info("Draw accepted by {} in room {}", replierId, roomId);
-            endGame(0, "draw");
+            endGame(0, "draw", "双方平局(求和)");
             if (pendingDrawActionId != null) {
                 gameActionDAO.updateActionStatus(pendingDrawActionId, "accepted");
             }
@@ -809,7 +887,7 @@ public class Room {
         }
 
         log.info("Direct draw executed by {} in room {}", userId, roomId);
-        endGame(0, "draw");
+        endGame(0, "draw", "双方平局(求和)");
         return true;
     }
 

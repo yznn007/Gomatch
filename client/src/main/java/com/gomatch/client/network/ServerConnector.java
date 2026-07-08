@@ -1,16 +1,12 @@
 package com.gomatch.client.network;
 
 import com.gomatch.common.Message;
-import com.gomatch.common.Protocol;
 import javafx.application.Platform;
 
 import java.io.*;
 import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class ServerConnector {
     private Socket socket;
@@ -19,10 +15,6 @@ public class ServerConnector {
     private volatile boolean running;
     private Thread receiveThread;
     private final List<NetworkListener> listeners = new CopyOnWriteArrayList<>();
-    private ScheduledExecutorService heartbeatTimer;
-    private volatile long lastResponseTime = System.currentTimeMillis();
-    private static final long HEARTBEAT_INTERVAL_SEC = 30;
-    private static final long HEARTBEAT_TIMEOUT_SEC = 90;
     private static final int MAX_RECONNECT_ATTEMPTS = 3;
     private static final long RECONNECT_DELAY_SEC = 5;
     private String lastHost;
@@ -34,9 +26,7 @@ public class ServerConnector {
         socket = new Socket(host, port);
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         writer = new PrintWriter(socket.getOutputStream(), true);
-        lastResponseTime = System.currentTimeMillis();
         startReceiveThread();
-        startHeartbeat();
     }
 
     // ==================== 发送 ====================
@@ -48,7 +38,7 @@ public class ServerConnector {
         }
     }
 
-    /** 发送仅含命令的消息（心跳、认输等） */
+    /** 发送仅含命令的消息（认输等） */
     public void send(String cmd) {
         send(Message.cmdOnly(cmd));
     }
@@ -72,7 +62,6 @@ public class ServerConnector {
 
     public void disconnect() {
         running = false;
-        stopHeartbeat();
         if (receiveThread != null) {
             receiveThread.interrupt();
         }
@@ -95,8 +84,18 @@ public class ServerConnector {
                 try {
                     String line = reader.readLine();
                     if (line == null) break;
-                    lastResponseTime = System.currentTimeMillis();
                     Message msg = Message.fromJson(line);
+
+                    // 内部拦截重连认证响应，不转发给业务 Controller
+                    if ("RECONNECT_OK".equals(msg.getCmd())) {
+                        handleReconnectOk(msg);
+                        continue;
+                    }
+                    if ("RECONNECT_FAIL".equals(msg.getCmd())) {
+                        handleReconnectFail(msg);
+                        continue;
+                    }
+
                     Platform.runLater(() -> {
                         for (NetworkListener l : listeners) {
                             l.onMessage(msg);
@@ -127,19 +126,51 @@ public class ServerConnector {
         receiveThread.start();
     }
 
+    /** 重连认证成功：更新本地用户状态 */
+    private void handleReconnectOk(Message msg) {
+        com.gomatch.client.model.User user = com.gomatch.client.AppConfig.getCurrentUser();
+        if (user != null) {
+            user.setUserId(msg.getLong("userId"));
+            user.setUsername(msg.getString("username"));
+            user.setScore(msg.getInt("score"));
+            user.setWinCount(msg.getInt("winCount"));
+            user.setLoseCount(msg.getInt("loseCount"));
+            user.setDrawCount(msg.getInt("drawCount"));
+            user.setRank(msg.getInt("rank"));
+        }
+        // 如果在房间中，服务器会额外下发 roomId/roomName 等，
+        // 但当前 Controller 已通过 clearListeners 清除，
+        // 重连后需要重新进入页面才能感知。这里暂不处理。
+    }
+
+    /** 重连认证失败：断开连接并触发全局断线事件 */
+    private void handleReconnectFail(Message msg) {
+        running = false;
+        try { if (socket != null) socket.close(); } catch (IOException ignored) {}
+        Platform.runLater(() -> {
+            for (NetworkListener l : listeners) {
+                l.onMessage(Message.cmdOnly("DISCONNECT"));
+            }
+        });
+    }
+
     private boolean tryReconnect() {
         for (int i = 1; i <= MAX_RECONNECT_ATTEMPTS; i++) {
             try {
                 Thread.sleep(RECONNECT_DELAY_SEC * 1000);
-                stopHeartbeat();
                 if (socket != null) { try { socket.close(); } catch (IOException ignored) {} }
                 socket = new Socket(lastHost, lastPort);
                 reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 writer = new PrintWriter(socket.getOutputStream(), true);
-                lastResponseTime = System.currentTimeMillis();
+
+                // 重连后发送 RECONNECT 消息恢复认证状态
+                String token = com.gomatch.client.AppConfig.getAuthToken();
+                if (token != null && !token.isEmpty()) {
+                    writer.println(Message.of("RECONNECT", "token", token).toJson());
+                }
+
                 running = true;
                 startReceiveThread();
-                startHeartbeat();
                 return true;
             } catch (Exception e) {
                 // 重连失败，继续尝试
@@ -148,31 +179,4 @@ public class ServerConnector {
         return false;
     }
 
-    // ==================== 心跳 ====================
-
-    private void startHeartbeat() {
-        stopHeartbeat();
-        heartbeatTimer = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "heartbeat");
-            t.setDaemon(true);
-            return t;
-        });
-        heartbeatTimer.scheduleAtFixedRate(() -> {
-            if (!isConnected()) return;
-            long elapsed = (System.currentTimeMillis() - lastResponseTime) / 1000;
-            if (elapsed > HEARTBEAT_TIMEOUT_SEC) {
-                running = false;
-                try { if (socket != null) socket.close(); } catch (IOException ignored) {}
-                return;
-            }
-            send(Protocol.HEARTBEAT);
-        }, HEARTBEAT_INTERVAL_SEC, HEARTBEAT_INTERVAL_SEC, TimeUnit.SECONDS);
-    }
-
-    private void stopHeartbeat() {
-        if (heartbeatTimer != null && !heartbeatTimer.isShutdown()) {
-            heartbeatTimer.shutdownNow();
-            heartbeatTimer = null;
-        }
-    }
 }
