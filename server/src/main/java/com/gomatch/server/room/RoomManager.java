@@ -32,6 +32,11 @@ public class RoomManager {
     /** 快速匹配等待队列 */
     private final Queue<MatchEntry> matchQueue = new ConcurrentLinkedQueue<>();
     private final Map<Long, MatchEntry> matchEntries = new ConcurrentHashMap<>();
+
+    /** 排位匹配等待队列（内存实现，作为Redis备选） */
+    private final Queue<MatchEntry> rankedMatchQueue = new ConcurrentLinkedQueue<>();
+    private final Map<Long, MatchEntry> rankedMatchEntries = new ConcurrentHashMap<>();
+
     private final ScheduledExecutorService matchScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread t = new Thread(r, "match-timeout");
         t.setDaemon(true);
@@ -268,43 +273,83 @@ public class RoomManager {
     }
 
     public Room rankedMatch(ClientHandler player, int playerScore) {
-        log.info("玩家 {} (积分:{}) 加入排位匹配队列", player.getUserId(), playerScore);
-        RedisManager.getInstance().addRankedMatchQueue(player.getUserId(), playerScore);
+        long userId = player.getUserId();
+        log.info("玩家 {} (积分:{}) 加入排位匹配队列", userId, playerScore);
 
-        String opponentData = RedisManager.getInstance().pollRankedMatchQueue(playerScore);
-        if (opponentData != null) {
-            String[] parts = opponentData.split(":");
-            if (parts.length >= 2) {
-                long opponentId = Long.parseLong(parts[0]);
-                int opponentScore = Integer.parseInt(parts[1]);
+        cancelRankedMatch(userId);
 
-                if (opponentId != player.getUserId()) {
-                    ClientHandler opponentHandler = findClientHandler(opponentId);
-                    if (opponentHandler != null) {
-                        String roomName = "排位赛 #" + (getActiveRoomCount() + 1);
-                        Room room = createRankedRoom(roomName, player);
-                        
-                        room.join(opponentHandler);
-                        player.setCurrentRoom(room);
-                        opponentHandler.setCurrentRoom(room);
-                        room.startGame();
+        // 1. 尝试从内存队列中配对
+        while (!rankedMatchQueue.isEmpty()) {
+            MatchEntry opponentEntry = rankedMatchQueue.poll();
+            rankedMatchEntries.remove(opponentEntry.userId);
 
-                        log.info("排位匹配成功: 玩家 {}({}) vs 玩家 {}({})", 
-                                player.getUserId(), playerScore, opponentId, opponentScore);
-                        return room;
-                    } else {
-                        log.warn("对手已离线: userId={}", opponentId);
-                        RedisManager.getInstance().addRankedMatchQueue(player.getUserId(), playerScore);
-                    }
-                }
+            if (opponentEntry.userId == userId) {
+                continue;
             }
+
+            int diff = Math.abs(playerScore - opponentEntry.score);
+            if (diff > 500) {
+                rankedMatchQueue.offer(opponentEntry);
+                rankedMatchEntries.put(opponentEntry.userId, opponentEntry);
+                break;
+            }
+
+            ClientHandler opponentHandler = findClientHandler(opponentEntry.userId);
+            if (opponentHandler == null || opponentHandler.getCurrentRoom() != null) {
+                log.info("对手 {} 已离线或已在房间，跳过", opponentEntry.userId);
+                continue;
+            }
+
+            opponentEntry.cancelTimeout();
+            String roomName = "排位赛 #" + (getActiveRoomCount() + 1);
+            Room room = createRankedRoom(roomName, player);
+
+            room.join(opponentHandler);
+            player.setCurrentRoom(room);
+            opponentHandler.setCurrentRoom(room);
+            room.startGame();
+
+            log.info("排位匹配成功: 玩家 {}({}) vs 玩家 {}({})",
+                    userId, playerScore, opponentEntry.userId, opponentEntry.score);
+            return room;
         }
 
+        // 2. 没有对手，加入等待队列，启动超时定时器
+        ScheduledFuture<?> timeoutTask = matchScheduler.schedule(() -> {
+            MatchEntry entry = rankedMatchEntries.remove(userId);
+            if (entry != null) {
+                rankedMatchQueue.remove(entry);
+                if (entry.handler.getCurrentRoom() == null) {
+                    entry.handler.send(Message.of(Protocol.MATCH_TIMEOUT,
+                            "msg", "排位匹配超时，请重试"));
+                    log.info("玩家 {} 排位匹配超时，已移出队列", userId);
+                }
+            }
+        }, MATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+        MatchEntry entry = new MatchEntry(userId, playerScore, player, timeoutTask);
+        rankedMatchQueue.offer(entry);
+        rankedMatchEntries.put(userId, entry);
+
+        RedisManager.getInstance().addRankedMatchQueue(userId, playerScore);
+
+        log.info("玩家 {} 进入排位匹配队列等待（{}秒超时），当前队列长度: {}",
+                userId, MATCH_TIMEOUT_SECONDS, rankedMatchQueue.size());
         return null;
     }
 
     public int getRankedMatchQueueSize() {
-        return RedisManager.getInstance().getRankedMatchQueueSize();
+        return rankedMatchQueue.size();
+    }
+
+    public void cancelRankedMatch(long userId) {
+        MatchEntry entry = rankedMatchEntries.remove(userId);
+        if (entry != null) {
+            entry.cancelTimeout();
+            rankedMatchQueue.remove(entry);
+            RedisManager.getInstance().removeRankedMatchQueue(userId);
+            log.info("玩家 {} 取消排位匹配", userId);
+        }
     }
 
     private ClientHandler findClientHandler(long userId) {
