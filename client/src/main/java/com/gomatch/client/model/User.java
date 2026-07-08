@@ -9,6 +9,7 @@ public class User {
     private int drawCount;
     private int rank;
     private String winRate;
+    private String role = "PLAYER";
 
     public User() {}
 
@@ -33,4 +34,7 @@ public class User {
     public void setRank(int rank) { this.rank = rank; }
     public String getWinRate() { return winRate; }
     public void setWinRate(String winRate) { this.winRate = winRate; }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 }
+

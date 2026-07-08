@@ -39,6 +39,7 @@
                     <TextField fx:id="chatInput" promptText="输入消息..." onAction="#handleSendChat" styleClass="field"/>
                     <Button text="悔棋" fx:id="undoBtn" onAction="#handleUndo" styleClass="btn-secondary" maxWidth="Infinity"/>
                     <Button text="求和" fx:id="drawBtn" onAction="#handleDraw" styleClass="btn-secondary" maxWidth="Infinity"/>
+                    <Button text="保存" fx:id="saveBtn" onAction="#handleSaveGame" styleClass="btn-secondary" maxWidth="Infinity"/>
                     <Button text="认输" fx:id="surrenderBtn" onAction="#handleSurrender" styleClass="btn-danger" maxWidth="Infinity"/>
                 </VBox>
 

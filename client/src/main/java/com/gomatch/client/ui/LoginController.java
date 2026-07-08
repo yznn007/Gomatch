@@ -127,6 +127,7 @@ public class LoginController implements NetworkListener {
             user.setLoseCount(msg.getInt("loseCount"));
             user.setDrawCount(msg.getInt("drawCount"));
             user.setRank(msg.getInt("rank"));
+            user.setRole(msg.getString("role").isEmpty() ? "PLAYER" : msg.getString("role"));
 
             AppConfig.setCurrentUser(user);
             AppConfig.setPreviewMode(false);
@@ -162,3 +163,4 @@ public class LoginController implements NetworkListener {
         }
     }
 }
+

@@ -42,6 +42,7 @@ public class BoardController implements NetworkListener {
     @FXML private Button undoBtn;
     @FXML private Button drawBtn;
     @FXML private Button surrenderBtn;
+    @FXML private Button saveBtn;
     @FXML private VBox gameControls;
     @FXML private VBox replayControls;
     @FXML private Button prevBtn;
@@ -402,6 +403,17 @@ public class BoardController implements NetworkListener {
         }
     }
 
+    public void loadSavedGame(String saveName, String boardData, int savedCurrentPlayer) {
+        setReplayMode(true);
+        currentTurn = savedCurrentPlayer == 2 ? 2 : 1;
+        replayMoves(boardData);
+        currentTurn = savedCurrentPlayer == 2 ? 2 : 1;
+        updateTurnLabel();
+        if (chatArea != null) {
+            chatArea.appendText("[系统] 已打开存档：" + (saveName == null || saveName.isBlank() ? "未命名棋局" : saveName) + "\n");
+            chatArea.setScrollTop(Double.MAX_VALUE);
+        }
+    }
     private void handleMouseClick(MouseEvent e) {
         if (replayMode || gameOver || spectatorMode) return;
         if (!myTurn) return;
@@ -701,6 +713,15 @@ public class BoardController implements NetworkListener {
     }
 
     @FXML
+    private void handleSaveGame() {
+        if (previewMode) {
+            chatArea.appendText("[系统] 浏览模式不保存棋局\n");
+            return;
+        }
+        String saveName = "棋局存档 " + java.time.LocalDateTime.now().withNano(0);
+        ClientMain.getConnector().send(Message.of(Protocol.SAVE_GAME, "saveName", saveName));
+    }
+    @FXML
     private void handleSurrender() {
         if (previewMode) {
             ScreenManager.showDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult("2", "预览模式 - 平局"));
@@ -717,6 +738,7 @@ public class BoardController implements NetworkListener {
         boolean canAct = myTurn && !gameOver && !spectatorMode && !replayMode;
         if (undoBtn != null) undoBtn.setDisable(!canAct);
         if (drawBtn != null) drawBtn.setDisable(!canAct);
+        if (saveBtn != null) saveBtn.setDisable(gameOver || spectatorMode || replayMode);
     }
 
     @FXML
@@ -880,6 +902,10 @@ public class BoardController implements NetworkListener {
 
             final int scoreChangeFinal = myScoreChange;
             ScreenManager.showDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult(result, reason, scoreChangeFinal));
+        } else if ("SAVE_GAME_OK".equals(cmd)) {
+            chatArea.appendText("[系统] 棋局已保存：" + msg.getString("saveName") + "\n");
+        } else if ("SAVE_GAME_FAIL".equals(cmd)) {
+            chatArea.appendText("[系统] 保存失败：" + msg.getString("msg") + "\n");
         } else if (Protocol.CHAT_MSG.equals(cmd)) {
             String username = msg.getString("username");
             String message = msg.getString("message");
@@ -1049,3 +1075,4 @@ public class BoardController implements NetworkListener {
         return width;
     }
 }
+

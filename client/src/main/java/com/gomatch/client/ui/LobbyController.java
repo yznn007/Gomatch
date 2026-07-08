@@ -108,6 +108,12 @@ public class LobbyController implements NetworkListener {
     }
 
     @FXML
+    private void handleManagement() {
+        ManagementController ctrl = ScreenManager.switchTo("/fxml/ManagementUI.fxml");
+        ctrl.setCurrentUser(currentUser);
+        ctrl.setPreviewMode(previewMode);
+    }
+    @FXML
     private void handleSettings() {
         SettingsController ctrl = ScreenManager.switchTo("/fxml/SettingsUI.fxml");
         ctrl.setCurrentUser(currentUser);
