@@ -1,5 +1,6 @@
 package com.gomatch.client.ui;
 
+import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.GameRecord;
 import com.gomatch.client.model.User;
@@ -10,7 +11,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -176,6 +176,34 @@ public class ProfileController implements NetworkListener {
     @FXML
     private void showRecordTab() {
         switchTab(recordPane, menuRecordBtn);
+        if (recordData.isEmpty()) {
+            loadRecords();
+        }
+        renderRecordCards();
+    }
+
+    /**
+     * 统一加载对战记录：
+     * - 预览模式 / 未连接服务器：加载本地模拟数据
+     * - 已连接服务器：发送 QUERY_RECORD 请求
+     */
+    private void loadRecords() {
+        if (isPreview() || !ClientMain.getConnector().isConnected()) {
+            loadMockRecords();
+        } else {
+            ClientMain.getConnector().send(Message.of(Protocol.QUERY_RECORD, "page", 0, "size", 20));
+        }
+    }
+
+    private void loadMockRecords() {
+        recordData.setAll(
+            new GameRecord("玩家A", "胜", "2026-07-04 15:30", "查看", "0,0,1;1,1,2;2,2,1;3,3,2;4,4,1"),
+            new GameRecord("玩家B", "负", "2026-07-04 16:10", "查看", "5,5,1;6,6,2;7,7,1;8,8,2;9,9,1")
+        );
+    }
+
+    private boolean isPreview() {
+        return previewMode || AppConfig.isPreviewMode();
     }
 
     @FXML
@@ -185,6 +213,9 @@ public class ProfileController implements NetworkListener {
 
     public void setCurrentUser(User user) {
         this.currentUser = user;
+        if (user == null) {
+            return;
+        }
         userIdLabel.setText("#" + user.getUserId());
         usernameLabel.setText(user.getUsername());
         if (profileAvatarLabel != null) {
@@ -221,14 +252,7 @@ public class ProfileController implements NetworkListener {
         }
 
         // 用户信息设置完成后再查询战绩，避免 currentUser 为空时解析异常
-        if (ClientMain.getConnector().isConnected()) {
-            ClientMain.getConnector().send(Message.of(Protocol.QUERY_RECORD, "page", 0, "size", 20));
-        } else {
-            recordData.addAll(
-                new GameRecord("玩家A", "胜", "2026-07-04 15:30", "查看"),
-                new GameRecord("玩家B", "负", "2026-07-04 16:10", "查看")
-            );
-        }
+        loadRecords();
     }
 
     public void setPreviewMode(boolean previewMode) {
@@ -279,31 +303,36 @@ public class ProfileController implements NetworkListener {
             if (currentUser == null) {
                 return;
             }
-            recordData.clear();
-            JSONArray records = msg.getData().optJSONArray("records");
-            if (records == null) return;
-            for (int i = 0; i < records.length(); i++) {
-                JSONObject r = records.getJSONObject(i);
-                String p1Name = r.getString("player1Name");
-                String p2Name = r.getString("player2Name");
-                String winnerId = r.getString("winnerId");
-                String time = r.getString("createTime");
-                String boardData = r.optString("boardData", "").replace("\\|", "|");
+            try {
+                recordData.clear();
+                JSONArray records = msg.getData().optJSONArray("records");
+                if (records == null) return;
+                for (int i = 0; i < records.length(); i++) {
+                    JSONObject r = records.getJSONObject(i);
+                    String p1Name = r.optString("player1Name", "未知");
+                    String p2Name = r.optString("player2Name", "未知");
+                    String winnerId = r.optString("winnerId", "0");
+                    String time = r.optString("createTime", "");
+                    String boardData = r.optString("boardData", "").replace("\\|", "|");
 
-                // 判断结果：比较 winnerId 与当前用户 ID
-                String result;
-                if ("0".equals(winnerId)) {
-                    result = "平局";
-                } else if (String.valueOf(currentUser.getUserId()).equals(winnerId)) {
-                    result = "胜";
-                } else {
-                    result = "负";
+                    // 判断结果：比较 winnerId 与当前用户 ID
+                    String result;
+                    if ("0".equals(winnerId)) {
+                        result = "平局";
+                    } else if (String.valueOf(currentUser.getUserId()).equals(winnerId)) {
+                        result = "胜";
+                    } else {
+                        result = "负";
+                    }
+
+                    // 对手名：当前用户是 p1 则对手是 p2，反之亦然
+                    String currentName = currentUser.getUsername();
+                    String opponent = currentName != null && currentName.equals(p1Name) ? p2Name : p1Name;
+
+                    recordData.add(new GameRecord(opponent, result, time, "查看", boardData));
                 }
-
-                // 对手名：当前用户是 p1 则对手是 p2，反之亦然
-                String opponent = p1Name.equals(currentUser.getUsername()) ? p2Name : p1Name;
-
-                recordData.add(new GameRecord(opponent, result, time, "查看", boardData));
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }

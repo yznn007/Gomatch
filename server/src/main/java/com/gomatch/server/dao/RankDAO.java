@@ -87,9 +87,16 @@ public class RankDAO {
     public List<RankInfo> getRanking(int limit) {
         List<Long> redisTopUsers = RedisManager.getInstance().getTopRank(limit);
         if (!redisTopUsers.isEmpty()) {
-            return getRankingFromRedis(redisTopUsers);
+            List<RankInfo> fromRedis = getRankingFromRedis(redisTopUsers, limit);
+            if (!fromRedis.isEmpty()) {
+                return fromRedis;
+            }
         }
 
+        return getRankingFromDB(limit);
+    }
+
+    private List<RankInfo> getRankingFromDB(int limit) {
         String sql = "SELECT r.rank_id, r.user_id, u.username, r.rank, r.score, r.win_rate, r.ai_win_rate " +
                      "FROM t_rank r JOIN t_user u ON r.user_id = u.user_id " +
                      "WHERE u.status = 'ACTIVE' " +
@@ -119,10 +126,11 @@ public class RankDAO {
         return result;
     }
 
-    private List<RankInfo> getRankingFromRedis(List<Long> userIds) {
+    private List<RankInfo> getRankingFromRedis(List<Long> userIds, int limit) {
         String sql = "SELECT r.rank_id, r.user_id, u.username, r.rank, r.score, r.win_rate, r.ai_win_rate " +
                      "FROM t_rank r JOIN t_user u ON r.user_id = u.user_id " +
-                     "WHERE r.user_id IN (" + buildPlaceholders(userIds.size()) + ")";
+                     "WHERE r.user_id IN (" + buildPlaceholders(userIds.size()) + ") " +
+                     "AND u.status = 'ACTIVE'";
 
         List<RankInfo> result = new ArrayList<>();
         try (Connection conn = DBUtil.getConnection();
@@ -161,6 +169,15 @@ public class RankDAO {
             }
         } catch (SQLException e) {
             log.error("Get ranking from Redis error", e);
+        }
+        // Redis 查到的用户已全部失效时，返回空列表以便回退到数据库
+        if (result.isEmpty()) {
+            return result;
+        }
+        // 若 Redis 返回的数量与预期严重不符（大量脏数据），也返回空以回退 DB
+        if (result.size() < Math.min(userIds.size(), limit) / 2 && result.size() < 5) {
+            log.warn("Redis ranking data is incomplete, fallback to DB");
+            return new ArrayList<>();
         }
         return result;
     }

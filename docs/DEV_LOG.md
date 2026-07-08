@@ -136,7 +136,8 @@
 | 2026-07-07 | Contributor| CasualLobbyController.onMessage() 缺少 ERROR 协议处理，服务端返回"等待对手…"时被静默丢弃；新增 ERROR/USER_SCORE_UPDATE 协议处理，FXML 增加 statusLabel 状态提示，handleQuickMatch/onMessage 中实时更新匹配状态；LobbyController 同步添加 USER_SCORE_UPDATE 处理确保积分标签即时刷新 |
 | 2026-07-07 | Contributor| RoomManager.quickMatch() 原逻辑先将自己入队再 poll，导致每个请求都先取出自己然后返回等待；改为先尝试从队列取对手，无可用对手再入队，确保第二位玩家点击时能正确配对并通知双方 |
 | 2026-07-07 | Contributor| Room.endGame() 中非排位赛普通匹配取消 winner +10 / loser -5 的积分调整，仅记录胜负场次；排位赛仍按原逻辑更新积分 |
-| 2026-07-07 | Contributor| BoardUI.fxml 中 blackLabel 默认使用 section-label 导致黑方永远加粗；改为 subtitle，BoardController.updateTurnLabel() 根据 currentTurn 动态设置黑方/白方 font-weight，实现落子方高亮 |
+| 2026-07-08 | Contributor| 1. RankingController 初始化时主动渲染占位，处理 ERROR 消息，使用 optInt/optString 解析数值字段，预览模式加载本地假数据；2. LobbyController 抽屉排行榜同步修复解析方式；3. 服务端 handleRanking 空列表时返回 RANKING_LIST 空数组而非 ERROR；4. RankDAO 在 Redis 结果为空/不完整时回退数据库查询。 | 编译验证通过 |
+
 | 2026-07-07 | Contributor| 服务端 Room.getRoomListInfo() 返回的 status 为大写 PLAYING，CasualLobbyController 中过滤观战房间时使用了小写 "playing"，导致条件永远不成立；改为 "PLAYING".equalsIgnoreCase() 比较，使进行中的对局正确出现在观战列表 |
 | 2026-07-07 | Contributor| 服务端 handleSpectate() 原只发送 JOIN_OK 导致客户端进入 RoomWaitingUI 卡死；改为发送 GAME_START 触发 BoardUI 切换，并回放所有已有落子使观战者看到实时棋盘；客户端 BoardController 新增 spectatorMode，观战模式自动禁用落子点击和操作按钮 |
 | 2026-07-07 | Contributor| 消除 14 个文件的 lint 警告：移除 28 个未使用 import、删除 4 个未使用方法、移除 7 个未使用字段/变量；修复 DatabaseBootstrap Scanner 资源泄漏 |

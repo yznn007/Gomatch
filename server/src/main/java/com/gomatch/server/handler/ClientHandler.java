@@ -667,11 +667,6 @@ public class ClientHandler implements Runnable {
 
     private void handleRanking() {
         var ranking = rankDAO.getRanking(20);
-        if (ranking.isEmpty()) {
-            send(Message.of(Protocol.ERROR, "msg", "暂无用户"));
-            return;
-        }
-
         JSONArray users = new JSONArray();
         for (var u : ranking) {
             JSONObject obj = new JSONObject();
