@@ -456,6 +456,7 @@ public class Room {
             scoreChangeMap.put(whiteUserId, p2ScoreChange);
         }
 
+        // 保存对战记录到 MySQL
         try {
             List<RecordDAO.MoveRecord> moves = new ArrayList<>();
             for (Game.MoveRecord mr : game.getMoveHistory()) {
@@ -470,14 +471,26 @@ public class Room {
                     winnerId == 0 ? null : winnerId, reason, moves, gameStartTime,
                     aiMode ? "AI" : "PVP",
                     p1ScoreChange, p2ScoreChange);
-            log.info("Game record saved successfully for room {}: recordId={}, {} moves recorded", roomId, currentRecordId, moves.size());
 
-            // 缓存对战记录到 Redis（3天TTL）
-            String boardData = new com.google.gson.Gson().toJson(moves);
-            cacheGameRecordToRedis(blackUserId, whiteUserId, winnerId, reason,
-                    moves.size(), durationSeconds, p1ScoreChange, p2ScoreChange, boardData);
+            if (currentRecordId > 0) {
+                log.info("Game record saved successfully for room {}: recordId={}, {} moves recorded",
+                        roomId, currentRecordId, moves.size());
+            } else {
+                log.error("Game record save returned invalid id for room {}: saveRecord returned {}",
+                        roomId, currentRecordId);
+            }
+
+            // 缓存对战记录到 Redis（3天TTL，失败不影响 MySQL 记录）
+            try {
+                String boardData = new com.google.gson.Gson().toJson(moves);
+                cacheGameRecordToRedis(blackUserId, whiteUserId, winnerId, reason,
+                        moves.size(), durationSeconds, p1ScoreChange, p2ScoreChange, boardData);
+            } catch (Exception redisEx) {
+                log.warn("Failed to cache game record to Redis for room {} (MySQL save ok): {}",
+                        roomId, redisEx.getMessage());
+            }
         } catch (Exception e) {
-            log.error("Failed to save game record for room {}: {}", roomId, e.getMessage(), e);
+            log.error("Failed to save game record to MySQL for room {}: {}", roomId, e.getMessage(), e);
         }
 
         // 对局结束后主动推送双方最新积分与排名到客户端

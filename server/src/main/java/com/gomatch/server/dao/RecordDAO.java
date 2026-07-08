@@ -30,7 +30,9 @@ public class RecordDAO {
                            Long winnerId, String result,
                            List<MoveRecord> moves, Instant startTime, String gameType,
                            int player1ScoreChange, int player2ScoreChange) {
-        int duration = (int) Duration.between(startTime, Instant.now()).getSeconds();
+        int duration = startTime != null
+                ? (int) Duration.between(startTime, Instant.now()).getSeconds()
+                : 0;
         int moveCount = moves.size();
 
         String boardData = gson.toJson(moves);
