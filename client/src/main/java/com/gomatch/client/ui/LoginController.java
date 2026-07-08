@@ -6,6 +6,7 @@ import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
+import com.gomatch.client.ui.AsciiTextCanvas;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
@@ -24,6 +25,7 @@ public class LoginController implements NetworkListener {
     @FXML private PasswordField passwordField;
     @FXML private CheckBox rememberCheckBox;
     @FXML private Label errorLabel;
+    @FXML private AsciiTextCanvas brandCanvas;
 
     private static final File CRED_FILE = new File(
             System.getProperty("user.home"), ".gomatch/credentials.json");
@@ -103,11 +105,13 @@ public class LoginController implements NetworkListener {
 
     @FXML
     private void handleRegister() {
+        if (brandCanvas != null) brandCanvas.stop();
         ScreenManager.switchTo("/fxml/RegisterUI.fxml");
     }
 
     @FXML
     private void handlePreview() {
+        if (brandCanvas != null) brandCanvas.stop();
         User fakeUser = new User(0, "游客");
         fakeUser.setScore(1000);
 
@@ -135,6 +139,7 @@ public class LoginController implements NetworkListener {
 
             saveOrClearCredentials();
 
+            if (brandCanvas != null) brandCanvas.stop();
             LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
             ctrl.setCurrentUser(user);
             ctrl.setPreviewMode(false);

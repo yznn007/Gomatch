@@ -2,6 +2,7 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import com.gomatch.client.ui.AsciiTextCanvas?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.gomatch.client.ui.LoginController"
@@ -10,8 +11,8 @@
         <HBox spacing="40" alignment="CENTER">
             <!-- Left: brand area -->
             <StackPane HBox.hgrow="ALWAYS" minWidth="320">
-                <VBox styleClass="brand-panel" alignment="CENTER" maxWidth="360" prefHeight="500">
-                    <Label text="Gomatch" styleClass="brand-logo"/>
+                <VBox styleClass="brand-panel" alignment="CENTER" maxWidth="480" prefHeight="500">
+                    <AsciiTextCanvas fx:id="brandCanvas" width="480" height="380"/>
                 </VBox>
             </StackPane>
 

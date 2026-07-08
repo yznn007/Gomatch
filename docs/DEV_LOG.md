@@ -259,6 +259,7 @@
 | 50 | 游戏大厅卡片集成 PixelCard 粒子悬浮效果 | 已完成 |
 | 51 | 客户端/服务端 JSON 协议统一 | 已完成 |
 | 52 | 排行榜分榜逻辑 | 已完成 |
+| 53 | 登录界面 ASCII 动态渐变标题 | 已完成 |
 
 ### 状态说明
 
@@ -283,8 +284,6 @@
 | 2026-07-06 | Contributor| 修改 t_room.room_id 为 VARCHAR(50) |
 | 2026-07-06 | Contributor| 定时任务自动刷新 |
 | 2026-07-06 | Contributor| |
-
-### 服务端（Server）
 
 | 日期 | 工作内容 | 问题/备注 |
 |------|----------|-----------|
@@ -395,3 +394,4 @@
 | 2026-07-07 | Contributor| 1. 在 style.css 中为 .pixel-card-body 引入基础极简软投影，提供细腻的纸张悬浮深度感；2. 为匹配（蓝色）、AI对战（黄色）、排位（粉色）三个主题色分别定制专属的 hover 投影（24px gaussian blur, 18% 不透明度），增强 3D 偏转侧倾时的空间光感表现；3. 增设 pressed 状态阴影收紧收敛（12px gaussian blur），建立直观敏捷的按下触觉交互反馈。 |
 | 2026-07-07 | Contributor| 1. 在 Pixel.draw() 中对 size<=0 进行拦截，在 shimmer/disappear 中进行 Clamp 边界夹紧，阻断异常渲染；2. 增加 Canvas 动态可见性管理（在开始 appear 时可见，在 disappear 结束时设为不可见），彻底打断 JavaFX 3D 渲染管线及脏区缓存失效引发的粒子显示残留。 |
 | 2026-07-08 | Contributor| 1. 在 RankDAO.java 中增加 SQL 查询 getFriendsRanking()，将当前用户与其好友合流并降序排序；2. 在 ClientHandler.java 中支持 Protocol.RANKING 携带 type 参数，并在返回数据包时回传分榜类型；3. 改造 RankingUI.fxml 左侧导航栏增加“全服排行”与“好友排行”两个选项按钮，为标题分配 fx:id；4. 重构 RankingController.java 实现 Tab 切换逻辑、多类型 Mock 数据展现与网络消息类型过滤，防范并发乱序渲染。 | 编译与逻辑验证完成，运行测试通过 |
+| 2026-07-08 | Contributor| 1. 采用 3D 正向光栅化高精密度采样（将采样量暴增至 480x120，共 5.7 万个点），并在 X, Y, Z 轴上大幅降慢且收窄 3D 几何形变波动以减少扭动；2. 将 ASCII 单字字号收缩为极精密的 5px（asciiFontSize=5），网格分辨率自动扩充至 174x76（共 1.3 万个字符），使字符点阵凝聚感和高密度精细度翻倍；3. 将字身黑色判定阈值门槛压低至 45，使核心黑色字符占比高达 95% 以上，并对红色、蓝色色散通道实施大幅亮度衰减融入暗色系；4. 布局拓宽至 480，销毁 AnimationTimer 防止泄漏。 | 编译与渲染测试成功，完美呈现超高密度且沉稳黑色的高精细偏色特效 |
