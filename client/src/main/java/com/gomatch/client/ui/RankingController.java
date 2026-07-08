@@ -16,38 +16,21 @@ import org.json.JSONObject;
 public class RankingController implements NetworkListener {
     @FXML private VBox rankingContainer;
 
-    @FXML private Button menuRankingBtn;
+    @FXML private Button menuGlobalBtn;
+    @FXML private Button menuFriendsBtn;
+    @FXML private Label rankingTitleLabel;
     @FXML private VBox rankingPane;
 
     private final ObservableList<User> rankingData = FXCollections.observableArrayList();
     private User currentUser;
     private boolean previewMode;
+    private String currentTab = "GLOBAL";
 
     @FXML
     private void initialize() {
         rankingData.addListener((javafx.collections.ListChangeListener<User>) c -> renderRankingCards());
         com.gomatch.client.ClientMain.getConnector().addListener(this);
-        if (com.gomatch.client.ClientMain.getConnector().isConnected()) {
-            com.gomatch.client.ClientMain.getConnector().send(com.gomatch.common.Protocol.RANKING);
-        } else {
-            String[][] fakeData = {
-                {"1", "棋圣",   "1500", "83.3%"},
-                {"2", "高手如云","1350", "72.7%"},
-                {"3", "五子连珠","1200", "63.6%"},
-                {"4", "新手求带","1050", "44.4%"},
-                {"5", "游客",   "1000",  "0%"  }
-            };
-            for (String[] row : fakeData) {
-                User u = new User();
-                u.setRank(Integer.parseInt(row[0]));
-                u.setUsername(row[1]);
-                u.setScore(Integer.parseInt(row[2]));
-                u.setWinRate(row[3]);
-                rankingData.add(u);
-            }
-        }
-
-        showRankingTab();
+        showGlobalRanking();
     }
 
     private String getRankTier(int score) {
@@ -146,18 +129,86 @@ public class RankingController implements NetworkListener {
     }
 
     @FXML
-    public void showRankingTab() {
-        rankingPane.setVisible(true);
-        rankingPane.setManaged(true);
-        menuRankingBtn.getStyleClass().add("active");
+    public void showGlobalRanking() {
+        currentTab = "GLOBAL";
+        rankingTitleLabel.setText("全服积分排行榜");
+        
+        menuGlobalBtn.getStyleClass().remove("active");
+        menuFriendsBtn.getStyleClass().remove("active");
+        menuGlobalBtn.getStyleClass().add("active");
+
+        loadRankingData();
+    }
+
+    @FXML
+    public void showFriendsRanking() {
+        currentTab = "FRIENDS";
+        rankingTitleLabel.setText("好友积分排行榜");
+        
+        menuGlobalBtn.getStyleClass().remove("active");
+        menuFriendsBtn.getStyleClass().remove("active");
+        menuFriendsBtn.getStyleClass().add("active");
+
+        loadRankingData();
+    }
+
+    private void loadRankingData() {
+        rankingData.clear();
+        if (com.gomatch.client.ClientMain.getConnector().isConnected() && !previewMode) {
+            com.gomatch.client.ClientMain.getConnector().send(
+                com.gomatch.common.Message.of(com.gomatch.common.Protocol.RANKING, "type", currentTab)
+            );
+        } else {
+            if ("GLOBAL".equals(currentTab)) {
+                String[][] fakeData = {
+                    {"1", "棋圣",   "1500", "83.3%"},
+                    {"2", "高手如云","1350", "72.7%"},
+                    {"3", "五子连珠","1200", "63.6%"},
+                    {"4", "新手求带","1050", "44.4%"},
+                    {"5", "游客",   "1000",  "0%"  }
+                };
+                for (String[] row : fakeData) {
+                    User u = new User();
+                    u.setRank(Integer.parseInt(row[0]));
+                    u.setUsername(row[1]);
+                    u.setScore(Integer.parseInt(row[2]));
+                    u.setWinRate(row[3]);
+                    rankingData.add(u);
+                }
+            } else {
+                String[][] fakeData = {
+                    {"1", "我",     "1250", "66.7%"},
+                    {"2", "好基友",  "1150", "55.6%"},
+                    {"3", "下棋搭子","1050", "48.0%"}
+                };
+                for (String[] row : fakeData) {
+                    User u = new User();
+                    u.setRank(Integer.parseInt(row[0]));
+                    if ("我".equals(row[1]) && currentUser != null && currentUser.getUsername() != null) {
+                        u.setUsername(currentUser.getUsername());
+                    } else {
+                        u.setUsername(row[1]);
+                    }
+                    u.setScore(Integer.parseInt(row[2]));
+                    u.setWinRate(row[3]);
+                    rankingData.add(u);
+                }
+            }
+        }
     }
 
     public void setCurrentUser(User user) {
         this.currentUser = user;
+        if (previewMode) {
+            loadRankingData();
+        } else {
+            renderRankingCards();
+        }
     }
 
     public void setPreviewMode(boolean previewMode) {
         this.previewMode = previewMode;
+        loadRankingData();
     }
 
     @FXML
@@ -170,6 +221,10 @@ public class RankingController implements NetworkListener {
     @Override
     public void onMessage(Message msg) {
         if (com.gomatch.common.Protocol.RANKING_LIST.equals(msg.getCmd())) {
+            String type = msg.getData().optString("type", "GLOBAL");
+            if (!type.equalsIgnoreCase(currentTab)) {
+                return;
+            }
             rankingData.clear();
             JSONArray users = msg.getData().optJSONArray("users");
             if (users == null) return;

@@ -5,4 +5,4 @@ if (Test-Path $ScoopJdk) {
 }
 # Set console code page to UTF-8 to avoid garbled Chinese output
 chcp 65001 | Out-Null
-mvn -f "$PSScriptRoot/../server/pom.xml" exec:java "-Dexec.mainClass=com.gomatch.server.ServerMain" "-Dmaven.repo.local=$HOME\.m2\repository" "-Dfile.encoding=UTF-8"
+mvn -f "$PSScriptRoot/../server/pom.xml" compile exec:java "-Dexec.mainClass=com.gomatch.server.ServerMain" "-Dmaven.repo.local=$HOME\.m2\repository" "-Dfile.encoding=UTF-8"

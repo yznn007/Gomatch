@@ -119,6 +119,38 @@ public class RankDAO {
         return result;
     }
 
+    public List<RankInfo> getFriendsRanking(long userId) {
+        String sql = "SELECT r.rank_id, r.user_id, u.username, r.rank, r.score, r.win_rate, r.ai_win_rate " +
+                     "FROM t_rank r JOIN t_user u ON r.user_id = u.user_id " +
+                     "WHERE (u.user_id = ? OR u.user_id IN (SELECT friend_user_id FROM t_friend WHERE user_id = ? AND relation_type = 'FRIEND')) " +
+                     "AND u.status = 'ACTIVE' " +
+                     "ORDER BY r.score DESC";
+
+        List<RankInfo> result = new ArrayList<>();
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            ps.setLong(2, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                int rank = 1;
+                while (rs.next()) {
+                    result.add(new RankInfo(
+                            rs.getLong("rank_id"),
+                            rs.getLong("user_id"),
+                            rs.getString("username"),
+                            rank++,
+                            rs.getInt("score"),
+                            rs.getDouble("win_rate"),
+                            rs.getDouble("ai_win_rate")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            log.error("Get friends ranking error: userId={}", userId, e);
+        }
+        return result;
+    }
+
     private List<RankInfo> getRankingFromRedis(List<Long> userIds) {
         String sql = "SELECT r.rank_id, r.user_id, u.username, r.rank, r.score, r.win_rate, r.ai_win_rate " +
                      "FROM t_rank r JOIN t_user u ON r.user_id = u.user_id " +

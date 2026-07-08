@@ -96,7 +96,7 @@ public class ClientHandler implements Runnable {
             case Protocol.ROOM_LIST       -> handleRoomList();
             case Protocol.QUICK_MATCH     -> handleQuickMatch();
             case "RANKED_MATCH"           -> handleRankedMatch();
-            case Protocol.RANKING         -> handleRanking();
+            case Protocol.RANKING         -> handleRanking(msg);
             case Protocol.QUERY_RECORD    -> handleQueryRecord(msg);
             case Protocol.REQUEST_UNDO    -> handleRequestUndo();
             case Protocol.REPLY_UNDO      -> handleReplyUndo(msg);
@@ -665,11 +665,17 @@ public class ClientHandler implements Runnable {
 
     // ==================== 排行榜 ====================
 
-    private void handleRanking() {
-        var ranking = rankDAO.getRanking(20);
-        if (ranking.isEmpty()) {
-            send(Message.of(Protocol.ERROR, "msg", "暂无用户"));
-            return;
+    private void handleRanking(Message msg) {
+        String type = msg.getString("type");
+        if (type == null || type.isEmpty()) {
+            type = "GLOBAL";
+        }
+
+        List<RankDAO.RankInfo> ranking;
+        if ("FRIENDS".equalsIgnoreCase(type)) {
+            ranking = rankDAO.getFriendsRanking(userId);
+        } else {
+            ranking = rankDAO.getRanking(20);
         }
 
         JSONArray users = new JSONArray();
@@ -681,8 +687,11 @@ public class ClientHandler implements Runnable {
             obj.put("winRate", u.getWinRate());
             users.put(obj);
         }
-        send(Message.builder(Protocol.RANKING_LIST).set("users", users).build());
-        log.info("Sent ranking to {}: {} users", socket.getPort(), ranking.size());
+        send(Message.builder(Protocol.RANKING_LIST)
+                .set("type", type)
+                .set("users", users)
+                .build());
+        log.info("Sent {} ranking to {}: {} users", type, socket.getPort(), ranking.size());
     }
 
     // ==================== 查询战绩 ====================
