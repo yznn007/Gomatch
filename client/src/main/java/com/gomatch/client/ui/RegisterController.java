@@ -3,6 +3,7 @@ package com.gomatch.client.ui;
 import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.network.NetworkListener;
+import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -47,7 +48,7 @@ public class RegisterController implements NetworkListener {
                 ClientMain.getConnector().connect(AppConfig.SERVER_HOST, AppConfig.SERVER_PORT);
             }
             ClientMain.getConnector().addListener(this);
-            ClientMain.getConnector().send(Protocol.REGISTER, username, password);
+            ClientMain.getConnector().send(Message.of(Protocol.REGISTER, "username", username, "password", password));
         } catch (Exception e) {
             errorLabel.setText("连接服务器失败: " + e.getMessage());
         }
@@ -59,15 +60,16 @@ public class RegisterController implements NetworkListener {
     }
 
     @Override
-    public void onMessage(String command, String[] args) {
+    public void onMessage(Message msg) {
+        String cmd = msg.getCmd();
         // 服务端注册成功应回复 REGISTER_OK，兼容旧服务端也处理 LOGIN_OK
-        if (Protocol.REGISTER_OK.equals(command) || Protocol.LOGIN_OK.equals(command)) {
+        if (Protocol.REGISTER_OK.equals(cmd) || Protocol.LOGIN_OK.equals(cmd)) {
             errorLabel.setStyle("-fx-text-fill: green;");
             errorLabel.setText("注册成功，请登录");
             ClientMain.getConnector().disconnect();
             ScreenManager.switchTo("/fxml/LoginUI.fxml");
-        } else if ("REGISTER_FAIL".equals(command)) {
-            errorLabel.setText(args[0]);
+        } else if ("REGISTER_FAIL".equals(cmd)) {
+            errorLabel.setText(msg.getString("msg"));
             ClientMain.getConnector().disconnect();
         }
     }

@@ -4,6 +4,7 @@ import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
+import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -125,20 +126,24 @@ public class LobbyController implements NetworkListener {
     }
 
     @Override
-    public void onMessage(String command, String[] args) {
-        if (Protocol.RANKING_LIST.equals(command)) {
-            drawerRanks.clear();
-            for (int i = 0; i < args.length; i += 4) {
-                if (i + 3 < args.length) {
-                    drawerRanks.add(args[i] + ". " + args[i + 1] + "  " + args[i + 2]);
+    public void onMessage(Message msg) {
+        if (Protocol.RANKING_LIST.equals(msg.getCmd())) {
+            // 服务端返回的 JSON 已被解析，这里是手动拼接的 JSON 数组
+            // 暂时解析 data 中的原始 JSON 字符串
+            org.json.JSONArray users = msg.getData().optJSONArray("users");
+            if (users != null) {
+                drawerRanks.clear();
+                for (int i = 0; i < users.length(); i++) {
+                    org.json.JSONObject u = users.getJSONObject(i);
+                    drawerRanks.add(u.getString("rank") + ". " + u.getString("username") + "  " + u.getString("score"));
                 }
             }
-        } else if (Protocol.USER_SCORE_UPDATE.equals(command)) {
-            if (args.length >= 4 && currentUser != null) {
-                currentUser.setScore(Integer.parseInt(args[0]));
-                currentUser.setWinCount(Integer.parseInt(args[1]));
-                currentUser.setLoseCount(Integer.parseInt(args[2]));
-                currentUser.setDrawCount(Integer.parseInt(args[3]));
+        } else if (Protocol.USER_SCORE_UPDATE.equals(msg.getCmd())) {
+            if (currentUser != null) {
+                currentUser.setScore(msg.getInt("score"));
+                currentUser.setWinCount(msg.getInt("winCount"));
+                currentUser.setLoseCount(msg.getInt("loseCount"));
+                currentUser.setDrawCount(msg.getInt("drawCount"));
                 if (currentUser.getScore() > 0) {
                     userScoreLabel.setText(currentUser.getScore() + " 分");
                 } else {

@@ -3,6 +3,7 @@ package com.gomatch.client.ui;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
+import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -33,7 +34,7 @@ public class CreateRoomController implements NetworkListener {
             return;
         }
         String password = passwordField.getText().trim();
-        ClientMain.getConnector().send(Protocol.CREATE_ROOM, name, password);
+        ClientMain.getConnector().send(Message.of(Protocol.CREATE_ROOM, "roomName", name, "password", password));
     }
 
     @FXML
@@ -42,18 +43,18 @@ public class CreateRoomController implements NetworkListener {
     }
 
     @Override
-    public void onMessage(String command, String[] args) {
-        if (Protocol.JOIN_OK.equals(command)) {
+    public void onMessage(Message msg) {
+        if (Protocol.JOIN_OK.equals(msg.getCmd())) {
             com.gomatch.client.model.RoomInfo room = new com.gomatch.client.model.RoomInfo();
-            room.setRoomId(args[0]);
-            room.setRoomName(args[1]);
-            String[] players = args[2].split("/");
+            room.setRoomId(msg.getString("roomId"));
+            room.setRoomName(msg.getString("roomName"));
+            String[] players = msg.getString("players").split("/");
             room.setPlayerCount(Integer.parseInt(players[0]));
-            room.setHasPassword("1".equals(args[3]));
+            room.setHasPassword("1".equals(msg.getString("hasPassword")));
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
             ctrl.setRoomInfo(room, currentUser);
-        } else if (Protocol.ERROR.equals(command)) {
-            errorLabel.setText(args.length > 0 ? args[0] : "创建失败");
+        } else if (Protocol.ERROR.equals(msg.getCmd())) {
+            errorLabel.setText(msg.getString("msg"));
         }
     }
 }

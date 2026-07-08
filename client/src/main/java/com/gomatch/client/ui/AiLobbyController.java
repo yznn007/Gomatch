@@ -3,6 +3,7 @@ package com.gomatch.client.ui;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
+import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -55,7 +56,7 @@ public class AiLobbyController implements NetworkListener {
             return;
         }
         
-        ClientMain.getConnector().send("AI_MATCH", difficulty);
+        ClientMain.getConnector().send(Message.of("AI_MATCH", "difficulty", difficulty));
     }
 
     @FXML
@@ -66,18 +67,18 @@ public class AiLobbyController implements NetworkListener {
     }
 
     @Override
-    public void onMessage(String command, String[] args) {
-        if (Protocol.JOIN_OK.equals(command)) {
-        } else if (Protocol.GAME_START.equals(command)) {
+    public void onMessage(Message msg) {
+        String cmd = msg.getCmd();
+        if (Protocol.JOIN_OK.equals(cmd)) {
+        } else if (Protocol.GAME_START.equals(cmd)) {
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-            String uname = currentUser != null ? currentUser.getUsername() : "player1";
-            if (args.length >= 4) {
-                ctrl.setGameInfo(args[0], args[1], args[2], args[3], uname);
+            if (currentUser != null) {
+                ctrl.setGameInfo(msg.getString("blackUserId"), msg.getString("whiteUserId"), currentUser.getUsername());
             } else {
-                ctrl.setGameInfo(args[0], args[1], uname);
+                ctrl.setGameInfo(msg.getString("blackUserId"), msg.getString("whiteUserId"), "player1");
             }
-        } else if (Protocol.ERROR.equals(command)) {
-            matchStatus.setText(args[0]);
+        } else if (Protocol.ERROR.equals(cmd)) {
+            matchStatus.setText(msg.getString("msg"));
         }
     }
 }

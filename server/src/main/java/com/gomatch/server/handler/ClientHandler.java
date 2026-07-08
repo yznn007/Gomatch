@@ -1,20 +1,18 @@
 package com.gomatch.server.handler;
 
+import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
-import com.gomatch.server.dao.ChatDAO;
-import com.gomatch.server.dao.FriendDAO;
-import com.gomatch.server.dao.GameSaveDAO;
-import com.gomatch.server.dao.RankDAO;
-import com.gomatch.server.dao.RoomWatcherDAO;
-import com.gomatch.server.dao.RecordDAO;
-import com.gomatch.server.dao.UserDAO;
+import com.gomatch.server.dao.*;
+import com.gomatch.server.game.AIPlayer;
+import com.gomatch.server.game.Game;
+import com.gomatch.server.redis.RedisManager;
 import com.gomatch.server.room.Room;
 import com.gomatch.server.room.RoomManager;
 import com.gomatch.server.session.SessionManager;
-import com.gomatch.server.redis.RedisManager;
-import com.gomatch.server.game.Game;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,9 +22,8 @@ import java.net.Socket;
 import java.util.List;
 
 /**
- * 客户端处理器
+ * 客户端处理器（JSON 协议版本）
  * 每个客户端连接分配一个独立的 ClientHandler 线程
- * 负责：协议解析、命令分发、消息发送、资源清理
  */
 public class ClientHandler implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(ClientHandler.class);
@@ -44,12 +41,10 @@ public class ClientHandler implements Runnable {
     private BufferedReader reader;
     private PrintWriter writer;
     
-    // Q2-A: 新增会话字段
     private long userId;
     private String username;
     private boolean authenticated;
     
-    // 当前所在房间
     Room currentRoom;
 
     public ClientHandler(Socket socket) {
@@ -62,15 +57,19 @@ public class ClientHandler implements Runnable {
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             writer = new PrintWriter(socket.getOutputStream(), true);
             
-            log.info("Client connected: {} from {}",
-                    socket.getLocalPort(), socket.getInetAddress());
+            log.info("Client connected: {} from {}", socket.getLocalPort(), socket.getInetAddress());
 
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.isEmpty()) continue;
-                String[] parts = Protocol.parse(line);
                 log.debug("Received from {}: {}", socket.getPort(), line);
-                dispatch(parts);
+                try {
+                    Message msg = Message.fromJson(line);
+                    dispatch(msg);
+                } catch (Exception e) {
+                    log.warn("Failed to parse message from {}: {}", socket.getInetAddress(), line);
+                    send(Message.of(Protocol.ERROR, "msg", "消息格式错误"));
+                }
             }
         } catch (IOException e) {
             log.warn("Client read error: {}", socket.getInetAddress());
@@ -79,148 +78,110 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    private void dispatch(String[] parts) {
-        if (parts.length == 0) return;
+    // ==================== 消息分发 ====================
 
-        String cmd = parts[0];
+    private void dispatch(Message msg) {
+        String cmd = msg.getCmd();
         switch (cmd) {
-            case Protocol.LOGIN        -> handleLogin(parts);
-            case Protocol.REGISTER     -> handleRegister(parts);
-            case Protocol.CREATE_ROOM   -> handleCreateRoom(parts);
-            case "CREATE_AI_ROOM"     -> handleCreateAiRoom(parts);
-            case Protocol.JOIN_ROOM   -> handleJoinRoom(parts);
-            case Protocol.LEAVE_ROOM   -> handleLeaveRoom();
-            case Protocol.MOVE         -> handleMove(parts);
-            case Protocol.CHAT         -> handleChat(parts);
-            case Protocol.SURRENDER    -> handleSurrender();
-            case Protocol.SPECTATE     -> handleSpectate(parts);
-            case Protocol.ROOM_LIST    -> handleRoomList();
-            case Protocol.QUICK_MATCH  -> handleQuickMatch();
-            case "RANKED_MATCH"      -> handleRankedMatch();
-            case Protocol.RANKING      -> handleRanking();
-            case Protocol.QUERY_RECORD     -> handleQueryRecord(parts);
-            case Protocol.REQUEST_UNDO -> handleRequestUndo();
-            case Protocol.REPLY_UNDO   -> handleReplyUndo(parts);
-            case Protocol.REQUEST_DRAW -> handleRequestDraw();
-            case Protocol.REPLY_DRAW   -> handleReplyDraw(parts);
-            case "RECONNECT"         -> handleReconnect(parts);
-            case Protocol.CHANGE_PWD -> handleChangePassword(parts);
-            case Protocol.ADD_FRIEND -> handleAddFriend(parts);
-            case Protocol.ACCEPT_FRIEND -> handleAcceptFriend(parts);
-            case Protocol.REJECT_FRIEND -> handleRejectFriend(parts);
-            case Protocol.DELETE_FRIEND -> handleDeleteFriend(parts);
-            case Protocol.FRIEND_LIST -> handleFriendList();
+            case Protocol.LOGIN           -> handleLogin(msg);
+            case Protocol.REGISTER        -> handleRegister(msg);
+            case Protocol.CREATE_ROOM     -> handleCreateRoom(msg);
+            case "CREATE_AI_ROOM"         -> handleCreateAiRoom(msg);
+            case Protocol.JOIN_ROOM       -> handleJoinRoom(msg);
+            case Protocol.LEAVE_ROOM      -> handleLeaveRoom();
+            case Protocol.MOVE            -> handleMove(msg);
+            case Protocol.CHAT            -> handleChat(msg);
+            case Protocol.SURRENDER       -> handleSurrender();
+            case Protocol.SPECTATE        -> handleSpectate(msg);
+            case Protocol.ROOM_LIST       -> handleRoomList();
+            case Protocol.QUICK_MATCH     -> handleQuickMatch();
+            case "RANKED_MATCH"           -> handleRankedMatch();
+            case Protocol.RANKING         -> handleRanking();
+            case Protocol.QUERY_RECORD    -> handleQueryRecord(msg);
+            case Protocol.REQUEST_UNDO    -> handleRequestUndo();
+            case Protocol.REPLY_UNDO      -> handleReplyUndo(msg);
+            case Protocol.REQUEST_DRAW    -> handleRequestDraw();
+            case Protocol.REPLY_DRAW      -> handleReplyDraw(msg);
+            case "RECONNECT"              -> handleReconnect(msg);
+            case Protocol.CHANGE_PWD      -> handleChangePassword(msg);
+            case Protocol.ADD_FRIEND      -> handleAddFriend(msg);
+            case Protocol.ACCEPT_FRIEND   -> handleAcceptFriend(msg);
+            case Protocol.REJECT_FRIEND   -> handleRejectFriend(msg);
+            case Protocol.DELETE_FRIEND   -> handleDeleteFriend(msg);
+            case Protocol.FRIEND_LIST     -> handleFriendList();
             case Protocol.FRIEND_REQUESTS -> handleFriendRequests();
-            case Protocol.SAVE_GAME -> handleSaveGame(parts);
-            case Protocol.LOAD_GAME -> handleLoadGame(parts);
-            case Protocol.DELETE_SAVE -> handleDeleteSave(parts);
-            case Protocol.SAVE_LIST -> handleSaveList(parts);
-            case Protocol.CHAT_HISTORY -> handleChatHistory(parts);
-            case Protocol.WATCHER_HISTORY -> handleWatcherHistory(parts);
-            case Protocol.LOGOUT -> handleLogout();
-            case Protocol.HEARTBEAT -> handleHeartbeat();
-            case "AI_MATCH" -> handleAiMatch(parts);
-
-            default -> send(Protocol.ERROR, "Unknown command: " + cmd);
+            case Protocol.SAVE_GAME       -> handleSaveGame(msg);
+            case Protocol.LOAD_GAME       -> handleLoadGame(msg);
+            case Protocol.DELETE_SAVE     -> handleDeleteSave(msg);
+            case Protocol.SAVE_LIST       -> handleSaveList(msg);
+            case Protocol.CHAT_HISTORY    -> handleChatHistory(msg);
+            case Protocol.WATCHER_HISTORY -> handleWatcherHistory(msg);
+            case Protocol.LOGOUT          -> handleLogout();
+            case Protocol.HEARTBEAT       -> handleHeartbeat();
+            case "AI_MATCH"               -> handleAiMatch(msg);
+            default -> send(Message.of(Protocol.ERROR, "msg", "Unknown command: " + cmd));
         }
     }
 
-    public void send(String... parts) {
+    // ==================== 发送方法 ====================
+
+    /** 发送 JSON 消息 */
+    public void send(Message msg) {
         if (writer != null) {
-            writer.println(Protocol.build(parts));
-            log.debug("Sent to {}: {}", socket.getPort(), Protocol.build(parts));
+            writer.println(msg.toJson());
+            log.debug("Sent to {}: {}", socket.getPort(), msg.toJson());
         }
     }
 
-    public void send(String message) {
+    /** 发送仅含命令的消息（兼容旧调用风格） */
+    public void send(String text) {
         if (writer != null) {
-            writer.println(message);
-        }
-    }
-
-    // ==================== 用户注册 ====================
-
-    private void handleRegister(String[] parts) {
-        if (parts.length < 3) {
-            send("REGISTER_FAIL", "缺少参数");
-            return;
-        }
-
-        String username = parts[1];
-        String password = parts[2];
-
-        log.info("注册请求: username={}", username);
-
-        if (username.trim().isEmpty()) {
-            send("REGISTER_FAIL", "用户名不能为空");
-            return;
-        }
-        if (username.length() > 16) {
-            send("REGISTER_FAIL", "用户名最多16个字符");
-            return;
-        }
-        if (password.length() < 6) {
-            send("REGISTER_FAIL", "密码至少6位");  
-            return;
-        }
-
-        boolean success = userDAO.register(username, password);
-        if (success) {
-            send("REGISTER_OK");
-            log.info("用户注册成功: {}", username);
-        } else {
-            send("REGISTER_FAIL", "用户名已存在");
-            log.warn("Register failed (duplicate): {}", username);
-        }
-    }
-
-    // ==================== 修改密码 ====================
-
-    private void handleChangePassword(String[] parts) {
-        if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
-            return;
-        }
-
-        if (parts.length < 3) {
-            send(Protocol.ERROR, "缺少参数");
-            return;
-        }
-
-        String oldPassword = parts[1];
-        String newPassword = parts[2];
-
-        if (newPassword.length() < 6) {
-            send(Protocol.ERROR, "新密码至少6位");
-            return;
-        }
-
-        boolean success = userDAO.changePassword(userId, oldPassword, newPassword);
-        if (success) {
-            send(Protocol.PWD_CHANGED);
-            log.info("用户 {} 修改密码成功", userId);
-        } else {
-            send(Protocol.ERROR, "旧密码错误");
-            log.warn("用户 {} 修改密码失败: 旧密码错误", userId);
+            writer.println(text);
         }
     }
 
     // ==================== 心跳 ====================
 
     private void handleHeartbeat() {
-        send(Protocol.HEARTBEAT_OK);
+        send(Message.cmdOnly(Protocol.HEARTBEAT_OK));
     }
 
-    // ==================== 用户登录 ====================
+    // ==================== 注册 ====================
 
-    private void handleLogin(String[] parts) {
-        if (parts.length < 3) {
-            send(Protocol.LOGIN_FAIL, "缺少参数");
+    private void handleRegister(Message msg) {
+        String username = msg.getString("username");
+        String password = msg.getString("password");
+
+        log.info("注册请求: username={}", username);
+
+        if (username.trim().isEmpty()) {
+            send(Message.of("REGISTER_FAIL", "msg", "用户名不能为空"));
+            return;
+        }
+        if (username.length() > 16) {
+            send(Message.of("REGISTER_FAIL", "msg", "用户名最多16个字符"));
+            return;
+        }
+        if (password.length() < 6) {
+            send(Message.of("REGISTER_FAIL", "msg", "密码至少6位"));
             return;
         }
 
-        String username = parts[1];
-        String password = parts[2];
+        boolean success = userDAO.register(username, password);
+        if (success) {
+            send(Message.cmdOnly("REGISTER_OK"));
+            log.info("用户注册成功: {}", username);
+        } else {
+            send(Message.of("REGISTER_FAIL", "msg", "用户名已存在"));
+            log.warn("Register failed (duplicate): {}", username);
+        }
+    }
+
+    // ==================== 登录 ====================
+
+    private void handleLogin(Message msg) {
+        String username = msg.getString("username");
+        String password = msg.getString("password");
 
         log.info("登录请求: username={}", username);
 
@@ -228,7 +189,7 @@ public class ClientHandler implements Runnable {
         if (userInfo != null) {
             SessionManager.Session existingSession = sessionManager.getSessionByUserId(userInfo.getUserId());
             if (existingSession != null && existingSession.handler != null) {
-                send(Protocol.LOGIN_FAIL, "该账号已在其他设备登录");
+                send(Message.of(Protocol.LOGIN_FAIL, "msg", "该账号已在其他设备登录"));
                 log.warn("登录失败: 用户 {} 已在线", username);
                 return;
             }
@@ -243,54 +204,68 @@ public class ClientHandler implements Runnable {
                     userInfo.getLoseCount(), userInfo.getDrawCount());
             sessionManager.updateSessionHandler(userInfo.getUserId(), this);
 
-            send(Protocol.LOGIN_OK,
-                    String.valueOf(userInfo.getUserId()),
-                    userInfo.getUsername(),
-                    String.valueOf(userInfo.getScore()),
-                    String.valueOf(userInfo.getWinCount()),
-                    String.valueOf(userInfo.getLoseCount()),
-                    String.valueOf(userInfo.getDrawCount()),
-                    session.token);
+            send(Message.builder(Protocol.LOGIN_OK)
+                    .set("userId", String.valueOf(userInfo.getUserId()))
+                    .set("username", userInfo.getUsername())
+                    .set("score", String.valueOf(userInfo.getScore()))
+                    .set("winCount", String.valueOf(userInfo.getWinCount()))
+                    .set("loseCount", String.valueOf(userInfo.getLoseCount()))
+                    .set("drawCount", String.valueOf(userInfo.getDrawCount()))
+                    .set("token", session.token)
+                    .build());
             
             log.info("User logged in: {} (id={}, score={}, token={})", 
                     userInfo.getUsername(), userInfo.getUserId(), userInfo.getScore(),
                     session.token.substring(0, 8));
         } else {
-            send(Protocol.LOGIN_FAIL, "用户名或密码错误");
+            send(Message.of(Protocol.LOGIN_FAIL, "msg", "用户名或密码错误"));
             log.warn("登录失败: {}", username);
         }
     }
 
-    // ==================== 房间管理 ====================
+    // ==================== 修改密码 ====================
 
-    /**
-     * 创建房间
-     * 协议: CREATE_ROOM|roomName
-     * 响应: JOIN_OK|roomId|roomName|1/2
-     */
-    private void handleCreateRoom(String[] parts) {
+    private void handleChangePassword(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        if (parts.length < 2) {
-            send(Protocol.ERROR, "缺少房间名称");
+        String oldPassword = msg.getString("oldPassword");
+        String newPassword = msg.getString("newPassword");
+
+        if (newPassword.length() < 6) {
+            send(Message.of(Protocol.ERROR, "msg", "新密码至少6位"));
             return;
         }
 
-        String roomName = parts[1];
+        boolean success = userDAO.changePassword(userId, oldPassword, newPassword);
+        if (success) {
+            send(Message.cmdOnly(Protocol.PWD_CHANGED));
+            log.info("用户 {} 修改密码成功", userId);
+        } else {
+            send(Message.of(Protocol.ERROR, "msg", "旧密码错误"));
+            log.warn("用户 {} 修改密码失败: 旧密码错误", userId);
+        }
+    }
+
+    // ==================== 创建房间 ====================
+
+    private void handleCreateRoom(Message msg) {
+        if (!authenticated) {
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
+            return;
+        }
+
+        String roomName = msg.getString("roomName");
         if (roomName.trim().isEmpty()) {
-            send(Protocol.ERROR, "房间名不能为空");
+            send(Message.of(Protocol.ERROR, "msg", "房间名不能为空"));
             return;
         }
 
-        String password = null;
-        if (parts.length >= 3 && !parts[2].trim().isEmpty()) {
-            password = parts[2];
-        }
+        String password = msg.has("password") ? msg.getString("password") : null;
+        if (password != null && password.trim().isEmpty()) password = null;
 
-        // 如果已在房间，先离开
         if (currentRoom != null) {
             roomManager.leaveRoom(this);
         }
@@ -298,36 +273,27 @@ public class ClientHandler implements Runnable {
         Room room = roomManager.createRoom(roomName, this, password);
         this.currentRoom = room;
 
-        // 响应: JOIN_OK|roomId|roomName|playerCount/max|hasPassword
-        send("JOIN_OK",
-                room.getRoomId(),
-                room.getRoomName(),
-                room.getPlayerCount() + "/" + 2,
-                room.hasPassword() ? "1" : "0");
+        send(Message.builder("JOIN_OK")
+                .set("roomId", room.getRoomId())
+                .set("roomName", room.getRoomName())
+                .set("players", room.getPlayerCount() + "/" + 2)
+                .set("hasPassword", room.hasPassword() ? "1" : "0")
+                .build());
 
-        log.info("Player {} created room: {} ({}) with password: {}", userId, room.getRoomId(), roomName, 
-                password != null && !password.isEmpty());
+        log.info("Player {} created room: {} ({}) with password: {}", userId, room.getRoomId(), roomName, password != null);
     }
 
-    /**
-     * 创建人机对战房间
-     * 协议: CREATE_AI_ROOM|roomName
-     * 响应: JOIN_OK|roomId|roomName|1/1|AI
-     */
-    private void handleCreateAiRoom(String[] parts) {
+    // ==================== 创建 AI 房间 ====================
+
+    private void handleCreateAiRoom(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        if (parts.length < 2) {
-            send(Protocol.ERROR, "缺少房间名称");
-            return;
-        }
-
-        String roomName = parts[1];
+        String roomName = msg.getString("roomName");
         if (roomName.trim().isEmpty()) {
-            send(Protocol.ERROR, "房间名不能为空");
+            send(Message.of(Protocol.ERROR, "msg", "房间名不能为空"));
             return;
         }
 
@@ -338,39 +304,30 @@ public class ClientHandler implements Runnable {
         Room room = roomManager.createAiRoom(roomName, this);
         this.currentRoom = room;
 
-        send("JOIN_OK",
-                room.getRoomId(),
-                room.getRoomName(),
-                room.getPlayerCount() + "/" + 1,
-                "AI");
+        send(Message.builder("JOIN_OK")
+                .set("roomId", room.getRoomId())
+                .set("roomName", room.getRoomName())
+                .set("players", room.getPlayerCount() + "/" + 1)
+                .set("type", "AI")
+                .build());
 
         room.startGame();
-        room.broadcastAll(
-                Protocol.GAME_START,
-                String.valueOf(room.getBlackUserId()),
-                room.getPlayerUsername(room.getBlackUserId()),
-                String.valueOf(room.getWhiteUserId()),
-                room.getPlayerUsername(room.getWhiteUserId())
-        );
+        room.broadcastAll(Message.of(Protocol.GAME_START,
+                "blackUserId", String.valueOf(room.getBlackUserId()),
+                "whiteUserId", String.valueOf(room.getWhiteUserId())));
 
         log.info("Player {} created AI room: {} ({}), game started", userId, room.getRoomId(), roomName);
     }
 
-    /**
-     * AI 对战
-     * 协议: AI_MATCH|difficulty
-     * 响应: JOIN_OK|roomId|roomName|playerCount/max
-     */
-    private void handleAiMatch(String[] parts) {
+    // ==================== AI 对战 ====================
+
+    private void handleAiMatch(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        String difficulty = "EASY";
-        if (parts.length >= 2) {
-            difficulty = parts[1];
-        }
+        String difficulty = msg.has("difficulty") ? msg.getString("difficulty") : "EASY";
 
         log.info("AI对战请求: userId={}, difficulty={}", userId, difficulty);
 
@@ -382,61 +339,44 @@ public class ClientHandler implements Runnable {
         Room room = roomManager.createAiRoom(roomName, this, difficulty);
         this.currentRoom = room;
 
-        send(Protocol.JOIN_OK,
-                room.getRoomId(),
-                roomName,
-                "1/2",
-                "0"
-        );
+        send(Message.builder(Protocol.JOIN_OK)
+                .set("roomId", room.getRoomId())
+                .set("roomName", roomName)
+                .set("players", "1/2")
+                .set("hasPassword", "0")
+                .build());
 
         room.startGame();
-        room.broadcastAll(
-                Protocol.GAME_START,
-                String.valueOf(userId),
-                username,
-                "-1",
-                "AI"
-        );
+        room.broadcastAll(Message.of(Protocol.GAME_START,
+                "blackUserId", String.valueOf(userId),
+                "whiteUserId", "AI"));
 
         log.info("AI对战房间创建成功: userId={}, roomId={}, difficulty={}", userId, room.getRoomId(), difficulty);
     }
 
-    /**
-     * 加入房间
-     * 协议: JOIN_ROOM|roomId
-     * 响应: JOIN_OK|roomId|roomName|playerCount/max
-     *       JOIN_FAIL|reason
-     */
-    private void handleJoinRoom(String[] parts) {
+    // ==================== 加入房间 ====================
+
+    private void handleJoinRoom(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        if (parts.length < 2) {
-            send(Protocol.JOIN_FAIL, "缺少房间ID");
-            return;
-        }
-
-        String roomId = parts[1];
+        String roomId = msg.getString("roomId");
         Room room = roomManager.getRoom(roomId);
         if (room == null) {
-            send(Protocol.JOIN_FAIL, "房间不存在");
+            send(Message.of(Protocol.JOIN_FAIL, "msg", "房间不存在"));
             return;
         }
 
-        String password = null;
-        if (parts.length >= 3) {
-            password = parts[2];
-        }
+        String password = msg.has("password") ? msg.getString("password") : null;
 
-        // 如果已在其他房间，先离开
         if (currentRoom != null && currentRoom != room) {
             roomManager.leaveRoom(this);
         }
 
         if (room.hasPassword() && !room.checkPassword(password)) {
-            send(Protocol.JOIN_FAIL, "密码错误");
+            send(Message.of(Protocol.JOIN_FAIL, "msg", "密码错误"));
             return;
         }
 
@@ -444,98 +384,77 @@ public class ClientHandler implements Runnable {
         if (success) {
             this.currentRoom = room;
 
-            // 广播: 新玩家进入
-            room.broadcastToPlayers(
-                Protocol.PLAYER_ENTER,
-                String.valueOf(getUserId()),
-                getUsername()
-            );
+            room.broadcastToPlayers(Message.of(Protocol.PLAYER_ENTER,
+                    "userId", String.valueOf(getUserId()),
+                    "username", getUsername()));
 
-            // 响应
-            send("JOIN_OK",
-                    room.getRoomId(),
-                    room.getRoomName(),
-                    room.getPlayerCount() + "/" + 2);
+            send(Message.builder("JOIN_OK")
+                    .set("roomId", room.getRoomId())
+                    .set("roomName", room.getRoomName())
+                    .set("players", room.getPlayerCount() + "/" + 2)
+                    .build());
 
-            // 房间满2人时自动开始游戏
             if (room.getPlayerCount() == 2) {
                 room.startGame();
-                room.broadcastAll(
-                    Protocol.GAME_START,
-                    String.valueOf(room.getBlackUserId()),
-                    room.getPlayerUsername(room.getBlackUserId()),
-                    String.valueOf(room.getWhiteUserId()),
-                    room.getPlayerUsername(room.getWhiteUserId())
-                );
-                log.info("房间 {} 已满，游戏开始: BLACK={}, WHITE={}",
-                        roomId, room.getBlackUserId(), room.getWhiteUserId());
+                room.broadcastAll(Message.of(Protocol.GAME_START,
+                        "blackUserId", String.valueOf(room.getBlackUserId()),
+                        "whiteUserId", String.valueOf(room.getWhiteUserId())));
+                log.info("房间 {} 已满，游戏开始: BLACK={}, WHITE={}", roomId, room.getBlackUserId(), room.getWhiteUserId());
             }
 
             log.info("玩家 {} 加入房间 {}", userId, roomId);
         } else {
-            send(Protocol.JOIN_FAIL, "房间已满或游戏进行中");
+            send(Message.of(Protocol.JOIN_FAIL, "msg", "房间已满或游戏进行中"));
         }
     }
 
-    /**
-     * 离开房间
-     * 协议: LEAVE_ROOM
-     * 响应: 无（服务端主动广播 PLAYER_LEAVE）
-     */
+    // ==================== 离开房间 ====================
+
     private void handleLeaveRoom() {
         if (currentRoom == null) {
-            send(Protocol.ERROR, "不在房间");
+            send(Message.of(Protocol.ERROR, "msg", "不在房间"));
             return;
         }
 
         Room room = currentRoom;
         String roomId = room.getRoomId();
 
-        room.broadcastToPlayers(
-            Protocol.PLAYER_LEAVE,
-            String.valueOf(userId),
-            getUsername()
-        );
+        room.broadcastToPlayers(Message.of(Protocol.PLAYER_LEAVE,
+                "userId", String.valueOf(userId),
+                "username", getUsername()));
 
         roomManager.leaveRoom(this);
         log.info("玩家 {} 离开房间 {}", userId, roomId);
     }
 
-    /**
-     * 获取房间列表
-     * 协议: ROOM_LIST
-     * 响应: RANKING_LIST|roomId|roomName|status|players|max|...
-     */
+    // ==================== 房间列表 ====================
+
     private void handleRoomList() {
         List<String[]> roomList = Room.getRoomListInfo(roomManager.getAllRooms());
-        
-        StringBuilder sb = new StringBuilder();
-        sb.append(Protocol.RANKING_LIST); // 复用 RANKING_LIST 作为列表响应头
+
+        JSONArray rooms = new JSONArray();
         for (String[] info : roomList) {
-            sb.append("|").append(info[0])   // roomId
-              .append("|").append(info[1])   // roomName
-              .append("|").append(info[2])   // status
-              .append("|").append(info[3])   // players
-              .append("|").append(info[4])   // max
-              .append("|").append(info[5]);  // hasPassword
+            JSONObject r = new JSONObject();
+            r.put("roomId", info[0]);
+            r.put("roomName", info[1]);
+            r.put("status", info[2]);
+            r.put("players", info[3]);
+            r.put("max", info[4]);
+            r.put("hasPassword", info[5]);
+            rooms.put(r);
         }
-        send(sb.toString());
+        send(Message.builder(Protocol.ROOM_LIST).set("rooms", rooms).build());
         log.info("Sent room list to {}: {} rooms", socket.getPort(), roomList.size());
     }
 
-    /**
-     * 快速匹配
-     * 协议: QUICK_MATCH
-     * 响应: JOIN_OK|roomId|roomName|2/2 (配对成功)
-     *       ERROR|reason (队列中)
-     */
+    // ==================== 快速匹配 ====================
+
     private void handleQuickMatch() {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        // 如果已在房间，先离开
         if (currentRoom != null) {
             roomManager.leaveRoom(this);
         }
@@ -544,35 +463,27 @@ public class ClientHandler implements Runnable {
         if (room != null) {
             this.currentRoom = room;
 
-            // 通知双方游戏开始
-            room.broadcastAll(
-                Protocol.GAME_START,
-                String.valueOf(room.getBlackUserId()),
-                room.getPlayerUsername(room.getBlackUserId()),
-                String.valueOf(room.getWhiteUserId()),
-                room.getPlayerUsername(room.getWhiteUserId())
-            );
+            room.broadcastAll(Message.of(Protocol.GAME_START,
+                    "blackUserId", String.valueOf(room.getBlackUserId()),
+                    "whiteUserId", String.valueOf(room.getWhiteUserId())));
 
-            send(Protocol.JOIN_OK,
-                    room.getRoomId(),
-                    room.getRoomName(),
-                    room.getPlayerCount() + "/" + 2);
+            send(Message.builder(Protocol.JOIN_OK)
+                    .set("roomId", room.getRoomId())
+                    .set("roomName", room.getRoomName())
+                    .set("players", room.getPlayerCount() + "/" + 2)
+                    .build());
 
             log.info("玩家 {} 配对成功，房间: {}", userId, room.getRoomId());
         } else {
-            send(Protocol.ERROR, "等待对手... (" + roomManager.getMatchQueueSize() + "/2)");
+            send(Message.of(Protocol.ERROR, "msg", "等待对手... (" + roomManager.getMatchQueueSize() + "/2)"));
         }
     }
 
-    /**
-     * 排位匹配
-     * 协议: RANKED_MATCH
-     * 响应: JOIN_OK|roomId|roomName|2/2|RANKED (配对成功)
-     *       ERROR|reason (队列中)
-     */
+    // ==================== 排位匹配 ====================
+
     private void handleRankedMatch() {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
@@ -582,7 +493,7 @@ public class ClientHandler implements Runnable {
 
         UserDAO.UserInfo userInfo = userDAO.getUserById(userId);
         if (userInfo == null) {
-            send(Protocol.ERROR, "用户信息不存在");
+            send(Message.of(Protocol.ERROR, "msg", "用户信息不存在"));
             return;
         }
 
@@ -590,52 +501,38 @@ public class ClientHandler implements Runnable {
         if (room != null) {
             this.currentRoom = room;
 
-            room.broadcastAll(
-                Protocol.GAME_START,
-                String.valueOf(room.getBlackUserId()),
-                room.getPlayerUsername(room.getBlackUserId()),
-                String.valueOf(room.getWhiteUserId()),
-                room.getPlayerUsername(room.getWhiteUserId())
-            );
+            room.broadcastAll(Message.of(Protocol.GAME_START,
+                    "blackUserId", String.valueOf(room.getBlackUserId()),
+                    "whiteUserId", String.valueOf(room.getWhiteUserId())));
 
-            send(Protocol.JOIN_OK,
-                    room.getRoomId(),
-                    room.getRoomName(),
-                    room.getPlayerCount() + "/" + 2,
-                    "RANKED");
+            send(Message.builder(Protocol.JOIN_OK)
+                    .set("roomId", room.getRoomId())
+                    .set("roomName", room.getRoomName())
+                    .set("players", room.getPlayerCount() + "/" + 2)
+                    .set("type", "RANKED")
+                    .build());
 
             log.info("玩家 {} 排位匹配成功，房间: {}", userId, room.getRoomId());
         } else {
-            send("RANKED_MATCH_WAIT", "等待排位对手... (" + roomManager.getRankedMatchQueueSize() + "/2)");
+            send(Message.of("RANKED_MATCH_WAIT", "msg", "等待排位对手... (" + roomManager.getRankedMatchQueueSize() + "/2)"));
         }
     }
 
-    // ==================== 游戏操作 ====================
+    // ==================== 游戏操作：落子 ====================
 
-    private void handleMove(String[] parts) {
-        log.info("handleMove called: parts={}, currentRoom={}, status={}, aiMode={}",
-                java.util.Arrays.toString(parts), currentRoom, 
+    private void handleMove(Message msg) {
+        log.info("handleMove called: msg={}, currentRoom={}, status={}, aiMode={}",
+                msg.toJson(), currentRoom, 
                 currentRoom != null ? currentRoom.getStatus() : "null",
                 currentRoom != null ? currentRoom.isAiMode() : "null");
 
         if (currentRoom == null || currentRoom.getStatus() != Room.Status.PLAYING) {
-            send(Protocol.ERROR, "不在游戏中");
+            send(Message.of(Protocol.ERROR, "msg", "不在游戏中"));
             return;
         }
 
-        if (parts.length < 3) {
-            send(Protocol.ERROR, "缺少 x,y 坐标");
-            return;
-        }
-
-        int x, y;
-        try {
-            x = Integer.parseInt(parts[1]);
-            y = Integer.parseInt(parts[2]);
-        } catch (NumberFormatException e) {
-            send(Protocol.ERROR, "坐标无效，请输入整数坐标");   
-            return;
-        }
+        int x = msg.getInt("x");
+        int y = msg.getInt("y");
 
         int color = currentRoom.getGame().getCurrentPlayer();
         log.info("Player move: x={}, y={}, color={}, aiMode={}", x, y, 
@@ -643,29 +540,25 @@ public class ClientHandler implements Runnable {
         
         boolean success = currentRoom.makeMove(x, y, this);
         if (!success) {
-            send(Protocol.ERROR, "无效的移动子操作");       
+            send(Message.of(Protocol.ERROR, "msg", "无效的移动子操作"));
             return;
         }
 
-        currentRoom.broadcastAll(
-            Protocol.MOVE_SYNC,
-            String.valueOf(x),
-            String.valueOf(y),
-            String.valueOf(color)
-        );
+        currentRoom.broadcastAll(Message.of(Protocol.MOVE_SYNC,
+                "x", String.valueOf(x),
+                "y", String.valueOf(y),
+                "color", String.valueOf(color)));
 
         if (currentRoom.isGameOver()) {
             long winnerId = currentRoom.getWinnerId();
             boolean isDraw = winnerId == 0;
             String reason = isDraw ? "board_full" : "five_in_a_row";
-            String msg = isDraw ? "棋盘已满，平局" : "五子连珠!";
+            String resultMsg = isDraw ? "棋盘已满，平局" : "五子连珠!";
             currentRoom.endGame(winnerId, reason);
 
-            currentRoom.broadcastAll(
-                Protocol.GAME_OVER,
-                String.valueOf(winnerId),
-                msg
-            );
+            currentRoom.broadcastAll(Message.of(Protocol.GAME_OVER,
+                    "winnerId", String.valueOf(winnerId),
+                    "msg", resultMsg));
 
             log.info("Game over in room {}: winner={}, reason={}", currentRoom.getRoomId(), winnerId, reason);
         } else if (currentRoom.isAiMode()) {
@@ -675,27 +568,26 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    private void handleChat(String[] parts) {
+    // ==================== 聊天 ====================
+
+    private void handleChat(Message msg) {
         if (currentRoom == null) {
-            send(Protocol.ERROR, "不在房间中");
+            send(Message.of(Protocol.ERROR, "msg", "不在房间中"));
             return;
         }
 
-        if (parts.length < 2) {
-            send(Protocol.ERROR, "缺少聊天消息");           
-            return;
-        }
-
-        String message = parts[1];
-        currentRoom.broadcastAll(
-            Protocol.CHAT_MSG,
-            String.valueOf(userId),
-            getUsername(),
-            message
-        );
-        // 同时发布到 Redis Pub/Sub
+        String message = msg.getString("message");
+        currentRoom.broadcastAll(Message.of(Protocol.CHAT_MSG,
+                "userId", String.valueOf(userId),
+                "username", getUsername(),
+                "message", message));
+        
+        // 发布到 Redis Pub/Sub（保持兼容）
         RedisManager.getInstance().publish(currentRoom.getRoomId(),
-            Protocol.build(Protocol.CHAT_MSG, String.valueOf(userId), getUsername(), message));
+            Message.of(Protocol.CHAT_MSG,
+                "userId", String.valueOf(userId),
+                "username", getUsername(),
+                "message", message).toJson());
 
         // 保存聊天消息到数据库
         chatDAO.saveMessage(currentRoom.getRoomId(), userId, message, "text");
@@ -703,14 +595,16 @@ public class ClientHandler implements Runnable {
         log.info("玩家 {} 在房间 {} 发送聊天消息: [{}]", getUsername(), currentRoom.getRoomId(), message);
     }
 
+    // ==================== 认输 ====================
+
     private void handleSurrender() {
         if (currentRoom == null || currentRoom.getStatus() != Room.Status.PLAYING) {
-            send(Protocol.ERROR, "不在游戏中");
+            send(Message.of(Protocol.ERROR, "msg", "不在游戏中"));
             return;
         }
 
         if (currentRoom.isObserver(this)) {
-            send(Protocol.ERROR, "观战者不能认输");
+            send(Message.of(Protocol.ERROR, "msg", "观战者不能认输"));
             return;
         }
 
@@ -720,40 +614,25 @@ public class ClientHandler implements Runnable {
 
         currentRoom.endGame(winnerId, "surrender");
 
-        // 广播游戏结束
-        currentRoom.broadcastAll(
-            Protocol.GAME_OVER,
-            String.valueOf(winnerId),
-            getUsername() + " 认输"
-        );
-        // 同时发布到 Redis Pub/Sub
-        RedisManager.getInstance().publish(currentRoom.getRoomId(),
-            Protocol.build(Protocol.GAME_OVER, String.valueOf(winnerId), getUsername() + " 认输"));
+        currentRoom.broadcastAll(Message.of(Protocol.GAME_OVER,
+                "winnerId", String.valueOf(winnerId),
+                "msg", getUsername() + " 认输"));
 
-        log.info("玩家 {} 在房间 {} 认输，获胜方: {}", 
-                userId, currentRoom.getRoomId(), winnerId);
+        log.info("玩家 {} 在房间 {} 认输，获胜方: {}", userId, currentRoom.getRoomId(), winnerId);
     }
 
-    /**
-     * 观战加入
-     * 协议: SPECTATE|roomId
-     * 响应: GAME_START|blackUserId|whiteUserId + MOVE_SYNC 回放已有落子
-     */
-    private void handleSpectate(String[] parts) {
+    // ==================== 观战 ====================
+
+    private void handleSpectate(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        if (parts.length < 2) {
-            send("JOIN_FAIL", "缺少房间ID");
-            return;
-        }
-
-        String roomId = parts[1];
+        String roomId = msg.getString("roomId");
         Room room = roomManager.getRoom(roomId);
         if (room == null) {
-            send("JOIN_FAIL", "房间不存在");
+            send(Message.of("JOIN_FAIL", "msg", "房间不存在"));
             return;
         }
 
@@ -764,283 +643,237 @@ public class ClientHandler implements Runnable {
         room.spectate(this);
         this.currentRoom = room;
 
-        room.broadcastToPlayers(
-            Protocol.PLAYER_ENTER,
-            String.valueOf(userId),
-            getUsername(),
-            "SPECTATOR"
-        );
+        room.broadcastToPlayers(Message.of(Protocol.PLAYER_ENTER,
+                "userId", String.valueOf(userId),
+                "username", getUsername(),
+                "type", "SPECTATOR"));
 
-        // 发送 GAME_START 让客户端切换到棋盘界面
-        send(Protocol.GAME_START,
-            String.valueOf(room.getBlackUserId()),
-            String.valueOf(room.getWhiteUserId()));
+        send(Message.of(Protocol.GAME_START,
+                "blackUserId", String.valueOf(room.getBlackUserId()),
+                "whiteUserId", String.valueOf(room.getWhiteUserId())));
 
-        // 回放所有已有落子，让观战者看到当前棋盘
+        // 回放已有落子
         for (Game.MoveRecord mr : room.getGame().getMoveHistory()) {
-            send(Protocol.MOVE_SYNC,
-                String.valueOf(mr.x),
-                String.valueOf(mr.y),
-                String.valueOf(mr.color));
+            send(Message.of(Protocol.MOVE_SYNC,
+                    "x", String.valueOf(mr.x),
+                    "y", String.valueOf(mr.y),
+                    "color", String.valueOf(mr.color)));
         }
 
-        log.info("玩家 {} 开始观战房间 {} (已回放 {} 步)", 
-                userId, roomId, room.getGame().getMoveHistory().size());
+        log.info("玩家 {} 开始观战房间 {} (已回放 {} 步)", userId, roomId, room.getGame().getMoveHistory().size());
     }
+
+    // ==================== 排行榜 ====================
 
     private void handleRanking() {
         var ranking = rankDAO.getRanking(20);
         if (ranking.isEmpty()) {
-            send(Protocol.ERROR, "暂无用户");   
+            send(Message.of(Protocol.ERROR, "msg", "暂无用户"));
             return;
         }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append(Protocol.RANKING_LIST);
-        for (int i = 0; i < ranking.size(); i++) {
-            var u = ranking.get(i);
-            sb.append("|").append(u.getRank())
-              .append("|").append(u.getUsername())
-              .append("|").append(u.getScore())
-              .append("|").append(u.getWinRate());
+        JSONArray users = new JSONArray();
+        for (var u : ranking) {
+            JSONObject obj = new JSONObject();
+            obj.put("rank", u.getRank());
+            obj.put("username", u.getUsername());
+            obj.put("score", u.getScore());
+            obj.put("winRate", u.getWinRate());
+            users.put(obj);
         }
-        send(sb.toString());
+        send(Message.builder(Protocol.RANKING_LIST).set("users", users).build());
         log.info("Sent ranking to {}: {} users", socket.getPort(), ranking.size());
     }
 
-    /**
-     * 查询战绩
-     * 协议: QUERY_RECORD|page|size
-     * 响应: RECORD_LIST|recordId|player1Id|player1Name|player2Id|player2Name|winnerId|result|moveCount|duration|createTime|...
-     */
-    private void handleQueryRecord(String[] parts) {
+    // ==================== 查询战绩 ====================
+
+    private void handleQueryRecord(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        int page = 0;
-        int size = 10;
-        try {
-            if (parts.length >= 2) page = Integer.parseInt(parts[1]);
-            if (parts.length >= 3) size = Integer.parseInt(parts[2]);
-        } catch (NumberFormatException e) {
-            send(Protocol.ERROR, "参数无效");
-            return;
-        }
+        int page = msg.has("page") ? msg.getInt("page") : 0;
+        int size = msg.has("size") ? msg.getInt("size") : 10;
 
         List<String[]> records = recordDAO.getHistory(userId, page, size);
-        
-        StringBuilder sb = new StringBuilder();
-        sb.append("RECORD_LIST");
+
+        JSONArray recs = new JSONArray();
         for (String[] record : records) {
             long player1Id = Long.parseLong(record[1]);
             long player2Id = Long.parseLong(record[2]);
             long winnerId = record[3].equals("0") ? 0 : Long.parseLong(record[3]);
-            
+
             UserDAO.UserInfo player1 = userDAO.getUserById(player1Id);
             UserDAO.UserInfo player2 = userDAO.getUserById(player2Id);
-            
+
             String player1Name = player1 != null ? player1.getUsername() : "未知";
             String player2Name = player2 != null ? player2.getUsername() : (player2Id == -1 ? "AI" : "未知");
-            
+
             String boardData = record.length > 8 ? record[8] : "";
-            boardData = boardData.replace("|", "\\|");
-            
-            sb.append("|").append(record[0])      // recordId
-              .append("|").append(player1Id)     // player1Id
-              .append("|").append(player1Name)   // player1Name
-              .append("|").append(player2Id)     // player2Id
-              .append("|").append(player2Name)   // player2Name
-              .append("|").append(winnerId)      // winnerId
-              .append("|").append(record[4])     // result
-              .append("|").append(record[5])     // moveCount
-              .append("|").append(record[6])     // duration
-              .append("|").append(record[7])     // createTime
-              .append("|").append(boardData);    // boardData
+
+            JSONObject r = new JSONObject();
+            r.put("recordId", record[0]);
+            r.put("player1Id", player1Id);
+            r.put("player1Name", player1Name);
+            r.put("player2Id", player2Id);
+            r.put("player2Name", player2Name);
+            r.put("winnerId", winnerId);
+            r.put("result", record[4]);
+            r.put("moveCount", record[5]);
+            r.put("duration", record[6]);
+            r.put("createTime", record[7]);
+            r.put("boardData", boardData);
+            recs.put(r);
         }
-        send(sb.toString());
+        send(Message.builder("RECORD_LIST").set("records", recs).build());
         log.info("Sent record list to user {} ({} records)", userId, records.size());
     }
 
-    /**
-     * 请求悔棋
-     * 协议: REQUEST_UNDO
-     * 响应: UNDO_REQUESTED|requesterId|requesterName
-     */
+    // ==================== 悔棋请求 ====================
+
     private void handleRequestUndo() {
         if (currentRoom == null || currentRoom.getStatus() != Room.Status.PLAYING) {
-            send(Protocol.ERROR, "不在游戏中");
+            send(Message.of(Protocol.ERROR, "msg", "不在游戏中"));
             return;
         }
 
         if (currentRoom.isObserver(this)) {
-            send(Protocol.ERROR, "观战者不能请求悔棋");
+            send(Message.of(Protocol.ERROR, "msg", "观战者不能请求悔棋"));
             return;
         }
 
-        // AI 模式下直接悔棋，不发送请求
         if (currentRoom.isAiMode()) {
             boolean undone = currentRoom.directUndo(userId);
             if (undone) {
-                currentRoom.broadcastAll("UNDO_ACCEPTED");
+                currentRoom.broadcastAll(Message.cmdOnly("UNDO_ACCEPTED"));
                 log.info("Player {} undid move in AI mode", userId);
             } else {
-                send(Protocol.ERROR, "无法悔棋");
+                send(Message.of(Protocol.ERROR, "msg", "无法悔棋"));
             }
             return;
         }
 
         boolean success = currentRoom.requestUndo(userId);
         if (success) {
-            // 只通知对手，不通知请求者本人
             currentRoom.broadcastToPlayersExcept(userId,
-                "UNDO_REQUESTED",
-                String.valueOf(userId),
-                getUsername()
-            );
+                Message.of("UNDO_REQUESTED",
+                    "requesterId", String.valueOf(userId),
+                    "requesterName", getUsername()));
             log.info("玩家 {} 请求悔棋", userId);
         } else {
-            send(Protocol.ERROR, "无法请求悔棋");
+            send(Message.of(Protocol.ERROR, "msg", "无法请求悔棋"));
         }
     }
 
-    /**
-     * 回复悔棋请求
-     * 协议: REPLY_UNDO|accept(1/0)
-     * 响应: UNDO_ACCEPTED|x|y (撤销成功)
-     *       UNDO_REJECTED (拒绝)
-     */
-    private void handleReplyUndo(String[] parts) {
+    // ==================== 悔棋回复 ====================
+
+    private void handleReplyUndo(Message msg) {
         if (currentRoom == null || currentRoom.getStatus() != Room.Status.PLAYING) {
-            send(Protocol.ERROR, "不在游戏中");
+            send(Message.of(Protocol.ERROR, "msg", "不在游戏中"));
             return;
         }
 
         if (currentRoom.isObserver(this)) {
-            send(Protocol.ERROR, "观战者不能回复悔棋");
+            send(Message.of(Protocol.ERROR, "msg", "观战者不能回复悔棋"));
             return;
         }
 
-        if (parts.length < 2) {
-            send(Protocol.ERROR, "缺少参数");
-            return;
-        }
-
-        boolean accept = "1".equals(parts[1]);
+        boolean accept = msg.getInt("accept") == 1;
         boolean success = currentRoom.replyUndo(userId, accept);
         if (success) {
             if (accept) {
-                currentRoom.broadcastAll("UNDO_ACCEPTED");
+                currentRoom.broadcastAll(Message.cmdOnly("UNDO_ACCEPTED"));
                 log.info("玩家 {} 同意悔棋", userId);
             } else {
-                currentRoom.broadcastAll("UNDO_REJECTED");
+                currentRoom.broadcastAll(Message.cmdOnly("UNDO_REJECTED"));
                 log.info("玩家 {} 拒绝悔棋", userId);
             }
         } else {
-            send(Protocol.ERROR, "无法回复悔棋请求");
+            send(Message.of(Protocol.ERROR, "msg", "无法回复悔棋请求"));
         }
     }
 
-    /**
-     * 请求求和
-     * 协议: REQUEST_DRAW
-     * 响应: DRAW_REQUESTED|requesterId|requesterName
-     */
+    // ==================== 求和请求 ====================
+
     private void handleRequestDraw() {
         if (currentRoom == null || currentRoom.getStatus() != Room.Status.PLAYING) {
-            send(Protocol.ERROR, "不在游戏中");
+            send(Message.of(Protocol.ERROR, "msg", "不在游戏中"));
             return;
         }
 
         if (currentRoom.isObserver(this)) {
-            send(Protocol.ERROR, "观战者不能请求求和");
+            send(Message.of(Protocol.ERROR, "msg", "观战者不能请求求和"));
             return;
         }
 
-        // AI 模式下直接判平局，不发送请求
         if (currentRoom.isAiMode()) {
             currentRoom.directDraw(userId);
-            currentRoom.broadcastAll(Protocol.GAME_OVER, "0", "双方平局(求和)");
+            currentRoom.broadcastAll(Message.of(Protocol.GAME_OVER,
+                    "winnerId", "0",
+                    "msg", "双方平局(求和)"));
             log.info("Player {} drew game in AI mode", userId);
             return;
         }
 
         boolean success = currentRoom.requestDraw(userId);
         if (success) {
-            // 只通知对手，不通知请求者本人
             currentRoom.broadcastToPlayersExcept(userId,
-                "DRAW_REQUESTED",
-                String.valueOf(userId),
-                getUsername()
-            );
+                Message.of("DRAW_REQUESTED",
+                    "requesterId", String.valueOf(userId),
+                    "requesterName", getUsername()));
             log.info("玩家 {} 请求求和", userId);
         } else {
-            send(Protocol.ERROR, "无法请求求和");
+            send(Message.of(Protocol.ERROR, "msg", "无法请求求和"));
         }
     }
 
-    /**
-     * 回复求和请求
-     * 协议: REPLY_DRAW|accept(1/0)
-     * 响应: GAME_OVER|0|draw (同意求和)
-     *       DRAW_REJECTED (拒绝)
-     */
-    private void handleReplyDraw(String[] parts) {
+    // ==================== 求和回复 ====================
+
+    private void handleReplyDraw(Message msg) {
         if (currentRoom == null || currentRoom.getStatus() != Room.Status.PLAYING) {
-            send(Protocol.ERROR, "不在游戏中");
+            send(Message.of(Protocol.ERROR, "msg", "不在游戏中"));
             return;
         }
 
         if (currentRoom.isObserver(this)) {
-            send(Protocol.ERROR, "观战者不能回复求和");
+            send(Message.of(Protocol.ERROR, "msg", "观战者不能回复求和"));
             return;
         }
 
-        if (parts.length < 2) {
-            send(Protocol.ERROR, "缺少参数");
-            return;
-        }
-
-        boolean accept = "1".equals(parts[1]);
+        boolean accept = msg.getInt("accept") == 1;
         boolean success = currentRoom.replyDraw(userId, accept);
         if (success) {
             if (accept) {
-                currentRoom.broadcastAll(Protocol.GAME_OVER, "0", "双方平局(求和)");
+                currentRoom.broadcastAll(Message.of(Protocol.GAME_OVER,
+                        "winnerId", "0",
+                        "msg", "双方平局(求和)"));
                 log.info("玩家 {} 同意求和，游戏平局结束", userId);
             } else {
-                currentRoom.broadcastAll("DRAW_REJECTED");
+                currentRoom.broadcastAll(Message.cmdOnly("DRAW_REJECTED"));
                 log.info("玩家 {} 拒绝求和", userId);
             }
         } else {
-            send(Protocol.ERROR, "无法回复求和请求");
+            send(Message.of(Protocol.ERROR, "msg", "无法回复求和请求"));
         }
     }
 
-    /**
-     * 断线重连
-     * 协议: RECONNECT|token
-     * 响应: RECONNECT_OK|userId|username|score|winCount|loseCount|drawCount|roomId|roomName|playerCount/max
-     *       RECONNECT_FAIL|reason
-     */
-    private void handleReconnect(String[] parts) {
-        if (parts.length < 2) {
-            send("RECONNECT_FAIL", "缺少参数");
-            return;
-        }
+    // ==================== 断线重连 ====================
 
-        String token = parts[1];
+    private void handleReconnect(Message msg) {
+        String token = msg.getString("token");
+
         SessionManager.Session session = sessionManager.getSessionByToken(token);
 
         if (session == null) {
-            send("RECONNECT_FAIL", "会话不存在或已过期");
-            log.warn("Reconnect failed: session not found for token {}", token.substring(0, 8));
+            send(Message.of("RECONNECT_FAIL", "msg", "会话不存在或已过期"));
+            log.warn("Reconnect failed: session not found for token {}", token.substring(0, Math.min(8, token.length())));
             return;
         }
 
         if (session.isExpired()) {
             sessionManager.removeSession(token);
-            send("RECONNECT_FAIL", "会话已过期");
+            send(Message.of("RECONNECT_FAIL", "msg", "会话已过期"));
             log.warn("Reconnect failed: session expired for userId {}", session.userId);
             return;
         }
@@ -1058,36 +891,39 @@ public class ClientHandler implements Runnable {
                 this.currentRoom = room;
                 sessionManager.updateSessionRoom(session.userId, room.getRoomId());
 
-                send("RECONNECT_OK",
-                        String.valueOf(session.userId),
-                        session.username,
-                        String.valueOf(session.score),
-                        String.valueOf(session.winCount),
-                        String.valueOf(session.loseCount),
-                        String.valueOf(session.drawCount),
-                        room.getRoomId(),
-                        room.getRoomName(),
-                        room.getPlayerCount() + "/" + 2);
+                send(Message.builder("RECONNECT_OK")
+                        .set("userId", String.valueOf(session.userId))
+                        .set("username", session.username)
+                        .set("score", String.valueOf(session.score))
+                        .set("winCount", String.valueOf(session.winCount))
+                        .set("loseCount", String.valueOf(session.loseCount))
+                        .set("drawCount", String.valueOf(session.drawCount))
+                        .set("roomId", room.getRoomId())
+                        .set("roomName", room.getRoomName())
+                        .set("players", room.getPlayerCount() + "/" + 2)
+                        .build());
 
-                room.broadcastToPlayers(
-                        Protocol.PLAYER_ENTER,
-                        String.valueOf(session.userId),
-                        session.username);
+                room.broadcastToPlayers(Message.of(Protocol.PLAYER_ENTER,
+                        "userId", String.valueOf(session.userId),
+                        "username", session.username));
 
                 log.info("玩家 {} 断线重连成功，进入房间 {}", session.userId, room.getRoomId());
             } else {
-                send("RECONNECT_FAIL", "无法重新加入房间");
+                send(Message.of("RECONNECT_FAIL", "msg", "无法重新加入房间"));
                 log.warn("Reconnect failed: cannot rejoin room {} for userId {}", room.getRoomId(), session.userId);
             }
         } else {
-            send("RECONNECT_OK",
-                    String.valueOf(session.userId),
-                    session.username,
-                    String.valueOf(session.score),
-                    String.valueOf(session.winCount),
-                    String.valueOf(session.loseCount),
-                    String.valueOf(session.drawCount),
-                    "", "", "");
+            send(Message.builder("RECONNECT_OK")
+                    .set("userId", String.valueOf(session.userId))
+                    .set("username", session.username)
+                    .set("score", String.valueOf(session.score))
+                    .set("winCount", String.valueOf(session.winCount))
+                    .set("loseCount", String.valueOf(session.loseCount))
+                    .set("drawCount", String.valueOf(session.drawCount))
+                    .set("roomId", "")
+                    .set("roomName", "")
+                    .set("players", "")
+                    .build());
 
             log.info("玩家 {} 断线重连成功，不在房间中", session.userId);
         }
@@ -1095,367 +931,280 @@ public class ClientHandler implements Runnable {
 
     // ==================== 好友系统 ====================
 
-    private void handleAddFriend(String[] parts) {
+    private void handleAddFriend(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        if (parts.length < 2) {
-            send(Protocol.ERROR, "缺少好友ID");
+        long friendUserId = msg.getLong("friendUserId");
+        if (friendUserId == 0) {
+            send(Message.of(Protocol.ERROR, "msg", "好友ID无效"));
             return;
         }
-
-        long friendUserId;
-        try {
-            friendUserId = Long.parseLong(parts[1]);
-        } catch (NumberFormatException e) {
-            send(Protocol.ERROR, "好友ID无效");
-            return;
-        }
-
-        String message = parts.length >= 3 ? parts[2] : "";
-
         if (friendUserId == userId) {
-            send(Protocol.ERROR, "不能添加自己为好友");
+            send(Message.of(Protocol.ERROR, "msg", "不能添加自己为好友"));
             return;
         }
+
+        String message = msg.has("message") ? msg.getString("message") : "";
 
         boolean success = friendDAO.sendFriendRequest(userId, friendUserId, message);
         if (success) {
-            send("ADD_FRIEND_OK");
+            send(Message.cmdOnly("ADD_FRIEND_OK"));
             log.info("玩家 {} 发送好友请求给 {}", userId, friendUserId);
         } else {
-            send("ADD_FRIEND_FAIL", "发送失败（可能已为好友或请求已存在）");
+            send(Message.of("ADD_FRIEND_FAIL", "msg", "发送失败（可能已为好友或请求已存在）"));
             log.warn("玩家 {} 发送好友请求失败: {}", userId, friendUserId);
         }
     }
 
-    private void handleAcceptFriend(String[] parts) {
+    private void handleAcceptFriend(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        if (parts.length < 2) {
-            send(Protocol.ERROR, "缺少请求ID");
-            return;
-        }
-
-        long requestId;
-        try {
-            requestId = Long.parseLong(parts[1]);
-        } catch (NumberFormatException e) {
-            send(Protocol.ERROR, "请求ID无效");
-            return;
-        }
-
+        long requestId = msg.getLong("requestId");
         boolean success = friendDAO.acceptFriendRequest(requestId, userId);
         if (success) {
-            send("ACCEPT_FRIEND_OK");
+            send(Message.cmdOnly("ACCEPT_FRIEND_OK"));
             log.info("玩家 {} 接受好友请求: {}", userId, requestId);
         } else {
-            send("ACCEPT_FRIEND_FAIL", "接受失败");
+            send(Message.of("ACCEPT_FRIEND_FAIL", "msg", "接受失败"));
             log.warn("玩家 {} 接受好友请求失败: {}", userId, requestId);
         }
     }
 
-    private void handleRejectFriend(String[] parts) {
+    private void handleRejectFriend(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        if (parts.length < 2) {
-            send(Protocol.ERROR, "缺少请求ID");
-            return;
-        }
-
-        long requestId;
-        try {
-            requestId = Long.parseLong(parts[1]);
-        } catch (NumberFormatException e) {
-            send(Protocol.ERROR, "请求ID无效");
-            return;
-        }
-
+        long requestId = msg.getLong("requestId");
         boolean success = friendDAO.rejectFriendRequest(requestId, userId);
         if (success) {
-            send("REJECT_FRIEND_OK");
+            send(Message.cmdOnly("REJECT_FRIEND_OK"));
             log.info("玩家 {} 拒绝好友请求: {}", userId, requestId);
         } else {
-            send("REJECT_FRIEND_FAIL", "拒绝失败");
+            send(Message.of("REJECT_FRIEND_FAIL", "msg", "拒绝失败"));
             log.warn("玩家 {} 拒绝好友请求失败: {}", userId, requestId);
         }
     }
 
-    private void handleDeleteFriend(String[] parts) {
+    private void handleDeleteFriend(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        if (parts.length < 2) {
-            send(Protocol.ERROR, "缺少好友ID");
-            return;
-        }
-
-        long friendUserId;
-        try {
-            friendUserId = Long.parseLong(parts[1]);
-        } catch (NumberFormatException e) {
-            send(Protocol.ERROR, "好友ID无效");
-            return;
-        }
-
+        long friendUserId = msg.getLong("friendUserId");
         boolean success = friendDAO.deleteFriend(userId, friendUserId);
         if (success) {
-            send("DELETE_FRIEND_OK");
+            send(Message.cmdOnly("DELETE_FRIEND_OK"));
             log.info("玩家 {} 删除好友: {}", userId, friendUserId);
         } else {
-            send("DELETE_FRIEND_FAIL", "删除失败");
+            send(Message.of("DELETE_FRIEND_FAIL", "msg", "删除失败"));
             log.warn("玩家 {} 删除好友失败: {}", userId, friendUserId);
         }
     }
 
     private void handleFriendList() {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
         List<FriendDAO.FriendInfo> friends = friendDAO.getFriendList(userId);
-        StringBuilder sb = new StringBuilder();
-        sb.append("FRIEND_LIST");
-        for (FriendDAO.FriendInfo friend : friends) {
-            sb.append("|").append(friend.getFriendUserId())
-              .append("|").append(friend.getFriendUsername())
-              .append("|").append(friend.getFriendScore())
-              .append("|").append(friend.isOnline() ? "1" : "0");
+        JSONArray arr = new JSONArray();
+        for (FriendDAO.FriendInfo f : friends) {
+            JSONObject obj = new JSONObject();
+            obj.put("friendUserId", f.getFriendUserId());
+            obj.put("friendUsername", f.getFriendUsername());
+            obj.put("friendScore", f.getFriendScore());
+            arr.put(obj);
         }
-        send(sb.toString());
+        send(Message.builder("FRIEND_LIST").set("friends", arr).build());
         log.info("发送好友列表给玩家 {}: {} 个好友", userId, friends.size());
     }
 
     private void handleFriendRequests() {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
         List<FriendDAO.FriendRequestInfo> requests = friendDAO.getPendingRequests(userId);
         StringBuilder sb = new StringBuilder();
-        sb.append("FRIEND_REQUEST_LIST");
-        for (FriendDAO.FriendRequestInfo request : requests) {
-            sb.append("|").append(request.getRequestId())
-              .append("|").append(request.getFromUserId())
-              .append("|").append(request.getFromUsername())
-              .append("|").append(request.getFromScore())
-              .append("|").append(request.getMessage() != null ? request.getMessage() : "");
+        sb.append("{\"cmd\":\"FRIEND_REQUEST_LIST\",\"data\":{\"requests\":[");
+        for (int i = 0; i < requests.size(); i++) {
+            if (i > 0) sb.append(",");
+            var r = requests.get(i);
+            sb.append("{\"requestId\":\"").append(r.getRequestId())
+              .append("\",\"fromUserId\":\"").append(r.getFromUserId())
+              .append("\",\"fromUsername\":\"").append(r.getFromUsername())
+              .append("\",\"fromScore\":\"").append(r.getFromScore())
+              .append("\",\"message\":\"").append(r.getMessage() != null ? r.getMessage() : "").append("\"}");
         }
+        sb.append("]}}");
         send(sb.toString());
         log.info("发送好友请求列表给玩家 {}: {} 个请求", userId, requests.size());
     }
 
     // ==================== 棋局保存 ====================
 
-    private void handleSaveGame(String[] parts) {
+    private void handleSaveGame(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
         if (currentRoom == null || !currentRoom.isGameStarted()) {
-            send("SAVE_GAME_FAIL", "不在游戏房间或游戏未开始");
+            send(Message.of("SAVE_GAME_FAIL", "msg", "不在游戏房间或游戏未开始"));
             return;
         }
 
-        String saveName = parts.length >= 2 ? parts[1] : "未命名棋局";
+        String saveName = msg.has("saveName") ? msg.getString("saveName") : "未命名棋局";
         if (saveName.length() > 100) {
             saveName = saveName.substring(0, 100);
         }
 
         long saveId = gameSaveDAO.saveGame(userId, null, saveName, currentRoom.getGame());
         if (saveId > 0) {
-            send("SAVE_GAME_OK", String.valueOf(saveId), saveName);
+            send(Message.of("SAVE_GAME_OK", "saveId", String.valueOf(saveId), "saveName", saveName));
             log.info("玩家 {} 保存棋局成功: saveId={}", userId, saveId);
         } else {
-            send("SAVE_GAME_FAIL", "保存失败");
+            send(Message.of("SAVE_GAME_FAIL", "msg", "保存失败"));
             log.warn("玩家 {} 保存棋局失败", userId);
         }
     }
 
-    private void handleLoadGame(String[] parts) {
+    private void handleLoadGame(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        if (parts.length < 2) {
-            send(Protocol.ERROR, "缺少存档ID");
-            return;
-        }
-
-        long saveId;
-        try {
-            saveId = Long.parseLong(parts[1]);
-        } catch (NumberFormatException e) {
-            send(Protocol.ERROR, "存档ID无效");
-            return;
-        }
-
+        long saveId = msg.getLong("saveId");
         GameSaveDAO.GameSaveInfo saveInfo = gameSaveDAO.getGameSave(saveId);
         if (saveInfo == null) {
-            send("LOAD_GAME_FAIL", "存档不存在");
+            send(Message.of("LOAD_GAME_FAIL", "msg", "存档不存在"));
             return;
         }
 
         if (saveInfo.getUserId() != userId) {
-            send("LOAD_GAME_FAIL", "无权加载此存档");
+            send(Message.of("LOAD_GAME_FAIL", "msg", "无权加载此存档"));
             return;
         }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("LOAD_GAME_OK");
-        sb.append("|").append(saveInfo.getSaveId());
-        sb.append("|").append(saveInfo.getSaveName());
-        sb.append("|").append(saveInfo.getBoardData());
-        sb.append("|").append(saveInfo.getCurrentPlayer());
-        sb.append("|").append(saveInfo.getGameStatus());
-        send(sb.toString());
+        send(Message.builder("LOAD_GAME_OK")
+                .set("saveId", String.valueOf(saveInfo.getSaveId()))
+                .set("saveName", saveInfo.getSaveName())
+                .set("boardData", saveInfo.getBoardData())
+                .set("currentPlayer", String.valueOf(saveInfo.getCurrentPlayer()))
+                .set("gameStatus", saveInfo.getGameStatus())
+                .build());
         log.info("玩家 {} 加载棋局成功: saveId={}", userId, saveId);
     }
 
-    private void handleDeleteSave(String[] parts) {
+    private void handleDeleteSave(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        if (parts.length < 2) {
-            send(Protocol.ERROR, "缺少存档ID");
-            return;
-        }
-
-        long saveId;
-        try {
-            saveId = Long.parseLong(parts[1]);
-        } catch (NumberFormatException e) {
-            send(Protocol.ERROR, "存档ID无效");
-            return;
-        }
-
+        long saveId = msg.getLong("saveId");
         boolean success = gameSaveDAO.deleteGameSave(saveId, userId);
         if (success) {
-            send("DELETE_SAVE_OK");
+            send(Message.cmdOnly("DELETE_SAVE_OK"));
             log.info("玩家 {} 删除棋局存档成功: saveId={}", userId, saveId);
         } else {
-            send("DELETE_SAVE_FAIL", "删除失败");
+            send(Message.of("DELETE_SAVE_FAIL", "msg", "删除失败"));
             log.warn("玩家 {} 删除棋局存档失败: saveId={}", userId, saveId);
         }
     }
 
-    private void handleSaveList(String[] parts) {
+    private void handleSaveList(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        int page = 0;
-        int size = 10;
-        if (parts.length >= 2) {
-            try {
-                page = Integer.parseInt(parts[1]);
-            } catch (NumberFormatException ignored) {}
-        }
-        if (parts.length >= 3) {
-            try {
-                size = Integer.parseInt(parts[2]);
-            } catch (NumberFormatException ignored) {}
-        }
+        int page = msg.has("page") ? msg.getInt("page") : 0;
+        int size = msg.has("size") ? msg.getInt("size") : 10;
 
         List<GameSaveDAO.GameSaveInfo> saves = gameSaveDAO.getGameSavesByUserId(userId, page, size);
         StringBuilder sb = new StringBuilder();
-        sb.append("SAVE_LIST");
-        for (GameSaveDAO.GameSaveInfo save : saves) {
-            sb.append("|").append(save.getSaveId())
-              .append("|").append(save.getSaveName())
-              .append("|").append(save.getGameStatus())
-              .append("|").append(save.getCreateTime());
+        sb.append("{\"cmd\":\"SAVE_LIST\",\"data\":{\"saves\":[");
+        for (int i = 0; i < saves.size(); i++) {
+            if (i > 0) sb.append(",");
+            var s = saves.get(i);
+            sb.append("{\"saveId\":\"").append(s.getSaveId())
+              .append("\",\"saveName\":\"").append(s.getSaveName())
+              .append("\",\"gameStatus\":\"").append(s.getGameStatus())
+              .append("\",\"createTime\":\"").append(s.getCreateTime()).append("\"}");
         }
+        sb.append("]}}");
         send(sb.toString());
         log.info("发送棋局存档列表给玩家 {}: {} 个存档", userId, saves.size());
     }
 
     // ==================== 聊天历史 ====================
 
-    private void handleChatHistory(String[] parts) {
+    private void handleChatHistory(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
         if (currentRoom == null) {
-            send(Protocol.ERROR, "不在房间中");
+            send(Message.of(Protocol.ERROR, "msg", "不在房间中"));
             return;
         }
 
-        int page = 0;
-        int size = 20;
-        if (parts.length >= 2) {
-            try {
-                page = Integer.parseInt(parts[1]);
-            } catch (NumberFormatException ignored) {}
-        }
-        if (parts.length >= 3) {
-            try {
-                size = Integer.parseInt(parts[2]);
-            } catch (NumberFormatException ignored) {}
-        }
+        int page = msg.has("page") ? msg.getInt("page") : 0;
+        int size = msg.has("size") ? msg.getInt("size") : 20;
 
         List<ChatDAO.ChatMessage> messages = chatDAO.getMessagesByRoomId(currentRoom.getRoomId(), page, size);
         StringBuilder sb = new StringBuilder();
-        sb.append("CHAT_HISTORY");
-        for (ChatDAO.ChatMessage msg : messages) {
-            sb.append("|").append(msg.getMessageId())
-              .append("|").append(msg.getUserId())
-              .append("|").append(msg.getUsername())
-              .append("|").append(msg.getContent())
-              .append("|").append(msg.getCreateTime());
+        sb.append("{\"cmd\":\"CHAT_HISTORY\",\"data\":{\"messages\":[");
+        for (int i = 0; i < messages.size(); i++) {
+            if (i > 0) sb.append(",");
+            var m = messages.get(i);
+            sb.append("{\"messageId\":\"").append(m.getMessageId())
+              .append("\",\"userId\":\"").append(m.getUserId())
+              .append("\",\"username\":\"").append(m.getUsername())
+              .append("\",\"content\":\"").append(m.getContent())
+              .append("\",\"createTime\":\"").append(m.getCreateTime()).append("\"}");
         }
+        sb.append("]}}");
         send(sb.toString());
         log.info("发送聊天历史给玩家 {}: {} 条消息", userId, messages.size());
     }
 
     // ==================== 观战记录 ====================
 
-    private void handleWatcherHistory(String[] parts) {
+    private void handleWatcherHistory(Message msg) {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
-        int page = 0;
-        int size = 10;
-        if (parts.length >= 2) {
-            try {
-                page = Integer.parseInt(parts[1]);
-            } catch (NumberFormatException ignored) {}
-        }
-        if (parts.length >= 3) {
-            try {
-                size = Integer.parseInt(parts[2]);
-            } catch (NumberFormatException ignored) {}
-        }
+        int page = msg.has("page") ? msg.getInt("page") : 0;
+        int size = msg.has("size") ? msg.getInt("size") : 10;
 
         List<RoomWatcherDAO.RoomWatcher> watchers = roomWatcherDAO.getWatcherHistory(userId, page, size);
         StringBuilder sb = new StringBuilder();
-        sb.append("WATCHER_HISTORY");
-        for (RoomWatcherDAO.RoomWatcher w : watchers) {
-            sb.append("|").append(w.getRoomId())
-              .append("|").append(w.getJoinTime())
-              .append("|").append(w.getLeaveTime() != null ? w.getLeaveTime() : "");
+        sb.append("{\"cmd\":\"WATCHER_HISTORY\",\"data\":{\"watchers\":[");
+        for (int i = 0; i < watchers.size(); i++) {
+            if (i > 0) sb.append(",");
+            var w = watchers.get(i);
+            sb.append("{\"roomId\":\"").append(w.getRoomId())
+              .append("\",\"joinTime\":\"").append(w.getJoinTime())
+              .append("\",\"leaveTime\":\"").append(w.getLeaveTime() != null ? w.getLeaveTime() : "").append("\"}");
         }
+        sb.append("]}}");
         send(sb.toString());
         log.info("发送观战记录给玩家 {}: {} 条", userId, watchers.size());
     }
@@ -1464,7 +1213,7 @@ public class ClientHandler implements Runnable {
 
     private void handleLogout() {
         if (!authenticated) {
-            send(Protocol.ERROR, "未登录");
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
             return;
         }
 
@@ -1475,7 +1224,7 @@ public class ClientHandler implements Runnable {
 
         sessionManager.removeSessionByUserId(userId);
 
-        send(Protocol.LOGOUT_OK);
+        send(Message.cmdOnly(Protocol.LOGOUT_OK));
         log.info("玩家 {} 退出登录成功", userId);
 
         this.userId = 0;
@@ -1516,7 +1265,6 @@ public class ClientHandler implements Runnable {
         this.currentRoom = null;
         this.authenticated = false;
 
-        // 递减服务器端全局连接计数
         com.gomatch.server.ServerMain.decrementConnections();
         log.info("Active connections decremented. Current: {}", com.gomatch.server.ServerMain.getActiveConnections());
     }
@@ -1538,4 +1286,3 @@ public class ClientHandler implements Runnable {
         this.currentRoom = currentRoom;
     }
 }
-

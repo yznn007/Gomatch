@@ -1,11 +1,11 @@
 package com.gomatch.client.network;
 
+import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import javafx.application.Platform;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
@@ -39,11 +39,21 @@ public class ServerConnector {
         startHeartbeat();
     }
 
-    public void send(String... parts) {
+    // ==================== 发送 ====================
+
+    /** 发送 JSON 消息 */
+    public void send(Message msg) {
         if (writer != null) {
-            writer.println(Protocol.build(parts));
+            writer.println(msg.toJson());
         }
     }
+
+    /** 发送仅含命令的消息（心跳、认输等） */
+    public void send(String cmd) {
+        send(Message.cmdOnly(cmd));
+    }
+
+    // ==================== 监听器 ====================
 
     public void addListener(NetworkListener listener) {
         if (!listeners.contains(listener)) {
@@ -76,6 +86,8 @@ public class ServerConnector {
         return socket != null && socket.isConnected() && !socket.isClosed();
     }
 
+    // ==================== 接收线程 ====================
+
     private void startReceiveThread() {
         running = true;
         receiveThread = new Thread(() -> {
@@ -84,21 +96,17 @@ public class ServerConnector {
                     String line = reader.readLine();
                     if (line == null) break;
                     lastResponseTime = System.currentTimeMillis();
-                    String[] parts = Protocol.parse(line);
-                    String cmd = parts[0];
-                    String[] args = Arrays.copyOfRange(parts, 1, parts.length);
+                    Message msg = Message.fromJson(line);
                     Platform.runLater(() -> {
                         for (NetworkListener l : listeners) {
-                            l.onMessage(cmd, args);
+                            l.onMessage(msg);
                         }
                     });
                 } catch (IOException e) {
                     break;
                 }
             }
-            // 接收线程退出后的处理
             if (!running) {
-                // 是主动调用 disconnect()，不触发重连
                 return;
             }
             // 意外断线：在后台线程重连，避免 Thread.sleep 卡死 FX 线程
@@ -107,7 +115,7 @@ public class ServerConnector {
                 if (!reconnected) {
                     Platform.runLater(() -> {
                         for (NetworkListener l : listeners) {
-                            l.onMessage("DISCONNECT", new String[0]);
+                            l.onMessage(Message.cmdOnly("DISCONNECT"));
                         }
                     });
                 }
@@ -117,35 +125,6 @@ public class ServerConnector {
         });
         receiveThread.setDaemon(true);
         receiveThread.start();
-    }
-
-    private void startHeartbeat() {
-        stopHeartbeat();
-        heartbeatTimer = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "heartbeat");
-            t.setDaemon(true);
-            return t;
-        });
-        heartbeatTimer.scheduleAtFixedRate(() -> {
-            if (!isConnected()) return;
-            // 检查超时
-            long elapsed = (System.currentTimeMillis() - lastResponseTime) / 1000;
-            if (elapsed > HEARTBEAT_TIMEOUT_SEC) {
-                // 超时未收到任何响应，判定断线
-                running = false;
-                try { if (socket != null) socket.close(); } catch (IOException ignored) {}
-                return;
-            }
-            // 发送心跳
-            send(Protocol.HEARTBEAT);
-        }, HEARTBEAT_INTERVAL_SEC, HEARTBEAT_INTERVAL_SEC, TimeUnit.SECONDS);
-    }
-
-    private void stopHeartbeat() {
-        if (heartbeatTimer != null && !heartbeatTimer.isShutdown()) {
-            heartbeatTimer.shutdownNow();
-            heartbeatTimer = null;
-        }
     }
 
     private boolean tryReconnect() {
@@ -167,5 +146,33 @@ public class ServerConnector {
             }
         }
         return false;
+    }
+
+    // ==================== 心跳 ====================
+
+    private void startHeartbeat() {
+        stopHeartbeat();
+        heartbeatTimer = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "heartbeat");
+            t.setDaemon(true);
+            return t;
+        });
+        heartbeatTimer.scheduleAtFixedRate(() -> {
+            if (!isConnected()) return;
+            long elapsed = (System.currentTimeMillis() - lastResponseTime) / 1000;
+            if (elapsed > HEARTBEAT_TIMEOUT_SEC) {
+                running = false;
+                try { if (socket != null) socket.close(); } catch (IOException ignored) {}
+                return;
+            }
+            send(Protocol.HEARTBEAT);
+        }, HEARTBEAT_INTERVAL_SEC, HEARTBEAT_INTERVAL_SEC, TimeUnit.SECONDS);
+    }
+
+    private void stopHeartbeat() {
+        if (heartbeatTimer != null && !heartbeatTimer.isShutdown()) {
+            heartbeatTimer.shutdownNow();
+            heartbeatTimer = null;
+        }
     }
 }

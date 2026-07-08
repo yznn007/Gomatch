@@ -4,6 +4,7 @@ import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
+import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
@@ -94,7 +95,7 @@ public class LoginController implements NetworkListener {
                 ClientMain.getConnector().connect(AppConfig.SERVER_HOST, AppConfig.SERVER_PORT);
             }
             ClientMain.getConnector().addListener(this);
-            ClientMain.getConnector().send(Protocol.LOGIN, username, password);
+            ClientMain.getConnector().send(Message.of(Protocol.LOGIN, "username", username, "password", password));
         } catch (Exception e) {
             errorLabel.setText("连接服务器失败: " + e.getMessage());
         }
@@ -119,15 +120,15 @@ public class LoginController implements NetworkListener {
     }
 
     @Override
-    public void onMessage(String command, String[] args) {
-        if (Protocol.LOGIN_OK.equals(command)) {
+    public void onMessage(Message msg) {
+        if (Protocol.LOGIN_OK.equals(msg.getCmd())) {
             User user = new User();
-            user.setUserId(Long.parseLong(args[0]));
-            user.setUsername(args[1]);
-            user.setScore(Integer.parseInt(args[2]));
-            user.setWinCount(Integer.parseInt(args[3]));
-            user.setLoseCount(Integer.parseInt(args[4]));
-            user.setDrawCount(Integer.parseInt(args[5]));
+            user.setUserId(msg.getLong("userId"));
+            user.setUsername(msg.getString("username"));
+            user.setScore(msg.getInt("score"));
+            user.setWinCount(msg.getInt("winCount"));
+            user.setLoseCount(msg.getInt("loseCount"));
+            user.setDrawCount(msg.getInt("drawCount"));
 
             AppConfig.setCurrentUser(user);
             AppConfig.setPreviewMode(false);
@@ -137,8 +138,8 @@ public class LoginController implements NetworkListener {
             LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
             ctrl.setCurrentUser(user);
             ctrl.setPreviewMode(false);
-        } else if (Protocol.LOGIN_FAIL.equals(command)) {
-            errorLabel.setText(args[0]);
+        } else if (Protocol.LOGIN_FAIL.equals(msg.getCmd())) {
+            errorLabel.setText(msg.getString("msg"));
             ClientMain.getConnector().disconnect();
         }
     }

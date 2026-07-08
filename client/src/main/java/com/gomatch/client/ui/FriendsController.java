@@ -3,6 +3,7 @@ package com.gomatch.client.ui;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
+import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -117,7 +118,7 @@ public class FriendsController implements NetworkListener {
         }
 
         if (ClientMain.getConnector().isConnected()) {
-            ClientMain.getConnector().send(Protocol.ADD_FRIEND, targetIdStr, msg);
+            ClientMain.getConnector().send(Message.of(Protocol.ADD_FRIEND, "friendUserId", targetIdStr, "message", msg));
         } else {
             errorLabel.setStyle("-fx-text-fill: green;");
             errorLabel.setText("预览模式：已模拟向用户 " + targetIdStr + " 发送好友申请");
@@ -126,7 +127,7 @@ public class FriendsController implements NetworkListener {
 
     private void handleAcceptRequest(String requestId) {
         if (ClientMain.getConnector().isConnected()) {
-            ClientMain.getConnector().send(Protocol.ACCEPT_FRIEND, requestId);
+            ClientMain.getConnector().send(Message.of(Protocol.ACCEPT_FRIEND, "requestId", requestId));
         } else {
             showAlert("已模拟接受请求 " + requestId);
             requestsData.removeIf(r -> r.getRequestId().equals(requestId));
@@ -135,7 +136,7 @@ public class FriendsController implements NetworkListener {
 
     private void handleRejectRequest(String requestId) {
         if (ClientMain.getConnector().isConnected()) {
-            ClientMain.getConnector().send(Protocol.REJECT_FRIEND, requestId);
+            ClientMain.getConnector().send(Message.of(Protocol.REJECT_FRIEND, "requestId", requestId));
         } else {
             showAlert("已模拟拒绝请求 " + requestId);
             requestsData.removeIf(r -> r.getRequestId().equals(requestId));
@@ -144,7 +145,7 @@ public class FriendsController implements NetworkListener {
 
     private void handleDeleteFriend(String friendUserId) {
         if (ClientMain.getConnector().isConnected()) {
-            ClientMain.getConnector().send(Protocol.DELETE_FRIEND, friendUserId);
+            ClientMain.getConnector().send(Message.of(Protocol.DELETE_FRIEND, "friendUserId", friendUserId));
         } else {
             showAlert("已模拟删除好友 " + friendUserId);
             friendsData.removeIf(f -> f.getFriendUserId().equals(friendUserId));
@@ -177,48 +178,52 @@ public class FriendsController implements NetworkListener {
     }
 
     @Override
-    public void onMessage(String command, String[] args) {
-        if ("FRIEND_LIST".equals(command)) {
+    public void onMessage(Message msg) {
+        String cmd = msg.getCmd();
+        if ("FRIEND_LIST".equals(cmd)) {
             friendsData.clear();
-            for (int i = 0; i < args.length; i += 4) {
-                if (i + 3 < args.length) {
-                    boolean online = "1".equals(args[i + 3]);
-                    friendsData.add(new FriendInfoModel(args[i], args[i + 1], args[i + 2], online));
+            org.json.JSONArray friends = msg.getData().optJSONArray("friends");
+            if (friends != null) {
+                for (int i = 0; i < friends.length(); i++) {
+                    org.json.JSONObject f = friends.getJSONObject(i);
+                    friendsData.add(new FriendInfoModel(f.getString("friendUserId"), f.getString("friendUsername"), f.getString("friendScore"), f.optBoolean("online", false)));
                 }
             }
-        } else if ("FRIEND_REQUEST_LIST".equals(command)) {
+        } else if ("FRIEND_REQUEST_LIST".equals(cmd)) {
             requestsData.clear();
-            for (int i = 0; i < args.length; i += 5) {
-                if (i + 4 < args.length) {
-                    requestsData.add(new FriendRequestModel(args[i], args[i + 1], args[i + 2], args[i + 3], args[i + 4]));
+            org.json.JSONArray requests = msg.getData().optJSONArray("requests");
+            if (requests != null) {
+                for (int i = 0; i < requests.length(); i++) {
+                    org.json.JSONObject r = requests.getJSONObject(i);
+                    requestsData.add(new FriendRequestModel(r.getString("requestId"), r.getString("fromUserId"), r.getString("fromUsername"), r.getString("fromScore"), r.getString("message")));
                 }
             }
-        } else if ("ADD_FRIEND_OK".equals(command)) {
+        } else if ("ADD_FRIEND_OK".equals(cmd)) {
             errorLabel.setStyle("-fx-text-fill: green;");
             errorLabel.setText("好友申请发送成功！");
             friendIdField.clear();
             addMsgField.clear();
-        } else if ("ADD_FRIEND_FAIL".equals(command)) {
+        } else if ("ADD_FRIEND_FAIL".equals(cmd)) {
             errorLabel.setStyle("-fx-text-fill: red;");
-            errorLabel.setText(args.length > 0 ? args[0] : "发送失败（对方不存在或已申请）");
-        } else if ("ACCEPT_FRIEND_OK".equals(command)) {
+            errorLabel.setText(msg.getString("msg"));
+        } else if ("ACCEPT_FRIEND_OK".equals(cmd)) {
             showAlert("已成功添加好友！");
             fetchRequestsList();
             fetchFriendsList();
-        } else if ("ACCEPT_FRIEND_FAIL".equals(command)) {
+        } else if ("ACCEPT_FRIEND_FAIL".equals(cmd)) {
             showAlert("接受好友申请失败！");
-        } else if ("REJECT_FRIEND_OK".equals(command)) {
+        } else if ("REJECT_FRIEND_OK".equals(cmd)) {
             showAlert("已拒绝该好友申请。");
             fetchRequestsList();
-        } else if ("REJECT_FRIEND_FAIL".equals(command)) {
+        } else if ("REJECT_FRIEND_FAIL".equals(cmd)) {
             showAlert("拒绝操作失败！");
-        } else if ("DELETE_FRIEND_OK".equals(command)) {
+        } else if ("DELETE_FRIEND_OK".equals(cmd)) {
             showAlert("删除好友成功。");
             fetchFriendsList();
-        } else if ("DELETE_FRIEND_FAIL".equals(command)) {
+        } else if ("DELETE_FRIEND_FAIL".equals(cmd)) {
             showAlert("删除好友失败！");
-        } else if (Protocol.ERROR.equals(command)) {
-            showAlert("错误: " + (args.length > 0 ? args[0] : "未知错误"));
+        } else if (Protocol.ERROR.equals(cmd)) {
+            showAlert("错误: " + msg.getString("msg"));
         }
     }
 

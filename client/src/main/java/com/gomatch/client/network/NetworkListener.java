@@ -1,5 +1,7 @@
 package com.gomatch.client.network;
 
+import com.gomatch.common.Message;
+
 public interface NetworkListener {
-    void onMessage(String command, String[] args);
+    void onMessage(Message msg);
 }

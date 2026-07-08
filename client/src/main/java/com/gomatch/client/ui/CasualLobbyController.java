@@ -4,6 +4,7 @@ import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.RoomInfo;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
+import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -109,10 +110,10 @@ public class CasualLobbyController implements NetworkListener {
             dialog.setHeaderText("该房间需要密码");
             dialog.setContentText("请输入房间密码:");
             dialog.showAndWait().ifPresent(password ->
-                ClientMain.getConnector().send(Protocol.JOIN_ROOM, room.getRoomId(), password.trim())
+                ClientMain.getConnector().send(Message.of(Protocol.JOIN_ROOM, "roomId", room.getRoomId(), "password", password.trim()))
             );
         } else {
-            ClientMain.getConnector().send(Protocol.JOIN_ROOM, room.getRoomId(), "");
+            ClientMain.getConnector().send(Message.of(Protocol.JOIN_ROOM, "roomId", room.getRoomId(), "password", ""));
         }
     }
 
@@ -169,60 +170,55 @@ public class CasualLobbyController implements NetworkListener {
     }
 
     @Override
-    public void onMessage(String command, String[] args) {
-        if (Protocol.RANKING_LIST.equals(command)) {
+    public void onMessage(Message msg) {
+        String cmd = msg.getCmd();
+        if (Protocol.RANKING_LIST.equals(cmd)) {
+            // 服务端返回的 JSON 数组
+            org.json.JSONArray rooms = msg.getData().optJSONArray("rooms");
+            if (rooms == null) return;
             roomData.clear();
-            for (int i = 0; i < args.length; i += 6) {
-                if (i + 5 < args.length) {
-                    RoomInfo room = new RoomInfo();
-                    room.setRoomId(args[i]);
-                    room.setRoomName(args[i + 1]);
-                    room.setStatus(args[i + 2]);
-                    String[] players = args[i + 3].split("/");
-                    room.setPlayerCount(Integer.parseInt(players[0]));
-                    // args[i+4] is max (always "2"), skip
-                    room.setHasPassword("1".equals(args[i + 5]));
-                    roomData.add(room);
-                }
+            for (int i = 0; i < rooms.length(); i++) {
+                org.json.JSONObject r = rooms.getJSONObject(i);
+                RoomInfo room = new RoomInfo();
+                room.setRoomId(r.getString("roomId"));
+                room.setRoomName(r.getString("roomName"));
+                room.setStatus(r.getString("status"));
+                room.setPlayerCount(Integer.parseInt(r.getString("players").split("/")[0]));
+                room.setHasPassword("1".equals(r.getString("hasPassword")));
+                roomData.add(room);
             }
             spectateData.setAll(roomData.stream()
                 .filter(r -> "PLAYING".equalsIgnoreCase(r.getStatus()))
                 .map(r -> "#" + r.getRoomId() + " " + r.getRoomName() + "  玩家: " + r.getPlayerCount() + "/2")
                 .collect(Collectors.toList()));
-        } else if (Protocol.JOIN_OK.equals(command)) {
+        } else if (Protocol.JOIN_OK.equals(cmd)) {
             setStatus("", false);
             RoomInfo room = new RoomInfo();
-            if (args.length > 0) room.setRoomId(args[0]);
-            if (args.length > 1) room.setRoomName(args[1]);
-            if (args.length > 2) {
-                String[] pc = args[2].split("/");
-                try {
-                    room.setPlayerCount(Integer.parseInt(pc[0]));
-                } catch (Exception ignored) {}
+            room.setRoomId(msg.getString("roomId"));
+            room.setRoomName(msg.getString("roomName"));
+            String ps = msg.getString("players");
+            if (!ps.isEmpty()) {
+                String[] pc = ps.split("/");
+                try { room.setPlayerCount(Integer.parseInt(pc[0])); } catch (Exception ignored) {}
             }
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
             ctrl.setPreviewMode(false);
             ctrl.setRoomInfo(room, currentUser != null ? currentUser : new com.gomatch.client.model.User());
-        } else if (Protocol.JOIN_FAIL.equals(command)) {
-            showAlert("加入失败: " + args[0]);
-        } else if (Protocol.GAME_START.equals(command)) {
+        } else if (Protocol.JOIN_FAIL.equals(cmd)) {
+            showAlert("加入失败: " + msg.getString("msg"));
+        } else if (Protocol.GAME_START.equals(cmd)) {
             setStatus("", false);
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-            String username = currentUser != null ? currentUser.getUsername() : "unknown";
-            if (args.length >= 4) {
-                ctrl.setGameInfo(args[0], args[1], args[2], args[3], username);
-            } else {
-                ctrl.setGameInfo(args[0], args[1], username);
-            }
-        } else if (Protocol.ERROR.equals(command)) {
-            String msg = args.length > 0 ? args[0] : "未知错误";
-            if (msg.contains("等待对手")) {
-                int idx = msg.lastIndexOf('(');
-                String suffix = idx >= 0 ? " " + msg.substring(idx) : "";
+            ctrl.setGameInfo(msg.getString("blackUserId"), msg.getString("whiteUserId"), currentUser != null ? currentUser.getUsername() : "unknown");
+        } else if (Protocol.ERROR.equals(cmd)) {
+            String errMsg = msg.getString("msg");
+            if (errMsg.contains("等待对手")) {
+                int idx = errMsg.lastIndexOf('(');
+                String suffix = idx >= 0 ? " " + errMsg.substring(idx) : "";
                 setStatus("等待对手中..." + suffix, true);
             } else {
                 setStatus("", false);
-                showAlert(msg);
+                showAlert(errMsg);
             }
         }
     }
