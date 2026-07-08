@@ -1,6 +1,8 @@
 package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
+import com.gomatch.client.ClientMain;
+import com.gomatch.common.Protocol;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
@@ -52,13 +54,11 @@ public class GameOverController {
     private void handleReplay() {
         closeDialog();
         if (AppConfig.isAiMode()) {
-            AiLobbyController ctrl = ScreenManager.switchTo("/fxml/AiLobbyUI.fxml");
-            ctrl.setCurrentUser(AppConfig.getCurrentUser());
-            ctrl.setPreviewMode(AppConfig.isPreviewMode());
+            // AI模式：发送AI_MATCH重新开始，BoardController仍在背后等待响应
+            ClientMain.getConnector().send(Protocol.AI_MATCH);
         } else {
-            LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
-            ctrl.setCurrentUser(AppConfig.getCurrentUser());
-            ctrl.setPreviewMode(AppConfig.isPreviewMode());
+            // PVP模式：发送再来一局请求给对手
+            ClientMain.getConnector().send(Protocol.REQUEST_REMATCH);
         }
     }
 

@@ -138,6 +138,8 @@ public class ClientHandler implements Runnable {
             case Protocol.REPLY_UNDO      -> handleReplyUndo(msg);
             case Protocol.REQUEST_DRAW    -> handleRequestDraw();
             case Protocol.REPLY_DRAW      -> handleReplyDraw(msg);
+            case Protocol.REQUEST_REMATCH -> handleRequestRematch();
+            case Protocol.REPLY_REMATCH   -> handleReplyRematch(msg);
             case Protocol.RECONNECT       -> handleReconnect(msg);
             case Protocol.CHANGE_PWD      -> handleChangePassword(msg);
             case Protocol.ADD_FRIEND      -> handleAddFriend(msg);
@@ -410,9 +412,7 @@ public class ClientHandler implements Runnable {
                 .build());
 
         room.startGame();
-        room.broadcastAll(Message.of(Protocol.GAME_START,
-                "blackUserId", String.valueOf(room.getBlackUserId()),
-                "whiteUserId", String.valueOf(room.getWhiteUserId())));
+        room.broadcastAll(room.buildGameStartMessage());
 
         log.info("Player {} created AI room: {} ({}), game started", userId, room.getRoomId(), roomName);
     }
@@ -445,9 +445,7 @@ public class ClientHandler implements Runnable {
                 .build());
 
         room.startGame();
-        room.broadcastAll(Message.of(Protocol.GAME_START,
-                "blackUserId", String.valueOf(userId),
-                "whiteUserId", "AI"));
+        room.broadcastAll(room.buildGameStartMessage());
 
         log.info("AI对战房间创建成功: userId={}, roomId={}, difficulty={}", userId, room.getRoomId(), difficulty);
     }
@@ -494,9 +492,7 @@ public class ClientHandler implements Runnable {
 
             if (room.getPlayerCount() == 2) {
                 room.startGame();
-                room.broadcastAll(Message.of(Protocol.GAME_START,
-                        "blackUserId", String.valueOf(room.getBlackUserId()),
-                        "whiteUserId", String.valueOf(room.getWhiteUserId())));
+                room.broadcastAll(room.buildGameStartMessage());
                 log.info("房间 {} 已满，游戏开始: BLACK={}, WHITE={}", roomId, room.getBlackUserId(), room.getWhiteUserId());
             }
 
@@ -561,9 +557,7 @@ public class ClientHandler implements Runnable {
         if (room != null) {
             this.currentRoom = room;
 
-            room.broadcastAll(Message.of(Protocol.GAME_START,
-                    "blackUserId", String.valueOf(room.getBlackUserId()),
-                    "whiteUserId", String.valueOf(room.getWhiteUserId())));
+            room.broadcastAll(room.buildGameStartMessage());
 
             send(Message.builder(Protocol.JOIN_OK)
                     .set("roomId", room.getRoomId())
@@ -608,9 +602,7 @@ public class ClientHandler implements Runnable {
         if (room != null) {
             this.currentRoom = room;
 
-            room.broadcastAll(Message.of(Protocol.GAME_START,
-                    "blackUserId", String.valueOf(room.getBlackUserId()),
-                    "whiteUserId", String.valueOf(room.getWhiteUserId())));
+            room.broadcastAll(room.buildGameStartMessage());
 
             send(Message.builder(Protocol.JOIN_OK)
                     .set("roomId", room.getRoomId())
@@ -747,9 +739,7 @@ public class ClientHandler implements Runnable {
                 "username", getUsername(),
                 "type", "SPECTATOR"));
 
-        send(Message.of(Protocol.GAME_START,
-                "blackUserId", String.valueOf(room.getBlackUserId()),
-                "whiteUserId", String.valueOf(room.getWhiteUserId())));
+        send(room.buildGameStartMessage());
 
         // 回放已有落子
         for (Game.MoveRecord mr : room.getGame().getMoveHistory()) {
@@ -974,6 +964,68 @@ public class ClientHandler implements Runnable {
             }
         } else {
             send(Message.of(Protocol.ERROR, "msg", "无法回复求和请求"));
+        }
+    }
+
+    // ==================== 再来一局请求 ====================
+
+    private void handleRequestRematch() {
+        if (currentRoom == null || currentRoom.getStatus() != Room.Status.FINISHED) {
+            send(Message.of(Protocol.ERROR, "msg", "当前不在已结束的对局中"));
+            return;
+        }
+
+        if (currentRoom.isObserver(this)) {
+            send(Message.of(Protocol.ERROR, "msg", "观战者不能请求再来一局"));
+            return;
+        }
+
+        boolean success = currentRoom.requestRematch(userId);
+        if (success) {
+            currentRoom.broadcastToPlayersExcept(userId,
+                Message.of("REMATCH_REQUESTED",
+                    "requesterId", String.valueOf(userId),
+                    "requesterName", getUsername()));
+            log.info("玩家 {} 请求再来一局", userId);
+        } else {
+            send(Message.of(Protocol.ERROR, "msg", "无法请求再来一局"));
+        }
+    }
+
+    // ==================== 再来一局回复 ====================
+
+    private void handleReplyRematch(Message msg) {
+        if (currentRoom == null || currentRoom.getStatus() != Room.Status.FINISHED) {
+            send(Message.of(Protocol.ERROR, "msg", "当前不在已结束的对局中"));
+            return;
+        }
+
+        if (currentRoom.isObserver(this)) {
+            send(Message.of(Protocol.ERROR, "msg", "观战者不能回复再来一局"));
+            return;
+        }
+
+        boolean accept = msg.getInt("accept") == 1;
+        boolean success = currentRoom.replyRematch(userId, accept);
+        if (success) {
+            if (accept) {
+                // 答复人同意 → 发送已接受通知给请求方
+                currentRoom.broadcastToPlayersExcept(userId,
+                    Message.of("REMATCH_ACCEPTED",
+                        "replierName", getUsername()));
+                // 请求方会通过 GAME_START 收到重置通知，答复方也需要知道可以开始了
+                currentRoom.broadcastAll(Message.cmdOnly("REMATCH_ACCEPTED"));
+                log.info("玩家 {} 同意再来一局，房间 {} 重新开始", userId,
+                        currentRoom != null ? currentRoom.getRoomId() : "null");
+            } else {
+                // 答复人拒绝 → 通知双方
+                currentRoom.broadcastAll(Message.of("REMATCH_REJECTED",
+                    "replierName", getUsername(),
+                    "msg", "对方拒绝了再来一局"));
+                log.info("玩家 {} 拒绝再来一局", userId);
+            }
+        } else {
+            send(Message.of(Protocol.ERROR, "msg", "无法回复再来一局请求"));
         }
     }
 

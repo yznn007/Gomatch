@@ -15,6 +15,8 @@ public class Protocol {
     public static final String REQUEST_DRAW = "REQUEST_DRAW";
     public static final String REPLY_UNDO   = "REPLY_UNDO";
     public static final String REPLY_DRAW   = "REPLY_DRAW";
+    public static final String REQUEST_REMATCH = "REQUEST_REMATCH";
+    public static final String REPLY_REMATCH   = "REPLY_REMATCH";
     public static final String CHANGE_PWD   = "CHANGE_PASSWORD";
     public static final String RANKING      = "RANKING";
     public static final String ROOM_LIST    = "ROOM_LIST";

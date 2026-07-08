@@ -46,11 +46,16 @@ public class Room {
 
     private long blackUserId;
     private long whiteUserId;
+    private String blackUsername;
+    private String whiteUsername;
+    private int blackScore;
+    private int whiteScore;
     private boolean gameStarted;
     private Instant gameStartTime;
 
     private Long undoRequesterId;
     private Long drawRequesterId;
+    private Long rematchRequesterId;
     private long currentRecordId = -1;
     private Long pendingUndoActionId;
     private Long pendingDrawActionId;
@@ -127,6 +132,10 @@ public class Room {
     public boolean isGameStarted() { return gameStarted; }
     public long getBlackUserId() { return blackUserId; }
     public long getWhiteUserId() { return whiteUserId; }
+    public String getBlackUsername() { return blackUsername; }
+    public String getWhiteUsername() { return whiteUsername; }
+    public int getBlackScore() { return blackScore; }
+    public int getWhiteScore() { return whiteScore; }
 
     public int getPlayerCount() { return players.size(); }
     public long getDisconnectedPlayerId() { return disconnectedPlayerId; }
@@ -176,9 +185,11 @@ public class Room {
 
         if (players.size() == 1) {
             blackUserId = handler.getUserId();
+            blackUsername = handler.getUsername();
             log.info("Player {} assigned as BLACK in room {}", handler.getUserId(), roomId);
         } else if (players.size() == 2) {
             whiteUserId = handler.getUserId();
+            whiteUsername = handler.getUsername();
             log.info("Player {} assigned as WHITE in room {}", handler.getUserId(), roomId);
         }
 
@@ -336,6 +347,11 @@ public class Room {
 
         if (aiMode) {
             whiteUserId = -1;
+            whiteUsername = "AI";
+            whiteScore = 0;
+            // 查询黑方积分
+            UserDAO.UserInfo blackInfo = userDAO.getUserById(blackUserId);
+            blackScore = blackInfo != null ? blackInfo.getScore() : 0;
             aiPlayer = new AIPlayer(Game.WHITE, aiDifficulty);
             log.info("AI game started in room {}: BLACK={}, AI=WHITE, difficulty={}, startTime={}",
                     roomId, blackUserId, aiDifficulty, gameStartTime);
@@ -344,8 +360,13 @@ public class Room {
                 log.error("startGame rejected: whiteUserId={} is not set", whiteUserId);
                 return false;
             }
-            log.info("Game started in room {}: BLACK={}, WHITE={}, startTime={}",
-                    roomId, blackUserId, whiteUserId, gameStartTime);
+            // 查询双方积分
+            UserDAO.UserInfo blackInfo = userDAO.getUserById(blackUserId);
+            UserDAO.UserInfo whiteInfo = userDAO.getUserById(whiteUserId);
+            blackScore = blackInfo != null ? blackInfo.getScore() : 0;
+            whiteScore = whiteInfo != null ? whiteInfo.getScore() : 0;
+            log.info("Game started in room {}: BLACK={}({}分), WHITE={}({}分), startTime={}",
+                    roomId, blackUserId, blackScore, whiteUserId, whiteScore, gameStartTime);
         }
 
         startTurnTimer();
@@ -722,8 +743,7 @@ public class Room {
                 long winnerId = (timedOutPlayerId == blackUserId) ? whiteUserId : blackUserId;
                 log.info("Turn timeout in room {}: player {} ran out of time, winner={}", roomId, timedOutPlayerId, winnerId);
                 endGame(winnerId, "timeout", "回合超时，对方获胜");
-                broadcastAll(Message.of(Protocol.TURN_TIMEOUT,
-                        "winnerId", String.valueOf(winnerId)));
+                // GAME_OVER 已在 endGame() 中广播，不再重复发送 TURN_TIMEOUT 避免客户端弹两次框
             }
         }, TURN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
@@ -876,6 +896,109 @@ public class Room {
             return true;
         }
     }
+
+    // ==================== 再来一局 ====================
+
+    /**
+     * 发起再来一局请求（游戏已结束状态）
+     */
+    public synchronized boolean requestRematch(long requesterId) {
+        log.debug("requestRematch called for room {}: requesterId={}", roomId, requesterId);
+
+        if (status != Status.FINISHED) {
+            log.warn("requestRematch rejected: room {} status is {} (expected FINISHED)", roomId, status);
+            return false;
+        }
+
+        if (rematchRequesterId != null) {
+            log.warn("requestRematch rejected: rematch request already pending from {}", rematchRequesterId);
+            return false;
+        }
+
+        if (!isValidPlayer(requesterId)) {
+            log.warn("requestRematch rejected: {} is not a valid player", requesterId);
+            return false;
+        }
+
+        rematchRequesterId = requesterId;
+        log.info("Rematch requested by {} in room {}", requesterId, roomId);
+        return true;
+    }
+
+    /**
+     * 回复再来一局请求。如果双方同意，重置房间并重新开始对局。
+     */
+    public synchronized boolean replyRematch(long replierId, boolean accept) {
+        log.debug("replyRematch called for room {}: replierId={}, accept={}", roomId, replierId, accept);
+
+        if (rematchRequesterId == null) {
+            log.warn("replyRematch rejected: no pending rematch request");
+            return false;
+        }
+
+        if (replierId == rematchRequesterId) {
+            log.warn("replyRematch rejected: requester cannot reply to own request");
+            return false;
+        }
+
+        if (!isValidPlayer(replierId)) {
+            log.warn("replyRematch rejected: {} is not a valid player", replierId);
+            return false;
+        }
+
+        rematchRequesterId = null;
+
+        if (accept) {
+            log.info("Rematch accepted in room {}: both players agreed", roomId);
+            resetAndRestartGame();
+            return true;
+        } else {
+            log.info("Rematch rejected by {} in room {}", replierId, roomId);
+            return true;
+        }
+    }
+
+    /**
+     * 重置房间状态并重新开始对局
+     */
+    private synchronized void resetAndRestartGame() {
+        log.info("Resetting room {} for rematch: black={}, white={}", roomId, blackUserId, whiteUserId);
+
+        // 重置游戏状态
+        game.reset();
+        gameStarted = true;
+        gameStartTime = Instant.now();
+        status = Status.PLAYING;
+
+        // 清除所有请求状态
+        undoRequesterId = null;
+        drawRequesterId = null;
+        rematchRequesterId = null;
+        pendingUndoActionId = null;
+        pendingDrawActionId = null;
+
+        // 清除断线计数
+        playerDisconnectCounts.clear();
+        disconnectedPlayerId = 0;
+        cancelReconnectTimer();
+
+        // 刷新双方积分（可能因上一局变化）
+        if (!aiMode) {
+            UserDAO.UserInfo blackInfo = userDAO.getUserById(blackUserId);
+            UserDAO.UserInfo whiteInfo = userDAO.getUserById(whiteUserId);
+            blackScore = blackInfo != null ? blackInfo.getScore() : 0;
+            whiteScore = whiteInfo != null ? whiteInfo.getScore() : 0;
+        }
+
+        // 广播新游戏开始（附带用户名和积分）
+        broadcastAll(buildGameStartMessage());
+
+        startTurnTimer();
+        log.info("Room {} rematch started: black={}({}分), white={}({}分), gameType={}",
+                roomId, blackUserId, blackScore, whiteUserId, whiteScore, gameType);
+    }
+
+    public synchronized Long getRematchRequesterId() { return rematchRequesterId; }
 
     /**
      * AI 模式下直接悔棋（不经过请求/确认流程）
@@ -1138,6 +1261,17 @@ public class Room {
     public String getInfo() {
         return String.format("Room[%s|%s|%s|%d/%d]",
                 roomId, roomName, status, players.size(), 2);
+    }
+
+    /** 构建包含用户名和积分的 GAME_START 消息 */
+    public Message buildGameStartMessage() {
+        return Message.of(Protocol.GAME_START,
+                "blackUserId", String.valueOf(blackUserId),
+                "blackUsername", blackUsername != null ? blackUsername : String.valueOf(blackUserId),
+                "blackScore", String.valueOf(blackScore),
+                "whiteUserId", String.valueOf(whiteUserId),
+                "whiteUsername", whiteUsername != null ? whiteUsername : String.valueOf(whiteUserId),
+                "whiteScore", String.valueOf(whiteScore));
     }
 
     public static List<String[]> getRoomListInfo(Map<String, Room> rooms) {
