@@ -33,6 +33,8 @@ public class AsciiTextCanvas extends Canvas {
     private double meshRotY = 0;
 
     public AsciiTextCanvas() {
+        // 初始化非零尺寸，防止 GPU RTTexture 分配失败
+        super(1, 1);
         widthProperty().addListener(evt -> {
             resetMouseCenter();
             drawFrame(System.nanoTime() * 1e-9);

@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Random;
 
 public class PixelCard extends StackPane {
-    private final Canvas canvas = new Canvas();
+    private final Canvas canvas = new Canvas(1, 1);
     private final List<Pixel> pixels = new ArrayList<>();
     private final AnimationTimer timer;
     private boolean isAnimating = false;

@@ -38,6 +38,13 @@ public class Protocol {
     public static final String QUERY_RECORD = "QUERY_RECORD";
     public static final String LOGOUT = "LOGOUT";
     public static final String HEARTBEAT = "HEARTBEAT";
+    // Admin commands
+    public static final String BAN_USER         = "BAN_USER";
+    public static final String UNBAN_USER       = "UNBAN_USER";
+    public static final String FORCE_CLOSE_ROOM = "FORCE_CLOSE_ROOM";
+    public static final String USER_LIST        = "USER_LIST";
+    public static final String ADMIN_STATS      = "ADMIN_STATS";
+    public static final String UPDATE_USER_ROLE = "UPDATE_USER_ROLE";
     // Server -> Client
     public static final String LOGIN_OK     = "LOGIN_OK";
     public static final String LOGIN_FAIL   = "LOGIN_FAIL";

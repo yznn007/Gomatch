@@ -42,6 +42,7 @@ public class ClientHandler implements Runnable {
     
     private long userId;
     private String username;
+    private String role = "PLAYER";
     private boolean authenticated;
     private volatile long lastMessageTime = System.currentTimeMillis();
     private volatile boolean heartbeatTimeout = false;
@@ -153,6 +154,13 @@ public class ClientHandler implements Runnable {
             case Protocol.LOGOUT          -> handleLogout();
             case Protocol.HEARTBEAT       -> handleHeartbeat();
             case "AI_MATCH"               -> handleAiMatch(msg);
+            // Admin commands
+            case Protocol.BAN_USER         -> handleBanUser(msg);
+            case Protocol.UNBAN_USER       -> handleUnbanUser(msg);
+            case Protocol.FORCE_CLOSE_ROOM -> handleForceCloseRoom(msg);
+            case Protocol.USER_LIST        -> handleUserList(msg);
+            case Protocol.ADMIN_STATS      -> handleAdminStats();
+            case Protocol.UPDATE_USER_ROLE -> handleUpdateUserRole(msg);
             default -> send(Message.of(Protocol.ERROR, "msg", "Unknown command: " + cmd));
         }
     }
@@ -229,12 +237,14 @@ public class ClientHandler implements Runnable {
 
             this.userId = userInfo.getUserId();
             this.username = userInfo.getUsername();
+            this.role = userInfo.getRole();
             this.authenticated = true;
 
             SessionManager.Session session = sessionManager.createSession(
                     userInfo.getUserId(), userInfo.getUsername(),
                     userInfo.getScore(), userInfo.getWinCount(),
-                    userInfo.getLoseCount(), userInfo.getDrawCount());
+                    userInfo.getLoseCount(), userInfo.getDrawCount(),
+                    userInfo.getRole());
             sessionManager.updateSessionHandler(userInfo.getUserId(), this);
 
             int rank = 0;
@@ -265,6 +275,7 @@ public class ClientHandler implements Runnable {
                             .set("loseCount", String.valueOf(userInfo.getLoseCount()))
                             .set("drawCount", String.valueOf(userInfo.getDrawCount()))
                             .set("rank", String.valueOf(rank))
+                            .set("role", userInfo.getRole())
                             .set("token", session.token)
                             .set("roomId", activeRoom.getRoomId())
                             .set("blackUserId", String.valueOf(activeRoom.getBlackUserId()))
@@ -295,6 +306,7 @@ public class ClientHandler implements Runnable {
                     .set("loseCount", String.valueOf(userInfo.getLoseCount()))
                     .set("drawCount", String.valueOf(userInfo.getDrawCount()))
                     .set("rank", String.valueOf(rank))
+                    .set("role", userInfo.getRole())
                     .set("token", session.token)
                     .build());
             
@@ -986,6 +998,7 @@ public class ClientHandler implements Runnable {
 
         this.userId = session.userId;
         this.username = session.username;
+        this.role = session.role;
         this.authenticated = true;
 
         sessionManager.updateSessionHandler(session.userId, this);
@@ -1012,6 +1025,7 @@ public class ClientHandler implements Runnable {
                         .set("loseCount", String.valueOf(session.loseCount))
                         .set("drawCount", String.valueOf(session.drawCount))
                         .set("rank", String.valueOf(rank))
+                        .set("role", session.role)
                         .set("roomId", room.getRoomId())
                         .set("roomName", room.getRoomName())
                         .set("players", room.getPlayerCount() + "/" + 2)
@@ -1041,6 +1055,7 @@ public class ClientHandler implements Runnable {
                     .set("loseCount", String.valueOf(session.loseCount))
                     .set("drawCount", String.valueOf(session.drawCount))
                     .set("rank", String.valueOf(rank))
+                    .set("role", session.role)
                     .set("roomId", "")
                     .set("roomName", "")
                     .set("players", "")
@@ -1388,6 +1403,200 @@ public class ClientHandler implements Runnable {
         this.currentRoom = null;
     }
 
+    // ==================== 管理员权限检查 ====================
+
+    private boolean requireAdmin() {
+        if (!authenticated) {
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
+            return false;
+        }
+        if (!"ADMIN".equals(role)) {
+            send(Message.of(Protocol.ERROR, "msg", "权限不足"));
+            log.warn("Admin permission denied for userId={}, role={}", userId, role);
+            return false;
+        }
+        return true;
+    }
+
+    // ==================== 封禁用户 ====================
+
+    private void handleBanUser(Message msg) {
+        if (!requireAdmin()) return;
+        long targetUserId = msg.getLong("userId");
+        if (targetUserId == 0) {
+            send(Message.of(Protocol.ERROR, "msg", "用户ID无效"));
+            return;
+        }
+        if (targetUserId == userId) {
+            send(Message.of(Protocol.ERROR, "msg", "不能封禁自己"));
+            return;
+        }
+
+        // 如果被封禁用户在线，断开其连接
+        SessionManager.Session targetSession = sessionManager.getSessionByUserId(targetUserId);
+        if (targetSession != null && targetSession.handler != null) {
+            targetSession.handler.send(Message.of("BANNED", "msg", "您的账号已被管理员封禁"));
+            try { targetSession.handler.socket.close(); } catch (IOException e) { log.error("关闭被封禁用户连接失败", e); }
+            sessionManager.removeSessionByUserId(targetUserId);
+        }
+
+        boolean success = userDAO.banUser(targetUserId);
+        if (success) {
+            send(Message.of("BAN_USER_OK", "userId", String.valueOf(targetUserId)));
+            log.info("Admin {} banned user {}", userId, targetUserId);
+        } else {
+            send(Message.of(Protocol.ERROR, "msg", "封禁失败（可能已是管理员）"));
+        }
+    }
+
+    // ==================== 解封用户 ====================
+
+    private void handleUnbanUser(Message msg) {
+        if (!requireAdmin()) return;
+        long targetUserId = msg.getLong("userId");
+        if (targetUserId == 0) {
+            send(Message.of(Protocol.ERROR, "msg", "用户ID无效"));
+            return;
+        }
+
+        boolean success = userDAO.unbanUser(targetUserId);
+        if (success) {
+            send(Message.of("UNBAN_USER_OK", "userId", String.valueOf(targetUserId)));
+            log.info("Admin {} unbanned user {}", userId, targetUserId);
+        } else {
+            send(Message.of(Protocol.ERROR, "msg", "解封失败"));
+        }
+    }
+
+    // ==================== 强制关闭房间 ====================
+
+    private void handleForceCloseRoom(Message msg) {
+        if (!requireAdmin()) return;
+        String roomId = msg.getString("roomId");
+        if (roomId == null || roomId.isEmpty()) {
+            send(Message.of(Protocol.ERROR, "msg", "房间ID无效"));
+            return;
+        }
+
+        Room targetRoom = roomManager.getRoom(roomId);
+        if (targetRoom == null) {
+            send(Message.of(Protocol.ERROR, "msg", "房间不存在"));
+            return;
+        }
+
+        // 通知房间内所有玩家
+        targetRoom.broadcastAll(Message.of("FORCE_CLOSE_ROOM", 
+                "roomId", roomId, 
+                "msg", "房间已被管理员关闭"));
+
+        // 让所有玩家离开房间
+        for (ClientHandler player : targetRoom.getPlayers()) {
+            try {
+                roomManager.leaveRoom(player);
+            } catch (Exception e) {
+                log.error("强制离开房间失败: userId={}", player.getUserId(), e);
+            }
+        }
+        for (ClientHandler observer : new java.util.ArrayList<>(targetRoom.getObservers())) {
+            try {
+                roomManager.leaveRoom(observer);
+            } catch (Exception e) {
+                log.error("强制离开房间失败(observer): userId={}", observer.getUserId(), e);
+            }
+        }
+
+        roomManager.removeRoom(roomId);
+        send(Message.of("FORCE_CLOSE_ROOM_OK", "roomId", roomId));
+        log.info("Admin {} force closed room {}", userId, roomId);
+    }
+
+    // ==================== 用户列表 ====================
+
+    private void handleUserList(Message msg) {
+        if (!requireAdmin()) return;
+        int page = msg.has("page") ? msg.getInt("page") : 0;
+        int size = msg.has("size") ? msg.getInt("size") : 20;
+        String keyword = msg.has("keyword") ? msg.getString("keyword") : null;
+
+        List<UserDAO.UserInfo> users;
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            users = userDAO.searchUsers(keyword.trim(), page, size);
+        } else {
+            users = userDAO.getAllUsers(page, size);
+        }
+
+        JSONArray arr = new JSONArray();
+        for (UserDAO.UserInfo u : users) {
+            JSONObject obj = new JSONObject();
+            obj.put("userId", String.valueOf(u.getUserId()));
+            obj.put("username", u.getUsername());
+            obj.put("score", u.getScore());
+            obj.put("winCount", u.getWinCount());
+            obj.put("loseCount", u.getLoseCount());
+            obj.put("drawCount", u.getDrawCount());
+            obj.put("role", u.getRole());
+            obj.put("status", u.getStatus());
+            arr.put(obj);
+        }
+
+        send(Message.builder("USER_LIST")
+                .set("users", arr)
+                .set("total", String.valueOf(userDAO.getUserCount()))
+                .set("page", String.valueOf(page))
+                .build());
+        log.info("Admin {} requested user list: page={}, size={}, keyword={}", userId, page, size, keyword);
+    }
+
+    // ==================== 管理员统计 ====================
+
+    private void handleAdminStats() {
+        if (!requireAdmin()) return;
+        int totalUsers = userDAO.getUserCount();
+        int activeRooms = roomManager.getActiveRoomCount();
+        int onlineUsers = sessionManager.getActiveSessionCount();
+
+        send(Message.builder("ADMIN_STATS")
+                .set("totalUsers", String.valueOf(totalUsers))
+                .set("activeRooms", String.valueOf(activeRooms))
+                .set("onlineUsers", String.valueOf(onlineUsers))
+                .build());
+        log.info("Admin {} requested stats: users={}, rooms={}, online={}", 
+                userId, totalUsers, activeRooms, onlineUsers);
+    }
+
+    // ==================== 修改用户角色 ====================
+
+    private void handleUpdateUserRole(Message msg) {
+        if (!requireAdmin()) return;
+        long targetUserId = msg.getLong("userId");
+        String newRole = msg.getString("role");
+        if (targetUserId == 0 || newRole == null) {
+            send(Message.of(Protocol.ERROR, "msg", "参数无效"));
+            return;
+        }
+        if (targetUserId == userId && "PLAYER".equals(newRole)) {
+            send(Message.of(Protocol.ERROR, "msg", "不能降级自己的管理员角色"));
+            return;
+        }
+
+        boolean success = userDAO.updateUserRole(targetUserId, newRole);
+        if (success) {
+            // 通知被修改角色的用户（如果在线）
+            SessionManager.Session targetSession = sessionManager.getSessionByUserId(targetUserId);
+            if (targetSession != null) {
+                targetSession.role = newRole;
+                if (targetSession.handler != null) {
+                    targetSession.handler.role = newRole;
+                    targetSession.handler.send(Message.of("ROLE_UPDATED", "role", newRole));
+                }
+            }
+            send(Message.of("UPDATE_USER_ROLE_OK", "userId", String.valueOf(targetUserId), "role", newRole));
+            log.info("Admin {} updated role of user {} to {}", userId, targetUserId, newRole);
+        } else {
+            send(Message.of(Protocol.ERROR, "msg", "修改角色失败"));
+        }
+    }
+
     // ==================== 资源清理 ====================
 
     private void cleanup() {
@@ -1431,7 +1640,9 @@ public class ClientHandler implements Runnable {
     public Socket getSocket() { return socket; }
     public long getUserId() { return userId; }
     public String getUsername() { return username != null ? username : "unknown"; }
+    public String getRole() { return role; }
     public boolean isAuthenticated() { return authenticated; }
+    public boolean isAdmin() { return "ADMIN".equals(role); }
     public Room getCurrentRoom() { return currentRoom; }
     public boolean isConnected() { return socket != null && !socket.isClosed() && socket.isConnected(); }
 

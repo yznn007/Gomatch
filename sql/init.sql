@@ -5,7 +5,7 @@ USE `gomatch`;
 CREATE TABLE IF NOT EXISTS `t_user` (
     `user_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
     `username` VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
-    `password` VARCHAR(100) NOT NULL COMMENT '密码(BCrypt加密)',
+    `password` VARCHAR(100) NOT NULL COMMENT '密码(明文)',
     `email` VARCHAR(100) UNIQUE COMMENT '邮箱',
     `avatar` VARCHAR(255) COMMENT '头像URL',
     `role` VARCHAR(20) NOT NULL DEFAULT 'PLAYER' COMMENT '角色: PLAYER/ADMIN',
@@ -195,16 +195,40 @@ CREATE TABLE IF NOT EXISTS `t_friend_request` (
     FOREIGN KEY (`to_user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='好友请求表';
 
-INSERT INTO `t_user` (`username`, `password`, `email`, `role`, `status`, `score`) VALUES
-('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjzqAKL9xL5jvMFVdNJHvGCgTq/VEq', '[redacted-email]', 'ADMIN', 'ACTIVE', 9999),
-('player1', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjzqAKL9xL5jvMFVdNJHvGCgTq/VEq', '[redacted-email]', 'PLAYER', 'ACTIVE', 1000),
-('player2', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjzqAKL9xL5jvMFVdNJHvGCgTq/VEq', '[redacted-email]', 'PLAYER', 'ACTIVE', 1000);
+INSERT INTO `t_user` (`username`, `password`, `email`, `role`, `status`, `score`, `win_count`, `lose_count`, `draw_count`) VALUES
+('admin',   '${GOMATCH_SEED_PASSWORD}', '[redacted-email]',   'ADMIN',  'ACTIVE', 9999, 0, 0, 0),
+('player1', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', 'PLAYER', 'ACTIVE', 1300, 8, 4, 1),
+('player2', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', 'PLAYER', 'ACTIVE', 1200, 5, 3, 0),
+('player3', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', 'PLAYER', 'ACTIVE', 1150, 4, 2, 1),
+('player4', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', 'PLAYER', 'ACTIVE', 1100, 3, 1, 0),
+('player5', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', 'PLAYER', 'ACTIVE', 1080, 3, 0, 2),
+('player6', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', 'PLAYER', 'ACTIVE', 1060, 2, 1, 1),
+('player7', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', 'PLAYER', 'ACTIVE', 1050, 2, 2, 0),
+('player8', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', 'PLAYER', 'ACTIVE', 1020, 1, 1, 0),
+('player9', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', 'PLAYER', 'ACTIVE', 1000, 0, 0, 0),
+('player10','${GOMATCH_SEED_PASSWORD}', '[redacted-email]','PLAYER', 'ACTIVE',  990, 0, 0, 0),
+('player11','${GOMATCH_SEED_PASSWORD}', '[redacted-email]','PLAYER', 'ACTIVE',  980, 1, 3, 0),
+('player12','${GOMATCH_SEED_PASSWORD}', '[redacted-email]','PLAYER', 'ACTIVE',  950, 0, 2, 0),
+('player13','${GOMATCH_SEED_PASSWORD}', '[redacted-email]','PLAYER', 'ACTIVE', 1180, 5, 5, 0),
+('player14','${GOMATCH_SEED_PASSWORD}', '[redacted-email]','PLAYER', 'ACTIVE', 1000, 0, 0, 0);
 
 -- AI 占位用户，用于满足对战记录表的外键约束
 INSERT INTO `t_user` (`user_id`, `username`, `password`, `email`, `role`, `status`, `score`) VALUES
-(-1, 'AI', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjzqAKL9xL5jvMFVdNJHvGCgTq/VEq', '[redacted-email]', 'PLAYER', 'ACTIVE', 0);
+(-1, 'AI', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', 'PLAYER', 'ACTIVE', 0);
 
 INSERT INTO `t_rank` (`user_id`, `rank`, `score`, `win_rate`, `ai_win_rate`) VALUES
-(1, 0, 9999, 0.00, 0.00),
-(2, 0, 1000, 0.00, 0.00),
-(3, 0, 1000, 0.00, 0.00);
+(1,  1,  9999, 0.00, 0.00),
+(2,  2,  1300, 0.67, 0.00),
+(3,  3,  1200, 0.63, 0.00),
+(4,  4,  1150, 0.57, 0.00),
+(5,  5,  1100, 0.75, 0.00),
+(6,  6,  1080, 0.60, 0.00),
+(7,  7,  1060, 0.67, 0.00),
+(8,  8,  1050, 0.50, 0.00),
+(9,  9,  1020, 0.50, 0.00),
+(10, 10, 1000, 0.00, 0.00),
+(11, 11,  990, 0.00, 0.00),
+(12, 12,  980, 0.25, 0.00),
+(13, 13,  950, 0.00, 0.00),
+(14, 14, 1180, 0.50, 0.00),
+(15, 15, 1000, 0.00, 0.00);

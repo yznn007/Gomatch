@@ -26,12 +26,18 @@ public class SessionManager {
         public final int winCount;
         public final int loseCount;
         public final int drawCount;
+        public String role;
         public ClientHandler handler;
         public Instant lastActiveTime;
         public String roomId;
 
         public Session(String token, long userId, String username, int score,
                        int winCount, int loseCount, int drawCount) {
+            this(token, userId, username, score, winCount, loseCount, drawCount, "PLAYER");
+        }
+
+        public Session(String token, long userId, String username, int score,
+                       int winCount, int loseCount, int drawCount, String role) {
             this.token = token;
             this.userId = userId;
             this.username = username;
@@ -39,6 +45,7 @@ public class SessionManager {
             this.winCount = winCount;
             this.loseCount = loseCount;
             this.drawCount = drawCount;
+            this.role = role;
             this.handler = null;
             this.lastActiveTime = Instant.now();
             this.roomId = null;
@@ -100,10 +107,10 @@ public class SessionManager {
     }
 
     public Session createSession(long userId, String username, int score,
-                                  int winCount, int loseCount, int drawCount) {
+                                  int winCount, int loseCount, int drawCount, String role) {
         String token = UUID.randomUUID().toString();
         Session session = new Session(token, userId, username, score,
-                winCount, loseCount, drawCount);
+                winCount, loseCount, drawCount, role);
         sessionsByToken.put(token, session);
         sessionsByUserId.put(userId, session);
 
@@ -115,7 +122,7 @@ public class SessionManager {
         RedisManager.getInstance().saveSession(token, sessionData);
         RedisManager.getInstance().setOnline(userId, token);
 
-        log.info("Session created: userId={}, token={}", userId, token.substring(0, 8));
+        log.info("Session created: userId={}, role={}, token={}", userId, role, token.substring(0, 8));
         return session;
     }
 
@@ -125,12 +132,12 @@ public class SessionManager {
             session.updateLastActive();
             socketSessionDAO.updateHeartbeat(token);
             RedisManager.getInstance().updateSessionActivity(token);
-        } else {
-            RedisManager.SessionData redisSession = RedisManager.getInstance().getSession(token);
-            if (redisSession != null) {
-                session = new Session(token, redisSession.userId, redisSession.username,
-                        redisSession.score, redisSession.winCount, redisSession.loseCount,
-                        redisSession.drawCount);
+            } else {
+                RedisManager.SessionData redisSession = RedisManager.getInstance().getSession(token);
+                if (redisSession != null) {
+                    session = new Session(token, redisSession.userId, redisSession.username,
+                            redisSession.score, redisSession.winCount, redisSession.loseCount,
+                            redisSession.drawCount, "PLAYER");
                 session.roomId = redisSession.roomId;
                 session.lastActiveTime = Instant.ofEpochMilli(redisSession.lastActiveTime);
                 sessionsByToken.put(token, session);

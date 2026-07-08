@@ -17,15 +17,25 @@ public class UserDAO {
         private final int winCount;
         private final int loseCount;
         private final int drawCount;
+        private final String role;
+        private final String status;
 
         public UserInfo(long userId, String username, int score,
                         int winCount, int loseCount, int drawCount) {
+            this(userId, username, score, winCount, loseCount, drawCount, "PLAYER", "ACTIVE");
+        }
+
+        public UserInfo(long userId, String username, int score,
+                        int winCount, int loseCount, int drawCount,
+                        String role, String status) {
             this.userId = userId;
             this.username = username;
             this.score = score;
             this.winCount = winCount;
             this.loseCount = loseCount;
             this.drawCount = drawCount;
+            this.role = role;
+            this.status = status;
         }
 
         public long getUserId() { return userId; }
@@ -34,6 +44,8 @@ public class UserDAO {
         public int getWinCount() { return winCount; }
         public int getLoseCount() { return loseCount; }
         public int getDrawCount() { return drawCount; }
+        public String getRole() { return role; }
+        public String getStatus() { return status; }
     }
 
     public boolean register(String username, String password) {
@@ -78,21 +90,28 @@ public class UserDAO {
         if (username == null || password == null) {
             return null;
         }
-        String sql = "SELECT user_id, username, score, win_count, lose_count, draw_count " +
-                     "FROM t_user WHERE username = ? AND password = ?";
+        String sql = "SELECT user_id, username, score, win_count, lose_count, draw_count, " +
+                     "role, status FROM t_user WHERE username = ? AND password = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
             ps.setString(2, password);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
+                    String status = rs.getString("status");
+                    if ("BANNED".equals(status)) {
+                        log.warn("Banned user attempt to login: {}", username);
+                        return null;
+                    }
                     return new UserInfo(
                             rs.getLong("user_id"),
                             rs.getString("username"),
                             rs.getInt("score"),
                             rs.getInt("win_count"),
                             rs.getInt("lose_count"),
-                            rs.getInt("draw_count")
+                            rs.getInt("draw_count"),
+                            rs.getString("role"),
+                            rs.getString("status")
                     );
                 }
             }
@@ -262,5 +281,141 @@ public class UserDAO {
             log.error("Get ranking error", e);
         }
         return result;
+    }
+
+    // ==================== 管理员方法 ====================
+
+    /**
+     * 封禁用户
+     */
+    public boolean banUser(long userId) {
+        String sql = "UPDATE t_user SET status = 'BANNED', update_time = NOW() WHERE user_id = ? AND role != 'ADMIN'";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            boolean success = ps.executeUpdate() > 0;
+            if (success) log.info("User banned: userId={}", userId);
+            return success;
+        } catch (SQLException e) {
+            log.error("Ban user error: userId={}", userId, e);
+            return false;
+        }
+    }
+
+    /**
+     * 解封用户
+     */
+    public boolean unbanUser(long userId) {
+        String sql = "UPDATE t_user SET status = 'ACTIVE', update_time = NOW() WHERE user_id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            boolean success = ps.executeUpdate() > 0;
+            if (success) log.info("User unbanned: userId={}", userId);
+            return success;
+        } catch (SQLException e) {
+            log.error("Unban user error: userId={}", userId, e);
+            return false;
+        }
+    }
+
+    /**
+     * 修改用户角色
+     */
+    public boolean updateUserRole(long userId, String newRole) {
+        if (!"PLAYER".equals(newRole) && !"ADMIN".equals(newRole)) {
+            log.warn("Invalid role: {}", newRole);
+            return false;
+        }
+        String sql = "UPDATE t_user SET role = ?, update_time = NOW() WHERE user_id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newRole);
+            ps.setLong(2, userId);
+            boolean success = ps.executeUpdate() > 0;
+            if (success) log.info("User role updated: userId={}, role={}", userId, newRole);
+            return success;
+        } catch (SQLException e) {
+            log.error("Update user role error: userId={}", userId, e);
+            return false;
+        }
+    }
+
+    /**
+     * 获取所有用户列表（分页，含 role 和 status）
+     */
+    public List<UserInfo> getAllUsers(int page, int size) {
+        String sql = "SELECT user_id, username, score, win_count, lose_count, draw_count, role, status " +
+                     "FROM t_user ORDER BY user_id ASC LIMIT ? OFFSET ?";
+        List<UserInfo> result = new ArrayList<>();
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, size);
+            ps.setInt(2, page * size);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.add(new UserInfo(
+                            rs.getLong("user_id"),
+                            rs.getString("username"),
+                            rs.getInt("score"),
+                            rs.getInt("win_count"),
+                            rs.getInt("lose_count"),
+                            rs.getInt("draw_count"),
+                            rs.getString("role"),
+                            rs.getString("status")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            log.error("Get all users error", e);
+        }
+        return result;
+    }
+
+    /**
+     * 搜索用户
+     */
+    public List<UserInfo> searchUsers(String keyword, int page, int size) {
+        String sql = "SELECT user_id, username, score, win_count, lose_count, draw_count, role, status " +
+                     "FROM t_user WHERE username LIKE ? ORDER BY user_id ASC LIMIT ? OFFSET ?";
+        List<UserInfo> result = new ArrayList<>();
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, "%" + keyword + "%");
+            ps.setInt(2, size);
+            ps.setInt(3, page * size);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.add(new UserInfo(
+                            rs.getLong("user_id"),
+                            rs.getString("username"),
+                            rs.getInt("score"),
+                            rs.getInt("win_count"),
+                            rs.getInt("lose_count"),
+                            rs.getInt("draw_count"),
+                            rs.getString("role"),
+                            rs.getString("status")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            log.error("Search users error: keyword={}", keyword, e);
+        }
+        return result;
+    }
+
+    /**
+     * 获取用户总数
+     */
+    public int getUserCount() {
+        String sql = "SELECT COUNT(*) FROM t_user";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) return rs.getInt(1);
+        } catch (SQLException e) {
+            log.error("Get user count error", e);
+        }
+        return 0;
     }
 }

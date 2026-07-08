@@ -103,7 +103,7 @@ public class BoardController implements NetworkListener {
         boardContainer.widthProperty().addListener((obs, o, n) -> resizeBoard());
         boardContainer.heightProperty().addListener((obs, o, n) -> resizeBoard());
 
-        canvas = new Canvas() {
+        canvas = new Canvas(1, 1) {
             @Override
             public boolean isResizable() {
                 return true;

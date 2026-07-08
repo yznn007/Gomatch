@@ -37,7 +37,7 @@ public class ShapeGridBackground extends Pane {
     private long lastTime = 0;
 
     public ShapeGridBackground() {
-        canvas = new Canvas();
+        canvas = new Canvas(1, 1);
         getChildren().add(canvas);
 
         // 避免背景吞噬鼠标点击事件，只用于渲染，不拦截事件
