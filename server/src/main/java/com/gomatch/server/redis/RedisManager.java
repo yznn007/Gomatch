@@ -427,19 +427,33 @@ public class RedisManager {
         }
     }
 
+    public void removeRankedMatchQueue(long userId) {
+        if (!isConnected()) return;
+        try {
+            syncCommands.zrem("match:ranked", String.valueOf(userId));
+            log.debug("Removed from ranked match queue: userId={}", userId);
+        } catch (Exception e) {
+            log.warn("Failed to remove from ranked match queue: {}", e.getMessage());
+        }
+    }
+
     @SuppressWarnings("deprecation")
-    public String pollRankedMatchQueue(int playerScore) {
+    public String pollRankedMatchQueue(int playerScore, long excludeUserId) {
         if (!isConnected()) return null;
         try {
-            int maxDiff = 200;
+            int maxDiff = 500;
             List<String> results = syncCommands.zrangebyscore("match:ranked",
                     String.valueOf(playerScore - maxDiff),
                     String.valueOf(playerScore + maxDiff));
             if (results != null && !results.isEmpty()) {
-                String opponentId = results.get(0);
-                syncCommands.zrem("match:ranked", opponentId);
-                Double opponentScore = syncCommands.zscore("match:ranked", opponentId);
-                return opponentId + ":" + (opponentScore != null ? opponentScore.intValue() : 0);
+                String excludeIdStr = String.valueOf(excludeUserId);
+                for (String opponentId : results) {
+                    if (!opponentId.equals(excludeIdStr)) {
+                        syncCommands.zrem("match:ranked", opponentId);
+                        Double opponentScore = syncCommands.zscore("match:ranked", opponentId);
+                        return opponentId + ":" + (opponentScore != null ? opponentScore.intValue() : 0);
+                    }
+                }
             }
         } catch (Exception e) {
             log.warn("Failed to poll ranked match queue: {}", e.getMessage());
