@@ -176,13 +176,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /** 发送仅含命令的消息（兼容旧调用风格） */
-    public void send(String text) {
-        if (writer != null) {
-            writer.println(text);
-        }
-    }
-
     // ==================== 注册 ====================
 
     private void handleRegister(Message msg) {
@@ -270,20 +263,20 @@ public class ClientHandler implements Runnable {
                     long disconnectedId = activeRoom.getDisconnectedPlayerId();
 
                     send(Message.builder(Protocol.LOGIN_OK)
-                            .set("userId", String.valueOf(userInfo.getUserId()))
+                            .set("userId", userInfo.getUserId())
                             .set("username", userInfo.getUsername())
-                            .set("score", String.valueOf(userInfo.getScore()))
-                            .set("winCount", String.valueOf(userInfo.getWinCount()))
-                            .set("loseCount", String.valueOf(userInfo.getLoseCount()))
-                            .set("drawCount", String.valueOf(userInfo.getDrawCount()))
-                            .set("rank", String.valueOf(rank))
+                            .set("score", userInfo.getScore())
+                            .set("winCount", userInfo.getWinCount())
+                            .set("loseCount", userInfo.getLoseCount())
+                            .set("drawCount", userInfo.getDrawCount())
+                            .set("rank", rank)
                             .set("role", userInfo.getRole())
                             .set("token", session.token)
                             .set("roomId", activeRoom.getRoomId())
-                            .set("blackUserId", String.valueOf(activeRoom.getBlackUserId()))
-                            .set("whiteUserId", String.valueOf(activeRoom.getWhiteUserId()))
-                            .set("currentColor", String.valueOf(currentColor))
-                            .set("disconnectedUserId", String.valueOf(disconnectedId))
+                            .set("blackUserId", activeRoom.getBlackUserId())
+                            .set("whiteUserId", activeRoom.getWhiteUserId())
+                            .set("currentColor", currentColor)
+                            .set("disconnectedUserId", disconnectedId)
                             .build());
 
                     // 回放已有落子（在 LOGIN_OK 之后发送，确保客户端先初始化对局界面）
@@ -301,13 +294,13 @@ public class ClientHandler implements Runnable {
             }
 
             send(Message.builder(Protocol.LOGIN_OK)
-                    .set("userId", String.valueOf(userInfo.getUserId()))
+                    .set("userId", userInfo.getUserId())
                     .set("username", userInfo.getUsername())
-                    .set("score", String.valueOf(userInfo.getScore()))
-                    .set("winCount", String.valueOf(userInfo.getWinCount()))
-                    .set("loseCount", String.valueOf(userInfo.getLoseCount()))
-                    .set("drawCount", String.valueOf(userInfo.getDrawCount()))
-                    .set("rank", String.valueOf(rank))
+                    .set("score", userInfo.getScore())
+                    .set("winCount", userInfo.getWinCount())
+                    .set("loseCount", userInfo.getLoseCount())
+                    .set("drawCount", userInfo.getDrawCount())
+                    .set("rank", rank)
                     .set("role", userInfo.getRole())
                     .set("token", session.token)
                     .build());
@@ -375,7 +368,7 @@ public class ClientHandler implements Runnable {
                 .set("roomId", room.getRoomId())
                 .set("roomName", room.getRoomName())
                 .set("players", room.getPlayerCount() + "/" + 2)
-                .set("hasPassword", room.hasPassword() ? "1" : "0")
+                .set("hasPassword", room.hasPassword())
                 .build());
 
         log.info("Player {} created room: {} ({}) with password: {}", userId, room.getRoomId(), roomName, password != null);
@@ -411,8 +404,8 @@ public class ClientHandler implements Runnable {
 
         room.startGame();
         room.broadcastAll(Message.of(Protocol.GAME_START,
-                "blackUserId", String.valueOf(room.getBlackUserId()),
-                "whiteUserId", String.valueOf(room.getWhiteUserId())));
+                "blackUserId", room.getBlackUserId(),
+                "whiteUserId", room.getWhiteUserId()));
 
         log.info("Player {} created AI room: {} ({}), game started", userId, room.getRoomId(), roomName);
     }
@@ -441,12 +434,12 @@ public class ClientHandler implements Runnable {
                 .set("roomId", room.getRoomId())
                 .set("roomName", roomName)
                 .set("players", "1/2")
-                .set("hasPassword", "0")
+                .set("hasPassword", false)
                 .build());
 
         room.startGame();
         room.broadcastAll(Message.of(Protocol.GAME_START,
-                "blackUserId", String.valueOf(userId),
+                "blackUserId", userId,
                 "whiteUserId", "AI"));
 
         log.info("AI对战房间创建成功: userId={}, roomId={}, difficulty={}", userId, room.getRoomId(), difficulty);
@@ -483,7 +476,7 @@ public class ClientHandler implements Runnable {
             this.currentRoom = room;
 
             room.broadcastToPlayers(Message.of(Protocol.PLAYER_ENTER,
-                    "userId", String.valueOf(getUserId()),
+                    "userId", getUserId(),
                     "username", getUsername()));
 
             send(Message.builder("JOIN_OK")
@@ -495,8 +488,8 @@ public class ClientHandler implements Runnable {
             if (room.getPlayerCount() == 2) {
                 room.startGame();
                 room.broadcastAll(Message.of(Protocol.GAME_START,
-                        "blackUserId", String.valueOf(room.getBlackUserId()),
-                        "whiteUserId", String.valueOf(room.getWhiteUserId())));
+                        "blackUserId", room.getBlackUserId(),
+                        "whiteUserId", room.getWhiteUserId()));
                 log.info("房间 {} 已满，游戏开始: BLACK={}, WHITE={}", roomId, room.getBlackUserId(), room.getWhiteUserId());
             }
 
@@ -518,7 +511,7 @@ public class ClientHandler implements Runnable {
         String roomId = room.getRoomId();
 
         room.broadcastToPlayers(Message.of(Protocol.PLAYER_LEAVE,
-                "userId", String.valueOf(userId),
+                "userId", userId,
                 "username", getUsername()));
 
         roomManager.leaveRoom(this);
@@ -538,7 +531,7 @@ public class ClientHandler implements Runnable {
             r.put("status", info[2]);
             r.put("players", info[3]);
             r.put("max", info[4]);
-            r.put("hasPassword", info[5]);
+            r.put("hasPassword", Boolean.parseBoolean(info[5]));
             rooms.put(r);
         }
         send(Message.builder(Protocol.ROOM_LIST).set("rooms", rooms).build());
@@ -562,8 +555,8 @@ public class ClientHandler implements Runnable {
             this.currentRoom = room;
 
             room.broadcastAll(Message.of(Protocol.GAME_START,
-                    "blackUserId", String.valueOf(room.getBlackUserId()),
-                    "whiteUserId", String.valueOf(room.getWhiteUserId())));
+                    "blackUserId", room.getBlackUserId(),
+                    "whiteUserId", room.getWhiteUserId()));
 
             send(Message.builder(Protocol.JOIN_OK)
                     .set("roomId", room.getRoomId())
@@ -609,8 +602,8 @@ public class ClientHandler implements Runnable {
             this.currentRoom = room;
 
             room.broadcastAll(Message.of(Protocol.GAME_START,
-                    "blackUserId", String.valueOf(room.getBlackUserId()),
-                    "whiteUserId", String.valueOf(room.getWhiteUserId())));
+                    "blackUserId", room.getBlackUserId(),
+                    "whiteUserId", room.getWhiteUserId()));
 
             send(Message.builder(Protocol.JOIN_OK)
                     .set("roomId", room.getRoomId())
@@ -652,9 +645,9 @@ public class ClientHandler implements Runnable {
         }
 
         currentRoom.broadcastAll(Message.of(Protocol.MOVE_SYNC,
-                "x", String.valueOf(x),
-                "y", String.valueOf(y),
-                "color", String.valueOf(color)));
+                "x", x,
+                "y", y,
+                "color", color));
 
         if (currentRoom.isGameOver()) {
             long winnerId = currentRoom.getWinnerId();
@@ -681,14 +674,14 @@ public class ClientHandler implements Runnable {
 
         String message = msg.getString("message");
         currentRoom.broadcastAll(Message.of(Protocol.CHAT_MSG,
-                "userId", String.valueOf(userId),
+                "userId", userId,
                 "username", getUsername(),
                 "message", message));
-        
+
         // 发布到 Redis Pub/Sub（保持兼容）
         RedisManager.getInstance().publish(currentRoom.getRoomId(),
             Message.of(Protocol.CHAT_MSG,
-                "userId", String.valueOf(userId),
+                "userId", userId,
                 "username", getUsername(),
                 "message", message).toJson());
 
@@ -743,20 +736,20 @@ public class ClientHandler implements Runnable {
         this.currentRoom = room;
 
         room.broadcastToPlayers(Message.of(Protocol.PLAYER_ENTER,
-                "userId", String.valueOf(userId),
+                "userId", userId,
                 "username", getUsername(),
                 "type", "SPECTATOR"));
 
         send(Message.of(Protocol.GAME_START,
-                "blackUserId", String.valueOf(room.getBlackUserId()),
-                "whiteUserId", String.valueOf(room.getWhiteUserId())));
+                "blackUserId", room.getBlackUserId(),
+                "whiteUserId", room.getWhiteUserId()));
 
         // 回放已有落子
         for (Game.MoveRecord mr : room.getGame().getMoveHistory()) {
             send(Message.of(Protocol.MOVE_SYNC,
-                    "x", String.valueOf(mr.x),
-                    "y", String.valueOf(mr.y),
-                    "color", String.valueOf(mr.color)));
+                    "x", mr.x,
+                    "y", mr.y,
+                    "color", mr.color));
         }
 
         log.info("玩家 {} 开始观战房间 {} (已回放 {} 步)", userId, roomId, room.getGame().getMoveHistory().size());
@@ -883,7 +876,7 @@ public class ClientHandler implements Runnable {
         if (success) {
             currentRoom.broadcastToPlayersExcept(userId,
                 Message.of("UNDO_REQUESTED",
-                    "requesterId", String.valueOf(userId),
+                    "requesterId", userId,
                     "requesterName", getUsername()));
             log.info("玩家 {} 请求悔棋", userId);
         } else {
@@ -904,7 +897,7 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        boolean accept = msg.getInt("accept") == 1;
+        boolean accept = msg.optBoolean("accept", false);
         boolean success = currentRoom.replyUndo(userId, accept);
         if (success) {
             if (accept) {
@@ -942,7 +935,7 @@ public class ClientHandler implements Runnable {
         if (success) {
             currentRoom.broadcastToPlayersExcept(userId,
                 Message.of("DRAW_REQUESTED",
-                    "requesterId", String.valueOf(userId),
+                    "requesterId", userId,
                     "requesterName", getUsername()));
             log.info("玩家 {} 请求求和", userId);
         } else {
@@ -963,7 +956,7 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        boolean accept = msg.getInt("accept") == 1;
+        boolean accept = msg.optBoolean("accept", false);
         boolean success = currentRoom.replyDraw(userId, accept);
         if (success) {
             if (accept) {
@@ -1021,13 +1014,13 @@ public class ClientHandler implements Runnable {
                 }
 
                 send(Message.builder("RECONNECT_OK")
-                        .set("userId", String.valueOf(session.userId))
+                        .set("userId", session.userId)
                         .set("username", session.username)
-                        .set("score", String.valueOf(session.score))
-                        .set("winCount", String.valueOf(session.winCount))
-                        .set("loseCount", String.valueOf(session.loseCount))
-                        .set("drawCount", String.valueOf(session.drawCount))
-                        .set("rank", String.valueOf(rank))
+                        .set("score", session.score)
+                        .set("winCount", session.winCount)
+                        .set("loseCount", session.loseCount)
+                        .set("drawCount", session.drawCount)
+                        .set("rank", rank)
                         .set("role", session.role)
                         .set("roomId", room.getRoomId())
                         .set("roomName", room.getRoomName())
@@ -1035,7 +1028,7 @@ public class ClientHandler implements Runnable {
                         .build());
 
                 room.broadcastToPlayers(Message.of(Protocol.PLAYER_ENTER,
-                        "userId", String.valueOf(session.userId),
+                        "userId", session.userId,
                         "username", session.username));
 
                 log.info("玩家 {} 断线重连成功，进入房间 {}", session.userId, room.getRoomId());
@@ -1051,13 +1044,13 @@ public class ClientHandler implements Runnable {
             }
 
             send(Message.builder("RECONNECT_OK")
-                    .set("userId", String.valueOf(session.userId))
+                    .set("userId", session.userId)
                     .set("username", session.username)
-                    .set("score", String.valueOf(session.score))
-                    .set("winCount", String.valueOf(session.winCount))
-                    .set("loseCount", String.valueOf(session.loseCount))
-                    .set("drawCount", String.valueOf(session.drawCount))
-                    .set("rank", String.valueOf(rank))
+                    .set("score", session.score)
+                    .set("winCount", session.winCount)
+                    .set("loseCount", session.loseCount)
+                    .set("drawCount", session.drawCount)
+                    .set("rank", rank)
                     .set("role", session.role)
                     .set("roomId", "")
                     .set("roomName", "")
@@ -1184,9 +1177,9 @@ public class ClientHandler implements Runnable {
         JSONArray arr = new JSONArray();
         for (FriendDAO.FriendInfo f : friends) {
             JSONObject obj = new JSONObject();
-            obj.put("friendUserId", String.valueOf(f.getFriendUserId()));
+            obj.put("friendUserId", f.getFriendUserId());
             obj.put("friendUsername", f.getFriendUsername());
-            obj.put("friendScore", String.valueOf(f.getFriendScore()));
+            obj.put("friendScore", f.getFriendScore());
             obj.put("online", f.isOnline());
             arr.put(obj);
         }
@@ -1201,19 +1194,17 @@ public class ClientHandler implements Runnable {
         }
 
         List<FriendDAO.FriendRequestInfo> requests = friendDAO.getPendingRequests(userId);
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\"cmd\":\"FRIEND_REQUEST_LIST\",\"data\":{\"requests\":[");
-        for (int i = 0; i < requests.size(); i++) {
-            if (i > 0) sb.append(",");
-            var r = requests.get(i);
-            sb.append("{\"requestId\":\"").append(r.getRequestId())
-              .append("\",\"fromUserId\":\"").append(r.getFromUserId())
-              .append("\",\"fromUsername\":\"").append(r.getFromUsername())
-              .append("\",\"fromScore\":\"").append(r.getFromScore())
-              .append("\",\"message\":\"").append(r.getMessage() != null ? r.getMessage() : "").append("\"}");
+        JSONArray arr = new JSONArray();
+        for (var r : requests) {
+            JSONObject obj = new JSONObject();
+            obj.put("requestId", r.getRequestId());
+            obj.put("fromUserId", r.getFromUserId());
+            obj.put("fromUsername", r.getFromUsername());
+            obj.put("fromScore", r.getFromScore());
+            obj.put("message", r.getMessage() != null ? r.getMessage() : "");
+            arr.put(obj);
         }
-        sb.append("]}}");
-        send(sb.toString());
+        send(Message.builder("FRIEND_REQUEST_LIST").set("requests", arr).build());
         log.info("发送好友请求列表给玩家 {}: {} 个请求", userId, requests.size());
     }
 
@@ -1237,7 +1228,7 @@ public class ClientHandler implements Runnable {
 
         long saveId = gameSaveDAO.saveGame(userId, null, saveName, currentRoom.getGame());
         if (saveId > 0) {
-            send(Message.of("SAVE_GAME_OK", "saveId", String.valueOf(saveId), "saveName", saveName));
+            send(Message.of("SAVE_GAME_OK", "saveId", saveId, "saveName", saveName));
             log.info("玩家 {} 保存棋局成功: saveId={}", userId, saveId);
         } else {
             send(Message.of("SAVE_GAME_FAIL", "msg", "保存失败"));
@@ -1264,10 +1255,10 @@ public class ClientHandler implements Runnable {
         }
 
         send(Message.builder("LOAD_GAME_OK")
-                .set("saveId", String.valueOf(saveInfo.getSaveId()))
+                .set("saveId", saveInfo.getSaveId())
                 .set("saveName", saveInfo.getSaveName())
                 .set("boardData", saveInfo.getBoardData())
-                .set("currentPlayer", String.valueOf(saveInfo.getCurrentPlayer()))
+                .set("currentPlayer", saveInfo.getCurrentPlayer())
                 .set("gameStatus", saveInfo.getGameStatus())
                 .build());
         log.info("玩家 {} 加载棋局成功: saveId={}", userId, saveId);
@@ -1300,18 +1291,16 @@ public class ClientHandler implements Runnable {
         int size = msg.has("size") ? msg.getInt("size") : 10;
 
         List<GameSaveDAO.GameSaveInfo> saves = gameSaveDAO.getGameSavesByUserId(userId, page, size);
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\"cmd\":\"SAVE_LIST\",\"data\":{\"saves\":[");
-        for (int i = 0; i < saves.size(); i++) {
-            if (i > 0) sb.append(",");
-            var s = saves.get(i);
-            sb.append("{\"saveId\":\"").append(s.getSaveId())
-              .append("\",\"saveName\":\"").append(s.getSaveName())
-              .append("\",\"gameStatus\":\"").append(s.getGameStatus())
-              .append("\",\"createTime\":\"").append(s.getCreateTime()).append("\"}");
+        JSONArray arr = new JSONArray();
+        for (var s : saves) {
+            JSONObject obj = new JSONObject();
+            obj.put("saveId", s.getSaveId());
+            obj.put("saveName", s.getSaveName());
+            obj.put("gameStatus", s.getGameStatus());
+            obj.put("createTime", s.getCreateTime());
+            arr.put(obj);
         }
-        sb.append("]}}");
-        send(sb.toString());
+        send(Message.builder(Protocol.SAVE_LIST).set("saves", arr).build());
         log.info("发送棋局存档列表给玩家 {}: {} 个存档", userId, saves.size());
     }
 
@@ -1332,19 +1321,17 @@ public class ClientHandler implements Runnable {
         int size = msg.has("size") ? msg.getInt("size") : 20;
 
         List<ChatDAO.ChatMessage> messages = chatDAO.getMessagesByRoomId(currentRoom.getRoomId(), page, size);
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\"cmd\":\"CHAT_HISTORY\",\"data\":{\"messages\":[");
-        for (int i = 0; i < messages.size(); i++) {
-            if (i > 0) sb.append(",");
-            var m = messages.get(i);
-            sb.append("{\"messageId\":\"").append(m.getMessageId())
-              .append("\",\"userId\":\"").append(m.getUserId())
-              .append("\",\"username\":\"").append(m.getUsername())
-              .append("\",\"content\":\"").append(m.getContent())
-              .append("\",\"createTime\":\"").append(m.getCreateTime()).append("\"}");
+        JSONArray arr = new JSONArray();
+        for (var m : messages) {
+            JSONObject obj = new JSONObject();
+            obj.put("messageId", m.getMessageId());
+            obj.put("userId", m.getUserId());
+            obj.put("username", m.getUsername());
+            obj.put("content", m.getContent());
+            obj.put("createTime", m.getCreateTime());
+            arr.put(obj);
         }
-        sb.append("]}}");
-        send(sb.toString());
+        send(Message.builder(Protocol.CHAT_HISTORY).set("messages", arr).build());
         log.info("发送聊天历史给玩家 {}: {} 条消息", userId, messages.size());
     }
 
@@ -1360,17 +1347,15 @@ public class ClientHandler implements Runnable {
         int size = msg.has("size") ? msg.getInt("size") : 10;
 
         List<RoomWatcherDAO.RoomWatcher> watchers = roomWatcherDAO.getWatcherHistory(userId, page, size);
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\"cmd\":\"WATCHER_HISTORY\",\"data\":{\"watchers\":[");
-        for (int i = 0; i < watchers.size(); i++) {
-            if (i > 0) sb.append(",");
-            var w = watchers.get(i);
-            sb.append("{\"roomId\":\"").append(w.getRoomId())
-              .append("\",\"joinTime\":\"").append(w.getJoinTime())
-              .append("\",\"leaveTime\":\"").append(w.getLeaveTime() != null ? w.getLeaveTime() : "").append("\"}");
+        JSONArray arr = new JSONArray();
+        for (var w : watchers) {
+            JSONObject obj = new JSONObject();
+            obj.put("roomId", w.getRoomId());
+            obj.put("joinTime", w.getJoinTime());
+            obj.put("leaveTime", w.getLeaveTime() != null ? w.getLeaveTime() : "");
+            arr.put(obj);
         }
-        sb.append("]}}");
-        send(sb.toString());
+        send(Message.builder(Protocol.WATCHER_HISTORY).set("watchers", arr).build());
         log.info("发送观战记录给玩家 {}: {} 条", userId, watchers.size());
     }
 
@@ -1447,7 +1432,7 @@ public class ClientHandler implements Runnable {
 
         boolean success = userDAO.banUser(targetUserId);
         if (success) {
-            send(Message.of("BAN_USER_OK", "userId", String.valueOf(targetUserId)));
+            send(Message.of("BAN_USER_OK", "userId", targetUserId));
             log.info("Admin {} banned user {}", userId, targetUserId);
         } else {
             send(Message.of(Protocol.ERROR, "msg", "封禁失败（可能已是管理员）"));
@@ -1466,7 +1451,7 @@ public class ClientHandler implements Runnable {
 
         boolean success = userDAO.unbanUser(targetUserId);
         if (success) {
-            send(Message.of("UNBAN_USER_OK", "userId", String.valueOf(targetUserId)));
+            send(Message.of("UNBAN_USER_OK", "userId", targetUserId));
             log.info("Admin {} unbanned user {}", userId, targetUserId);
         } else {
             send(Message.of(Protocol.ERROR, "msg", "解封失败"));
@@ -1533,7 +1518,7 @@ public class ClientHandler implements Runnable {
         JSONArray arr = new JSONArray();
         for (UserDAO.UserInfo u : users) {
             JSONObject obj = new JSONObject();
-            obj.put("userId", String.valueOf(u.getUserId()));
+            obj.put("userId", u.getUserId());
             obj.put("username", u.getUsername());
             obj.put("score", u.getScore());
             obj.put("winCount", u.getWinCount());
@@ -1546,8 +1531,8 @@ public class ClientHandler implements Runnable {
 
         send(Message.builder("USER_LIST")
                 .set("users", arr)
-                .set("total", String.valueOf(userDAO.getUserCount()))
-                .set("page", String.valueOf(page))
+                .set("total", userDAO.getUserCount())
+                .set("page", page)
                 .build());
         log.info("Admin {} requested user list: page={}, size={}, keyword={}", userId, page, size, keyword);
     }
@@ -1561,9 +1546,9 @@ public class ClientHandler implements Runnable {
         int onlineUsers = sessionManager.getActiveSessionCount();
 
         send(Message.builder("ADMIN_STATS")
-                .set("totalUsers", String.valueOf(totalUsers))
-                .set("activeRooms", String.valueOf(activeRooms))
-                .set("onlineUsers", String.valueOf(onlineUsers))
+                .set("totalUsers", totalUsers)
+                .set("activeRooms", activeRooms)
+                .set("onlineUsers", onlineUsers)
                 .build());
         log.info("Admin {} requested stats: users={}, rooms={}, online={}", 
                 userId, totalUsers, activeRooms, onlineUsers);
@@ -1595,7 +1580,7 @@ public class ClientHandler implements Runnable {
                     targetSession.handler.send(Message.of("ROLE_UPDATED", "role", newRole));
                 }
             }
-            send(Message.of("UPDATE_USER_ROLE_OK", "userId", String.valueOf(targetUserId), "role", newRole));
+            send(Message.of("UPDATE_USER_ROLE_OK", "userId", targetUserId, "role", newRole));
             log.info("Admin {} updated role of user {} to {}", userId, targetUserId, newRole);
         } else {
             send(Message.of(Protocol.ERROR, "msg", "修改角色失败"));

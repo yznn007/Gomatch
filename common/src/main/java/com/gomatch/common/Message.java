@@ -102,6 +102,14 @@ public class Message {
         return data.optBoolean(key, false);
     }
 
+    public boolean optBoolean(String key, boolean defaultValue) {
+        return data.optBoolean(key, defaultValue);
+    }
+
+    public long optLong(String key, long defaultValue) {
+        return data.optLong(key, defaultValue);
+    }
+
     public boolean has(String key) {
         return data.has(key);
     }

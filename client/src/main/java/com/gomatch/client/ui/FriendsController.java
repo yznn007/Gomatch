@@ -118,7 +118,7 @@ public class FriendsController implements NetworkListener {
         }
 
         if (ClientMain.getConnector().isConnected()) {
-            ClientMain.getConnector().send(Message.of(Protocol.ADD_FRIEND, "friendUserId", targetIdStr, "message", msg));
+            ClientMain.getConnector().send(Message.of(Protocol.ADD_FRIEND, "friendUserId", Long.parseLong(targetIdStr), "message", msg));
         } else {
             errorLabel.setStyle("-fx-text-fill: green;");
             errorLabel.setText("预览模式：已模拟向用户 " + targetIdStr + " 发送好友申请");
@@ -127,7 +127,7 @@ public class FriendsController implements NetworkListener {
 
     private void handleAcceptRequest(String requestId) {
         if (ClientMain.getConnector().isConnected()) {
-            ClientMain.getConnector().send(Message.of(Protocol.ACCEPT_FRIEND, "requestId", requestId));
+            ClientMain.getConnector().send(Message.of(Protocol.ACCEPT_FRIEND, "requestId", Long.parseLong(requestId)));
         } else {
             showAlert("已模拟接受请求 " + requestId);
             requestsData.removeIf(r -> r.getRequestId().equals(requestId));
@@ -136,7 +136,7 @@ public class FriendsController implements NetworkListener {
 
     private void handleRejectRequest(String requestId) {
         if (ClientMain.getConnector().isConnected()) {
-            ClientMain.getConnector().send(Message.of(Protocol.REJECT_FRIEND, "requestId", requestId));
+            ClientMain.getConnector().send(Message.of(Protocol.REJECT_FRIEND, "requestId", Long.parseLong(requestId)));
         } else {
             showAlert("已模拟拒绝请求 " + requestId);
             requestsData.removeIf(r -> r.getRequestId().equals(requestId));
@@ -145,7 +145,7 @@ public class FriendsController implements NetworkListener {
 
     private void handleDeleteFriend(String friendUserId) {
         if (ClientMain.getConnector().isConnected()) {
-            ClientMain.getConnector().send(Message.of(Protocol.DELETE_FRIEND, "friendUserId", friendUserId));
+            ClientMain.getConnector().send(Message.of(Protocol.DELETE_FRIEND, "friendUserId", Long.parseLong(friendUserId)));
         } else {
             showAlert("已模拟删除好友 " + friendUserId);
             friendsData.removeIf(f -> f.getFriendUserId().equals(friendUserId));
@@ -186,7 +186,7 @@ public class FriendsController implements NetworkListener {
             if (friends != null) {
                 for (int i = 0; i < friends.length(); i++) {
                     org.json.JSONObject f = friends.getJSONObject(i);
-                    friendsData.add(new FriendInfoModel(f.getString("friendUserId"), f.getString("friendUsername"), f.getString("friendScore"), f.optBoolean("online", false)));
+                    friendsData.add(new FriendInfoModel(String.valueOf(f.getLong("friendUserId")), f.getString("friendUsername"), String.valueOf(f.getInt("friendScore")), f.optBoolean("online", false)));
                 }
             }
         } else if ("FRIEND_REQUEST_LIST".equals(cmd)) {
@@ -195,7 +195,7 @@ public class FriendsController implements NetworkListener {
             if (requests != null) {
                 for (int i = 0; i < requests.length(); i++) {
                     org.json.JSONObject r = requests.getJSONObject(i);
-                    requestsData.add(new FriendRequestModel(r.getString("requestId"), r.getString("fromUserId"), r.getString("fromUsername"), r.getString("fromScore"), r.getString("message")));
+                    requestsData.add(new FriendRequestModel(r.getString("requestId"), String.valueOf(r.getLong("fromUserId")), r.getString("fromUsername"), String.valueOf(r.getInt("fromScore")), r.getString("message")));
                 }
             }
         } else if ("ADD_FRIEND_OK".equals(cmd)) {

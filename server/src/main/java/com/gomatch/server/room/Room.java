@@ -246,8 +246,8 @@ public class Room {
                     endGame(winnerId, "disconnect_limit",
                             loserName + " 累计断线" + count + "次，自动判负");
                     broadcastAll(Message.of("PLAYER_DISCONNECT_LIMIT",
-                            "userId", String.valueOf(uid),
-                            "disconnectCount", String.valueOf(count),
+                            "userId", uid,
+                            "disconnectCount", count,
                             "msg", loserName + " 累计断线" + count + "次，自动判负"));
                     disconnectedPlayerId = 0;
                     return;
@@ -256,8 +256,8 @@ public class Room {
                 disconnectedPlayerId = uid;
                 startReconnectTimer();
                 broadcastToPlayers(Message.of("PLAYER_DISCONNECTED",
-                        "userId", String.valueOf(disconnectedPlayerId),
-                        "disconnectCount", String.valueOf(count)));
+                        "userId", disconnectedPlayerId,
+                        "disconnectCount", count));
                 log.info("Player {} disconnected during game in room {} (disconnect #{}/{}), reconnect timer started ({}s)",
                         disconnectedPlayerId, roomId, count, MAX_DISCONNECT_COUNT, RECONNECT_TIMEOUT_SEC);
             }
@@ -372,9 +372,9 @@ public class Room {
         boolean success = game.move(x, y, -1);
         if (success) {
             broadcastAll(Message.of(Protocol.MOVE_SYNC,
-                    "x", String.valueOf(x),
-                    "y", String.valueOf(y),
-                    "color", String.valueOf(Game.WHITE)));
+                    "x", x,
+                    "y", y,
+                    "color", Game.WHITE));
 
             if (game.isFinished()) {
                 int winnerColor = game.getWinner();
@@ -504,11 +504,11 @@ public class Room {
                     RankDAO.RankInfo rankInfo = rankDAO.getRankByUserId(id);
                     int rank = rankInfo != null ? rankInfo.getRank() : 0;
                     handler.send(Message.of(Protocol.USER_SCORE_UPDATE,
-                        "score", String.valueOf(info.getScore()),
-                        "winCount", String.valueOf(info.getWinCount()),
-                        "loseCount", String.valueOf(info.getLoseCount()),
-                        "drawCount", String.valueOf(info.getDrawCount()),
-                        "rank", String.valueOf(rank)));
+                        "score", info.getScore(),
+                        "winCount", info.getWinCount(),
+                        "loseCount", info.getLoseCount(),
+                        "drawCount", info.getDrawCount(),
+                        "rank", rank));
                 }
             }
             log.info("Score update pushed to players in room {}: black={}(score={}), white={}(score={})",
@@ -520,7 +520,7 @@ public class Room {
 
         // 广播游戏结束消息（附带每位玩家的积分变化）
         broadcastAll(Message.of(Protocol.GAME_OVER,
-                "winnerId", String.valueOf(winnerId),
+                "winnerId", winnerId,
                 "msg", message != null ? message : "游戏结束",
                 "scoreChanges", buildScoreChangesJson(scoreChangeMap)));
 
@@ -723,7 +723,7 @@ public class Room {
                 log.info("Turn timeout in room {}: player {} ran out of time, winner={}", roomId, timedOutPlayerId, winnerId);
                 endGame(winnerId, "timeout", "回合超时，对方获胜");
                 broadcastAll(Message.of(Protocol.TURN_TIMEOUT,
-                        "winnerId", String.valueOf(winnerId)));
+                        "winnerId", winnerId));
             }
         }, TURN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
@@ -993,7 +993,7 @@ public class Room {
             disconnectedPlayerId = 0;
             cancelReconnectTimer();
             broadcastToPlayers(Message.of("PLAYER_RECONNECTED",
-                    "userId", String.valueOf(userId)));
+                    "userId", userId));
         }
 
         // 回放已有落子（通过 replayMovesTo 显式调用，便于调用方控制 LOGIN_OK/MOVE_SYNC 顺序）
@@ -1008,9 +1008,9 @@ public class Room {
     public synchronized void replayMovesTo(ClientHandler handler) {
         for (Game.MoveRecord mr : game.getMoveHistory()) {
             handler.send(Message.of(Protocol.MOVE_SYNC,
-                    "x", String.valueOf(mr.x),
-                    "y", String.valueOf(mr.y),
-                    "color", String.valueOf(mr.color)));
+                    "x", mr.x,
+                    "y", mr.y,
+                    "color", mr.color));
         }
     }
 
@@ -1064,14 +1064,13 @@ public class Room {
     }
 
     public synchronized void broadcastToPlayers(Message msg) {
-        String message = msg.toJson();
         log.debug("broadcastToPlayers room {}: message={}, playerCount={}",
                 roomId, msg.getCmd(), players.size());
 
         int sentCount = 0;
         for (ClientHandler player : players) {
             if (player != null) {
-                player.send(message);
+                player.send(msg);
                 sentCount++;
             }
         }
@@ -1079,14 +1078,13 @@ public class Room {
     }
 
     public synchronized void broadcastToObservers(Message msg) {
-        String message = msg.toJson();
         log.debug("broadcastToObservers room {}: cmd={}, observerCount={}",
                 roomId, msg.getCmd(), observers.size());
 
         int sentCount = 0;
         for (ClientHandler observer : observers) {
             if (observer != null) {
-                observer.send(message);
+                observer.send(msg);
                 sentCount++;
             }
         }
@@ -1104,12 +1102,11 @@ public class Room {
      * 向除指定玩家外的所有人广播（用于悔棋/求和请求等场景，避免请求者自己也收到弹窗）
      */
     public synchronized void broadcastToPlayersExcept(long excludeUserId, Message msg) {
-        String message = msg.toJson();
         log.debug("broadcastToPlayersExcept room {}: exclude={}, cmd={}", roomId, excludeUserId, msg.getCmd());
 
         for (ClientHandler player : players) {
             if (player != null && player.getUserId() != excludeUserId) {
-                player.send(message);
+                player.send(msg);
             }
         }
         // 观战者也应该看到请求通知
@@ -1152,7 +1149,7 @@ public class Room {
                 room.getStatus().toString(),
                 String.valueOf(room.getPlayerCount()),
                 "2",
-                room.hasPassword() ? "1" : "0"
+                room.hasPassword() ? "true" : "false"
             });
         }
         log.debug("getRoomListInfo completed: {} rooms listed", list.size());

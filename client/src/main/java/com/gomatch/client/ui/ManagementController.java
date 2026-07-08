@@ -215,7 +215,7 @@ public class ManagementController implements NetworkListener {
         } else if (Protocol.USER_LIST.equals(cmd)) {
             renderUsers(msg.getData().optJSONArray("users"));
         } else if (Protocol.ADMIN_STATS.equals(cmd)) {
-            adminStatsLabel.setText("用户 " + msg.getString("totalUsers") + "  在线 " + msg.getString("onlineUsers") + "  房间 " + msg.getString("activeRooms"));
+            adminStatsLabel.setText("用户 " + msg.getInt("totalUsers") + "  在线 " + msg.getInt("onlineUsers") + "  房间 " + msg.getInt("activeRooms"));
         } else if (cmd.endsWith("_OK") || "ROLE_UPDATED".equals(cmd)) {
             setStatus("操作成功：" + cmd);
             if (isAdmin()) requestUserList();

@@ -73,8 +73,8 @@ public class RecordController implements NetworkListener {
             if (recs == null) return;
             for (int i = 0; i < recs.length(); i++) {
                 JSONObject r = recs.getJSONObject(i);
-                long player1Id = Long.parseLong(r.getString("player1Id"));
-                long winnerId = Long.parseLong(r.getString("winnerId"));
+                long player1Id = r.getLong("player1Id");
+                long winnerId = r.getLong("winnerId");
 
                 String opponentName = currentUserId == player1Id ? r.getString("player2Name") : r.getString("player1Name");
                 String result;

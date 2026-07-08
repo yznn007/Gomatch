@@ -438,7 +438,7 @@ public class BoardController implements NetworkListener {
         myTurn = false;
         updateTurnLabel();
         updateActionButtons();
-        ClientMain.getConnector().send(Message.of(Protocol.MOVE, "x", String.valueOf(x), "y", String.valueOf(y)));
+        ClientMain.getConnector().send(Message.of(Protocol.MOVE, "x", x, "y", y));
     }
 
     private void drawStone(int x, int y, int color) {
@@ -850,7 +850,7 @@ public class BoardController implements NetworkListener {
         String cmd = msg.getCmd();
         if (Protocol.GAME_START.equals(cmd)) {
             moveHistory.clear();
-            setGameInfo(msg.getString("blackUserId"), msg.getString("whiteUserId"), myUsername);
+            setGameInfo(String.valueOf(msg.getLong("blackUserId")), String.valueOf(msg.getLong("whiteUserId")), myUsername);
             startCountdown();
         } else if (Protocol.MOVE_SYNC.equals(cmd)) {
             int x     = msg.getInt("x");
@@ -869,7 +869,7 @@ public class BoardController implements NetworkListener {
             myTurn = false;
             updateActionButtons();
             stopCountdown();
-            String winnerId = msg.getString("winnerId");
+            String winnerId = String.valueOf(msg.getLong("winnerId"));
             String reason = msg.getString("msg");
             String result;
             if ("0".equals(winnerId)) {
@@ -926,9 +926,9 @@ public class BoardController implements NetworkListener {
             alert.setContentText("是否同意悔棋？");
             ScreenManager.showStyledAlert(alert).ifPresent(response -> {
                 if (response == ButtonType.OK) {
-                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_UNDO, "accept", "1"));
+                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_UNDO, "accept", true));
                 } else {
-                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_UNDO, "accept", "0"));
+                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_UNDO, "accept", false));
                 }
             });
         } else if ("UNDO_ACCEPTED".equals(cmd)) {
@@ -968,9 +968,9 @@ public class BoardController implements NetworkListener {
             alert.setContentText("是否同意平局？");
             ScreenManager.showStyledAlert(alert).ifPresent(response -> {
                 if (response == ButtonType.OK) {
-                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_DRAW, "accept", "1"));
+                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_DRAW, "accept", true));
                 } else {
-                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_DRAW, "accept", "0"));
+                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_DRAW, "accept", false));
                 }
             });
         } else if ("DRAW_REJECTED".equals(cmd)) {
@@ -995,7 +995,7 @@ public class BoardController implements NetworkListener {
                 cu.setDrawCount(msg.getInt("drawCount"));
             }
         } else if ("PLAYER_DISCONNECTED".equals(cmd)) {
-            String userId = msg.getString("userId");
+            String userId = String.valueOf(msg.getLong("userId"));
             if (userId == null || userId.isEmpty()) return;
             boolean isBlack = userId.equals(blackId);
             boolean isWhite = userId.equals(whiteId);
@@ -1006,7 +1006,7 @@ public class BoardController implements NetworkListener {
             chatArea.appendText("[系统] 玩家 " + name + " 断线 (第" + dcCount + "/" + 3 + "次)，等待重连...\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
         } else if ("PLAYER_RECONNECTED".equals(cmd)) {
-            String userId = msg.getString("userId");
+            String userId = String.valueOf(msg.getLong("userId"));
             if (userId == null || userId.isEmpty()) return;
             boolean isBlack = userId.equals(blackId);
             boolean isWhite = userId.equals(whiteId);
@@ -1016,7 +1016,7 @@ public class BoardController implements NetworkListener {
             chatArea.appendText("[系统] 玩家 " + name + " 已重连\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
         } else if ("PLAYER_DISCONNECT_LIMIT".equals(cmd)) {
-            String userId = msg.getString("userId");
+            String userId = String.valueOf(msg.getLong("userId"));
             if (userId != null && (userId.equals(blackId) || userId.equals(whiteId))) {
                 setPlayerOnline(userId.equals(blackId), true);
             }

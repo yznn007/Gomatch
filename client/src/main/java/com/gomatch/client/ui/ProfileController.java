@@ -374,7 +374,7 @@ public class ProfileController implements NetworkListener {
                     JSONObject r = records.getJSONObject(i);
                     String p1Name = r.optString("player1Name", "未知");
                     String p2Name = r.optString("player2Name", "未知");
-                    String winnerId = r.optString("winnerId", "0");
+                    String winnerId = String.valueOf(r.optLong("winnerId", 0));
                     String time = r.optString("createTime", "");
                     // 兼容多种格式：JSON 数组字符串（Redis 缓存）、老格式的分号/管道分隔、JSON 字符串
                     String boardData = extractBoardData(r);

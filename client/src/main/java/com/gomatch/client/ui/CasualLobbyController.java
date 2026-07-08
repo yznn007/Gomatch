@@ -244,7 +244,7 @@ public class CasualLobbyController implements NetworkListener {
                 room.setRoomName(r.getString("roomName"));
                 room.setStatus(r.getString("status"));
                 room.setPlayerCount(Integer.parseInt(r.getString("players").split("/")[0]));
-                room.setHasPassword("1".equals(r.getString("hasPassword")));
+                room.setHasPassword(r.optBoolean("hasPassword", false));
                 roomData.add(room);
             }
             spectateData.setAll(roomData.stream()
@@ -271,7 +271,7 @@ public class CasualLobbyController implements NetworkListener {
             stopMatching();
             setStatus("", false);
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-            ctrl.setGameInfo(msg.getString("blackUserId"), msg.getString("whiteUserId"), currentUser != null ? currentUser.getUsername() : "unknown");
+            ctrl.setGameInfo(String.valueOf(msg.getLong("blackUserId")), String.valueOf(msg.getLong("whiteUserId")), currentUser != null ? currentUser.getUsername() : "unknown");
         } else if (Protocol.MATCH_TIMEOUT.equals(cmd)) {
             stopMatching();
             setStatus("匹配超时，请重试", true);

@@ -50,7 +50,7 @@ public class CreateRoomController implements NetworkListener {
             room.setRoomName(msg.getString("roomName"));
             String[] players = msg.getString("players").split("/");
             room.setPlayerCount(Integer.parseInt(players[0]));
-            room.setHasPassword("1".equals(msg.getString("hasPassword")));
+            room.setHasPassword(msg.optBoolean("hasPassword", false));
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
             ctrl.setRoomInfo(room, currentUser);
         } else if (Protocol.ERROR.equals(msg.getCmd())) {

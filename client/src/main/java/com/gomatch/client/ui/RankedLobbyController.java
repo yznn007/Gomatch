@@ -72,7 +72,7 @@ public class RankedLobbyController implements NetworkListener {
             ClientMain.getConnector().removeListener(this);
             Platform.runLater(() -> {
                 BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-                ctrl.setGameInfo(msg.getString("blackUserId"), msg.getString("whiteUserId"),
+                ctrl.setGameInfo(String.valueOf(msg.getLong("blackUserId")), String.valueOf(msg.getLong("whiteUserId")),
                         currentUser != null ? currentUser.getUsername() : "");
             });
         } else if (Protocol.ERROR.equals(cmd)) {

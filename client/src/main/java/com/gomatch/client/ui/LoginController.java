@@ -143,10 +143,10 @@ public class LoginController implements NetworkListener {
 
             String roomId = msg.getString("roomId");
             if (roomId != null && !roomId.isEmpty()) {
-                String blackUserId   = msg.getString("blackUserId");
-                String whiteUserId   = msg.getString("whiteUserId");
+                String blackUserId   = String.valueOf(msg.getLong("blackUserId"));
+                String whiteUserId   = String.valueOf(msg.getLong("whiteUserId"));
                 int    currentColor  = msg.getInt("currentColor");
-                String disconnectedUserId = msg.getString("disconnectedUserId");
+                String disconnectedUserId = String.valueOf(msg.optLong("disconnectedUserId", 0));
                 String username      = user.getUsername();
 
                 BoardController boardCtrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
