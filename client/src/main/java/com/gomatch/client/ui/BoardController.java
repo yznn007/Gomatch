@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -20,6 +21,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.lang.reflect.Type;
@@ -73,6 +75,7 @@ public class BoardController implements NetworkListener {
     private boolean spectatorMode;
     private boolean replayMode;
     private boolean gameOver;
+    private Stage gameOverDialogStage;   // 游戏结束弹窗引用，用于再来一局时关闭
     private int cellSize; // 动态计算
     private final List<int[]> moveHistory = new ArrayList<>();
     private final List<int[]> replayMoveList = new ArrayList<>();
@@ -191,10 +194,28 @@ public class BoardController implements NetworkListener {
     }
 
     public void setGameInfo(String blackId, String whiteId, String username) {
-        setGameInfo(blackId, blackId, whiteId, whiteId, username);
+        setGameInfo(blackId, blackId, whiteId, whiteId, username, 0, 0);
     }
 
-    public void setGameInfo(String blackId, String blackDisplayName, String whiteId, String whiteDisplayName, String username) {
+    public void setGameInfo(String blackId, String blackDisplayName, String whiteId, String whiteDisplayName,
+                            String username, int blackScore, int whiteScore) {
+        this.setGameInfo(blackId, blackDisplayName, whiteId, whiteDisplayName, username);
+        // setGameInfo 已设置基本信息，这里补充分数
+        User cu = AppConfig.getCurrentUser();
+        String myIdStr = cu != null ? String.valueOf(cu.getUserId()) : "";
+        boolean isBlack = myIdStr.equals(blackId) || (username != null && username.equals(blackId));
+        if (isBlack) {
+            if (whitePlayerScoreLabel != null && whiteScore >= 0) {
+                whitePlayerScoreLabel.setText(whiteScore + "分");
+            }
+        } else {
+            if (blackPlayerScoreLabel != null && blackScore >= 0) {
+                blackPlayerScoreLabel.setText(blackScore + "分");
+            }
+        }
+    }
+
+    private void setGameInfo(String blackId, String blackDisplayName, String whiteId, String whiteDisplayName, String username) {
         this.blackName  = blackDisplayName;
         this.whiteName  = whiteDisplayName;
         this.blackId    = blackId != null ? blackId : "";
@@ -741,6 +762,44 @@ public class BoardController implements NetworkListener {
         if (saveBtn != null) saveBtn.setDisable(gameOver || spectatorMode || replayMode);
     }
 
+    /**
+     * 显示游戏结束弹窗（非阻塞模式），返回 Stage 引用以便外部关闭。
+     * 与 ScreenManager.showDialog 不同，此方法使用 show() 而非 showAndWait()，
+     * 保证 BoardController 可以继续接收网络消息（如再来一局请求）。
+     */
+    private Stage showGameOverDialog(String fxmlPath, java.util.function.Consumer<GameOverController> setupCallback) {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource(fxmlPath));
+            javafx.scene.Parent root = loader.load();
+            GameOverController ctrl = loader.getController();
+            if (setupCallback != null) {
+                setupCallback.accept(ctrl);
+            }
+            Stage dialog = new Stage();
+            dialog.initOwner(ScreenManager.getStage());
+            dialog.initModality(javafx.stage.Modality.WINDOW_MODAL);
+            dialog.initStyle(javafx.stage.StageStyle.UNDECORATED);
+
+            // 给弹窗添加基本包装
+            javafx.scene.layout.VBox layout = new javafx.scene.layout.VBox();
+            layout.setStyle("-fx-background-color: transparent;");
+            javafx.scene.layout.VBox.setVgrow(root, javafx.scene.layout.Priority.ALWAYS);
+            layout.getChildren().add(root);
+
+            javafx.scene.Scene scene = new javafx.scene.Scene(layout);
+            String css = getClass().getResource("/css/style.css").toExternalForm();
+            if (!scene.getStylesheets().contains(css)) {
+                scene.getStylesheets().add(css);
+            }
+            dialog.setScene(scene);
+            dialog.setResizable(false);
+            dialog.show();
+            return dialog;
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to load dialog: " + fxmlPath, e);
+        }
+    }
+
     @FXML
     private void handleSendChat() {
         String msg = chatInput.getText().trim();
@@ -849,8 +908,24 @@ public class BoardController implements NetworkListener {
     public void onMessage(Message msg) {
         String cmd = msg.getCmd();
         if (Protocol.GAME_START.equals(cmd)) {
+            // 重置棋盘状态准备新游戏
+            for (int x = 0; x < SIZE; x++) {
+                for (int y = 0; y < SIZE; y++) {
+                    board[x][y] = 0;
+                }
+            }
+            lastMoveX = -1;
+            lastMoveY = -1;
+            currentTurn = 1;
             moveHistory.clear();
-            setGameInfo(String.valueOf(msg.getLong("blackUserId")), String.valueOf(msg.getLong("whiteUserId")), myUsername);
+            String bId = String.valueOf(msg.getLong("blackUserId"));
+            String wId = String.valueOf(msg.getLong("whiteUserId"));
+            String bName = msg.has("blackUsername") ? msg.getString("blackUsername") : bId;
+            String wName = msg.has("whiteUsername") ? msg.getString("whiteUsername") : wId;
+            int bScore = msg.has("blackScore") ? msg.getInt("blackScore") : 0;
+            int wScore = msg.has("whiteScore") ? msg.getInt("whiteScore") : 0;
+            setGameInfo(bId, bName, wId, wName, myUsername, bScore, wScore);
+            redrawAll();
             startCountdown();
         } else if (Protocol.MOVE_SYNC.equals(cmd)) {
             int x     = msg.getInt("x");
@@ -901,7 +976,13 @@ public class BoardController implements NetworkListener {
             }
 
             final int scoreChangeFinal = myScoreChange;
-            ScreenManager.showDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult(result, reason, scoreChangeFinal));
+            // 关闭旧弹窗（如存在），然后存储新弹窗引用
+            if (gameOverDialogStage != null) {
+                gameOverDialogStage.close();
+                gameOverDialogStage = null;
+            }
+            // 使用 showDialogWithoutWait 避免阻塞，以便后续接收 rematch 消息
+            gameOverDialogStage = showGameOverDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult(result, reason, scoreChangeFinal));
         } else if ("SAVE_GAME_OK".equals(cmd)) {
             chatArea.appendText("[系统] 棋局已保存：" + msg.getString("saveName") + "\n");
         } else if ("SAVE_GAME_FAIL".equals(cmd)) {
@@ -976,6 +1057,42 @@ public class BoardController implements NetworkListener {
         } else if ("DRAW_REJECTED".equals(cmd)) {
             chatArea.appendText("[系统] 对手拒绝求和\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
+        } else if ("REMATCH_REQUESTED".equals(cmd)) {
+            // 收到对手的再来一局请求
+            String requesterName = msg.getString("requesterName");
+            chatArea.appendText("[系统] 玩家 " + requesterName + " 请求再来一局\n");
+            chatArea.setScrollTop(Double.MAX_VALUE);
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("再来一局请求");
+            alert.setHeaderText("玩家 " + requesterName + " 请求再来一局");
+            alert.setContentText("是否同意再来一局？");
+            ScreenManager.showStyledAlert(alert).ifPresent(response -> {
+                if (response == ButtonType.OK) {
+                    // 同意：关闭结算弹窗，发送同意消息
+                    closeGameOverDialog();
+                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_REMATCH, "accept", "1"));
+                } else {
+                    // 拒绝：直接发送拒绝消息，弹窗稍后由 REMATCH_REJECTED 统一关闭
+                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_REMATCH, "accept", "0"));
+                }
+            });
+        } else if ("REMATCH_ACCEPTED".equals(cmd)) {
+            // 对手同意了再来一局，或双方都已同意
+            closeGameOverDialog();
+            chatArea.appendText("[系统] 双方同意再来一局，准备开始新对局...\n");
+            chatArea.setScrollTop(Double.MAX_VALUE);
+            // 服务端随后会发送 GAME_START，棋盘将在 onMessage(GAME_START) 中重置
+        } else if ("REMATCH_REJECTED".equals(cmd)) {
+            // 对手拒绝了再来一局
+            closeGameOverDialog();
+            String replierName = msg.getString("replierName");
+            chatArea.appendText("[系统] " + (replierName != null ? replierName : "对方") + " 拒绝了再来一局\n");
+            chatArea.setScrollTop(Double.MAX_VALUE);
+            Platform.runLater(() -> {
+                LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+                ctrl.setCurrentUser(AppConfig.getCurrentUser());
+                ctrl.setPreviewMode(AppConfig.isPreviewMode());
+            });
         } else if (Protocol.TURN_TIMEOUT.equals(cmd)) {
             gameOver = true;
             stopCountdown();
@@ -1073,6 +1190,14 @@ public class BoardController implements NetworkListener {
         if (width < minW) return minW;
         if (width > maxW) return maxW;
         return width;
+    }
+
+    /** 关闭游戏结束弹窗并清理引用 */
+    private void closeGameOverDialog() {
+        if (gameOverDialogStage != null) {
+            gameOverDialogStage.close();
+            gameOverDialogStage = null;
+        }
     }
 }
 

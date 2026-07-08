@@ -71,6 +71,8 @@
 | 57 | 悔棋/求和按钮仅当前落子方可操作 | 已完成 |
 | 58 | 管理员功能（踢人/封禁/强制结束） | 已完成 |
 | 59 | Token 重连机制 | 已完成 |
+| 60 | 再来一局（Rematch）功能 | 已完成 |
+| 61 | GAME_START 协议增强（传递用户名/积分） | 已完成 |
 
 ### 状态说明
 
@@ -143,6 +145,8 @@
 | 2026-07-08 | Contributor| |
 | 2026-07-08 | Contributor| |
 | 2026-07-08 | Contributor| 匹配大厅界面优化 |
+| 2026-07-08 | Contributor| BoardController 新增 handleRequestRematch/handleReplyRematch 方法及 rematchRequested 状态；对局结束弹窗 GameOverController 新增"再来一局"按钮；BoardController 监听 REMATCH_REQUESTED/REMATCH_ACCEPTED/REMATCH_REJECTED 消息，同意后自动重置棋盘开始新对局 |
+| 2026-07-08 | Contributor| BoardController.onMessage(GAME_START) 解析新增的 blackUsername/blackScore/whiteUsername/whiteScore 字段；新增带分数的 setGameInfo 重载，对手卡片显示真实用户名和积分而非 ID 和问号 |
 
 ### 服务端（Server）
 
@@ -176,6 +180,8 @@
 | 2026-07-08 | Contributor| |
 | 2026-07-08 | Contributor| |
 | 2026-07-08 | Contributor| |
+| 2026-07-08 | Contributor| Protocol 新增 REQUEST_REMATCH/REPLY_REMATCH/REMATCH_ACCEPTED/REMATCH_REJECTED 常量；ClientHandler 新增 handleRequestRematch/handleReplyRematch 方法；Room 新增 rematchRequesterId 字段 + requestRematch/replyRematch/resetAndRestartGame 方法，支持双方同意后自动重置棋盘开始新对局 |
+| 2026-07-08 | Contributor| Room 新增 blackUsername/whiteUsername/blackScore/whiteScore 字段 + getter；join() 缓存用户名；startGame()/resetAndRestartGame() 查询并刷新双方积分；新增 buildGameStartMessage() 统一构建含用户名/积分的 GAME_START 消息；ClientHandler 全部 7 处 GAME_START 广播改用 buildGameStartMessage() |
 
 ### 客户端（Client）
 

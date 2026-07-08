@@ -1,7 +1,8 @@
 # server 模块文档
 
 > **模块标识**：`com.gomatch:server`  
-> **职责**：多线程 Socket 服务端，实现用户管理、房间管理、游戏逻辑、数据持久化和 Redis 缓存。
+> **职责**：多线程 Socket 服务端，实现用户管理、房间管理、游戏逻辑、数据持久化和 Redis 缓存。  
+> **更新日期**：2026-07-08（合并 SERVER_IMPLEMENTATION_PLAN.md）
 
 ---
 
@@ -134,6 +135,8 @@ private static final SessionManager sessionManager = SessionManager.getInstance(
 | `REPLY_UNDO` | `handleReplyUndo` | 同意/拒绝悔棋 |
 | `REQUEST_DRAW` | `handleRequestDraw` | 发起求和请求 |
 | `REPLY_DRAW` | `handleReplyDraw` | 同意/拒绝求和 |
+| `REQUEST_REMATCH` | `handleRequestRematch` | 发起再来一局请求 |
+| `REPLY_REMATCH` | `handleReplyRematch` | 同意/拒绝再来一局 |
 | `RECONNECT` | `handleReconnect` | 断线重连，恢复棋局状态 |
 | `CHANGE_PASSWORD` | `handleChangePassword` | 修改密码 |
 | `ADD_FRIEND` | `handleAddFriend` | 发起好友申请 |
@@ -175,10 +178,12 @@ private static final SessionManager sessionManager = SessionManager.getInstance(
 | `players` | `CopyOnWriteArrayList<ClientHandler>` | 玩家列表（最多 2 人）|
 | `observers` | `CopyOnWriteArrayList<ClientHandler>` | 观众列表 |
 | `blackUserId` / `whiteUserId` | `long` | 黑白方用户 ID |
+| `blackUsername` / `whiteUsername` | `String` | 黑白方用户名（join 时缓存，GAME_START 中携带） |
+| `blackScore` / `whiteScore` | `int` | 黑白方积分（startGame/resetAndRestartGame 时查询更新） |
 | `aiMode` | `boolean` | 是否为人机对战模式 |
 | `aiPlayer` | `AIPlayer` | 人机对战 AI 实例 |
 | `gameType` | `GameType` | 对战类型（普通/排位） |
-| `undoRequesterId` / `drawRequesterId` | `Long` | 悔棋/求和请求方 ID |
+| `undoRequesterId` / `drawRequesterId` / `rematchRequesterId` | `Long` | 悔棋/求和/再来一局请求方 ID |
 | `currentRecordId` | `long` | 当前对局在 DB 中的记录 ID |
 | `gameStartTime` | `Instant` | 对局开始时间 |
 
@@ -193,6 +198,10 @@ private static final SessionManager sessionManager = SessionManager.getInstance(
 | `broadcast(msg)` | 向所有玩家广播 |
 | `broadcastAll(msg)` | 向玩家 + 观众全体广播 |
 | `checkPassword(input)` | 密码校验（无密码房间始终通过） |
+| `requestRematch(handler)` | 记录请求方 ID，通知对手 `REMATCH_REQUESTED` |
+| `replyRematch(handler, accept)` | 处理再来一局响应：同意 → `resetAndRestartGame()`；拒绝 → 通知对方 |
+| `resetAndRestartGame()` | 重置棋盘、刷新双方积分、分配黑白、广播新 `GAME_START` |
+| `buildGameStartMessage()` | 构建含 `blackUsername/whiteUsername/blackScore/whiteScore` 的 GAME_START 消息 |
 
 ---
 
@@ -331,6 +340,60 @@ public static class MoveRecord {
 > [!NOTE]
 > Redis 为必需组件。若连接失败，服务端启动失败，避免会话、排行榜和匹配队列进入不一致状态。
 
+#### Redis Key 设计详解
+
+##### （1）会话持久化
+
+```
+session:{token}  ->  JSON 字符串（会话数据）
+  Value: {"userId":1,"username":"player1","score":1000,"role":"PLAYER","roomId":"r01","lastActiveTime":1234567890}
+  TTL: 300秒（5分钟）
+```
+
+- 登录后：`SET session:{token} <sessionData>`
+- 重连时：`GET session:{token}` 恢复会话
+- 更新房间：更新 `sessionData.roomId`
+
+##### （2）排行榜缓存
+
+```
+rank:leaderboard  ->  Sorted Set（score: userId）
+  Value: {1000: "1", 980: "2", 950: "3", ...}
+```
+
+- 更新积分：`ZADD rank:leaderboard score userId`
+- 获取 Top N：`ZREVRANGE rank:leaderboard 0 N-1`
+- 获取排名：`ZREVRANK rank:leaderboard userId`
+
+##### （3）匹配队列
+
+```
+# 快速匹配
+match:queue  ->  List（userId:score）
+  Value: ["1:1000", "2:980", "3:950"]
+
+# 排位匹配
+match:ranked  ->  Sorted Set（score: userId:score）
+  Value: {1000: "1:1000", 980: "2:980"}
+```
+
+##### （4）在线状态追踪
+
+```
+online:{userId}  ->  String（token）
+  TTL: 300秒（5分钟）
+```
+
+- 登录：`SET online:{userId} token`
+- 退出/断线：`DEL online:{userId}`
+- 检查在线：`EXISTS online:{userId}`
+
+##### （5）Pub/Sub 实时同步（可选）
+
+```
+gomatch:game:{roomId}  ->  游戏事件频道
+```
+
 ---
 
 ## 4. 数据访问层（DAO）
@@ -362,6 +425,28 @@ public static class MoveRecord {
 | `RoomDAO` | `t_room` | 房间状态同步到 DB（每 1 分钟），清理过期房间 |
 | `RoomWatcherDAO` | `t_room_watcher` | 观战记录保存和查询 |
 | `SocketSessionDAO` | `t_socket_session` | Socket 会话持久化，断线检测，自动清理 60 分钟前的过期会话 |
+
+### 4.3 业务操作 ↔ 数据库表映射
+
+| 业务操作 | 涉及表 | DAO 方法 |
+|---------|--------|---------|
+| 注册 | t_user | UserDAO.register() |
+| 登录 | t_user | UserDAO.login() |
+| 修改密码 | t_user | UserDAO.changePassword() |
+| 创建房间 | t_room | RoomDAO.saveRoom()（定时） |
+| 加入房间 | t_room | RoomDAO.updateRoom()（定时） |
+| 观战加入 | t_room_watcher | RoomWatcherDAO.startWatching() |
+| 观战离开 | t_room_watcher | RoomWatcherDAO.stopWatching() |
+| 落子 | - | 内存 Game 对象 |
+| 游戏操作 | t_game_action | GameActionDAO.saveAction() |
+| 对局结束 | t_game_record | RecordDAO.saveRecord() |
+| 更新积分 | t_user, t_rank | UserDAO.updateScore(), RankDAO.updateScore() |
+| 排行榜 | t_rank, Redis | RankDAO.getRanking() |
+| 聊天消息 | t_chat_message | ChatDAO.saveMessage() |
+| 好友请求 | t_friend_request | FriendDAO.sendFriendRequest() |
+| 好友关系 | t_friend | FriendDAO.acceptFriendRequest() |
+| 棋局保存 | t_game_save | GameSaveDAO.saveGame() |
+| Socket会话 | t_socket_session | SocketSessionDAO.saveSession() |
 
 ---
 
@@ -448,9 +533,127 @@ public static class MoveRecord {
 （求和流程类似，accept 触发平局结算）
 ```
 
+### 5.6 再来一局（Rematch）流程
+
+```
+玩家A 发送 REQUEST_REMATCH
+  → Room 记录 rematchRequesterId = A.userId
+  → 通知玩家B（REMATCH_REQUESTED|requesterName）
+
+玩家B 发送 REPLY_REMATCH|1（同意）
+  → 清除 rematchRequesterId
+  → Room.resetAndRestartGame()：重置棋盘、刷新积分、广播新 GAME_START
+  → 双方棋盘清空，新对局开始
+
+玩家B 发送 REPLY_REMATCH|0（拒绝）
+  → 清除 rematchRequesterId
+  → 通知玩家A（REMATCH_REJECTED|replierName）
+```
+
 ---
 
-## 6. ELO 积分算法
+## 6. 协议消息流（序列图）
+
+### 6.1 登录流程
+
+```
+客户端                          服务端
+  |  {"cmd":"LOGIN","data":{"username":"user","password":"pass"}}
+  |------------------------------------------------------------->|
+  |  {"cmd":"LOGIN_OK","data":{"userId":"1","username":"user","score":"1000","token":"..."}}
+  |<-------------------------------------------------------------|
+```
+
+### 6.2 创建房间流程
+
+```
+客户端A                    服务端              客户端B
+  | CREATE_ROOM|测试房间|pass  |
+  |-------------------------->|
+  | JOIN_OK|r01|测试房间|1/2|1 |
+  |<--------------------------|
+  |                           |
+  | JOIN_ROOM|r01|pass        |
+  |-------------------------->|
+  | JOIN_OK|r01|测试房间|2/2|1 |
+  |<--------------------------|
+  | PLAYER_ENTER|B            |  广播
+  |<--------------------------|------------------>|PLAYER_ENTER|A|
+  | GAME_START|A|B            |  广播（满2人）
+  |<--------------------------|------------------>|GAME_START|A|B|
+```
+
+### 6.3 对局流程
+
+```
+玩家A                    服务端                  玩家B
+  | MOVE|7|7             |
+  |---------------------->|
+  | MOVE|7|7|1           |  广播
+  |<----------------------|-------------------->|MOVE|7|7|1|
+  |                       |
+  | (一方五连)            |
+  | GAME_OVER|winnerId|原因|
+  |<----------------------|-------------------->|GAME_OVER|winnerId|原因|
+  |                       |  保存记录到 DB
+  |                       |  更新积分和排行榜
+```
+
+### 6.4 观战流程
+
+```
+客户端A（观战者）         服务端              房间内玩家
+  | SPECTATE|r01         |
+  |---------------------->|
+  | JOIN_OK|r01|SPECTATOR|  广播给房间内
+  |<----------------------|-------------------->|PLAYER_ENTER|A|SPECTATOR|
+```
+
+### 6.5 断线重连流程
+
+```
+客户端                    服务端                  Redis
+  | RECONNECT|token      |
+  |-------------------->|
+  |                     | GET session:{token}
+  |                     |<------------------|
+  |                     | 返回 sessionData
+  |                     |------------------>|
+  | RECONNECT_OK|user    | 查找房间
+  |<-------------------->|
+  |                     | 恢复连接
+  |                     | 广播 PLAYER_ENTER
+```
+
+### 6.6 快速匹配流程
+
+```
+玩家A                    服务端                  Redis
+  | QUICK_MATCH         |
+  |-------------------->|
+  |                     | LPUSH match:queue "1:1000"
+  |                     |<------------------|
+  |                     | RPOP match:queue（检查队列长度）
+  |                     |<------------------|
+  |                     | 队列只有1人，等待
+  | ERROR|等待对手...    |
+  |<-------------------->|
+                        |
+玩家B                    |
+  | QUICK_MATCH         |
+  |-------------------->|
+  |                     | LPUSH match:queue "2:980"
+  |                     |<------------------|
+  |                     | RPOP match:queue × 2
+  |                     |<------------------|
+  |                     | 创建房间，配对成功
+  | JOIN_OK|r01|2/2     |
+  |<-------------------->|
+```
+
+---
+
+## 7. ELO 积分算法
 
 排位对战结束后，服务端通过 ELO 公式更新双方积分：
 
@@ -464,7 +667,7 @@ public static class MoveRecord {
 
 ---
 
-## 7. 定时任务
+## 8. 定时任务
 
 | 任务名 | 线程名 | 频率 | 功能 |
 |--------|--------|------|------|
@@ -472,10 +675,11 @@ public static class MoveRecord {
 | 房间持久化 | `room-persistence` | 每 1 分钟 | 同步内存房间状态到 t_room，清理 30 分钟前结束的房间 |
 | 会话清理 | `session-cleanup` | 每 1 分钟 | 清理 300 秒未活跃的内存 Session 和 Redis Session |
 | SocketSession 清理 | （由 SessionManager 触发） | 每次会话清理时 | 清理数据库中 60 分钟前过期的 Socket 会话记录 |
+| Redis 连接保活 | `redis-keepalive` | 每 30 秒 | 保持 Redis 连接活跃 |
 
 ---
 
-## 8. 日志配置
+## 9. 日志配置
 
 **文件**：[logback.xml](../server/src/main/resources/logback.xml)
 
@@ -485,7 +689,7 @@ public static class MoveRecord {
 
 ---
 
-## 9. 并发安全设计
+## 10. 并发安全设计
 
 | 机制 | 用途 |
 |------|------|
@@ -493,11 +697,65 @@ public static class MoveRecord {
 | `CopyOnWriteArrayList` | `Room.players`、`Room.observers`（读多写少的玩家列表）|
 | `AtomicInteger` | `connectionCount`（连接计数）|
 | `volatile` | `running`（服务器运行标志）、`connected`（Redis 连接状态）|
-| `synchronized` | `Game.undo()`（悔棋防竞态）、`RedisManager.init()` |
+| `synchronized` | `Game.undo()`（悔棋防竞态）、`RedisManager.init()`、`Room.join/leave/broadcast` |
 
 ---
 
-## 10. 启动命令
+## 11. 注意事项
+
+### 11.1 TCP Socket 通信机制
+- 服务端使用 ServerSocket(8888) 监听，accept() 阻塞等待连接
+- 每个客户端连接创建独立 ClientHandler 线程
+- 协议格式：`{"cmd":"COMMAND","data":{"key":"value"}}`（JSON 消息）
+
+### 11.2 密码策略
+- 注册时直接保存明文密码（实训演示简化）
+- 登录时使用明文密码比对
+
+### 11.3 断线策略
+- 客户端断开后，保留会话 5 分钟（SessionManager + Redis）
+- 房间状态保持，支持重连恢复
+- 超时后自动清理会话，标记用户离线
+
+### 11.4 观战功能规则
+- 观战者只能接收广播，不能发送 MOVE/SURRENDER/REQUEST_UNDO/REQUEST_DRAW
+- 观战者通过 broadcastAll() 接收消息
+- 观战者不计入房间玩家数上限（2人），可无限加入
+- 观战者可以聊天（CHAT 消息同样广播给所有玩家和观战者）
+
+### 11.5 匹配规则
+- 快速匹配：先进先出，两人自动配对
+- 排位匹配：ELO 算法，积分差距阈值 200，优先匹配差距最小的对手
+- 匹配队列使用 Redis，支持跨服务器扩展
+
+---
+
+## 12. 代码量统计
+
+| 文件 | 行数 | 说明 |
+|------|------|------|
+| ClientHandler.java | ~1400 | 协议分发 + 所有业务处理方法 |
+| Room.java | ~500 | 房间状态机 + 游戏逻辑 + 再来一局 |
+| RoomManager.java | ~200 | 房间管理 + 匹配逻辑 |
+| Game.java | ~150 | 棋盘状态 + 胜负判定 |
+| AIPlayer.java | ~100 | AI 启发式评分 |
+| SessionManager.java | ~200 | 会话管理 + Redis |
+| RedisManager.java | ~400 | Redis 操作封装 |
+| UserDAO.java | ~150 | 用户数据访问 |
+| RecordDAO.java | ~100 | 战绩数据访问 |
+| RankDAO.java | ~150 | 排行榜数据访问 |
+| ChatDAO.java | ~80 | 聊天数据访问 |
+| FriendDAO.java | ~150 | 好友数据访问 |
+| RoomWatcherDAO.java | ~80 | 观战记录 |
+| GameSaveDAO.java | ~100 | 棋局保存 |
+| GameActionDAO.java | ~80 | 游戏操作记录 |
+| SocketSessionDAO.java | ~120 | Socket会话持久化 |
+| RoomDAO.java | ~100 | 房间持久化 |
+| **合计** | **~3400** | **全部功能已实现** |
+
+---
+
+## 13. 启动命令
 
 ```powershell
 # 方式一：使用本机脚本（推荐）
@@ -509,6 +767,7 @@ mvn -f server/pom.xml exec:java -Dexec.mainClass="com.gomatch.server.ServerMain"
 
 **前置条件**：
 1. MySQL 已启动，数据库 `gomatch` 已初始化（执行 `sql/init.sql`）
-2. JDK 21 已配置
-3. 已执行 `mvn install -pl common -am` 安装 common 模块
+2. Redis 已启动
+3. JDK 21 已配置
+4. 已执行 `mvn install -pl common -am` 安装 common 模块
 
