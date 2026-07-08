@@ -52,6 +52,8 @@ public class Room {
     private int whiteScore;
     private boolean gameStarted;
     private Instant gameStartTime;
+    private boolean blackReady = false;
+    private boolean whiteReady = false;
 
     private Long undoRequesterId;
     private Long drawRequesterId;
@@ -194,6 +196,29 @@ public class Room {
         }
 
         return true;
+    }
+
+    public synchronized boolean setReady(long userId, boolean ready) {
+        if (userId == blackUserId) {
+            blackReady = ready;
+            log.info("Player {} (BLACK) ready status changed to {} in room {}", userId, ready, roomId);
+        } else if (userId == whiteUserId) {
+            whiteReady = ready;
+            log.info("Player {} (WHITE) ready status changed to {} in room {}", userId, ready, roomId);
+        } else {
+            log.warn("setReady rejected: player {} is not in room {}", userId, roomId);
+            return false;
+        }
+        return true;
+    }
+
+    public synchronized boolean isBlackReady() { return blackReady; }
+    public synchronized boolean isWhiteReady() { return whiteReady; }
+    public synchronized boolean bothReady() { return blackReady && whiteReady; }
+
+    public synchronized void resetReady() {
+        blackReady = false;
+        whiteReady = false;
     }
 
     public synchronized void leave(ClientHandler handler) {
