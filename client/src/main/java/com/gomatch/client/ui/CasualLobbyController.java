@@ -385,7 +385,7 @@ public class CasualLobbyController implements NetworkListener {
                         showAlert("预览模式：观战功能需要服务器");
                         return;
                     }
-                    ClientMain.getConnector().send(Protocol.SPECTATE, finalRoomId);
+                    ClientMain.getConnector().send(Message.of(Protocol.SPECTATE, "roomId", finalRoomId));
                 });
 
                 card.getChildren().addAll(avatar, infoBox, actionBtn);
