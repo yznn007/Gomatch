@@ -50,6 +50,9 @@ public class LobbyController implements NetworkListener {
 
     public void setCurrentUser(User user) {
         this.currentUser = user;
+        if (user == null) {
+            return;
+        }
         String name = user.getUsername();
         userInfoLabel.setText(name);
         if (user.getScore() > 0) {
@@ -71,6 +74,7 @@ public class LobbyController implements NetworkListener {
     private void handleProfile() {
         ProfileController ctrl = ScreenManager.switchTo("/fxml/ProfileUI.fxml");
         ctrl.setCurrentUser(currentUser);
+        ctrl.setPreviewMode(previewMode);
     }
 
     @FXML
@@ -128,14 +132,17 @@ public class LobbyController implements NetworkListener {
     @Override
     public void onMessage(Message msg) {
         if (Protocol.RANKING_LIST.equals(msg.getCmd())) {
-            // 服务端返回的 JSON 已被解析，这里是手动拼接的 JSON 数组
-            // 暂时解析 data 中的原始 JSON 字符串
+            // 服务端返回的 JSON 数组
             org.json.JSONArray users = msg.getData().optJSONArray("users");
             if (users != null) {
                 drawerRanks.clear();
                 for (int i = 0; i < users.length(); i++) {
-                    org.json.JSONObject u = users.getJSONObject(i);
-                    drawerRanks.add(u.getString("rank") + ". " + u.getString("username") + "  " + u.getString("score"));
+                    org.json.JSONObject u = users.optJSONObject(i);
+                    if (u == null) continue;
+                    int rank = u.optInt("rank", i + 1);
+                    String username = u.optString("username", "");
+                    int score = u.optInt("score", 0);
+                    drawerRanks.add(rank + ". " + username + "  " + score);
                 }
             }
         } else if (Protocol.USER_SCORE_UPDATE.equals(msg.getCmd())) {

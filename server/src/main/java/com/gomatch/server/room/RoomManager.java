@@ -1,5 +1,7 @@
 package com.gomatch.server.room;
 
+import com.gomatch.common.Message;
+import com.gomatch.common.Protocol;
 import com.gomatch.server.game.AIPlayer;
 import com.gomatch.server.handler.ClientHandler;
 import com.gomatch.server.redis.RedisManager;
@@ -9,19 +11,53 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 
 /**
  * 房间管理器（单例）
  * 管理所有房间的创建、查询、销毁
- * 提供快速匹配功能
+ * 提供快速匹配功能（带超时）
  */
 public class RoomManager {
     private static final Logger log = LoggerFactory.getLogger(RoomManager.class);
     private static final RoomManager instance = new RoomManager();
 
+    /** 快速匹配超时时间（秒） */
+    private static final int MATCH_TIMEOUT_SECONDS = 60;
+
     private final Map<String, Room> rooms = new ConcurrentHashMap<>();
+
+    /** 快速匹配等待队列 */
+    private final Queue<MatchEntry> matchQueue = new ConcurrentLinkedQueue<>();
+    private final Map<Long, MatchEntry> matchEntries = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService matchScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "match-timeout");
+        t.setDaemon(true);
+        return t;
+    });
+
+    /** 匹配队列条目 */
+    private static class MatchEntry {
+        final long userId;
+        final int score;
+        final ClientHandler handler;
+        final ScheduledFuture<?> timeoutTask;
+
+        MatchEntry(long userId, int score, ClientHandler handler, ScheduledFuture<?> timeoutTask) {
+            this.userId = userId;
+            this.score = score;
+            this.handler = handler;
+            this.timeoutTask = timeoutTask;
+        }
+
+        void cancelTimeout() {
+            if (timeoutTask != null && !timeoutTask.isDone()) {
+                timeoutTask.cancel(false);
+            }
+        }
+    }
 
     private RoomManager() {}
 
@@ -141,62 +177,94 @@ public class RoomManager {
         }
     }
 
-    // ==================== 快速匹配（Redis队列）====================
+    // ==================== 快速匹配（内存队列 + 超时）====================
 
+    /**
+     * 快速匹配：优先配对等待中的玩家，否则进入等待队列，超时自动取消
+     */
     public Room quickMatch(ClientHandler player) {
-        log.info("玩家 {} 请求快速匹配", player.getUserId());
-        SessionManager.Session session = SessionManager.getInstance().getSessionByUserId(player.getUserId());
+        long userId = player.getUserId();
+        log.info("玩家 {} 请求快速匹配", userId);
+
+        // 如果已在等待队列中，先移除旧的
+        cancelMatch(userId);
+
+        SessionManager.Session session = SessionManager.getInstance().getSessionByUserId(userId);
         int score = session != null ? session.score : 1000;
 
-        // 先尝试从队列中取出等待的玩家，避免把自己刚 push 进去的元素 pop 出来
-        while (true) {
-            String opponentData = RedisManager.getInstance().pollMatchQueue();
-            if (opponentData == null) {
-                break;
-            }
+        // 1. 尝试从等待队列中配对
+        while (!matchQueue.isEmpty()) {
+            MatchEntry opponentEntry = matchQueue.poll();
+            matchEntries.remove(opponentEntry.userId);
 
-            String[] parts = opponentData.split(":");
-            if (parts.length < 2) {
+            if (opponentEntry.userId == userId) {
+                // 队列中只有自己，跳过
                 continue;
             }
 
-            long opponentId = Long.parseLong(parts[0]);
-            int opponentScore = Integer.parseInt(parts[1]);
-
-            if (opponentId == player.getUserId()) {
-                // 队列中只有该玩家自己，重新放回并继续等待
-                RedisManager.getInstance().addMatchQueue(player.getUserId(), score);
-                log.info("快速匹配队列仅含自己，继续等待: userId={}", player.getUserId());
-                return null;
+            // 检查对手是否还在线
+            ClientHandler opponentHandler = findClientHandler(opponentEntry.userId);
+            if (opponentHandler == null || opponentHandler.getCurrentRoom() != null) {
+                log.info("对手 {} 已离线或已在房间，跳过", opponentEntry.userId);
+                continue;
             }
 
-            ClientHandler opponentHandler = findClientHandler(opponentId);
-            if (opponentHandler != null) {
-                String roomName = "快速匹配 #" + (getActiveRoomCount() + 1);
-                Room room = createRoom(roomName, player);
+            // 配对成功：取消对方超时，创建房间
+            opponentEntry.cancelTimeout();
+            String roomName = "快速匹配 #" + (getActiveRoomCount() + 1);
+            Room room = createRoom(roomName, player);
 
-                room.join(opponentHandler);
-                player.setCurrentRoom(room);
-                opponentHandler.setCurrentRoom(room);
-                room.startGame();
+            room.join(opponentHandler);
+            player.setCurrentRoom(room);
+            opponentHandler.setCurrentRoom(room);
+            room.startGame();
 
-                log.info("快速匹配成功: 玩家 {}(score={}) vs 玩家 {}(score={})",
-                        player.getUserId(), score, opponentId, opponentScore);
-                return room;
-            } else {
-                log.warn("对手已离线，继续寻找: userId={}", opponentId);
-                // 继续循环，尝试下一个等待的玩家
-            }
+            log.info("快速匹配成功: 玩家 {}(score={}) vs 玩家 {}(score={})",
+                    userId, score, opponentEntry.userId, opponentEntry.score);
+            return room;
         }
 
-        // 没有可用对手，把自己加入队列等待
-        RedisManager.getInstance().addMatchQueue(player.getUserId(), score);
-        log.info("玩家 {} 进入快速匹配队列等待", player.getUserId());
+        // 2. 没有对手，加入等待队列，启动超时定时器
+        ScheduledFuture<?> timeoutTask = matchScheduler.schedule(() -> {
+            MatchEntry entry = matchEntries.remove(userId);
+            if (entry != null) {
+                matchQueue.remove(entry);
+                // 如果玩家还没被匹配，通知超时
+                if (entry.handler.getCurrentRoom() == null) {
+                    entry.handler.send(Message.of(Protocol.MATCH_TIMEOUT,
+                            "msg", "匹配超时，请重试"));
+                    log.info("玩家 {} 快速匹配超时，已移出队列", userId);
+                }
+            }
+        }, MATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+        MatchEntry entry = new MatchEntry(userId, score, player, timeoutTask);
+        matchQueue.offer(entry);
+        matchEntries.put(userId, entry);
+
+        // 同步写入 Redis（兼容性）
+        RedisManager.getInstance().addMatchQueue(userId, score);
+
+        log.info("玩家 {} 进入快速匹配队列等待（{}秒超时），当前队列长度: {}",
+                userId, MATCH_TIMEOUT_SECONDS, matchQueue.size());
         return null;
     }
 
+    /**
+     * 取消匹配
+     */
+    public void cancelMatch(long userId) {
+        MatchEntry entry = matchEntries.remove(userId);
+        if (entry != null) {
+            entry.cancelTimeout();
+            matchQueue.remove(entry);
+            RedisManager.getInstance().removeFromMatchQueue(userId);
+            log.info("玩家 {} 取消快速匹配", userId);
+        }
+    }
+
     public int getMatchQueueSize() {
-        return RedisManager.getInstance().getMatchQueueSize();
+        return matchQueue.size();
     }
 
     public Room rankedMatch(ClientHandler player, int playerScore) {

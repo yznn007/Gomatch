@@ -63,6 +63,8 @@ public class Protocol {
     public static final String LOGOUT_OK    = "LOGOUT_OK";
     public static final String TURN_TIMEOUT = "TURN_TIMEOUT";
     public static final String USER_SCORE_UPDATE = "USER_SCORE_UPDATE";
+    public static final String CANCEL_MATCH  = "CANCEL_MATCH";
+    public static final String MATCH_TIMEOUT = "MATCH_TIMEOUT";
 
     public static String build(String... parts) {
         return String.join(SEPARATOR, parts);
