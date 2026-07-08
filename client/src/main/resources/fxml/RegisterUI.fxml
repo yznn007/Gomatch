@@ -2,42 +2,41 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import com.gomatch.client.ui.PixelCard?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.gomatch.client.ui.RegisterController"
             styleClass="page-root">
     <center>
-        <!-- Register card (CodingNepal Glassmorphism Theme - Chinese) -->
-        <VBox styleClass="glass-card" alignment="CENTER" spacing="22" prefWidth="400" prefHeight="500" maxWidth="400" maxHeight="500">
-            <Label text="注册账号" styleClass="title" style="-fx-font-size: 26px; -fx-padding: 0 0 10 0;"/>
+        <PixelCard variant="blue" showParticles="false"
+                   maxWidth="480" minWidth="320" minHeight="420"
+                   style="-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 12, 0, 0, 4);">
+            <VBox alignment="CENTER" spacing="22" styleClass="glass-card"
+                    style="-fx-background-color: rgba(255,255,255,0.72); -fx-background-radius: 16; -fx-padding: 28 32;">
+                <Label text="注册账号" styleClass="title" style="-fx-font-size: 26px; -fx-padding: 0 0 10 0;"/>
 
-            <!-- 输入框组 1: 用户名 -->
-            <VBox styleClass="input-field-group" prefWidth="320" maxWidth="320" style="-fx-padding: 6 0 4 0;">
-                <TextField fx:id="usernameField" styleClass="glass-input" promptText="用户名"/>
+                <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
+                    <TextField fx:id="usernameField" styleClass="glass-input" promptText="用户名"/>
+                </VBox>
+
+                <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
+                    <PasswordField fx:id="passwordField" styleClass="glass-input" promptText="密码"/>
+                </VBox>
+
+                <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
+                    <PasswordField fx:id="confirmField" styleClass="glass-input" promptText="确认密码"/>
+                </VBox>
+
+                <Label fx:id="errorLabel" text="" styleClass="error-text" maxWidth="320"/>
+
+                <Button text="注 册" onAction="#handleRegister" styleClass="btn-primary"
+                        maxWidth="320" style="-fx-font-size: 15px; -fx-margin: 10 0 0 0;"/>
+
+                <HBox alignment="CENTER" spacing="4" maxWidth="320">
+                    <Label text="已有账号？" styleClass="subtitle" style="-fx-text-fill: #64748b;"/>
+                    <Button text="返回登录" onAction="#handleBack" styleClass="btn-link" style="-fx-padding: 0; -fx-font-size: 13px;"/>
+                </HBox>
             </VBox>
-
-            <!-- 输入框组 2: 密码 -->
-            <VBox styleClass="input-field-group" prefWidth="320" maxWidth="320" style="-fx-padding: 6 0 4 0;">
-                <PasswordField fx:id="passwordField" styleClass="glass-input" promptText="密码"/>
-            </VBox>
-
-            <!-- 输入框组 3: 确认密码 -->
-            <VBox styleClass="input-field-group" prefWidth="320" maxWidth="320" style="-fx-padding: 6 0 4 0;">
-                <PasswordField fx:id="confirmField" styleClass="glass-input" promptText="确认密码"/>
-            </VBox>
-
-            <!-- 错误提示 -->
-            <Label fx:id="errorLabel" text="" styleClass="error-text" prefWidth="320" maxWidth="320"/>
-
-            <!-- 注册按钮 (全宽) -->
-            <Button text="注 册" onAction="#handleRegister" styleClass="btn-primary"
-                    prefWidth="320" prefHeight="44" maxWidth="320" style="-fx-font-size: 15px; -fx-margin: 10 0 0 0;"/>
-
-            <!-- 返回登录 -->
-            <HBox alignment="CENTER" spacing="4" prefWidth="320" maxWidth="320">
-                <Label text="已有账号？" styleClass="subtitle" style="-fx-text-fill: #64748b;"/>
-                <Button text="返回登录" onAction="#handleBack" styleClass="btn-link" style="-fx-padding: 0; -fx-font-size: 13px;"/>
-            </HBox>
-        </VBox>
+        </PixelCard>
     </center>
 </BorderPane>

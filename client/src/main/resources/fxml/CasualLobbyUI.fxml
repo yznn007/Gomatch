@@ -29,7 +29,7 @@
                 <StackPane alignment="CENTER" style="-fx-background-color: transparent;">
                     
                     <!-- 面板 1: 房间列表 -->
-                    <VBox fx:id="roomsPane" spacing="16" alignment="TOP_CENTER" maxWidth="600" prefWidth="600" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                    <VBox fx:id="roomsPane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
                         <HBox spacing="10" alignment="CENTER_LEFT">
                             <Button text="创建房间" onAction="#handleCreateRoom" styleClass="btn-primary"/>
                             <Button text="快速匹配" fx:id="quickMatchBtn" onAction="#handleQuickMatch" styleClass="btn-secondary"/>
@@ -44,7 +44,7 @@
                     </VBox>
  
                     <!-- 面板 2: 观战列表 -->
-                    <VBox fx:id="spectatePane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                    <VBox fx:id="spectatePane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
                         <Label text="正在进行中的对局" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
                         <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" VBox.vgrow="ALWAYS" minHeight="200" prefHeight="260">
                             <VBox fx:id="spectateContainer" spacing="10" style="-fx-padding: 8; -fx-background-color: transparent;"/>

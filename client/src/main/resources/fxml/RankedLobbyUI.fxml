@@ -21,7 +21,7 @@
             <Label fx:id="rankLabel" text="当前段位: 未定级" styleClass="title" style="-fx-font-size: 28px;"/>
             <Label text="排位胜负会计入积分与段位" styleClass="subtitle"/>
             <Button text="开 始 排 位 匹 配" onAction="#handleMatch" styleClass="btn-primary"
-                    prefWidth="320" prefHeight="80" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+                    maxWidth="480" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-pref-height: 80;"/>
             <Label fx:id="matchStatus" text="" styleClass="subtitle" style="-fx-padding: 10 0 0 0;"/>
             <Region VBox.vgrow="ALWAYS"/>
         </VBox>

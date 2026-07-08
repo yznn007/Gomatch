@@ -89,6 +89,8 @@ public class ShapeGridBackground extends Pane {
         double h = getHeight();
         if (w <= 0 || h <= 0) return;
 
+        if (Math.abs(canvas.getWidth() - w) < 1 && Math.abs(canvas.getHeight() - h) < 1) return;
+
         canvas.setWidth(w);
         canvas.setHeight(h);
 

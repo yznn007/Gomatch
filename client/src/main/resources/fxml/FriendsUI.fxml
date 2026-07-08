@@ -30,7 +30,7 @@
                 <StackPane alignment="CENTER" style="-fx-background-color: transparent;">
                     
                     <!-- 面板 1: 我的好友 -->
-                    <VBox fx:id="myFriendsPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                    <VBox fx:id="myFriendsPane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
                         <Label text="好友列表" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
                         <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" prefHeight="320" minHeight="240" VBox.vgrow="ALWAYS">
                             <VBox fx:id="friendsContainer" spacing="10" style="-fx-padding: 8; -fx-background-color: transparent;"/>
@@ -38,7 +38,7 @@
                     </VBox>
  
                     <!-- 面板 2: 好友请求 -->
-                    <VBox fx:id="requestsPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                    <VBox fx:id="requestsPane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
                         <Label text="待处理好友请求" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
                         <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" prefHeight="320" minHeight="240" VBox.vgrow="ALWAYS">
                             <VBox fx:id="requestsContainer" spacing="10" style="-fx-padding: 8; -fx-background-color: transparent;"/>
@@ -46,7 +46,7 @@
                     </VBox>
 
                     <!-- 面板 3: 添加好友 -->
-                    <VBox fx:id="addPane" spacing="16" alignment="TOP_CENTER" maxWidth="380" prefWidth="380" style="-fx-background-color: transparent; -fx-padding: 20 16 20 0;">
+                    <VBox fx:id="addPane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 20 16 20 0;">
                         <Label text="发送好友申请" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
                         <TextField fx:id="friendIdField" promptText="请输入对方用户ID" styleClass="field" prefWidth="380"/>
                         <TextField fx:id="addMsgField" promptText="申请备注消息 (可选)" styleClass="field" prefWidth="380"/>

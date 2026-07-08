@@ -17,6 +17,7 @@ public class LobbyController implements NetworkListener {
     @FXML private Label avatarLabel;
     @FXML private VBox rankDrawer;
     @FXML private ListView<String> rankDrawerList;
+    @FXML private Button managementBtn;
 
     private final ObservableList<String> drawerRanks = FXCollections.observableArrayList();
     private User currentUser;
@@ -56,6 +57,10 @@ public class LobbyController implements NetworkListener {
             userScoreLabel.setText("未定级");
         }
         avatarLabel.setText(name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase());
+        if (!"ADMIN".equalsIgnoreCase(user.getRole())) {
+            managementBtn.setVisible(false);
+            managementBtn.setManaged(false);
+        }
     }
 
     @FXML

@@ -171,7 +171,12 @@ public class BoardController implements NetworkListener {
         double available = Math.min(w, h) - MARGIN * 2;
         if (available <= 0) return;
         cellSize = (int) (available / (SIZE - 1));
+        if (cellSize <= 0) return;
         int boardPx = (SIZE - 1) * cellSize + MARGIN * 2;
+        if (boardPx <= 0) return;
+        double curW = canvas.getWidth();
+        double curH = canvas.getHeight();
+        if (Math.abs(curW - boardPx) < 1 && Math.abs(curH - boardPx) < 1) return;
         canvas.setWidth(boardPx);
         canvas.setHeight(boardPx);
         redrawAll();
@@ -179,6 +184,7 @@ public class BoardController implements NetworkListener {
 
     /** 重绘棋盘格线 + 已落的所有棋子 */
     private void redrawAll() {
+        if (canvas.getWidth() <= 0 || canvas.getHeight() <= 0) return;
         drawBoard();
         for (int x = 0; x < SIZE; x++) {
             for (int y = 0; y < SIZE; y++) {
@@ -510,8 +516,10 @@ public class BoardController implements NetworkListener {
     }
     private void drawBoard() {
         if (cellSize == 0) return;
-        // 清除画布上的旧内容，防止尺寸变化时留下残影
-        gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        double cw = canvas.getWidth();
+        double ch = canvas.getHeight();
+        if (cw <= 0 || ch <= 0) return;
+        gc.clearRect(0, 0, cw, ch);
 
         int boardPx = (SIZE - 1) * cellSize + MARGIN * 2;
         gc.setFill(Color.rgb(222, 184, 135));
