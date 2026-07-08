@@ -142,12 +142,13 @@ public class CasualLobbyController implements NetworkListener {
     private void startMatch() {
         ClientMain.getConnector().send(Protocol.QUICK_MATCH);
         isMatching = true;
-        matchCountdown = 60;
+        matchCountdown = 0;
         updateMatchStatus();
         startCountdown();
         Platform.runLater(() -> {
             if (quickMatchBtn != null) {
                 quickMatchBtn.setText("取消匹配");
+                quickMatchBtn.getStyleClass().add("btn-danger");
             }
         });
     }
@@ -167,6 +168,7 @@ public class CasualLobbyController implements NetworkListener {
         Platform.runLater(() -> {
             if (quickMatchBtn != null) {
                 quickMatchBtn.setText("快速匹配");
+                quickMatchBtn.getStyleClass().remove("btn-danger");
             }
         });
     }
@@ -176,17 +178,15 @@ public class CasualLobbyController implements NetworkListener {
             matchCountdownTimer.stop();
         }
         matchCountdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
-            if (matchCountdown > 0) {
-                matchCountdown--;
-                updateMatchStatus();
-            }
+            matchCountdown++;
+            updateMatchStatus();
         }));
-        matchCountdownTimer.setCycleCount(60);
+        matchCountdownTimer.setCycleCount(Timeline.INDEFINITE);
         matchCountdownTimer.play();
     }
 
     private void updateMatchStatus() {
-        setStatus("正在匹配中... 倒计时: " + matchCountdown + "秒 (点击'快速匹配'取消)", true);
+        setStatus("正在匹配中... 已等待: " + matchCountdown + "秒 (点击'取消匹配'取消)", true);
     }
 
     // handleSpectate 已被内嵌卡片按钮取代

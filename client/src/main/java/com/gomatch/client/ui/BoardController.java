@@ -768,8 +768,8 @@ public class BoardController implements NetworkListener {
             e.printStackTrace();
         }
 
-        // 默认显示完整棋局
-        replayIndex = replayMoveList.size();
+        // 默认从头开始
+        replayIndex = 0;
         showReplayStep(replayIndex);
     }
 
