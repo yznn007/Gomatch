@@ -125,7 +125,8 @@ main() → Application.launch()
 | 方法 | 说明 |
 |------|------|
 | `connect(host, port)` | 建立 TCP 连接，启动接收线程 |
-| `send(String... parts)` | 构建协议报文并发送（调用 `Protocol.build`） |
+| `send(Message msg)` | 发送 JSON 消息对象 |
+| `send(String cmd)` | 发送仅含命令的消息（如认领 `"SURRENDER"`） |
 | `addListener(listener)` | 注册消息监听器（去重）|
 | `removeListener(listener)` | 移除指定监听器 |
 | `clearListeners()` | **切换页面前调用**，清除所有旧监听，防止内存泄漏 |
@@ -136,8 +137,8 @@ main() → Application.launch()
 
 ```
 接收线程读到一行
-  → Protocol.parse(line) 解析为 [cmd, args...]
-  → Platform.runLater(() → 遍历 listeners.onMessage(cmd, args))
+  → Message.fromJson(line) 解析为 Message 对象
+  → Platform.runLater(() → 遍历 listeners.onMessage(msg))
 ```
 
 ---
@@ -147,12 +148,14 @@ main() → Application.launch()
 **文件**：[NetworkListener.java](../client/src/main/java/com/gomatch/client/network/NetworkListener.java)
 
 ```java
+import com.gomatch.common.Message;
+
 public interface NetworkListener {
-    void onMessage(String command, String[] args);
+    void onMessage(Message msg);
 }
 ```
 
-所有需要处理服务器消息的 Controller 均实现此接口，并在初始化时注册到 `ServerConnector`。
+所有需要处理服务器消息的 Controller 均实现此接口，并在初始化时注册到 `ServerConnector`。消息通过 `msg.getCmd()` 获取命令、`msg.getData()` 获取 `JSONObject` 数据体。
 
 ---
 
@@ -323,8 +326,29 @@ ProfileUI（个人中心）
 | 落子 | 点击 Canvas → 发送 `MOVE|row|col` |
 | 同步 | 收到 `MOVE_SYNC` → 更新 board 数组 → 重绘 |
 | 聊天 | TextArea + TextField，收到 `CHAT` 追加并自动滚底 |
-| 游戏结束 | 收到 `GAME_OVER` → `ScreenManager.showDialog(GameOverUI)` |
+| 对手信息 | 收到 `GAME_START` → 解析 `blackUsername/whiteUsername/blackScore/whiteScore` 显示对手真实用户名和积分 |
+| 积分变化 | 收到 `GAME_OVER` → 解析 `data.scoreChanges` 提取本局积分变化，传递给结算弹窗 |
+| 游戏结束弹窗 | `showGameOverDialog()` 使用 `Stage.show()` 非阻塞模式，保持网络消息接收能力（支持再来一局） |
 | 操作按钮 | 悔棋（`REQUEST_UNDO`）、求和（`REQUEST_DRAW`）、认输（`SURRENDER`） |
+| 再来一局 | 发送 `REQUEST_REMATCH` 请求对手；监听 `REMATCH_REQUESTED/ACCEPTED/REJECTED` 处理对方响应 |
+
+#### 消息监听（Rematch 相关）
+
+| 消息 | 处理逻辑 |
+|------|----------|
+| `GAME_START` | 解析 `blackUsername/blackScore/whiteUsername/whiteScore`，调用 `setGameInfo()` 显示双方用户名和积分 |
+| `GAME_OVER` | 解析 `scoreChanges` 数组获取积分变化；调用 `showGameOverDialog()` 弹出非阻塞结算弹窗 |
+| `REMATCH_REQUESTED` | 收到对手的再来一局请求 → `showConfirmDialog` → 发送 `REPLY_REMATCH|1` 或 `0` |
+| `REMATCH_ACCEPTED` | 双方同意 → 关闭结算弹窗，等待新 `GAME_START` 重置棋盘 |
+| `REMATCH_REJECTED` | 对手拒绝 → 关闭结算弹窗，返回大厅 |
+
+#### 核心新增字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `gameOverDialogStage` | `Stage` | 持有结算弹窗引用，用于再来一局时关闭旧弹窗 |
+| `blackPlayerScoreLabel` / `whitePlayerScoreLabel` | `Label` | 双方积分显示控件 |
+| `rematchRequested` | `boolean` | 是否已发送过再来一局请求（防重复） |
 
 ### 5.8 `ProfileController`
 
@@ -336,10 +360,20 @@ ProfileUI（个人中心）
 ### 5.9 `GameOverController`
 
 **FXML**：`/fxml/GameOverUI.fxml`  
-**显示方式**：模态弹窗（`ScreenManager.showDialog`）
+**显示方式**：非阻塞弹窗（`Stage.show()`，由 `BoardController.showGameOverDialog()` 管理）
 
-- 显示胜负结果
-- 返回大厅按钮 → 关闭弹窗 → 跳至 LobbyUI
+| 关键方法 | 说明 |
+|----------|------|
+| `setResult(result, scoreChange)` | 设置胜负结果（WIN/LOSE/DRAW），并显示积分变化：正数绿色 `+N 积分`、负数红色 `N 积分`、零灰色 `+0 积分` |
+| `handleGoLobby()` | 关闭弹窗 → 返回 LobbyUI |
+| `handleReplay()` | 再来一局：**AI 模式**发送 `AI_MATCH` 重新开始人机对战；**PVP 模式**发送 `REQUEST_REMATCH` 请求对手 |
+
+#### 新增 FXML 控件
+
+| fx:id | 类型 | 说明 |
+|-------|------|------|
+| `scoreChangeLabel` | `Label` | 显示本局积分变化（颜色区分正/负/零） |
+| `replayButton` | `Button` | "再来一局"按钮，`onAction="#handleReplay"` |
 
 ### 5.10 `RankingController` / `RecordController` / `AboutController`
 
