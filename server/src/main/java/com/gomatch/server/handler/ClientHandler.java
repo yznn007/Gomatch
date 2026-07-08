@@ -132,6 +132,7 @@ public class ClientHandler implements Runnable {
             case Protocol.QUICK_MATCH     -> handleQuickMatch();
             case Protocol.CANCEL_MATCH    -> handleCancelMatch();
             case Protocol.RANKED_MATCH    -> handleRankedMatch();
+            case Protocol.RANKED_READY    -> handleRankedReady(msg);
             case Protocol.RANKING         -> handleRanking(msg);
             case Protocol.QUERY_RECORD    -> handleQueryRecord(msg);
             case Protocol.REQUEST_UNDO    -> handleRequestUndo();
@@ -582,6 +583,7 @@ public class ClientHandler implements Runnable {
     private void handleCancelMatch() {
         if (!authenticated) return;
         roomManager.cancelMatch(userId);
+        roomManager.cancelRankedMatch(userId);
         send(Message.of(Protocol.CANCEL_MATCH, "msg", "已取消匹配"));
         log.info("玩家 {} 取消匹配", userId);
     }
@@ -608,10 +610,6 @@ public class ClientHandler implements Runnable {
         if (room != null) {
             this.currentRoom = room;
 
-            room.broadcastAll(Message.of(Protocol.GAME_START,
-                    "blackUserId", String.valueOf(room.getBlackUserId()),
-                    "whiteUserId", String.valueOf(room.getWhiteUserId())));
-
             send(Message.builder(Protocol.JOIN_OK)
                     .set("roomId", room.getRoomId())
                     .set("roomName", room.getRoomName())
@@ -622,6 +620,46 @@ public class ClientHandler implements Runnable {
             log.info("玩家 {} 排位匹配成功，房间: {}", userId, room.getRoomId());
         } else {
             send(Message.of("RANKED_MATCH_WAIT", "msg", "等待排位对手... (" + roomManager.getRankedMatchQueueSize() + "/2)"));
+        }
+    }
+
+    private void handleRankedReady(Message msg) {
+        if (!authenticated) {
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
+            return;
+        }
+
+        if (currentRoom == null) {
+            send(Message.of(Protocol.ERROR, "msg", "不在房间中"));
+            return;
+        }
+
+        if (currentRoom.getGameType() != Room.GameType.RANKED) {
+            send(Message.of(Protocol.ERROR, "msg", "非排位模式"));
+            return;
+        }
+
+        if (currentRoom.isGameStarted()) {
+            send(Message.of(Protocol.ERROR, "msg", "游戏已开始"));
+            return;
+        }
+
+        boolean ready = "true".equals(msg.getString("ready"));
+        currentRoom.setReady(userId, ready);
+
+        boolean blackReady = currentRoom.isBlackReady();
+        boolean whiteReady = currentRoom.isWhiteReady();
+
+        currentRoom.broadcastAll(Message.of(Protocol.RANKED_READY,
+                "blackReady", String.valueOf(blackReady),
+                "whiteReady", String.valueOf(whiteReady)));
+
+        if (currentRoom.bothReady()) {
+            log.info("双方玩家已准备，开始排位赛: room={}", currentRoom.getRoomId());
+            currentRoom.startGame();
+            currentRoom.broadcastAll(Message.of(Protocol.GAME_START,
+                    "blackUserId", String.valueOf(currentRoom.getBlackUserId()),
+                    "whiteUserId", String.valueOf(currentRoom.getWhiteUserId())));
         }
     }
 

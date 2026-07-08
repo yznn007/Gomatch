@@ -463,6 +463,17 @@ public class RedisManager {
         return null;
     }
 
+    public boolean isInRankedMatchQueue(long userId) {
+        if (!isConnected()) return false;
+        try {
+            Double score = syncCommands.zscore("match:ranked", String.valueOf(userId));
+            return score != null;
+        } catch (Exception e) {
+            log.warn("Failed to check ranked match queue: {}", e.getMessage());
+            return false;
+        }
+    }
+
     public int getRankedMatchQueueSize() {
         if (!isConnected()) return 0;
         try {

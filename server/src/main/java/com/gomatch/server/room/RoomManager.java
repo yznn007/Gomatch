@@ -319,17 +319,20 @@ public class RoomManager {
             }
 
             MatchEntry opponentEntry = rankedMatchEntries.remove(opponentId);
-            ClientHandler opponentHandler = opponentEntry != null ? opponentEntry.handler : findClientHandler(opponentId);
+            if (opponentEntry == null) {
+                log.info("对手 {} 已取消匹配，跳过", opponentId);
+                rankedOpponent = RedisManager.getInstance().pollRankedMatchQueue(playerScore, userId);
+                continue;
+            }
+            ClientHandler opponentHandler = opponentEntry.handler;
             if (opponentHandler == null || opponentHandler.getCurrentRoom() != null) {
                 log.info("对手 {} 已离线或已在房间，跳过", opponentId);
                 rankedOpponent = RedisManager.getInstance().pollRankedMatchQueue(playerScore, userId);
                 continue;
             }
 
-            if (opponentEntry != null) {
-                opponentEntry.cancelTimeout();
-                rankedMatchQueue.remove(opponentEntry);
-            }
+            opponentEntry.cancelTimeout();
+            rankedMatchQueue.remove(opponentEntry);
 
             String roomName = "排位赛 #" + (getActiveRoomCount() + 1);
             Room room = createRankedRoom(roomName, player);
@@ -337,10 +340,20 @@ public class RoomManager {
             room.join(opponentHandler);
             player.setCurrentRoom(room);
             opponentHandler.setCurrentRoom(room);
-            room.startGame();
 
-            log.info("排位匹配成功: 玩家 {}({}) vs 玩家 {}({})",
+            String playerUsername = player.getUsername();
+            String opponentUsername = opponentHandler.getUsername();
+
+            player.send(Message.of(Protocol.RANKED_MATCH_FOUND,
+                    "opponentId", String.valueOf(opponentId),
+                    "opponentUsername", opponentUsername));
+            opponentHandler.send(Message.of(Protocol.RANKED_MATCH_FOUND,
+                    "opponentId", String.valueOf(userId),
+                    "opponentUsername", playerUsername));
+
+            log.info("排位匹配成功: 玩家 {}({}) vs 玩家 {}({}), 等待双方准备",
                     userId, playerScore, opponentId, opponentScore);
+            log.info("已发送 RANKED_MATCH_FOUND 给玩家 {} 和玩家 {}", userId, opponentId);
             return room;
         }
 

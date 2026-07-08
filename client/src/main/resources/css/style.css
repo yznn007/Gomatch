@@ -237,6 +237,23 @@
     -fx-background-color: linear-gradient(to bottom, #ef4444, #dc2626);
 }
 
+.btn-success {
+    -fx-background-color: linear-gradient(to bottom, #34d399, #10b981);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 9 24;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.35), 10, 0, 0, 4);
+}
+.btn-success:hover {
+    -fx-background-color: linear-gradient(to bottom, #6ee7b7, #34d399);
+    -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.55), 14, 0, 0, 5);
+}
+.btn-success:armed {
+    -fx-background-color: linear-gradient(to bottom, #10b981, #059669);
+}
+
 .btn-link {
     -fx-background-color: transparent;
     -fx-text-fill: #475569;

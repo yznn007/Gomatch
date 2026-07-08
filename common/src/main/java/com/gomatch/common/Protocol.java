@@ -72,6 +72,8 @@ public class Protocol {
     public static final String USER_SCORE_UPDATE = "USER_SCORE_UPDATE";
     public static final String CANCEL_MATCH  = "CANCEL_MATCH";
     public static final String MATCH_TIMEOUT = "MATCH_TIMEOUT";
+    public static final String RANKED_MATCH_FOUND = "RANKED_MATCH_FOUND";
+    public static final String RANKED_READY = "RANKED_READY";
 
 }
 
