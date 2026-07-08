@@ -427,6 +427,7 @@ public class RedisManager {
         }
     }
 
+    @SuppressWarnings("deprecation")
     public String pollRankedMatchQueue(int playerScore) {
         if (!isConnected()) return null;
         try {
@@ -453,6 +454,47 @@ public class RedisManager {
         } catch (Exception e) {
             log.warn("Failed to get ranked match queue size: {}", e.getMessage());
             return 0;
+        }
+    }
+
+    // ==================== 对战记录缓存 ====================
+
+    private static final long RECORD_TTL_SECONDS = 3 * 24 * 3600; // 3天
+
+    /**
+     * 将对战记录缓存到 Redis，为双方玩家各存一份
+     */
+    public void saveGameRecord(long userId, String recordJson, long timestampMs) {
+        if (!isConnected()) return;
+        try {
+            String key = "record:" + userId;
+            syncCommands.zadd(key, (double) timestampMs, recordJson);
+            syncCommands.expire(key, RECORD_TTL_SECONDS);
+            log.debug("Game record cached in Redis: userId={}, key={}", userId, key);
+        } catch (Exception e) {
+            log.warn("Failed to cache game record in Redis: userId={}", userId, e.getMessage());
+        }
+    }
+
+    /**
+     * 从 Redis 获取用户对战记录（按时间倒序，支持分页）
+     */
+    public List<String> getGameRecords(long userId, int page, int size) {
+        if (!isConnected()) return Collections.emptyList();
+        try {
+            String key = "record:" + userId;
+            // zrevrange 按 score 倒序，最新的在前
+            int start = page * size;
+            int stop = start + size - 1;
+            List<String> results = syncCommands.zrevrange(key, start, stop);
+            // 续期 TTL
+            if (results != null && !results.isEmpty()) {
+                syncCommands.expire(key, RECORD_TTL_SECONDS);
+            }
+            return results != null ? results : Collections.emptyList();
+        } catch (Exception e) {
+            log.warn("Failed to get game records from Redis: userId={}", userId, e.getMessage());
+            return Collections.emptyList();
         }
     }
 }

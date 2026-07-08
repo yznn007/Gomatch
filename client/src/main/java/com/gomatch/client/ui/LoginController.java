@@ -129,9 +129,16 @@ public class LoginController implements NetworkListener {
             user.setWinCount(msg.getInt("winCount"));
             user.setLoseCount(msg.getInt("loseCount"));
             user.setDrawCount(msg.getInt("drawCount"));
+            user.setRank(msg.getInt("rank"));
 
             AppConfig.setCurrentUser(user);
             AppConfig.setPreviewMode(false);
+
+            // 保存认证 token，用于断线重连
+            String token = msg.getString("token");
+            if (token != null && !token.isEmpty()) {
+                AppConfig.setAuthToken(token);
+            }
 
             saveOrClearCredentials();
 

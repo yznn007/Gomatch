@@ -3,7 +3,6 @@ package com.gomatch.server.handler;
 import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import com.gomatch.server.dao.*;
-import com.gomatch.server.game.AIPlayer;
 import com.gomatch.server.game.Game;
 import com.gomatch.server.redis.RedisManager;
 import com.gomatch.server.room.Room;
@@ -118,7 +117,6 @@ public class ClientHandler implements Runnable {
             case Protocol.CHAT_HISTORY    -> handleChatHistory(msg);
             case Protocol.WATCHER_HISTORY -> handleWatcherHistory(msg);
             case Protocol.LOGOUT          -> handleLogout();
-            case Protocol.HEARTBEAT       -> handleHeartbeat();
             case "AI_MATCH"               -> handleAiMatch(msg);
             default -> send(Message.of(Protocol.ERROR, "msg", "Unknown command: " + cmd));
         }
@@ -139,15 +137,6 @@ public class ClientHandler implements Runnable {
         if (writer != null) {
             writer.println(text);
         }
-    }
-
-    // ==================== 心跳 ====================
-
-    private void handleHeartbeat() {
-        if (authenticated) {
-            RedisManager.getInstance().setOnline(userId, "heartbeat");
-        }
-        send(Message.cmdOnly(Protocol.HEARTBEAT_OK));
     }
 
     // ==================== 注册 ====================
@@ -208,6 +197,12 @@ public class ClientHandler implements Runnable {
                     userInfo.getLoseCount(), userInfo.getDrawCount());
             sessionManager.updateSessionHandler(userInfo.getUserId(), this);
 
+            int rank = 0;
+            RankDAO.RankInfo rankInfo = rankDAO.getRankByUserId(userInfo.getUserId());
+            if (rankInfo != null) {
+                rank = rankInfo.getRank();
+            }
+
             send(Message.builder(Protocol.LOGIN_OK)
                     .set("userId", String.valueOf(userInfo.getUserId()))
                     .set("username", userInfo.getUsername())
@@ -215,6 +210,7 @@ public class ClientHandler implements Runnable {
                     .set("winCount", String.valueOf(userInfo.getWinCount()))
                     .set("loseCount", String.valueOf(userInfo.getLoseCount()))
                     .set("drawCount", String.valueOf(userInfo.getDrawCount()))
+                    .set("rank", String.valueOf(rank))
                     .set("token", session.token)
                     .build());
             
@@ -567,11 +563,7 @@ public class ClientHandler implements Runnable {
             boolean isDraw = winnerId == 0;
             String reason = isDraw ? "board_full" : "five_in_a_row";
             String resultMsg = isDraw ? "棋盘已满，平局" : "五子连珠!";
-            currentRoom.endGame(winnerId, reason);
-
-            currentRoom.broadcastAll(Message.of(Protocol.GAME_OVER,
-                    "winnerId", String.valueOf(winnerId),
-                    "msg", resultMsg));
+            currentRoom.endGame(winnerId, reason, resultMsg);
 
             log.info("Game over in room {}: winner={}, reason={}", currentRoom.getRoomId(), winnerId, reason);
         } else if (currentRoom.isAiMode()) {
@@ -625,11 +617,7 @@ public class ClientHandler implements Runnable {
                 ? currentRoom.getWhiteUserId() 
                 : currentRoom.getBlackUserId();
 
-        currentRoom.endGame(winnerId, "surrender");
-
-        currentRoom.broadcastAll(Message.of(Protocol.GAME_OVER,
-                "winnerId", String.valueOf(winnerId),
-                "msg", getUsername() + " 认输"));
+        currentRoom.endGame(winnerId, "surrender", getUsername() + " 认输");
 
         log.info("玩家 {} 在房间 {} 认输，获胜方: {}", userId, currentRoom.getRoomId(), winnerId);
     }
@@ -718,6 +706,19 @@ public class ClientHandler implements Runnable {
         int page = msg.has("page") ? msg.getInt("page") : 0;
         int size = msg.has("size") ? msg.getInt("size") : 10;
 
+        // 优先从 Redis 缓存读取对战记录（3天内的热数据）
+        List<String> redisRecords = RedisManager.getInstance().getGameRecords(userId, page, size);
+        if (!redisRecords.isEmpty()) {
+            JSONArray recs = new JSONArray();
+            for (String json : redisRecords) {
+                recs.put(new JSONObject(json));
+            }
+            send(Message.builder("RECORD_LIST").set("records", recs).build());
+            log.info("Sent record list from Redis to user {} ({} records)", userId, redisRecords.size());
+            return;
+        }
+
+        // Redis 未命中则回退 MySQL 查询
         List<String[]> records = recordDAO.getHistory(userId, page, size);
 
         JSONArray recs = new JSONArray();
@@ -733,6 +734,9 @@ public class ClientHandler implements Runnable {
             String player2Name = player2 != null ? player2.getUsername() : (player2Id == -1 ? "AI" : "未知");
 
             String boardData = record.length > 8 ? record[8] : "";
+            int p1ScoreChange = record.length > 9 ? Integer.parseInt(record[9]) : 0;
+            int p2ScoreChange = record.length > 10 ? Integer.parseInt(record[10]) : 0;
+            int userScoreChange = userId == player1Id ? p1ScoreChange : p2ScoreChange;
 
             JSONObject r = new JSONObject();
             r.put("recordId", record[0]);
@@ -746,6 +750,7 @@ public class ClientHandler implements Runnable {
             r.put("duration", record[6]);
             r.put("createTime", record[7]);
             r.put("boardData", boardData);
+            r.put("scoreChange", userScoreChange);
             recs.put(r);
         }
         send(Message.builder("RECORD_LIST").set("records", recs).build());
@@ -831,9 +836,6 @@ public class ClientHandler implements Runnable {
 
         if (currentRoom.isAiMode()) {
             currentRoom.directDraw(userId);
-            currentRoom.broadcastAll(Message.of(Protocol.GAME_OVER,
-                    "winnerId", "0",
-                    "msg", "双方平局(求和)"));
             log.info("Player {} drew game in AI mode", userId);
             return;
         }
@@ -867,9 +869,6 @@ public class ClientHandler implements Runnable {
         boolean success = currentRoom.replyDraw(userId, accept);
         if (success) {
             if (accept) {
-                currentRoom.broadcastAll(Message.of(Protocol.GAME_OVER,
-                        "winnerId", "0",
-                        "msg", "双方平局(求和)"));
                 log.info("玩家 {} 同意求和，游戏平局结束", userId);
             } else {
                 currentRoom.broadcastAll(Message.cmdOnly("DRAW_REJECTED"));
@@ -914,6 +913,12 @@ public class ClientHandler implements Runnable {
                 this.currentRoom = room;
                 sessionManager.updateSessionRoom(session.userId, room.getRoomId());
 
+                int rank = 0;
+                RankDAO.RankInfo rankInfo = rankDAO.getRankByUserId(session.userId);
+                if (rankInfo != null) {
+                    rank = rankInfo.getRank();
+                }
+
                 send(Message.builder("RECONNECT_OK")
                         .set("userId", String.valueOf(session.userId))
                         .set("username", session.username)
@@ -921,6 +926,7 @@ public class ClientHandler implements Runnable {
                         .set("winCount", String.valueOf(session.winCount))
                         .set("loseCount", String.valueOf(session.loseCount))
                         .set("drawCount", String.valueOf(session.drawCount))
+                        .set("rank", String.valueOf(rank))
                         .set("roomId", room.getRoomId())
                         .set("roomName", room.getRoomName())
                         .set("players", room.getPlayerCount() + "/" + 2)
@@ -936,6 +942,12 @@ public class ClientHandler implements Runnable {
                 log.warn("Reconnect failed: cannot rejoin room {} for userId {}", room.getRoomId(), session.userId);
             }
         } else {
+            int rank = 0;
+            RankDAO.RankInfo rankInfo = rankDAO.getRankByUserId(session.userId);
+            if (rankInfo != null) {
+                rank = rankInfo.getRank();
+            }
+
             send(Message.builder("RECONNECT_OK")
                     .set("userId", String.valueOf(session.userId))
                     .set("username", session.username)
@@ -943,6 +955,7 @@ public class ClientHandler implements Runnable {
                     .set("winCount", String.valueOf(session.winCount))
                     .set("loseCount", String.valueOf(session.loseCount))
                     .set("drawCount", String.valueOf(session.drawCount))
+                    .set("rank", String.valueOf(rank))
                     .set("roomId", "")
                     .set("roomName", "")
                     .set("players", "")

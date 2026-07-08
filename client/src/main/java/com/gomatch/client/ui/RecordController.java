@@ -4,34 +4,43 @@ import com.gomatch.client.ClientMain;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.lang.reflect.Type;
-import java.util.List;
 import java.util.Map;
 
 public class RecordController implements NetworkListener {
     @FXML private VBox recordsContainer;
 
     private final ObservableList<Map<String, String>> records = FXCollections.observableArrayList();
-    private final Gson gson = new Gson();
-    private String movesData; // 用于棋谱回放
 
+    private int parseIntOrDefault(String value, int defaultValue) {
+        if (value == null || value.isEmpty()) return defaultValue;
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
+    private String formatDuration(int seconds) {
+        if (seconds <= 0) return "--";
+        int m = seconds / 60;
+        int s = seconds % 60;
+        if (m > 0) {
+            return m + "分" + (s > 0 ? s + "秒" : "");
+        }
+        return s + "秒";
+    }
+
+    @SuppressWarnings("unchecked")
     @FXML
     private void initialize() {
         records.addListener((javafx.collections.ListChangeListener<Map<String, String>>) c -> renderRecordCards());
@@ -78,13 +87,19 @@ public class RecordController implements NetworkListener {
                 }
 
                 String boardData = r.optString("boardData", "").replace("\\|", "|");
+                int moveCount = r.optInt("moveCount", 0);
+                int duration = r.optInt("duration", 0);
+                int scoreChange = r.optInt("scoreChange", 0);
 
                 records.add(Map.of(
                     "opponent", opponentName,
                     "result", result,
                     "time", r.getString("createTime"),
                     "replay", "回放",
-                    "moves", boardData
+                    "moves", boardData,
+                    "moveCount", String.valueOf(moveCount),
+                    "duration", String.valueOf(duration),
+                    "scoreChange", String.valueOf(scoreChange)
                 ));
             }
         }
@@ -117,19 +132,20 @@ public class RecordController implements NetworkListener {
                 badgeText.getStyleClass().add("result-badge-text");
                 badgeContainer.getChildren().add(badgeText);
 
+                int scoreChange = parseIntOrDefault(record.get("scoreChange"), 0);
                 Label scoreChangeLabel = new Label();
                 scoreChangeLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 32px;");
                 if (result.contains("胜")) {
                     badgeContainer.getStyleClass().add("result-badge-win");
-                    scoreChangeLabel.setText("+15");
+                    scoreChangeLabel.setText("+" + scoreChange);
                     scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #22c55e;");
                 } else if (result.contains("负")) {
                     badgeContainer.getStyleClass().add("result-badge-lose");
-                    scoreChangeLabel.setText("-10");
+                    scoreChangeLabel.setText(String.valueOf(scoreChange));
                     scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #ef4444;");
                 } else {
                     badgeContainer.getStyleClass().add("result-badge-draw");
-                    scoreChangeLabel.setText("+0");
+                    scoreChangeLabel.setText("+" + scoreChange);
                     scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #94a3b8;");
                 }
 
@@ -140,16 +156,11 @@ public class RecordController implements NetworkListener {
 
                 Label opponentLabel = new Label("与 " + record.get("opponent") + " 的对局");
                 opponentLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
-                
-                // Parse moves and construct detailed info (duration, steps)
-                String moves = record.get("moves");
-                int stepsCount = 0;
-                if (moves != null && !moves.isEmpty()) {
-                    stepsCount = moves.split(";").length;
-                }
-                
-                String durationStr = "3分45秒"; // Default/Mock duration
-                Label detailsLabel = new Label("落子: " + (stepsCount > 0 ? stepsCount : "--") + " 步 | 用时: " + durationStr);
+
+                int moveCount = parseIntOrDefault(record.get("moveCount"), 0);
+                int durationSec = parseIntOrDefault(record.get("duration"), 0);
+                String durationStr = formatDuration(durationSec);
+                Label detailsLabel = new Label("落子: " + (moveCount > 0 ? moveCount : "--") + " 步 | 用时: " + durationStr);
                 detailsLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 detailsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
 

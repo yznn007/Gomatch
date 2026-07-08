@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS `t_game_record` (
     `board_data` TEXT NOT NULL COMMENT '棋谱数据(JSON格式)',
     `duration` INT COMMENT '对局时长(秒)',
     `move_count` INT DEFAULT 0 COMMENT '落子总数',
+    `player1_score_change` INT DEFAULT 0 COMMENT '玩家1积分变化',
+    `player2_score_change` INT DEFAULT 0 COMMENT '玩家2积分变化',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     INDEX `idx_player1` (`player1_id`),
     INDEX `idx_player2` (`player2_id`),

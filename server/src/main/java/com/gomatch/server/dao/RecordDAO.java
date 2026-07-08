@@ -23,6 +23,13 @@ public class RecordDAO {
     public long saveRecord(String roomId, long player1Id, long player2Id,
                            Long winnerId, String result,
                            List<MoveRecord> moves, Instant startTime, String gameType) {
+        return saveRecord(roomId, player1Id, player2Id, winnerId, result, moves, startTime, gameType, 0, 0);
+    }
+
+    public long saveRecord(String roomId, long player1Id, long player2Id,
+                           Long winnerId, String result,
+                           List<MoveRecord> moves, Instant startTime, String gameType,
+                           int player1ScoreChange, int player2ScoreChange) {
         int duration = (int) Duration.between(startTime, Instant.now()).getSeconds();
         int moveCount = moves.size();
 
@@ -30,8 +37,8 @@ public class RecordDAO {
 
         String sql = "INSERT INTO t_game_record " +
                      "(player1_id, player2_id, game_type, winner_id, result, " +
-                     "board_data, duration, move_count, create_time) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                     "board_data, duration, move_count, player1_score_change, player2_score_change, create_time) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -47,13 +54,16 @@ public class RecordDAO {
             ps.setString(6, boardData);
             ps.setInt(7, duration);
             ps.setInt(8, moveCount);
+            ps.setInt(9, player1ScoreChange);
+            ps.setInt(10, player2ScoreChange);
             ps.executeUpdate();
 
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
                     long recordId = rs.getLong(1);
-                    log.info("Game record saved: room={}, recordId={}, p1={}, p2={}, winner={}, duration={}s, moves={}",
-                            roomId, recordId, player1Id, player2Id, winnerId, duration, moveCount);
+                    log.info("Game record saved: room={}, recordId={}, p1={}, p2={}, winner={}, duration={}s, moves={}, p1Delta={}, p2Delta={}",
+                            roomId, recordId, player1Id, player2Id, winnerId, duration, moveCount,
+                            player1ScoreChange, player2ScoreChange);
                     return recordId;
                 }
             }
@@ -79,7 +89,7 @@ public class RecordDAO {
 
     public List<String[]> getHistory(long userId, int page, int size) {
         String sql = "SELECT record_id, player1_id, player2_id, winner_id, result, " +
-                     "board_data, duration, move_count, create_time " +
+                     "board_data, duration, move_count, player1_score_change, player2_score_change, create_time " +
                      "FROM t_game_record " +
                      "WHERE player1_id = ? OR player2_id = ? " +
                      "ORDER BY create_time DESC LIMIT ? OFFSET ?";
@@ -103,7 +113,9 @@ public class RecordDAO {
                         String.valueOf(rs.getInt("move_count")),
                         String.valueOf(rs.getInt("duration")),
                         rs.getString("create_time"),
-                        rs.getString("board_data")
+                        rs.getString("board_data"),
+                        String.valueOf(rs.getInt("player1_score_change")),
+                        String.valueOf(rs.getInt("player2_score_change"))
                     });
                 }
             }

@@ -19,11 +19,12 @@ public final class AppConfig {
     public static final Gson GSON = new Gson();
 
     // ---------- 游戏配置 ----------
-    /** 每回合限时（秒），默认 30 秒 */
-    public static final int TURN_TIME_LIMIT = 30;
+    /** 每回合限时（秒），默认 60 秒 */
+    public static final int TURN_TIME_LIMIT = 60;
 
     // ---------- 全局会话状态 (Session) ----------
     private static User currentUser;
+    private static String authToken;
     private static boolean previewMode;
     private static boolean aiMode;
 
@@ -41,6 +42,14 @@ public final class AppConfig {
 
     public static void setPreviewMode(boolean preview) {
         previewMode = preview;
+    }
+
+    public static String getAuthToken() {
+        return authToken;
+    }
+
+    public static void setAuthToken(String token) {
+        authToken = token;
     }
 
     public static boolean isAiMode() {
