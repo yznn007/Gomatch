@@ -4,6 +4,7 @@ import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.RoomInfo;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
+import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -121,43 +122,43 @@ public class RoomWaitingController implements NetworkListener {
         lastLocalChatTime = System.currentTimeMillis();
 
         if (!previewMode) {
-            ClientMain.getConnector().send(Protocol.CHAT, msg);
+            ClientMain.getConnector().send(Message.of(Protocol.CHAT, "message", msg));
         }
         chatInput.clear();
     }
 
     @Override
-    public void onMessage(String command, String[] args) {
-        if (Protocol.PLAYER_ENTER.equals(command)) {
-            String username = args.length > 1 ? args[1] : args[0];
+    public void onMessage(Message msg) {
+        String cmd = msg.getCmd();
+        if (Protocol.PLAYER_ENTER.equals(cmd)) {
+            String username = msg.getString("username");
             players.add(username);
             statusLabel.setText("玩家 " + username + " 已加入");
-        } else if (Protocol.PLAYER_LEAVE.equals(command)) {
-            String username = args.length > 1 ? args[1] : args[0];
+        } else if (Protocol.PLAYER_LEAVE.equals(cmd)) {
+            String username = msg.getString("username");
             players.remove(username);
-        } else if (Protocol.CHAT_MSG.equals(command)) {
-            String username = args.length > 1 ? args[1] : args[0];
-            String message = args.length > 2 ? args[2] : "";
+        } else if (Protocol.CHAT_MSG.equals(cmd)) {
+            String username = msg.getString("username");
+            String message = msg.getString("message");
             String display = username + ": " + message + "\n";
-            // 避免服务端回显导致自己发送的消息出现两次
             if (display.equals(lastLocalChat) &&
                 System.currentTimeMillis() - lastLocalChatTime < 2000) {
                 return;
             }
             chatArea.appendText(display);
             chatArea.setScrollTop(Double.MAX_VALUE);
-        } else if (Protocol.GAME_START.equals(command)) {
+        } else if (Protocol.GAME_START.equals(cmd)) {
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-            ctrl.setGameInfo(args[0], args[1], currentUser.getUsername());
-        } else if ("UNDO_REQUESTED".equals(command)) {
-            statusLabel.setText("玩家 " + args[1] + " 请求悔棋");
-        } else if ("UNDO_ACCEPTED".equals(command)) {
+            ctrl.setGameInfo(msg.getString("blackUserId"), msg.getString("whiteUserId"), currentUser.getUsername());
+        } else if ("UNDO_REQUESTED".equals(cmd)) {
+            statusLabel.setText("玩家 " + msg.getString("requesterName") + " 请求悔棋");
+        } else if ("UNDO_ACCEPTED".equals(cmd)) {
             statusLabel.setText("对手同意悔棋");
-        } else if ("UNDO_REJECTED".equals(command)) {
+        } else if ("UNDO_REJECTED".equals(cmd)) {
             statusLabel.setText("对手拒绝悔棋");
-        } else if ("DRAW_REQUESTED".equals(command)) {
-            statusLabel.setText("玩家 " + args[1] + " 请求求和");
-        } else if ("DRAW_REJECTED".equals(command)) {
+        } else if ("DRAW_REQUESTED".equals(cmd)) {
+            statusLabel.setText("玩家 " + msg.getString("requesterName") + " 请求求和");
+        } else if ("DRAW_REJECTED".equals(cmd)) {
             statusLabel.setText("对手拒绝求和");
         }
     }

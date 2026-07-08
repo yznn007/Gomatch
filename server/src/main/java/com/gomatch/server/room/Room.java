@@ -1,5 +1,6 @@
 package com.gomatch.server.room;
 
+import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import com.gomatch.server.game.AIPlayer;
 import com.gomatch.server.game.Game;
@@ -319,12 +320,10 @@ public class Room {
 
         boolean success = game.move(x, y, -1);
         if (success) {
-            broadcastAll(
-                    Protocol.MOVE_SYNC,
-                    String.valueOf(x),
-                    String.valueOf(y),
-                    String.valueOf(Game.WHITE)
-            );
+            broadcastAll(Message.of(Protocol.MOVE_SYNC,
+                    "x", String.valueOf(x),
+                    "y", String.valueOf(y),
+                    "color", String.valueOf(Game.WHITE)));
 
             if (game.isFinished()) {
                 int winnerColor = game.getWinner();
@@ -332,11 +331,9 @@ public class Room {
                 String reason = winnerColor == Game.EMPTY ? "draw" : "five_in_a_row";
                 String msg = winnerColor == Game.EMPTY ? "棋盘已满，平局" : "AI 获胜!";
                 endGame(winnerId, reason);
-                broadcastAll(
-                        Protocol.GAME_OVER,
-                        String.valueOf(winnerId),
-                        msg
-                );
+                broadcastAll(Message.of(Protocol.GAME_OVER,
+                        "winnerId", String.valueOf(winnerId),
+                        "msg", msg));
                 log.info("AI game ended in room {}: winnerColor={}, winnerId={}, reason={}",
                         roomId, winnerColor == Game.BLACK ? "BLACK" : winnerColor == Game.WHITE ? "WHITE" : "DRAW", winnerId, reason);
             } else {
@@ -424,11 +421,11 @@ public class Room {
                     long id = handler.getUserId();
                     UserDAO.UserInfo info = id == blackUserId ? blackInfo : (id == whiteUserId ? whiteInfo : null);
                     if (info != null) {
-                        handler.send(Protocol.USER_SCORE_UPDATE,
-                            String.valueOf(info.getScore()),
-                            String.valueOf(info.getWinCount()),
-                            String.valueOf(info.getLoseCount()),
-                            String.valueOf(info.getDrawCount()));
+                        handler.send(Message.of(Protocol.USER_SCORE_UPDATE,
+                            "score", String.valueOf(info.getScore()),
+                            "winCount", String.valueOf(info.getWinCount()),
+                            "loseCount", String.valueOf(info.getLoseCount()),
+                            "drawCount", String.valueOf(info.getDrawCount())));
                     }
                 }
                 log.info("Score update pushed to players in room {}: black={}(score={}), white={}(score={})",
@@ -575,7 +572,8 @@ public class Room {
                 long winnerId = (timedOutPlayerId == blackUserId) ? whiteUserId : blackUserId;
                 log.info("Turn timeout in room {}: player {} ran out of time, winner={}", roomId, timedOutPlayerId, winnerId);
                 endGame(winnerId, "timeout");
-                broadcastAll(Protocol.TURN_TIMEOUT, String.valueOf(winnerId));
+                broadcastAll(Message.of(Protocol.TURN_TIMEOUT,
+                        "winnerId", String.valueOf(winnerId)));
             }
         }, TURN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
@@ -859,10 +857,10 @@ public class Room {
         return winnerId;
     }
 
-    public synchronized void broadcastToPlayers(String... msg) {
-        String message = com.gomatch.common.Protocol.build(msg);
+    public synchronized void broadcastToPlayers(Message msg) {
+        String message = msg.toJson();
         log.debug("broadcastToPlayers room {}: message={}, playerCount={}",
-                roomId, message, players.size());
+                roomId, msg.getCmd(), players.size());
 
         int sentCount = 0;
         for (ClientHandler player : players) {
@@ -874,10 +872,10 @@ public class Room {
         log.debug("broadcastToPlayers completed: sent to {} of {} players", sentCount, players.size());
     }
 
-    public synchronized void broadcastToObservers(String... msg) {
-        String message = com.gomatch.common.Protocol.build(msg);
-        log.debug("broadcastToObservers room {}: message={}, observerCount={}",
-                roomId, message, observers.size());
+    public synchronized void broadcastToObservers(Message msg) {
+        String message = msg.toJson();
+        log.debug("broadcastToObservers room {}: cmd={}, observerCount={}",
+                roomId, msg.getCmd(), observers.size());
 
         int sentCount = 0;
         for (ClientHandler observer : observers) {
@@ -889,8 +887,8 @@ public class Room {
         log.debug("broadcastToObservers completed: sent to {} of {} observers", sentCount, observers.size());
     }
 
-    public synchronized void broadcastAll(String... msg) {
-        log.debug("broadcastAll room {}: message parts={}", roomId, msg.length);
+    public synchronized void broadcastAll(Message msg) {
+        log.debug("broadcastAll room {}: cmd={}", roomId, msg.getCmd());
         broadcastToPlayers(msg);
         broadcastToObservers(msg);
         log.debug("broadcastAll completed for room {}", roomId);
@@ -899,9 +897,9 @@ public class Room {
     /**
      * 向除指定玩家外的所有人广播（用于悔棋/求和请求等场景，避免请求者自己也收到弹窗）
      */
-    public synchronized void broadcastToPlayersExcept(long excludeUserId, String... msg) {
-        String message = com.gomatch.common.Protocol.build(msg);
-        log.debug("broadcastToPlayersExcept room {}: exclude={}, message={}", roomId, excludeUserId, message);
+    public synchronized void broadcastToPlayersExcept(long excludeUserId, Message msg) {
+        String message = msg.toJson();
+        log.debug("broadcastToPlayersExcept room {}: exclude={}, cmd={}", roomId, excludeUserId, msg.getCmd());
 
         for (ClientHandler player : players) {
             if (player != null && player.getUserId() != excludeUserId) {
@@ -912,9 +910,9 @@ public class Room {
         broadcastToObservers(msg);
     }
 
-    public synchronized void sendToPlayer(ClientHandler handler, String... msg) {
-        log.debug("sendToPlayer room {}: handler={}, message parts={}",
-                roomId, handler != null ? handler.getUserId() : "null", msg.length);
+    public synchronized void sendToPlayer(ClientHandler handler, Message msg) {
+        log.debug("sendToPlayer room {}: handler={}, cmd={}",
+                roomId, handler != null ? handler.getUserId() : "null", msg.getCmd());
 
         if (handler == null) {
             log.warn("sendToPlayer rejected: handler is null");

@@ -2,6 +2,7 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
+import com.gomatch.common.Message;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -10,6 +11,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class RankingController implements NetworkListener {
     @FXML private TableView<User>          rankingTable;
@@ -86,18 +89,19 @@ public class RankingController implements NetworkListener {
     }
 
     @Override
-    public void onMessage(String command, String[] args) {
-        if (com.gomatch.common.Protocol.RANKING_LIST.equals(command)) {
+    public void onMessage(Message msg) {
+        if (com.gomatch.common.Protocol.RANKING_LIST.equals(msg.getCmd())) {
             rankingData.clear();
-            for (int i = 0; i < args.length; i += 4) {
-                if (i + 3 < args.length) {
-                    User u = new User();
-                    u.setRank(Integer.parseInt(args[i]));
-                    u.setUsername(args[i + 1]);
-                    u.setScore(Integer.parseInt(args[i + 2]));
-                    u.setWinRate(args[i + 3]);
-                    rankingData.add(u);
-                }
+            JSONArray users = msg.getData().optJSONArray("users");
+            if (users == null) return;
+            for (int i = 0; i < users.length(); i++) {
+                JSONObject u = users.getJSONObject(i);
+                User user = new User();
+                user.setRank(Integer.parseInt(u.getString("rank")));
+                user.setUsername(u.getString("username"));
+                user.setScore(Integer.parseInt(u.getString("score")));
+                user.setWinRate(u.getString("winRate"));
+                rankingData.add(user);
             }
         }
     }

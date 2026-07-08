@@ -2,6 +2,8 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.network.NetworkListener;
+import com.gomatch.common.Message;
+import com.gomatch.common.Protocol;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -11,6 +13,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.Map;
 
@@ -67,7 +71,7 @@ public class RecordController implements NetworkListener {
             );
         } else {
             ClientMain.getConnector().addListener(this);
-            ClientMain.getConnector().send("QUERY_RECORD", "0", "10");
+            ClientMain.getConnector().send(Message.of(Protocol.QUERY_RECORD, "page", 0, "size", 10));
         }
     }
 
@@ -77,40 +81,40 @@ public class RecordController implements NetworkListener {
     }
 
     @Override
-    public void onMessage(String command, String[] args) {
-        if ("RECORD_LIST".equals(command)) {
+    public void onMessage(Message msg) {
+        if ("RECORD_LIST".equals(msg.getCmd())) {
             records.clear();
             com.gomatch.client.model.User currentUser = com.gomatch.client.AppConfig.getCurrentUser();
             if (currentUser == null) {
                 return;
             }
             long currentUserId = currentUser.getUserId();
-            for (int i = 0; i < args.length; i += 11) {
-                if (i + 10 < args.length) {
-                    long player1Id = Long.parseLong(args[i + 1]);
-                    long winnerId = Long.parseLong(args[i + 5]);
-                    
-                    String opponentName = currentUserId == player1Id ? args[i + 4] : args[i + 2];
-                    String result;
-                    if (winnerId == 0) {
-                        result = "平局";
-                    } else if (winnerId == currentUserId) {
-                        result = "胜";
-                    } else {
-                        result = "负";
-                    }
-                    
-                    String boardData = args[i + 10];
-                    boardData = boardData.replace("\\|", "|");
-                    
-                    records.add(Map.of(
-                        "opponent", opponentName,
-                        "result", result,
-                        "time", args[i + 9],
-                        "replay", "回放",
-                        "moves", boardData
-                    ));
+            JSONArray recs = msg.getData().optJSONArray("records");
+            if (recs == null) return;
+            for (int i = 0; i < recs.length(); i++) {
+                JSONObject r = recs.getJSONObject(i);
+                long player1Id = Long.parseLong(r.getString("player1Id"));
+                long winnerId = Long.parseLong(r.getString("winnerId"));
+
+                String opponentName = currentUserId == player1Id ? r.getString("player2Name") : r.getString("player1Name");
+                String result;
+                if (winnerId == 0) {
+                    result = "平局";
+                } else if (winnerId == currentUserId) {
+                    result = "胜";
+                } else {
+                    result = "负";
                 }
+
+                String boardData = r.optString("boardData", "").replace("\\|", "|");
+
+                records.add(Map.of(
+                    "opponent", opponentName,
+                    "result", result,
+                    "time", r.getString("createTime"),
+                    "replay", "回放",
+                    "moves", boardData
+                ));
             }
         }
     }

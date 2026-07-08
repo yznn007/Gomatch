@@ -3,6 +3,7 @@ package com.gomatch.client;
 import com.gomatch.client.network.ServerConnector;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.client.ui.ScreenManager;
+import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -23,8 +24,8 @@ public class ClientMain extends Application {
         // 全局断线监听器
         connector.addListener(new NetworkListener() {
             @Override
-            public void onMessage(String command, String[] args) {
-                if (Protocol.DISCONNECT.equals(command) && !disconnectHandled) {
+            public void onMessage(Message msg) {
+                if (Protocol.DISCONNECT.equals(msg.getCmd()) && !disconnectHandled) {
                     disconnectHandled = true;
                     Platform.runLater(() -> {
                         Alert alert = new Alert(Alert.AlertType.WARNING, "与服务器断开连接，请重新登录");

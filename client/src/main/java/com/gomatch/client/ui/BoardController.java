@@ -4,6 +4,7 @@ import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
+import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -311,7 +312,7 @@ public class BoardController implements NetworkListener {
         drawStone(x, y, color);
         myTurn = false;
         updateTurnLabel();
-        ClientMain.getConnector().send(Protocol.MOVE, String.valueOf(x), String.valueOf(y));
+        ClientMain.getConnector().send(Message.of(Protocol.MOVE, "x", String.valueOf(x), "y", String.valueOf(y)));
     }
 
     private void drawStone(int x, int y, int color) {
@@ -486,7 +487,7 @@ public class BoardController implements NetworkListener {
         lastLocalChatTime = System.currentTimeMillis();
 
         if (!previewMode) {
-            ClientMain.getConnector().send(Protocol.CHAT, msg);
+            ClientMain.getConnector().send(Message.of(Protocol.CHAT, "message", msg));
         }
         chatInput.clear();
     }
@@ -579,17 +580,16 @@ public class BoardController implements NetworkListener {
 
 
     @Override
-    public void onMessage(String command, String[] args) {
-        if (Protocol.GAME_START.equals(command)) {
+    public void onMessage(Message msg) {
+        String cmd = msg.getCmd();
+        if (Protocol.GAME_START.equals(cmd)) {
             moveHistory.clear();
-            if (args.length >= 2) {
-                setGameInfo(args[0], args[1], myUsername);
-            }
+            setGameInfo(msg.getString("blackUserId"), msg.getString("whiteUserId"), myUsername);
             startCountdown();
-        } else if (Protocol.MOVE_SYNC.equals(command)) {
-            int x     = Integer.parseInt(args[0]);
-            int y     = Integer.parseInt(args[1]);
-            int color = Integer.parseInt(args[2]);
+        } else if (Protocol.MOVE_SYNC.equals(cmd)) {
+            int x     = msg.getInt("x");
+            int y     = msg.getInt("y");
+            int color = msg.getInt("color");
             drawStone(x, y, color);
             moveHistory.add(new int[]{x, y, color});
             currentTurn = (color == 1) ? 2 : 1;
@@ -597,12 +597,12 @@ public class BoardController implements NetworkListener {
                      (myColor.equals("white") && currentTurn == 2);
             updateTurnLabel();
             startCountdown();
-        } else if (Protocol.GAME_OVER.equals(command)) {
+        } else if (Protocol.GAME_OVER.equals(cmd)) {
             gameOver = true;
             myTurn = false;
             stopCountdown();
-            String winnerId = args[0];
-            String reason = args.length > 1 ? args[1] : "";
+            String winnerId = msg.getString("winnerId");
+            String reason = msg.getString("msg");
             String result;
             if ("0".equals(winnerId)) {
                 result = "平局";
@@ -621,39 +621,38 @@ public class BoardController implements NetworkListener {
             }
             updateTurnLabel();
             ScreenManager.showDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult(result, reason));
-        } else if (Protocol.CHAT_MSG.equals(command)) {
-            String username = args.length > 1 ? args[1] : args[0];
-            String message = args.length > 2 ? args[2] : "";
+        } else if (Protocol.CHAT_MSG.equals(cmd)) {
+            String username = msg.getString("username");
+            String message = msg.getString("message");
             String display = username + ": " + message + "\n";
-            // 避免服务端回显导致自己发送的消息出现两次
             if (display.equals(lastLocalChat) &&
                 System.currentTimeMillis() - lastLocalChatTime < 2000) {
                 return;
             }
             chatArea.appendText(display);
             chatArea.setScrollTop(Double.MAX_VALUE);
-        } else if ("UNDO_REQUESTED".equals(command)) {
-            chatArea.appendText("[系统] 玩家 " + args[1] + " 请求悔棋\n");
+        } else if ("UNDO_REQUESTED".equals(cmd)) {
+            String requesterName = msg.getString("requesterName");
+            chatArea.appendText("[系统] 玩家 " + requesterName + " 请求悔棋\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
-            // 弹出确认对话框
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("悔棋请求");
-            alert.setHeaderText("玩家 " + args[1] + " 请求悔棋");
+            alert.setHeaderText("玩家 " + requesterName + " 请求悔棋");
             alert.setContentText("是否同意悔棋？");
             alert.showAndWait().ifPresent(response -> {
                 if (response == ButtonType.OK) {
-                    ClientMain.getConnector().send(Protocol.REPLY_UNDO, "1");
+                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_UNDO, "accept", "1"));
                 } else {
-                    ClientMain.getConnector().send(Protocol.REPLY_UNDO, "0");
+                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_UNDO, "accept", "0"));
                 }
             });
-        } else if ("UNDO_ACCEPTED".equals(command)) {
+        } else if ("UNDO_ACCEPTED".equals(cmd)) {
             if (moveHistory.size() >= 2) {
                 int[] opponentMove = moveHistory.remove(moveHistory.size() - 1);
                 board[opponentMove[0]][opponentMove[1]] = 0;
                 int[] myMove = moveHistory.remove(moveHistory.size() - 1);
                 board[myMove[0]][myMove[1]] = 0;
-                currentTurn = myMove[2]; // 回到请求悔棋者的回合
+                currentTurn = myMove[2];
                 if (moveHistory.isEmpty()) {
                     lastMoveX = -1;
                     lastMoveY = -1;
@@ -670,46 +669,43 @@ public class BoardController implements NetworkListener {
             startCountdown();
             chatArea.appendText("[系统] 悔棋成功\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
-        } else if ("UNDO_REJECTED".equals(command)) {
+        } else if ("UNDO_REJECTED".equals(cmd)) {
             chatArea.appendText("[系统] 对手拒绝悔棋\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
-        } else if ("DRAW_REQUESTED".equals(command)) {
-            chatArea.appendText("[系统] 玩家 " + args[1] + " 请求求和\n");
+        } else if ("DRAW_REQUESTED".equals(cmd)) {
+            String requesterName = msg.getString("requesterName");
+            chatArea.appendText("[系统] 玩家 " + requesterName + " 请求求和\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
-            // 弹出确认对话框
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("求和请求");
-            alert.setHeaderText("玩家 " + args[1] + " 请求求和");
+            alert.setHeaderText("玩家 " + requesterName + " 请求求和");
             alert.setContentText("是否同意平局？");
             alert.showAndWait().ifPresent(response -> {
                 if (response == ButtonType.OK) {
-                    ClientMain.getConnector().send(Protocol.REPLY_DRAW, "1");
+                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_DRAW, "accept", "1"));
                 } else {
-                    ClientMain.getConnector().send(Protocol.REPLY_DRAW, "0");
+                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_DRAW, "accept", "0"));
                 }
             });
-        } else if ("DRAW_REJECTED".equals(command)) {
+        } else if ("DRAW_REJECTED".equals(cmd)) {
             chatArea.appendText("[系统] 对手拒绝求和\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
-        } else if (Protocol.TURN_TIMEOUT.equals(command)) {
+        } else if (Protocol.TURN_TIMEOUT.equals(cmd)) {
             gameOver = true;
             stopCountdown();
-            // 超时的是当前回合方 → myTurn=true 表示我超时
             String result = myTurn ? "超时负" : "对手超时";
             myTurn = false;
             updateTurnLabel();
             ScreenManager.showDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult(result, "timeout"));
             chatArea.appendText("[系统] " + result + "\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
-        } else if (Protocol.USER_SCORE_UPDATE.equals(command)) {
-            if (args.length >= 4) {
-                User cu = AppConfig.getCurrentUser();
-                if (cu != null) {
-                    cu.setScore(Integer.parseInt(args[0]));
-                    cu.setWinCount(Integer.parseInt(args[1]));
-                    cu.setLoseCount(Integer.parseInt(args[2]));
-                    cu.setDrawCount(Integer.parseInt(args[3]));
-                }
+        } else if (Protocol.USER_SCORE_UPDATE.equals(cmd)) {
+            User cu = AppConfig.getCurrentUser();
+            if (cu != null) {
+                cu.setScore(msg.getInt("score"));
+                cu.setWinCount(msg.getInt("winCount"));
+                cu.setLoseCount(msg.getInt("loseCount"));
+                cu.setDrawCount(msg.getInt("drawCount"));
             }
         }
     }
