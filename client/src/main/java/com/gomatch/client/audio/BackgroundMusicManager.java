@@ -15,8 +15,8 @@ public final class BackgroundMusicManager {
 
     private static final BooleanProperty globalMusicEnabled = new SimpleBooleanProperty(true);
     private static final BooleanProperty backgroundMusicEnabled = new SimpleBooleanProperty(true);
-    private static final DoubleProperty globalVolume = new SimpleDoubleProperty(80);
-    private static final DoubleProperty backgroundVolume = new SimpleDoubleProperty(70);
+    private static final DoubleProperty globalVolume = new SimpleDoubleProperty(45);
+    private static final DoubleProperty backgroundVolume = new SimpleDoubleProperty(35);
 
     private static MediaPlayer player;
     private static boolean unavailable;
