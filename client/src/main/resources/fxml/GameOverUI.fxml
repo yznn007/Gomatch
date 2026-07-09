@@ -12,8 +12,8 @@
             <Label fx:id="scoreChangeLabel" styleClass="subtitle"/>
             <Label fx:id="reasonLabel" styleClass="subtitle"/>
             <HBox spacing="12" alignment="CENTER">
-                <Button text="%gameover.back" onAction="#handleBack" styleClass="btn-primary"/>
-                <Button fx:id="replayButton" text="%gameover.replay" onAction="#handleReplay" styleClass="btn-secondary"/>
+                <Button text="返回大厅" onAction="#handleBack" styleClass="btn-primary"/>
+                <Button fx:id="replayButton" text="再来一局" onAction="#handleReplay" styleClass="btn-secondary"/>
             </HBox>
         </VBox>
     </center>

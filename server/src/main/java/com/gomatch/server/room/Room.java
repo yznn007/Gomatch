@@ -428,11 +428,13 @@ public class Room {
                     "color", Game.WHITE));
 
             if (game.isFinished()) {
-                int winnerColor = game.getWinner();
-                long winnerId = winnerColor == Game.EMPTY ? 0 : whiteUserId;
-                String reason = winnerColor == Game.EMPTY ? "draw" : "five_in_a_row";
-                String msg = winnerColor == Game.EMPTY ? "棋盘已满，平局" : "AI 获胜!";
-                endGame(winnerId, reason, msg);
+            int winnerColor = game.getWinner();
+            long winnerId = winnerColor == Game.EMPTY ? 0 : 
+                    (winnerColor == Game.BLACK ? blackUserId : whiteUserId);
+            String reason = winnerColor == Game.EMPTY ? "draw" : "five_in_a_row";
+            String msg = winnerColor == Game.EMPTY ? "棋盘已满，平局" : 
+                    (winnerColor == Game.BLACK ? "黑方获胜!" : "AI 获胜!");
+            endGame(winnerId, reason, msg);
                 log.info("AI game ended in room {}: winnerColor={}, winnerId={}, reason={}",
                         roomId, winnerColor == Game.BLACK ? "BLACK" : winnerColor == Game.WHITE ? "WHITE" : "DRAW", winnerId, reason);
             } else {

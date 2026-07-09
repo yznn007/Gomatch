@@ -363,6 +363,8 @@ ProfileUI（个人中心）
 | 游戏结束弹窗 | `showGameOverDialog()` 使用 `Stage.show()` 非阻塞模式，保持网络消息接收能力（支持再来一局） |
 | 操作按钮 | 悔棋（`REQUEST_UNDO`）、求和（`REQUEST_DRAW`）、认输（`SURRENDER`） |
 | 再来一局 | 发送 `REQUEST_REMATCH` 请求对手；监听 `REMATCH_REQUESTED/ACCEPTED/REJECTED` 处理对方响应 |
+| AI 对战结果 | GAME_OVER 处理增加 AI 模式特殊判断（winnerId="-1"时判定为对手胜），正确显示黑方胜/白方胜/平局 |
+| 棋谱回放 | `replayMoves()` 支持 JSON 格式棋谱（检测 `[` 开头自动切换解析方式），兼容旧格式分号分隔 |
 
 #### 消息监听（Rematch 相关）
 

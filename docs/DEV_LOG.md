@@ -257,8 +257,20 @@
 | 2026-07-09 | Contributor| **原因**：CasualLobbyController.onMessage(GAME_START) 只调用了 3 参数版 setGameInfo(bId, wId, username)，丢弃了服务端传来的 blackUsername/blackScore/whiteUsername/whiteScore 全部数据；同时 JOIN_OK 在 GAME_START 后又被发送，导致已切入 BoardUI 的客户端又被切回 RoomWaitingUI。**修复**：1. GAME_START 处理改为解析全部 6 个字段（blackUsername/blackScore/whiteUsername/whiteScore），传递到 BoardController.setGameInfo() 的完整参数重载；2. 新增 joinedGame 标记位，在已进入 GAME_START 对局后忽略后续 JOIN_OK 消息，防止界面回切到等待室 | 编译通过 |
 | 2026-07-09 | Contributor| 1. 定位大厅音乐未播放原因为 JavaFX Media 对 FLAC 运行时支持不稳定且原逻辑静默降级；2. 使用 ShareX ffmpeg 将原曲转为纯音频 lobby-theme.mp3；3. BackgroundMusicManager 改为加载 MP3，移除未使用 FLAC 资源；4. MODULE_CLIENT.md 同步资源路径。 | 媒体探针 READY；编译通过 |
 | 2026-07-09 | Contributor| 将 BackgroundMusicManager 的默认全局音乐音量从 80 调整为 45、背景音乐音量从 70 调整为 35，初始实际播放音量由 56% 降至约 16%；SettingsUI.fxml 同步默认滑杆显示值。 | 编译通过 |
+| 2026-07-09 | Contributor| RoomManager.quickMatch() 中 createRoom() 已将 player 加入房间，但后续又调用 room.join(player) 被重复检查拒绝；删除重复调用 | 编译通过 |
+| 2026-07-09 | Contributor| RoomManager.rankedMatch() 中 createRankedRoom() 已将 player 加入房间，但后续又调用 room.join(player) 被重复检查拒绝；删除重复调用 | 编译通过 |
+| 2026-07-09 | Contributor| Room.makeAiMove() 无论谁获胜都使用 whiteUserId(-1) 作为 winnerId；改为根据 winnerColor 正确判断获胜者 | 编译通过 |
+| 2026-07-09 | Contributor| RecordDAO.getHistory() 中使用 rs.wasNull() 检查平局时的 NULL 值，确保正确处理 | 编译通过 |
+| 2026-07-09 | Contributor| ClientHandler.handleFriendRequests() 改用 JSONObject/JSONArray 构建安全的 JSON 响应，避免特殊字符导致解析错误 | 编译通过 |
 | 2026-07-09 | Contributor| 1. 全屏模式：stage.setFullScreen() 即时生效；2. 分辨率切换：动态调整 stage 宽高并居中；3. 动态背景：ShapeGridBackground.setEnabled() 控制粒子网格显隐；4. 帧率限制：ShapeGridBackground 跳帧逻辑实现 60/120/无限制；5. 字体切换：修改 scene root 的 -fx-font-family 属性；6. 开机自启：VBS 脚本写入 Windows %APPDATA%\Startup；7. 记住密码：LoginController 读取 UserSettings 控制默认勾选；8. 后台静音：窗口失焦暂停音乐、获焦恢复；9. 音频控制：ElasticVolumeSlider 双向绑定 BackgroundMusicManager | 编译通过 |
 | 2026-07-09 | Contributor| 新增 UserSettings 类，将全屏/分辨率/帧率/音量/背景/字体/主题/语言/开机自启/记住密码等 15 项偏好保存到 ~/.gomatch/user-settings.json，启动时自动加载 | 编译通过 |
 | 2026-07-09 | Contributor| 1. 新增 I18N 工具类，支持 ResourceBundle 动态切换；2. 新增 messages_zh.properties 和 messages_en.properties 资源文件（240+ key）；3. 所有 21 个 FXML 中文文本替换为 %key 占位符；4. ScreenManager 加载 FXML 时传入 ResourceBundle；5. ClientMain 启动时初始化语言；6. SettingsController 语言切换后重载场景 | 编译通过 |
 | 2026-07-09 | Contributor| root.setStyle() 会覆盖所有内联样式导致 -fx-background-color 丢失；改为 appendFontFamily() 追加/替换 -fx-font-family 属性，保留其他样式 | 编译通过 |
 | 2026-07-09 | Contributor| updateTurnLabel() 中 if-else 块后多了一个 }，导致 updatePlayerCardHighlight() 脱离方法体 | 编译通过 |
+| 2026-07-09 | Contributor| 1. GameOverController.setResult() 支持中文描述（黑方胜、白方胜、平局、对手胜）；2. BoardController GAME_OVER 处理增加 AI 模式特殊判断（winnerId="-1"时判定为对手胜） | 编译通过 |
+| 2026-07-09 | Contributor| 1. FriendDAO.sendFriendRequest() 发送新请求前先删除双方所有旧请求记录（PENDING/ACCEPTED/REJECTED）；2. FriendDAO.deleteFriend() 删除好友关系时同时清理双方的请求记录，解决唯一索引冲突 | 编译通过 |
+| 2026-07-09 | Contributor| 1. RecordDAO.getHistory() 添加返回 board_data 字段；2. ClientHandler.handleQueryRecord() 在 RECORD_LIST 响应中添加 boardData，转义 `\|` 防止协议解析错误 | 编译通过 |
+| 2026-07-09 | Contributor| 1. RecordController.onMessage() 更新解析步长从10改为11，添加 boardData 处理和解转义；2. BoardController.replayMoves() 新增 JSON 格式棋谱支持（检测 `[` 开头自动切换解析方式），兼容旧格式分号分隔 | 编译通过 |
+| 2026-07-09 | Contributor| BoardUI.fxml 将回放按钮容器从 HBox（水平排列）改为 VBox（垂直排列），按钮 maxWidth="Infinity" 充分利用侧边栏宽度 | 编译通过 |
+| 2026-07-09 | Contributor| FriendsUI.fxml 将操作列宽度从 100px 增加到 140px，确保"接受"和"拒绝"按钮完整显示 | 编译通过 |
+| 2026-07-09 | Contributor| client-config.properties 中 server.host 从错误值改为 127.0.0.1 | 编译通过 |

@@ -416,9 +416,9 @@ gomatch:game:{roomId}  ->  游戏事件频道
 | DAO 类 | 表名 | 主要操作 |
 |--------|------|---------|
 | `UserDAO` | `t_user` | 用户注册、登录验证、密码修改、积分更新（ELO） |
-| `RecordDAO` | `t_record` | 创建对战记录、更新结果、查询历史 |
+| `RecordDAO` | `t_record` | 创建对战记录、更新结果、查询历史（winner_id NULL 值使用 wasNull() 正确处理）|
 | `ChatDAO` | `t_chat_message` | 保存聊天消息、查询房间聊天历史 |
-| `FriendDAO` | `t_friend` | 发起/接受/拒绝/删除好友关系 |
+| `FriendDAO` | `t_friend`, `t_friend_request` | 发起/接受/拒绝/删除好友关系；发送请求前清理旧记录；删除好友时同步清理请求记录 |
 | `GameSaveDAO` | `t_game_save` | 保存/加载/删除棋局存档（含落子序列JSON）|
 | `GameActionDAO` | `t_game_action` | 记录每一步落子操作（用于回放和审计）|
 | `RankDAO` | `t_rank` | 排行榜物化表刷新和查询（每 5 分钟自动刷新）|
