@@ -11,7 +11,7 @@ import javafx.scene.media.MediaPlayer;
 import java.net.URL;
 
 public final class BackgroundMusicManager {
-    private static final String LOBBY_THEME_PATH = "/audio/lobby-theme.flac";
+    private static final String LOBBY_THEME_PATH = "/audio/lobby-theme.mp3";
 
     private static final BooleanProperty globalMusicEnabled = new SimpleBooleanProperty(true);
     private static final BooleanProperty backgroundMusicEnabled = new SimpleBooleanProperty(true);
