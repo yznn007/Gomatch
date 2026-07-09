@@ -22,10 +22,11 @@
             </StackPane>
 
             <PixelCard GridPane.columnIndex="1" variant="blue" showParticles="false"
-                       maxWidth="480" minWidth="320" minHeight="420"
-                       style="-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 12, 0, 0, 4);">
+                       maxWidth="480" minWidth="320" prefHeight="520"
+                       styleClass="auth-pixel-card">
                 <VBox alignment="CENTER" spacing="22" styleClass="glass-card"
-                      style="-fx-background-color: rgba(255,255,255,0.72); -fx-background-radius: 16; -fx-padding: 28 32;">
+                      maxWidth="Infinity" maxHeight="Infinity"
+                      style="-fx-padding: 28 32;">
                     <Label text="%login.title" styleClass="title" style="-fx-font-size: 26px; -fx-padding: 0 0 10 0;"/>
 
                     <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
@@ -49,7 +50,7 @@
 
                     <VBox alignment="CENTER" spacing="8" maxWidth="320">
                         <HBox alignment="CENTER" spacing="4">
-                            <Label text="%login.noAccount" styleClass="subtitle" style="-fx-text-fill: #64748b;"/>
+                            <Label text="%login.noAccount" styleClass="subtitle"/>
                             <Button text="%login.register" onAction="#handleRegister" styleClass="btn-link" style="-fx-padding: 0; -fx-font-size: 13px;"/>
                         </HBox>
                         <Button text="%login.preview" onAction="#handlePreview" styleClass="btn-link" style="-fx-padding: 4 0 0 0; -fx-font-size: 13px;"/>

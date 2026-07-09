@@ -28,6 +28,8 @@ public class ScreenManager {
     private static final int WIDTH = 1280;
     private static final int HEIGHT = 720;
     private static final String STYLE_PATH = "/css/style.css";
+    private static final String THEME_LIGHT = "theme-light";
+    private static final String THEME_DARK = "theme-dark";
     private static Stage stage;
     private static boolean firstShow = true;
 
@@ -96,7 +98,6 @@ public class ScreenManager {
 
             // 3. 包装一层 StackPane，将 ShapeGridBackground 动态粒子点阵放在最底层，主 UI 在上层
             StackPane wrapper = new StackPane();
-            wrapper.setStyle("-fx-background-color: transparent;");
             ShapeGridBackground bg = new ShapeGridBackground();
             bg.setEnabled(UserSettings.get().dynamicBackground);
             currentBackground = bg;
@@ -148,6 +149,7 @@ public class ScreenManager {
             customTitleBar.prefWidthProperty().bind(mainLayout.widthProperty());
             
             applyStylesheet(scene);
+            applyUserTheme(scene);
             applyUserFont(scene);
             stage.setScene(scene);
 
@@ -191,7 +193,6 @@ public class ScreenManager {
             dialogLayout.getChildren().addAll(dialogTitleBar, root);
 
             StackPane dialogWrapper = new StackPane();
-            dialogWrapper.setStyle("-fx-background-color: transparent;");
             ShapeGridBackground bg = new ShapeGridBackground();
             dialogWrapper.getChildren().addAll(bg, dialogLayout);
 
@@ -205,6 +206,7 @@ public class ScreenManager {
             dialogTitleBar.prefWidthProperty().bind(scene.widthProperty());
             
             applyStylesheet(scene);
+            applyUserTheme(scene);
             dialog.setScene(scene);
             dialog.setResizable(false);
             dialog.showAndWait();
@@ -342,10 +344,11 @@ public class ScreenManager {
     private static HBox createDialogTitleBar(Stage dialog) {
         HBox titleBar = new HBox();
         titleBar.getStyleClass().add("custom-title-bar");
-        titleBar.setStyle("-fx-pref-height: 32; -fx-min-height: 32; -fx-max-height: 32; -fx-background-color: rgba(255,255,255,0.6);");
+        titleBar.setStyle("-fx-pref-height: 32; -fx-min-height: 32; -fx-max-height: 32;");
 
         Label titleLabel = new Label("提示");
-        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #64748b; -fx-font-size: 12px;");
+        titleLabel.getStyleClass().add("muted");
+        titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px;");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -377,6 +380,31 @@ public class ScreenManager {
         }
     }
 
+
+    /** 当前是否使用暗夜黑磨砂主题。 */
+    public static boolean isDarkTheme() {
+        String theme = UserSettings.get().theme;
+        return theme != null && (theme.contains("暗夜") || theme.toLowerCase().contains("dark"));
+    }
+
+    /** 给当前 Scene 根节点挂载主题类，浅色原色与暗色覆盖层互斥。 */
+    public static void applyUserTheme(Scene scene) {
+        if (scene == null || scene.getRoot() == null) return;
+        boolean dark = isDarkTheme();
+        scene.getRoot().getStyleClass().removeAll(THEME_LIGHT, THEME_DARK);
+        scene.getRoot().getStyleClass().add(dark ? THEME_DARK : THEME_LIGHT);
+
+        String background = dark
+                ? "linear-gradient(to bottom right, #010208, #040713 46%, #080c16)"
+                : "transparent";
+        scene.getRoot().setStyle(appendBackgroundColor(scene.getRoot().getStyle(), background));
+    }
+
+    /** 动态生成控件使用的主题色。 */
+    public static String themeColor(String lightColor, String darkColor) {
+        return isDarkTheme() ? darkColor : lightColor;
+    }
+
     /** 根据用户偏好设置全局字体（不覆盖其他内联样式） */
     public static void applyUserFont(Scene scene) {
         if (scene.getRoot() == null) return;
@@ -390,6 +418,16 @@ public class ScreenManager {
         }
     }
 
+
+    /** 在已有 style 字符串中追加或替换 -fx-background-color，保留字体等其他属性 */
+    private static String appendBackgroundColor(String existingStyle, String backgroundValue) {
+        String newProp = "-fx-background-color: " + backgroundValue + ";";
+        if (existingStyle == null || existingStyle.isBlank()) return newProp;
+        if (existingStyle.contains("-fx-background-color:")) {
+            return existingStyle.replaceAll("-fx-background-color:\\s*[^;]+;", newProp);
+        }
+        return existingStyle + " " + newProp;
+    }
     /** 在已有 style 字符串中追加或替换 -fx-font-family，保留其他属性 */
     private static String appendFontFamily(String existingStyle, String fontFamilyValue) {
         String newProp = "-fx-font-family: " + fontFamilyValue + ";";

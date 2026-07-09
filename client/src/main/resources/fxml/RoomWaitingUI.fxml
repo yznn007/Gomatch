@@ -22,7 +22,7 @@
         <HBox spacing="24" alignment="TOP_CENTER" style="-fx-padding: 18 0 0 0;">
             
             <!-- 左侧导航栏 VBox -->
-            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10; -fx-background-color: rgba(245, 247, 250, 0.65);">
+            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10;">
                 <Button fx:id="menuPlayersBtn" text="%room.players" onAction="#showPlayersTab" styleClass="sidebar-menu-btn"/>
                 <Button fx:id="menuChatBtn" text="%room.chat" onAction="#showChatTab" styleClass="sidebar-menu-btn"/>
             </VBox>

@@ -19,7 +19,7 @@
         <HBox spacing="24" alignment="TOP_CENTER" style="-fx-padding: 18 0 0 0;">
             
             <!-- 左侧导航栏 VBox -->
-            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10; -fx-background-color: rgba(245, 247, 250, 0.65);">
+            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10;">
                 <Button fx:id="menuMyFriendsBtn" text="%friends.my" onAction="#showMyFriendsTab" styleClass="sidebar-menu-btn"/>
                 <Button fx:id="menuRequestsBtn" text="%friends.requests" onAction="#showRequestsTab" styleClass="sidebar-menu-btn"/>
                 <Button fx:id="menuAddBtn" text="%friends.add" onAction="#showAddTab" styleClass="sidebar-menu-btn"/>

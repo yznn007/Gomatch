@@ -21,7 +21,7 @@
         <HBox spacing="24" alignment="TOP_CENTER" style="-fx-padding: 18 0 0 0;">
             
             <!-- 左侧导航栏 VBox (使用微透磨砂底卡片，统一图标字符范围以保障尺寸完全一致) -->
-            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10; -fx-background-color: rgba(245, 247, 250, 0.65);">
+            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10;">
                 <Button fx:id="menuInfoBtn" text="%profile.info" onAction="#showInfoTab" styleClass="sidebar-menu-btn"/>
                 <Button fx:id="menuRecordBtn" text="%profile.records" onAction="#showRecordTab" styleClass="sidebar-menu-btn"/>
                 <Button fx:id="menuPwdBtn" text="%profile.changepwd" onAction="#showPwdTab" styleClass="sidebar-menu-btn"/>
@@ -37,14 +37,14 @@
                         <PixelCard variant="blue" showParticles="false" minWidth="380" maxWidth="800" minHeight="450">
                             <VBox spacing="16" alignment="TOP_CENTER" style="-fx-padding: 20 18 10 18;">
                                 <!-- 个人头像与昵称ID头部区域 -->
-                                <HBox spacing="16" alignment="CENTER_LEFT" style="-fx-padding: 10 16; -fx-background-color: rgba(255, 255, 255, 0.45); -fx-background-radius: 12px; -fx-border-radius: 12px; -fx-border-color: rgba(100, 116, 139, 0.10); -fx-border-width: 1px;">
+                                <HBox spacing="16" alignment="CENTER_LEFT" styleClass="profile-header-card" style="-fx-padding: 10 16;">
                                     <!-- 头像圆形 -->
-                                    <StackPane prefWidth="56" prefHeight="56" minWidth="56" minHeight="56" styleClass="avatar-badge" style="-fx-background-color: #0ea5e9;">
+                                    <StackPane prefWidth="56" prefHeight="56" minWidth="56" minHeight="56" styleClass="avatar-badge">
                                         <Label fx:id="profileAvatarLabel" text="U" styleClass="avatar-badge-text" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;"/>
                                     </StackPane>
                                     <VBox spacing="4" alignment="CENTER_LEFT">
-                                        <Label fx:id="usernameLabel" text="%profile.username" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1e293b;"/>
-                                        <Label fx:id="userIdLabel" text="#ID" style="-fx-font-size: 11px; -fx-text-fill: #64748b;"/>
+                                        <Label fx:id="usernameLabel" text="%profile.username" styleClass="section-label" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+                                        <Label fx:id="userIdLabel" text="#ID" styleClass="muted" style="-fx-font-size: 11px;"/>
                                     </VBox>
                                 </HBox>
 
