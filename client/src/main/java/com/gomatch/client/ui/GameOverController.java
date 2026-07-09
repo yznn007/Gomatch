@@ -4,6 +4,7 @@ import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.common.Protocol;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
@@ -11,6 +12,7 @@ public class GameOverController {
     @FXML private Label resultLabel;
     @FXML private Label reasonLabel;
     @FXML private Label scoreChangeLabel;
+    @FXML private Button replayButton;
 
     public void setResult(String result, String reason) {
         setResult(result, reason, 0);
@@ -59,6 +61,16 @@ public class GameOverController {
         } else {
             // PVP模式：发送再来一局请求给对手
             ClientMain.getConnector().send(Protocol.REQUEST_REMATCH);
+        }
+    }
+
+    /**
+     * 断线/强制结束等场景隐藏"再来一局"按钮，仅保留"返回大厅"。
+     */
+    public void hideReplayButton() {
+        if (replayButton != null) {
+            replayButton.setVisible(false);
+            replayButton.setManaged(false);
         }
     }
 

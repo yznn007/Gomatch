@@ -59,12 +59,13 @@ public class ProfileController implements NetworkListener {
      *  - null / 空串视为无效
      *  - JSON 数组 "[]" 视为无效（无落子）
      *  - 其他任意非空内容视为有效（JSON 数组或老格式字符串）
+     * 注意：即使 boardData 为 "[]"（双方未落子就认输），也允许进入回放界面查看空棋盘。
+     * 客户端 replayMoves 在 moves 为空时安全地初始化空棋谱列表，不会报错。
      */
     private boolean isReplayDataValid(String movesStr) {
         if (movesStr == null) return false;
         String trimmed = movesStr.trim();
         if (trimmed.isEmpty()) return false;
-        if ("[]".equals(trimmed)) return false;
         return true;
     }
 

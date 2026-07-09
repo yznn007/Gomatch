@@ -200,30 +200,38 @@ public class BoardController implements NetworkListener {
     }
 
     public void setGameInfo(String blackId, String whiteId, String username) {
-        setGameInfo(blackId, blackId, whiteId, whiteId, username, 0, 0);
+        // MATCH_FOUND 阶段还不知道 displayName/分数，用 ID 当占位（不渲染到 UI 上）
+        setGameInfo(blackId, null, whiteId, null, username, -1, -1);
     }
 
     public void setGameInfo(String blackId, String blackDisplayName, String whiteId, String whiteDisplayName,
                             String username, int blackScore, int whiteScore) {
         this.setGameInfo(blackId, blackDisplayName, whiteId, whiteDisplayName, username);
-        // setGameInfo 已设置基本信息，这里补充分数
-        User cu = AppConfig.getCurrentUser();
-        String myIdStr = cu != null ? String.valueOf(cu.getUserId()) : "";
-        boolean isBlack = myIdStr.equals(blackId) || (username != null && username.equals(blackId));
-        if (isBlack) {
-            if (whitePlayerScoreLabel != null && whiteScore >= 0) {
-                whitePlayerScoreLabel.setText(whiteScore + "分");
-            }
-        } else {
-            if (blackPlayerScoreLabel != null && blackScore >= 0) {
+        // 补充分数（4 参数版已设 -1 占位为"?"，这里用实参覆盖；GAME_START 不会传 -1）
+        if (blackPlayerScoreLabel != null) {
+            if (blackScore >= 0) {
                 blackPlayerScoreLabel.setText(blackScore + "分");
+                blackPlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
+            } else if (blackDisplayName == null) {
+                blackPlayerScoreLabel.setText("?");
+                blackPlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
+            }
+        }
+        if (whitePlayerScoreLabel != null) {
+            if (whiteScore >= 0) {
+                whitePlayerScoreLabel.setText(whiteScore + "分");
+                whitePlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
+            } else if (whiteDisplayName == null) {
+                whitePlayerScoreLabel.setText("?");
+                whitePlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
             }
         }
     }
 
     private void setGameInfo(String blackId, String blackDisplayName, String whiteId, String whiteDisplayName, String username) {
-        this.blackName  = blackDisplayName;
-        this.whiteName  = whiteDisplayName;
+        // 形参 displayName 为 null 时用 ID 作占位（MATCH_FOUND 阶段无完整信息）
+        this.blackName  = (blackDisplayName != null && !blackDisplayName.isEmpty()) ? blackDisplayName : blackId;
+        this.whiteName  = (whiteDisplayName != null && !whiteDisplayName.isEmpty()) ? whiteDisplayName : whiteId;
         this.blackId    = blackId != null ? blackId : "";
         this.whiteId    = whiteId != null ? whiteId : "";
         this.myUsername = username;
@@ -251,17 +259,22 @@ public class BoardController implements NetworkListener {
             }
         }
 
-        if (isBlack) {
-            setPlayerCardLabels(blackPlayerNameLabel, blackPlayerIdLabel, blackPlayerScoreLabel,
-                    username != null ? username : blackDisplayName, myIdStr, myScore);
-            setPlayerCardLabels(whitePlayerNameLabel, whitePlayerIdLabel, whitePlayerScoreLabel,
-                    whiteDisplayName, whiteId, -1);
-        } else {
-            setPlayerCardLabels(blackPlayerNameLabel, blackPlayerIdLabel, blackPlayerScoreLabel,
-                    blackDisplayName, blackId, -1);
-            setPlayerCardLabels(whitePlayerNameLabel, whitePlayerIdLabel, whitePlayerScoreLabel,
-                    username != null ? username : whiteDisplayName, myIdStr, myScore);
+        // 双方玩家卡片都按实参的 displayName / id / score 设置。
+        // 对于"自己"那一方，如果 displayName 还没拿到（GAME_START 未到），用 myUsername（自己登录名）作为可读占位。
+        String blackDisplay = this.blackName;
+        String whiteDisplay = this.whiteName;
+        if (username != null && !username.isEmpty()) {
+            if (myIdStr.equals(this.blackId) || (cu == null && username.equals(this.blackId))) {
+                blackDisplay = username;
+            }
+            if (myIdStr.equals(this.whiteId) || (cu == null && username.equals(this.whiteId))) {
+                whiteDisplay = username;
+            }
         }
+        setPlayerCardLabels(blackPlayerNameLabel, blackPlayerIdLabel, blackPlayerScoreLabel,
+                blackDisplay, this.blackId, myIdStr.equals(this.blackId) ? myScore : -1);
+        setPlayerCardLabels(whitePlayerNameLabel, whitePlayerIdLabel, whitePlayerScoreLabel,
+                whiteDisplay, this.whiteId, myIdStr.equals(this.whiteId) ? myScore : -1);
 
         myColor = isBlack ? "black" : "white";
         myTurn  = isBlack;
@@ -932,6 +945,11 @@ public class BoardController implements NetworkListener {
             String wName = msg.has("whiteUsername") ? msg.getString("whiteUsername") : wId;
             int bScore = msg.has("blackScore") ? msg.getInt("blackScore") : 0;
             int wScore = msg.has("whiteScore") ? msg.getInt("whiteScore") : 0;
+            // 优先使用实例字段；为空时从 AppConfig 取，避免新建 Board 后 myUsername 未初始化导致白方卡片显示 "unknown"
+            if (myUsername == null) {
+                User cu0 = AppConfig.getCurrentUser();
+                myUsername = cu0 != null ? cu0.getUsername() : null;
+            }
             setGameInfo(bId, bName, wId, wName, myUsername, bScore, wScore);
             redrawAll();
             startCountdown();
@@ -989,8 +1007,21 @@ public class BoardController implements NetworkListener {
                 gameOverDialogStage.close();
                 gameOverDialogStage = null;
             }
-            // 使用 showDialogWithoutWait 避免阻塞，以便后续接收 rematch 消息
-            gameOverDialogStage = showGameOverDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> ctrl.setResult(result, reason, scoreChangeFinal));
+            // 观战模式下不弹出"再来一局/返回大厅"对话框，仅在聊天区提示结果
+            if (spectatorMode) {
+                chatArea.appendText("[系统] 对局结束: " + result + "\n");
+                chatArea.setScrollTop(Double.MAX_VALUE);
+            } else {
+                // 断线结束不显示"再来一局"
+                final boolean disconnectEnd = reason != null && reason.contains("断线");
+                // 使用 showDialogWithoutWait 避免阻塞，以便后续接收 rematch 消息
+                gameOverDialogStage = showGameOverDialog("/fxml/GameOverUI.fxml", (GameOverController ctrl) -> {
+                    ctrl.setResult(result, reason, scoreChangeFinal);
+                    if (disconnectEnd) {
+                        ctrl.hideReplayButton();
+                    }
+                });
+            }
         } else if ("SAVE_GAME_OK".equals(cmd)) {
             chatArea.appendText("[系统] 棋局已保存：" + msg.getString("saveName") + "\n");
         } else if ("SAVE_GAME_FAIL".equals(cmd)) {

@@ -236,7 +236,9 @@ public class RoomManager {
             String roomName = "快速匹配 #" + (getActiveRoomCount() + 1);
             Room room = createRoom(roomName, player);
 
+            // 两个玩家都要 join 进 room（否则 startGame 校验 players.size() != 2 会失败）
             room.join(opponentHandler);
+            room.join(player);
             player.setCurrentRoom(room);
             opponentHandler.setCurrentRoom(room);
             room.startGame();
@@ -337,7 +339,9 @@ public class RoomManager {
             String roomName = "排位赛 #" + (getActiveRoomCount() + 1);
             Room room = createRankedRoom(roomName, player);
 
+            // 两个玩家都要 join 进 room（否则 startGame 校验 players.size() != 2 会失败）
             room.join(opponentHandler);
+            room.join(player);
             player.setCurrentRoom(room);
             opponentHandler.setCurrentRoom(room);
 

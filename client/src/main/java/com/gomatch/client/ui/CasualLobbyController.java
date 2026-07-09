@@ -35,6 +35,7 @@ public class CasualLobbyController implements NetworkListener {
     private User currentUser;
     private boolean previewMode;
     private boolean isMatching = false;
+    private boolean joinedGame = false;
     private int matchCountdown = 0;
     private Timeline matchCountdownTimer;
 
@@ -245,6 +246,7 @@ public class CasualLobbyController implements NetworkListener {
                 room.setStatus(r.getString("status"));
                 room.setPlayerCount(Integer.parseInt(r.getString("players").split("/")[0]));
                 room.setHasPassword(r.optBoolean("hasPassword", false));
+                room.setOwnerName(r.optString("ownerName", "未知"));
                 roomData.add(room);
             }
             spectateData.setAll(roomData.stream()
@@ -252,6 +254,8 @@ public class CasualLobbyController implements NetworkListener {
                 .map(r -> "#" + r.getRoomId() + " " + r.getRoomName() + "  玩家: " + r.getPlayerCount() + "/2")
                 .collect(Collectors.toList()));
         } else if (Protocol.JOIN_OK.equals(cmd)) {
+            // 如果已在 GAME_START 中进入了对局（快速匹配），忽略 JOIN_OK
+            if (joinedGame) return;
             stopMatching();
             setStatus("", false);
             RoomInfo room = new RoomInfo();
@@ -270,8 +274,17 @@ public class CasualLobbyController implements NetworkListener {
         } else if (Protocol.GAME_START.equals(cmd)) {
             stopMatching();
             setStatus("", false);
+            // 标记已进入游戏，防止后续 JOIN_OK 切回等待室
+            joinedGame = true;
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-            ctrl.setGameInfo(String.valueOf(msg.getLong("blackUserId")), String.valueOf(msg.getLong("whiteUserId")), currentUser != null ? currentUser.getUsername() : "unknown");
+            String bId = String.valueOf(msg.getLong("blackUserId"));
+            String wId = String.valueOf(msg.getLong("whiteUserId"));
+            String bName = msg.has("blackUsername") ? msg.getString("blackUsername") : bId;
+            String wName = msg.has("whiteUsername") ? msg.getString("whiteUsername") : wId;
+            int bScore = msg.has("blackScore") ? msg.getInt("blackScore") : 0;
+            int wScore = msg.has("whiteScore") ? msg.getInt("whiteScore") : 0;
+            String username = currentUser != null ? currentUser.getUsername() : "unknown";
+            ctrl.setGameInfo(bId, bName, wId, wName, username, bScore, wScore);
         } else if (Protocol.MATCH_TIMEOUT.equals(cmd)) {
             stopMatching();
             setStatus("匹配超时，请重试", true);

@@ -268,7 +268,9 @@ public class ClientHandler implements Runnable {
                     sessionManager.updateSessionRoom(userInfo.getUserId(), activeRoom.getRoomId());
 
                     int currentColor = (userInfo.getUserId() == activeRoom.getBlackUserId()) ? 1 : 2;
-                    long disconnectedId = activeRoom.getDisconnectedPlayerId();
+                    long opponentId = (userInfo.getUserId() == activeRoom.getBlackUserId())
+                            ? activeRoom.getWhiteUserId() : activeRoom.getBlackUserId();
+                    long disconnectedId = activeRoom.isPlayerDisconnected(opponentId) ? opponentId : 0;
 
                     send(Message.builder(Protocol.LOGIN_OK)
                             .set("userId", String.valueOf(userInfo.getUserId()))
@@ -411,9 +413,7 @@ public class ClientHandler implements Runnable {
                 .build());
 
         room.startGame();
-        room.broadcastAll(Message.of(Protocol.GAME_START,
-                "blackUserId", String.valueOf(room.getBlackUserId()),
-                "whiteUserId", String.valueOf(room.getWhiteUserId())));
+        room.broadcastAll(room.buildGameStartMessage());
 
         log.info("Player {} created AI room: {} ({}), game started", userId, room.getRoomId(), roomName);
     }
@@ -446,9 +446,7 @@ public class ClientHandler implements Runnable {
                 .build());
 
         room.startGame();
-        room.broadcastAll(Message.of(Protocol.GAME_START,
-                "blackUserId", String.valueOf(userId),
-                "whiteUserId", "AI"));
+        room.broadcastAll(room.buildGameStartMessage());
 
         log.info("AI对战房间创建成功: userId={}, roomId={}, difficulty={}", userId, room.getRoomId(), difficulty);
     }
@@ -495,9 +493,7 @@ public class ClientHandler implements Runnable {
 
             if (room.getPlayerCount() == 2) {
                 room.startGame();
-                room.broadcastAll(Message.of(Protocol.GAME_START,
-                        "blackUserId", String.valueOf(room.getBlackUserId()),
-                        "whiteUserId", String.valueOf(room.getWhiteUserId())));
+                room.broadcastAll(room.buildGameStartMessage());
                 log.info("房间 {} 已满，游戏开始: BLACK={}, WHITE={}", roomId, room.getBlackUserId(), room.getWhiteUserId());
             }
 
@@ -540,6 +536,7 @@ public class ClientHandler implements Runnable {
             r.put("players", info[3]);
             r.put("max", info[4]);
             r.put("hasPassword", info[5]);
+            r.put("ownerName", info[6]);
             rooms.put(r);
         }
         send(Message.builder(Protocol.ROOM_LIST).set("rooms", rooms).build());
@@ -562,9 +559,7 @@ public class ClientHandler implements Runnable {
         if (room != null) {
             this.currentRoom = room;
 
-            room.broadcastAll(Message.of(Protocol.GAME_START,
-                    "blackUserId", String.valueOf(room.getBlackUserId()),
-                    "whiteUserId", String.valueOf(room.getWhiteUserId())));
+            room.broadcastAll(room.buildGameStartMessage());
 
             send(Message.builder(Protocol.JOIN_OK)
                     .set("roomId", room.getRoomId())
@@ -657,9 +652,7 @@ public class ClientHandler implements Runnable {
         if (currentRoom.bothReady()) {
             log.info("双方玩家已准备，开始排位赛: room={}", currentRoom.getRoomId());
             currentRoom.startGame();
-            currentRoom.broadcastAll(Message.of(Protocol.GAME_START,
-                    "blackUserId", String.valueOf(currentRoom.getBlackUserId()),
-                    "whiteUserId", String.valueOf(currentRoom.getWhiteUserId())));
+            currentRoom.broadcastAll(currentRoom.buildGameStartMessage());
         }
     }
 
@@ -785,9 +778,7 @@ public class ClientHandler implements Runnable {
                 "username", getUsername(),
                 "type", "SPECTATOR"));
 
-        send(Message.of(Protocol.GAME_START,
-                "blackUserId", String.valueOf(room.getBlackUserId()),
-                "whiteUserId", String.valueOf(room.getWhiteUserId())));
+        send(room.buildGameStartMessage());
 
         // 回放已有落子
         for (Game.MoveRecord mr : room.getGame().getMoveHistory()) {
@@ -1682,7 +1673,22 @@ public class ClientHandler implements Runnable {
 
     public Socket getSocket() { return socket; }
     public long getUserId() { return userId; }
-    public String getUsername() { return username != null ? username : "unknown"; }
+    public String getUsername() {
+        if (username != null) return username;
+        // username 未设置时回退到 UserDAO 查询，避免 buildGameStartMessage 等场景出现 "unknown" 字符串
+        if (userId > 0) {
+            try {
+                UserDAO.UserInfo info = userDAO.getUserById(userId);
+                if (info != null && info.getUsername() != null) {
+                    this.username = info.getUsername();
+                    return this.username;
+                }
+            } catch (Exception e) {
+                log.warn("getUsername fallback query failed for userId={}: {}", userId, e.getMessage());
+            }
+        }
+        return "unknown";
+    }
     public String getRole() { return role; }
     public boolean isAuthenticated() { return authenticated; }
     public boolean isAdmin() { return "ADMIN".equals(role); }
