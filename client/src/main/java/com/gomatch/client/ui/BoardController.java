@@ -581,7 +581,7 @@ public class BoardController implements NetworkListener {
             turnLabel.setText("⚫ " + blackName + turnSuffix);
         } else {
             turnLabel.setText("⚪ " + whiteName + turnSuffix);
-        }
+}
         updatePlayerCardHighlight();
     }
 
