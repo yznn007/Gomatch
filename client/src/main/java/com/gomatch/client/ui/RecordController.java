@@ -30,6 +30,16 @@ public class RecordController implements NetworkListener {
         }
     }
 
+    /** 字符串兜底：null 时返回空串（非 null），保证 setReplayMode 接收的参数不会 NPE */
+    private static String safeStr(String v) {
+        return v == null ? "" : v;
+    }
+
+    /** 字符串兜底：null/空时返回 fallback，避免回放卡片显示空白 */
+    private static String safeStr(String v, String fallback) {
+        return (v == null || v.isEmpty()) ? (fallback == null ? "" : fallback) : v;
+    }
+
     private String formatDuration(int seconds) {
         if (seconds <= 0) return "--";
         int m = seconds / 60;
@@ -86,21 +96,35 @@ public class RecordController implements NetworkListener {
                     result = "负";
                 }
 
-                String boardData = r.optString("boardData", "").replace("\\|", "|");
+                Object boardDataObj = r.opt("boardData");
+                String boardData;
+                if (boardDataObj instanceof org.json.JSONArray) {
+                    boardData = boardDataObj.toString();
+                } else {
+                    boardData = r.optString("boardData", "");
+                }
+                boardData = boardData.replace("\\|", "|");
                 int moveCount = r.optInt("moveCount", 0);
                 int duration = r.optInt("duration", 0);
                 int scoreChange = r.optInt("scoreChange", 0);
 
-                records.add(Map.of(
-                    "opponent", opponentName,
-                    "result", result,
-                    "time", r.getString("createTime"),
-                    "replay", "回放",
-                    "moves", boardData,
-                    "moveCount", String.valueOf(moveCount),
-                    "duration", String.valueOf(duration),
-                    "scoreChange", String.valueOf(scoreChange)
-                ));
+                // 使用 HashMap 替代 Map.ofEntries —— 后者最多只支持 10 个 entry，
+                // 之前 12 个 entry 会抛 IllegalArgumentException，导致 player1/2 的 ID 和名字
+                // 全部丢失，回放时只能看到"黑方/白方/#---"占位符。
+                java.util.HashMap<String, String> recordMap = new java.util.HashMap<>();
+                recordMap.put("opponent", opponentName);
+                recordMap.put("result", result);
+                recordMap.put("time", r.getString("createTime"));
+                recordMap.put("replay", "回放");
+                recordMap.put("moves", boardData);
+                recordMap.put("moveCount", String.valueOf(moveCount));
+                recordMap.put("duration", String.valueOf(duration));
+                recordMap.put("scoreChange", String.valueOf(scoreChange));
+                recordMap.put("player1Id", String.valueOf(player1Id));
+                recordMap.put("player1Name", r.getString("player1Name"));
+                recordMap.put("player2Id", String.valueOf(r.getLong("player2Id")));
+                recordMap.put("player2Name", r.getString("player2Name"));
+                records.add(recordMap);
             }
         }
     }
@@ -117,6 +141,11 @@ public class RecordController implements NetworkListener {
             }
 
             for (Map<String, String> record : records) {
+                // 关键：Java lambda 闭包按引用捕获循环变量，所有按钮的 onAction 会共享同一条 record 引用
+                // （最终指向最后一条 record）。这里用 final 局部变量复制当前迭代的 record 引用，
+                // 让每个按钮的闭包只看到自己这条 record。
+                final Map<String, String> finalRecord = record;
+
                 // Card Root HBox
                 javafx.scene.layout.HBox card = new javafx.scene.layout.HBox();
                 card.getStyleClass().add("list-item-card");
@@ -127,12 +156,12 @@ public class RecordController implements NetworkListener {
                 // Result Badge & ELO change indicator
                 javafx.scene.layout.StackPane badgeContainer = new javafx.scene.layout.StackPane();
                 badgeContainer.getStyleClass().add("result-badge");
-                String result = record.getOrDefault("result", "平");
+                String result = finalRecord.getOrDefault("result", "平");
                 Label badgeText = new Label(result.substring(0, 1));
                 badgeText.getStyleClass().add("result-badge-text");
                 badgeContainer.getChildren().add(badgeText);
 
-                int scoreChange = parseIntOrDefault(record.get("scoreChange"), 0);
+                int scoreChange = parseIntOrDefault(finalRecord.get("scoreChange"), 0);
                 Label scoreChangeLabel = new Label();
                 scoreChangeLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 32px;");
                 if (result.contains("胜")) {
@@ -154,11 +183,11 @@ public class RecordController implements NetworkListener {
                 infoBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 javafx.scene.layout.HBox.setHgrow(infoBox, javafx.scene.layout.Priority.ALWAYS);
 
-                Label opponentLabel = new Label("与 " + record.get("opponent") + " 的对局");
+                Label opponentLabel = new Label("与 " + finalRecord.get("opponent") + " 的对局");
                 opponentLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
 
-                int moveCount = parseIntOrDefault(record.get("moveCount"), 0);
-                int durationSec = parseIntOrDefault(record.get("duration"), 0);
+                int moveCount = parseIntOrDefault(finalRecord.get("moveCount"), 0);
+                int durationSec = parseIntOrDefault(finalRecord.get("duration"), 0);
                 String durationStr = formatDuration(durationSec);
                 Label detailsLabel = new Label("落子: " + (moveCount > 0 ? moveCount : "--") + " 步 | 用时: " + durationStr);
                 detailsLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
@@ -170,7 +199,7 @@ public class RecordController implements NetworkListener {
                 VBox rightBox = new VBox(4);
                 rightBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
-                Label timeLabel = new Label(record.get("time"));
+                Label timeLabel = new Label(finalRecord.get("time"));
                 timeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
 
                 Button replayBtn = new Button("回放");
@@ -178,10 +207,41 @@ public class RecordController implements NetworkListener {
                 replayBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 replayBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
                 replayBtn.setOnAction(e -> {
-                    String movesStr = record.get("moves");
+                    String movesStr = finalRecord.get("moves");
+                    // 打印 recordMap 的全部 key=value，便于排查 recordMap 是否正确填充
+                    StringBuilder allEntries = new StringBuilder();
+                    for (java.util.Map.Entry<String, String> en : finalRecord.entrySet()) {
+                        String v = en.getValue();
+                        allEntries.append(en.getKey()).append("=").append(v == null ? "null" : v).append(" | ");
+                    }
+                    System.out.println("[REPLAY-DEBUG] recordMap={" + allEntries + "}");
+                    System.out.println("[REPLAY-DEBUG] moves=" + (movesStr == null ? "null" : ("len=" + movesStr.length() + " head=" + movesStr.substring(0, Math.min(80, movesStr.length()))))
+                            + " p1id=" + finalRecord.get("player1Id") + " p1name=" + finalRecord.get("player1Name")
+                            + " p2id=" + finalRecord.get("player2Id") + " p2name=" + finalRecord.get("player2Name"));
                     if (movesStr != null && !movesStr.isEmpty()) {
+                        // 第一保险：从 recordMap 拿 p1/p2 的 ID 和名字
+                        String p1Id   = safeStr(finalRecord.get("player1Id"));
+                        String p1Name = safeStr(finalRecord.get("player1Name"), p1Id);
+                        String p2Id   = safeStr(finalRecord.get("player2Id"));
+                        String p2Name = safeStr(finalRecord.get("player2Name"), p2Id);
+                        // 第二保险：如果 recordMap 里名字还是空，从 boardData 反推黑白方 userId
+                        // （boardData[0] 是黑方第一步、boardData[1] 是白方第一步）
+                        try {
+                            org.json.JSONArray bd = new org.json.JSONArray(movesStr);
+                            if ((p1Name.isEmpty() || p2Name.isEmpty()) && bd.length() >= 2) {
+                                long firstBlackUid  = bd.getJSONObject(0).optLong("userId", -2);
+                                long firstWhiteUid  = bd.getJSONObject(1).optLong("userId", -2);
+                                if (p1Id.isEmpty() && firstBlackUid != -2) p1Id = String.valueOf(firstBlackUid);
+                                if (p2Id.isEmpty() && firstWhiteUid != -2) p2Id = String.valueOf(firstWhiteUid);
+                                if (p1Name.isEmpty() && firstBlackUid != -2) p1Name = String.valueOf(firstBlackUid);
+                                if (p2Name.isEmpty() && firstWhiteUid != -2) p2Name = String.valueOf(firstWhiteUid);
+                                System.out.println("[REPLAY-DEBUG] 兜底从 boardData 反推 p1=" + p1Id + "/" + p1Name + " p2=" + p2Id + "/" + p2Name);
+                            }
+                        } catch (Exception ex) {
+                            System.out.println("[REPLAY-DEBUG] boardData 解析失败: " + ex.getMessage());
+                        }
                         BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-                        ctrl.setReplayMode(true);
+                        ctrl.setReplayMode(true, p1Id, p1Name, p2Id, p2Name);
                         ctrl.replayMoves(movesStr);
                     } else {
                         Alert alert = new Alert(Alert.AlertType.INFORMATION, "暂无棋谱数据");

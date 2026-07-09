@@ -339,6 +339,10 @@ public class ClientHandler implements Runnable {
             send(Message.of(Protocol.ERROR, "msg", "新密码至少6位"));
             return;
         }
+        if (newPassword.equals(oldPassword)) {
+            send(Message.of(Protocol.ERROR, "msg", "新密码不能与旧密码相同"));
+            return;
+        }
 
         boolean success = userDAO.changePassword(userId, oldPassword, newPassword);
         if (success) {
@@ -561,12 +565,6 @@ public class ClientHandler implements Runnable {
 
             room.broadcastAll(room.buildGameStartMessage());
 
-            send(Message.builder(Protocol.JOIN_OK)
-                    .set("roomId", room.getRoomId())
-                    .set("roomName", room.getRoomName())
-                    .set("players", room.getPlayerCount() + "/" + 2)
-                    .build());
-
             log.info("玩家 {} 配对成功，房间: {}", userId, room.getRoomId());
         } else {
             send(Message.of(Protocol.ERROR, "msg", "等待对手... (" + roomManager.getMatchQueueSize() + "/2)"));
@@ -577,6 +575,10 @@ public class ClientHandler implements Runnable {
 
     private void handleCancelMatch() {
         if (!authenticated) return;
+        if (currentRoom != null && currentRoom.isGameStarted()) {
+            send(Message.of(Protocol.ERROR, "msg", "对局已开始，无法取消"));
+            return;
+        }
         roomManager.cancelMatch(userId);
         roomManager.cancelRankedMatch(userId);
         send(Message.of(Protocol.CANCEL_MATCH, "msg", "已取消匹配"));

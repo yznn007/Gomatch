@@ -85,6 +85,12 @@ public class BoardController implements NetworkListener {
     private int lastMoveX = -1;
     private int lastMoveY = -1;
 
+    private static boolean isEmpty(String s) {
+        return s == null || s.isEmpty();
+    }
+
+
+
     private Label blackPlayerNameLabel;
     private Label whitePlayerNameLabel;
     private Label blackPlayerIdLabel;
@@ -410,20 +416,49 @@ public class BoardController implements NetworkListener {
     }
 
     public void setReplayMode(boolean replayMode) {
+        setReplayMode(replayMode, null, null, null, null);
+    }
+
+    /**
+     * 设置回放模式（带玩家信息）。
+     * @param blackId      黑方用户ID（可为 null，用占位符）
+     * @param blackName    黑方显示名（可为 null）
+     * @param whiteId      白方用户ID
+     * @param whiteName    白方显示名
+     */
+    public void setReplayMode(boolean replayMode,
+                              String blackId, String blackName,
+                              String whiteId, String whiteName) {
+        System.out.println("[DEBUG-SETREPLAY] replayMode=" + replayMode
+                + " blackId=" + blackId + " blackName=" + blackName
+                + " whiteId=" + whiteId + " whiteName=" + whiteName
+                + " hasBlackLbl=" + (blackPlayerNameLabel != null)
+                + " hasBlackIdLbl=" + (blackPlayerIdLabel != null)
+                + " hasWhiteLbl=" + (whitePlayerNameLabel != null)
+                + " hasWhiteIdLbl=" + (whitePlayerIdLabel != null));
         this.replayMode = replayMode;
         if (replayMode) {
             gameOver = true;
             myTurn = false;
-            blackName = "黑方";
-            whiteName = "白方";
+            // 兜底：名字为空时回退到 ID，再不行用"黑方/白方"
+            this.blackName = (blackName != null && !blackName.isEmpty()) ? blackName : (isEmpty(blackId) ? "黑方" : blackId);
+            this.whiteName = (whiteName != null && !whiteName.isEmpty()) ? whiteName : (isEmpty(whiteId) ? "白方" : whiteId);
+            this.blackId = blackId != null ? blackId : "";
+            this.whiteId = whiteId != null ? whiteId : "";
             myColor = "black";
             currentTurn = 1;
-            if (blackPlayerNameLabel != null) blackPlayerNameLabel.setText(blackName);
-            if (whitePlayerNameLabel != null) whitePlayerNameLabel.setText(whiteName);
-            if (blackPlayerIdLabel != null) blackPlayerIdLabel.setText("#---");
-            if (whitePlayerIdLabel != null) whitePlayerIdLabel.setText("#---");
+            if (blackPlayerNameLabel != null) blackPlayerNameLabel.setText(this.blackName);
+            if (whitePlayerNameLabel != null) whitePlayerNameLabel.setText(this.whiteName);
+            if (blackPlayerIdLabel != null) blackPlayerIdLabel.setText(this.blackId.isEmpty() ? "#---" : "#" + this.blackId);
+            if (whitePlayerIdLabel != null) whitePlayerIdLabel.setText(this.whiteId.isEmpty() ? "#---" : "#" + this.whiteId);
             if (blackPlayerScoreLabel != null) blackPlayerScoreLabel.setText("?");
             if (whitePlayerScoreLabel != null) whitePlayerScoreLabel.setText("?");
+            // 回放模式无倒计时：清空 timerLabel 并停止任何 timeline
+            if (timerLabel != null) {
+                timerLabel.setText("");
+                timerLabel.setVisible(false);
+                timerLabel.setManaged(false);
+            }
             updateTurnLabel();
 
             if (gameControls != null) {

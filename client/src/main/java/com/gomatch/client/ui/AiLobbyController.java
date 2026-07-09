@@ -72,11 +72,14 @@ public class AiLobbyController implements NetworkListener {
         if (Protocol.JOIN_OK.equals(cmd)) {
         } else if (Protocol.GAME_START.equals(cmd)) {
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-            if (currentUser != null) {
-                ctrl.setGameInfo(String.valueOf(msg.getLong("blackUserId")), String.valueOf(msg.getLong("whiteUserId")), currentUser.getUsername());
-            } else {
-                ctrl.setGameInfo(String.valueOf(msg.getLong("blackUserId")), String.valueOf(msg.getLong("whiteUserId")), "player1");
-            }
+            String bId = String.valueOf(msg.getLong("blackUserId"));
+            String wId = String.valueOf(msg.getLong("whiteUserId"));
+            String bName = msg.has("blackUsername") ? msg.getString("blackUsername") : bId;
+            String wName = msg.has("whiteUsername") ? msg.getString("whiteUsername") : wId;
+            int bScore = msg.has("blackScore") ? msg.getInt("blackScore") : 0;
+            int wScore = msg.has("whiteScore") ? msg.getInt("whiteScore") : 0;
+            String username = currentUser != null ? currentUser.getUsername() : "";
+            ctrl.setGameInfo(bId, bName, wId, wName, username, bScore, wScore);
         } else if (Protocol.ERROR.equals(cmd)) {
             matchStatus.setText(msg.getString("msg"));
         }

@@ -194,6 +194,7 @@ public class CasualLobbyController implements NetworkListener {
 
     @FXML
     private void handleBack() {
+        stopMatching();
         LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
         if (currentUser != null) {
             ctrl.setCurrentUser(currentUser);
