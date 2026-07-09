@@ -73,6 +73,7 @@
 | 59 | Token 重连机制 | 已完成 |
 | 60 | 再来一局（Rematch）功能 | 已完成 |
 | 61 | GAME_START 协议增强（传递用户名/积分） | 已完成 |
+| 62 | 修复快速匹配 GAME_START 数据丢失 + 注册用户名并发重复 | 已完成 |
 
 ### 状态说明
 
@@ -182,6 +183,7 @@
 | 2026-07-08 | Contributor| |
 | 2026-07-08 | Contributor| Protocol 新增 REQUEST_REMATCH/REPLY_REMATCH/REMATCH_ACCEPTED/REMATCH_REJECTED 常量；ClientHandler 新增 handleRequestRematch/handleReplyRematch 方法；Room 新增 rematchRequesterId 字段 + requestRematch/replyRematch/resetAndRestartGame 方法，支持双方同意后自动重置棋盘开始新对局 |
 | 2026-07-08 | Contributor| Room 新增 blackUsername/whiteUsername/blackScore/whiteScore 字段 + getter；join() 缓存用户名；startGame()/resetAndRestartGame() 查询并刷新双方积分；新增 buildGameStartMessage() 统一构建含用户名/积分的 GAME_START 消息；ClientHandler 全部 7 处 GAME_START 广播改用 buildGameStartMessage() |
+| 2026-07-09 | Contributor| 1. UserDAO.register() 新增捕获 SQLIntegrityConstraintViolationException，防止 existsByUsername 和 INSERT 之间的并发竞态绕过唯一性检查；2. UserDAO.existsByUsername() 在 SQL 异常时改为返回 true（保守拒绝注册），而非 false（放行），确保数据库故障时不被绕过 | 编译通过 |
 
 ### 客户端（Client）
 
@@ -247,5 +249,6 @@
 | 2026-07-08 | Contributor| Maven 编译插件统一 3.13.0 + release 21 + fork；database 测试改为结构测试；心跳改为服务端返回 HEARTBEAT_OK 并刷新 Redis 会话活跃时间；Redis 改为服务端必需组件，匹配候选从 Redis 队列读取，锁失败不再兜底成功；会话 Redis 数据补充 role；新增管理中心页面 + 存档功能；协议常量集中化；清理 cp.txt 与 client-config.properties | 编译验证通过 |
 | 2026-07-09 | Contributor| 1. ScreenManager 移除整页 Scale 缩放，改由 FXML 布局约束自适应；2. 登录/注册页改用静态 PixelCard 外壳，列表页和个人中心释放固定宽度；3. 非 ADMIN 用户隐藏管理入口；4. BoardController 与 ShapeGridBackground 增加 0 尺寸和重复尺寸重绘保护；5. 同步更新 CLIENT_STYLE_GUIDE.md 与 MODULE_CLIENT.md。 |
 | 2026-07-09 | Contributor| 1. 新增 ElasticVolumeSlider 自定义控件，用 JavaFX 属性、鼠标事件和 Timeline 实现 React Bits ElasticSlider 风格的悬浮放大、轨道变粗、越界衰减与松手回弹；2. SettingsUI.fxml 将全局音量原生 Slider 替换为 0-100、步长 5 的弹性滑杆；3. style.css 补充中性板岩灰轨道、图标和数值提示样式；4. 新增 PRODUCT.md 记录产品设计上下文。 | 编译通过 |
-| 2026-07-09 | Contributor| 1. 全局音乐新增独立开关与弹性音量条；2. 背景音乐、音效保留无文字开关并新增 ElasticVolumeSlider；3. 将“大厅音乐”改名为“大厅歌曲”，仅保留歌曲下拉选择（默认主题曲、清晨棋局、静夜对弈、赛场低语）；4. SettingsController 绑定开关与对应音量条的禁用和透明度状态。 | 编译通过 |
+| 2026-07-09 | Contributor| 1. 全局音乐新增独立开关与弹性音量条；2. 背景音乐、音效保留无文字开关并新增 ElasticVolumeSlider；3. 将"大厅音乐"改名为"大厅歌曲"，仅保留歌曲下拉选择（默认主题曲、清晨棋局、静夜对弈、赛场低语）；4. SettingsController 绑定开关与对应音量条的禁用和透明度状态。 | 编译通过 |
 | 2026-07-09 | Contributor| 1. 新增 audio/lobby-theme.flac，来自用户指定的 D:\CloudMusic 原曲；2. 新增 BackgroundMusicManager，通过 JavaFX MediaPlayer 循环播放并在退出时释放；3. ClientMain 启动时播放背景音乐，SettingsController 将全局音乐/背景音乐开关与音量条同步到实际播放状态；4. client/pom.xml 补充 javafx-media 依赖。 | 编译通过 |
+| 2026-07-09 | Contributor| **原因**：CasualLobbyController.onMessage(GAME_START) 只调用了 3 参数版 setGameInfo(bId, wId, username)，丢弃了服务端传来的 blackUsername/blackScore/whiteUsername/whiteScore 全部数据；同时 JOIN_OK 在 GAME_START 后又被发送，导致已切入 BoardUI 的客户端又被切回 RoomWaitingUI。**修复**：1. GAME_START 处理改为解析全部 6 个字段（blackUsername/blackScore/whiteUsername/whiteScore），传递到 BoardController.setGameInfo() 的完整参数重载；2. 新增 joinedGame 标记位，在已进入 GAME_START 对局后忽略后续 JOIN_OK 消息，防止界面回切到等待室 | 编译通过 |

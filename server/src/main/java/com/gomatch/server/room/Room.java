@@ -19,8 +19,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -70,9 +72,9 @@ public class Room {
     // 断线重连管理
     private static final int MAX_DISCONNECT_COUNT = 3;   // 累计断线次数上限（超过判负）
     private static final long RECONNECT_TIMEOUT_SEC = 60;
-    private long disconnectedPlayerId;        // 当前断线的玩家ID（0=无）
+    private final Set<Long> disconnectedPlayerIds = new HashSet<>();  // 当前断线的玩家ID集合
     private final Map<Long, Integer> playerDisconnectCounts = new java.util.HashMap<>(); // 每局玩家断线次数
-    private ScheduledFuture<?> reconnectTimerFuture;
+    private final Map<Long, ScheduledFuture<?>> reconnectTimerFutures = new HashMap<>(); // 每个玩家的断线倒计时
 
     // 回合计时器
     private static final int TURN_TIMEOUT_SECONDS = 60;
@@ -140,7 +142,9 @@ public class Room {
     public int getWhiteScore() { return whiteScore; }
 
     public int getPlayerCount() { return players.size(); }
-    public long getDisconnectedPlayerId() { return disconnectedPlayerId; }
+    public Set<Long> getDisconnectedPlayerIds() { return disconnectedPlayerIds; }
+    /** 判断指定玩家当前是否断线 */
+    public boolean isPlayerDisconnected(long userId) { return disconnectedPlayerIds.contains(userId); }
     public String getPlayerUsername(long userId) {
         for (ClientHandler p : players) {
             if (p.getUserId() == userId) return p.getUsername();
@@ -279,23 +283,24 @@ public class Room {
                     String loserName = getPlayerUsername(uid);
                     log.info("Player {} disconnected {} times in room {}, declaring {} as winner",
                             uid, count, roomId, winnerId);
+                    disconnectedPlayerIds.remove(uid);
+                    cancelReconnectTimer(uid);
                     endGame(winnerId, "disconnect_limit",
                             loserName + " 累计断线" + count + "次，自动判负");
                     broadcastAll(Message.of("PLAYER_DISCONNECT_LIMIT",
                             "userId", uid,
                             "disconnectCount", count,
                             "msg", loserName + " 累计断线" + count + "次，自动判负"));
-                    disconnectedPlayerId = 0;
                     return;
                 }
 
-                disconnectedPlayerId = uid;
-                startReconnectTimer();
+                disconnectedPlayerIds.add(uid);
+                startReconnectTimer(uid);
                 broadcastToPlayers(Message.of("PLAYER_DISCONNECTED",
-                        "userId", disconnectedPlayerId,
+                        "userId", uid,
                         "disconnectCount", count));
                 log.info("Player {} disconnected during game in room {} (disconnect #{}/{}), reconnect timer started ({}s)",
-                        disconnectedPlayerId, roomId, count, MAX_DISCONNECT_COUNT, RECONNECT_TIMEOUT_SEC);
+                        uid, roomId, count, MAX_DISCONNECT_COUNT, RECONNECT_TIMEOUT_SEC);
             }
         } else {
             boolean removedFromObservers = observers.remove(handler);
@@ -449,6 +454,9 @@ public class Room {
                 roomId, winnerId, reason, status);
 
         cancelTurnTimer();
+        // 清除所有断线状态（对局结束，不再需要重连计时）
+        disconnectedPlayerIds.clear();
+        cancelAllReconnectTimers();
         status = Status.FINISHED;
         gameStarted = false;
 
@@ -1004,8 +1012,8 @@ public class Room {
 
         // 清除断线计数
         playerDisconnectCounts.clear();
-        disconnectedPlayerId = 0;
-        cancelReconnectTimer();
+        disconnectedPlayerIds.clear();
+        cancelAllReconnectTimers();
 
         // 刷新双方积分（可能因上一局变化）
         if (!aiMode) {
@@ -1137,9 +1145,8 @@ public class Room {
                 playerDisconnectCounts.getOrDefault(userId, 0), MAX_DISCONNECT_COUNT);
 
         // 重连成功：清除断线状态，停止倒计时
-        if (disconnectedPlayerId == userId) {
-            disconnectedPlayerId = 0;
-            cancelReconnectTimer();
+        if (disconnectedPlayerIds.remove(userId)) {
+            cancelReconnectTimer(userId);
             broadcastToPlayers(Message.of("PLAYER_RECONNECTED",
                     "userId", userId));
         }
@@ -1164,33 +1171,45 @@ public class Room {
 
     // ==================== 断线重连计时器 ====================
 
-    private synchronized void startReconnectTimer() {
-        cancelReconnectTimer();
-        long targetPlayer = disconnectedPlayerId;
-        reconnectTimerFuture = turnTimerPool.schedule(() -> {
+    /** 为指定玩家启动断线重连倒计时 */
+    private synchronized void startReconnectTimer(long userId) {
+        // 先取消该玩家已有的计时器
+        cancelReconnectTimer(userId);
+        reconnectTimerFutures.put(userId, turnTimerPool.schedule(() -> {
             synchronized (Room.this) {
-                if (status != Status.PLAYING || disconnectedPlayerId != targetPlayer) return;
+                if (status != Status.PLAYING || !isPlayerDisconnected(userId)) return;
                 // 断线超时（60秒内未重连），判负
-                long winnerId = (disconnectedPlayerId == blackUserId) ? whiteUserId : blackUserId;
-                String loserName = getPlayerUsername(disconnectedPlayerId);
+                long winnerId = (userId == blackUserId) ? whiteUserId : blackUserId;
+                String loserName = getPlayerUsername(userId);
                 log.info("Player {} reconnect timed out in room {}, declaring {} as winner",
-                        disconnectedPlayerId, roomId, winnerId);
+                        userId, roomId, winnerId);
+                disconnectedPlayerIds.remove(userId);
+                reconnectTimerFutures.remove(userId);
                 endGame(winnerId, "disconnect_timeout",
                         loserName + " 断线超时未重连，自动判负");
                 broadcastAll(Message.of("RECONNECT_TIMEOUT",
-                        "userId", String.valueOf(disconnectedPlayerId),
+                        "userId", String.valueOf(userId),
                         "msg", "断线超时，对方获胜"));
-                disconnectedPlayerId = 0;
             }
-        }, RECONNECT_TIMEOUT_SEC, TimeUnit.SECONDS);
+        }, RECONNECT_TIMEOUT_SEC, TimeUnit.SECONDS));
     }
 
-    private synchronized void cancelReconnectTimer() {
-        if (reconnectTimerFuture != null && !reconnectTimerFuture.isDone()) {
-            reconnectTimerFuture.cancel(false);
-            reconnectTimerFuture = null;
-            log.debug("Reconnect timer cancelled for room {}", roomId);
+    /** 取消指定玩家的断线倒计时 */
+    private synchronized void cancelReconnectTimer(long userId) {
+        ScheduledFuture<?> f = reconnectTimerFutures.remove(userId);
+        if (f != null && !f.isDone()) {
+            f.cancel(false);
+            log.debug("Reconnect timer cancelled for player {} in room {}", userId, roomId);
         }
+    }
+
+    /** 取消所有断线倒计时 */
+    private synchronized void cancelAllReconnectTimers() {
+        for (ScheduledFuture<?> f : reconnectTimerFutures.values()) {
+            if (f != null && !f.isDone()) f.cancel(false);
+        }
+        reconnectTimerFutures.clear();
+        log.debug("All reconnect timers cancelled for room {}", roomId);
     }
 
     public synchronized boolean isGameOver() {
@@ -1288,12 +1307,12 @@ public class Room {
     /** 构建包含用户名和积分的 GAME_START 消息 */
     public Message buildGameStartMessage() {
         return Message.of(Protocol.GAME_START,
-                "blackUserId", String.valueOf(blackUserId),
+                "blackUserId", blackUserId,
                 "blackUsername", blackUsername != null ? blackUsername : String.valueOf(blackUserId),
-                "blackScore", String.valueOf(blackScore),
-                "whiteUserId", String.valueOf(whiteUserId),
+                "blackScore", blackScore,
+                "whiteUserId", whiteUserId,
                 "whiteUsername", whiteUsername != null ? whiteUsername : String.valueOf(whiteUserId),
-                "whiteScore", String.valueOf(whiteScore));
+                "whiteScore", whiteScore);
     }
 
     public static List<String[]> getRoomListInfo(Map<String, Room> rooms) {
@@ -1302,13 +1321,20 @@ public class Room {
         for (Room room : rooms.values()) {
             // 不对外暴露已结束的房间
             if (room.getStatus() == Status.FINISHED) continue;
+            String ownerName = "未知";
+            if (room.aiMode) {
+                ownerName = "AI";
+            } else if (room.owner != null) {
+                ownerName = room.owner.getUsername();
+            }
             list.add(new String[]{
-                room.getRoomId(),
-                room.getRoomName(),
-                room.getStatus().toString(),
-                String.valueOf(room.getPlayerCount()),
-                "2",
-                room.hasPassword() ? "true" : "false"
+                    room.getRoomId(),
+                    room.getRoomName(),
+                    room.getStatus().toString(),
+                    String.valueOf(room.getPlayerCount()),
+                    "2",
+                    room.hasPassword() ? "true" : "false",
+                    ownerName
             });
         }
         log.debug("getRoomListInfo completed: {} rooms listed", list.size());

@@ -80,6 +80,10 @@ public class UserDAO {
             }
             log.info("User registered: {}", username);
             return true;
+        } catch (java.sql.SQLIntegrityConstraintViolationException e) {
+            // 并发安全：existsByUsername 和 INSERT 之间可能有竞态，捕获唯一约束异常
+            log.warn("Register failed: duplicate username (concurrent): {}", username);
+            return false;
         } catch (SQLException e) {
             log.error("Register SQL error: {}", username, e);
             return false;
@@ -130,9 +134,10 @@ public class UserDAO {
                 return rs.next();
             }
         } catch (SQLException e) {
-            log.error("Check username error: {}", username, e);
+            // 数据库查询失败时保守处理：视作用户名已存在，拒绝注册
+            log.error("Check username error, treating as duplicate: {}", username, e);
         }
-        return false;
+        return true;
     }
 
     public UserInfo getUserById(long userId) {
