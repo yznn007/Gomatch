@@ -1,6 +1,7 @@
 package com.gomatch.client.ui;
 
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.UserSettings;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
@@ -47,6 +48,9 @@ public class ScreenManager {
     private static double prevWidth = WIDTH;
     private static double prevHeight = HEIGHT;
 
+    // 当前场景的动态背景引用，供设置页实时切换
+    private static ShapeGridBackground currentBackground;
+
     private enum ResizeMode {
         NONE, N, S, W, E, NW, NE, SW, SE
     }
@@ -92,6 +96,8 @@ public class ScreenManager {
             StackPane wrapper = new StackPane();
             wrapper.setStyle("-fx-background-color: transparent;");
             ShapeGridBackground bg = new ShapeGridBackground();
+            bg.setEnabled(UserSettings.get().dynamicBackground);
+            currentBackground = bg;
             wrapper.getChildren().addAll(bg, mainLayout);
 
             // 4. 监听鼠标移动，将其坐标转发给底层的 ShapeGridBackground
@@ -140,6 +146,7 @@ public class ScreenManager {
             customTitleBar.prefWidthProperty().bind(mainLayout.widthProperty());
             
             applyStylesheet(scene);
+            applyUserFont(scene);
             stage.setScene(scene);
 
             if (firstShow) {
@@ -365,6 +372,20 @@ public class ScreenManager {
         if (!scene.getStylesheets().contains(css)) {
             scene.getStylesheets().add(css);
         }
+    }
+
+    /** 根据用户偏好设置全局字体 */
+    private static void applyUserFont(Scene scene) {
+        if (scene.getRoot() == null) return;
+        String fontFamily = UserSettings.get().fontFamily;
+        if (fontFamily != null && fontFamily.contains("系统默认")) {
+            scene.getRoot().setStyle("-fx-font-family: \"Segoe UI\", \"Microsoft YaHei\", sans-serif;");
+        }
+    }
+
+    /** 获取当前场景的动态背景实例，供设置页实时切换 */
+    public static ShapeGridBackground getCurrentBackground() {
+        return currentBackground;
     }
 
     // ---------- 无边框窗口拉伸算法 ----------
