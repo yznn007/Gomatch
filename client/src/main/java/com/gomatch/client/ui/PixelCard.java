@@ -140,6 +140,10 @@ public class PixelCard extends StackPane {
         // 隔离绘制的卡片本体背景 Region，单独赋予样式，使其不覆盖挂绳区
         cardBody.getStyleClass().add("pixel-card-body");
         cardBody.setManaged(false);
+        // 放开最大尺寸限制，使 layoutInArea 的 fillWidth/fillHeight 能将其拉伸至与内层 glass-card 一致的宽度，
+        // 避免外层 cardBody 的上下边框比内层短
+        cardBody.setMaxWidth(Double.POSITIVE_INFINITY);
+        cardBody.setMaxHeight(Double.POSITIVE_INFINITY);
         this.getChildren().add(1, cardBody);
 
         // 添加样式类
@@ -306,14 +310,25 @@ public class PixelCard extends StackPane {
         canvas.relocate(0, 0);
 
         // 4. 定位卡片背景区域 (cardBody) 仅覆盖底部卡片物理身体区域
+        // 用 resize+relocate 强制填满，避免 layoutInArea 对 Region 的 fillWidth 不生效导致上下边框偏短
+        double bodyW = w;
+        double bodyH = h - stringLength;
         if (cardBody != null) {
-            layoutInArea(cardBody, 0, stringLength, w, h - stringLength, 0, Insets.EMPTY, true, true, HPos.CENTER, VPos.CENTER);
+            cardBody.resize(bodyW, bodyH);
+            cardBody.relocate(0, stringLength);
         }
 
         // 5. 定位所有 FXML 子内容节点，同样限定并平移在卡片身体区域内
         for (Node child : getChildren()) {
             if (child != canvas && child != cardBody) {
-                layoutInArea(child, 0, stringLength, w, h - stringLength, 0, Insets.EMPTY, true, true, HPos.CENTER, VPos.CENTER);
+                if (child instanceof Region r) {
+                    r.setMaxWidth(Double.POSITIVE_INFINITY);
+                    r.setMaxHeight(Double.POSITIVE_INFINITY);
+                    r.resize(bodyW, bodyH);
+                    r.relocate(0, stringLength);
+                } else {
+                    layoutInArea(child, 0, stringLength, bodyW, bodyH, 0, Insets.EMPTY, true, true, HPos.CENTER, VPos.CENTER);
+                }
             }
         }
     }
@@ -443,7 +458,7 @@ public class PixelCard extends StackPane {
         // 绘制卡片身体与挂钩的挂孔搭扣
         gc.setFill(Color.web("#94a3b8")); // 银灰色夹子扣
         gc.fillOval(centerX - 4.5, stringLength - 4.5, 9, 9);
-        gc.setStroke(Color.web("#475569"));
+        gc.setStroke(Color.web(ScreenManager.themeColor("#475569", "#cbd5e1")));
         gc.setLineWidth(1.0);
         gc.strokeOval(centerX - 4.5, stringLength - 4.5, 9, 9);
 
