@@ -321,21 +321,21 @@ public class FriendsController implements NetworkListener {
                 nameRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 Label nameLabel = new Label(friend.getFriendUsername());
                 nameLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
+                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
                 Label idLabel = new Label("#" + friend.getFriendUserId());
                 idLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
+                idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
                 nameRow.getChildren().addAll(nameLabel, idLabel);
 
                 HBox detailRow = new HBox(8);
                 detailRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 Label scoreLabel = new Label(friend.getFriendScore() + " 分");
                 scoreLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                scoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
+                scoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
                 
                 Label activeLabel = new Label(isOnline ? "在线" : "离线");
                 activeLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                activeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + (isOnline ? "#16a34a;" : "#64748b;"));
+                activeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + (isOnline ? ScreenManager.themeColor("#16a34a;", "#86efac;") : ScreenManager.themeColor("#64748b;", "#a7b0c2;")));
                 
                 detailRow.getChildren().addAll(scoreLabel, activeLabel);
                 infoBox.getChildren().addAll(nameRow, detailRow);
@@ -407,17 +407,17 @@ public class FriendsController implements NetworkListener {
                 nameRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 Label nameLabel = new Label(req.getFromUsername());
                 nameLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
+                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
                 Label idLabel = new Label("#" + req.getFromUserId());
                 idLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
+                idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
                 nameRow.getChildren().addAll(nameLabel, idLabel);
 
                 String msg = req.getMessage() != null && !req.getMessage().isEmpty() ? 
                              "“" + req.getMessage() + "”" : "加个好友吧！";
                 Label msgLabel = new Label(msg);
                 msgLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                msgLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b; -fx-font-style: italic;");
+                msgLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + "; -fx-font-style: italic;");
                 infoBox.getChildren().addAll(nameRow, msgLabel);
 
                 // Action Buttons

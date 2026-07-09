@@ -62,7 +62,7 @@ public class ServerConfigDialogController {
 
         // 置为"连接中"，禁用按钮防止重复点击
         statusLabel.setText("连接中...");
-        statusLabel.setStyle("-fx-text-fill: #64748b;");
+        statusLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
         applyBtn.setDisable(true);
 
         final String finalHost = host;

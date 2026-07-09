@@ -352,9 +352,9 @@ public class CasualLobbyController implements NetworkListener {
                 HBox nameRow = new HBox(8);
                 nameRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 Label nameLabel = new Label(room.getRoomName());
-                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
+                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
                 Label idLabel = new Label("#" + room.getRoomId());
-                idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
+                idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
                 nameRow.getChildren().addAll(nameLabel, idLabel);
 
                 if (room.isHasPassword()) {
@@ -365,7 +365,7 @@ public class CasualLobbyController implements NetworkListener {
                 }
 
                 Label ownerLabel = new Label("房主: " + hostName);
-                ownerLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #475569;");
+                ownerLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + ScreenManager.themeColor("#475569", "#cbd5e1") + ";");
                 infoBox.getChildren().addAll(nameRow, ownerLabel);
 
                 // Slots HBox (human figures)
@@ -374,7 +374,7 @@ public class CasualLobbyController implements NetworkListener {
                 int pc = room.getPlayerCount();
                 Label slotLabel = new Label("人数: " + pc + "/2");
                 slotLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                slotLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #475569; -fx-font-weight: bold;");
+                slotLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: " + ScreenManager.themeColor("#475569", "#cbd5e1") + "; -fx-font-weight: bold;");
                 slots.getChildren().add(slotLabel);
 
                 // Status Badge
@@ -454,10 +454,10 @@ public class CasualLobbyController implements NetworkListener {
                 javafx.scene.layout.HBox.setHgrow(infoBox, javafx.scene.layout.Priority.ALWAYS);
 
                 Label titleLabel = new Label(roomName);
-                titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
+                titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
                 
                 Label detailLabel = new Label(matchDetails.isEmpty() ? "对局编号: #" + roomId : matchDetails);
-                detailLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
+                detailLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
                 infoBox.getChildren().addAll(titleLabel, detailLabel);
 
                 // Spectate Button

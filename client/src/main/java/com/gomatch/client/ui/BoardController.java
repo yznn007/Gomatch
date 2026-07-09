@@ -220,19 +220,19 @@ public class BoardController implements NetworkListener {
         if (blackPlayerScoreLabel != null) {
             if (blackScore >= 0) {
                 blackPlayerScoreLabel.setText(blackScore + "分");
-                blackPlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
+                blackPlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + "; -fx-font-weight: bold;");
             } else if (blackDisplayName == null) {
                 blackPlayerScoreLabel.setText("?");
-                blackPlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
+                blackPlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#94a3b8") + ";");
             }
         }
         if (whitePlayerScoreLabel != null) {
             if (whiteScore >= 0) {
                 whitePlayerScoreLabel.setText(whiteScore + "分");
-                whitePlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
+                whitePlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + "; -fx-font-weight: bold;");
             } else if (whiteDisplayName == null) {
                 whitePlayerScoreLabel.setText("?");
-                whitePlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
+                whitePlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#94a3b8") + ";");
             }
         }
     }
@@ -397,10 +397,10 @@ public class BoardController implements NetworkListener {
         if (scoreLbl != null) {
             if (score >= 0) {
                 scoreLbl.setText(score + "分");
-                scoreLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
+                scoreLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + "; -fx-font-weight: bold;");
             } else {
                 scoreLbl.setText("?");
-                scoreLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
+                scoreLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#94a3b8") + ";");
             }
         }
     }
@@ -653,8 +653,8 @@ public class BoardController implements NetworkListener {
     }
 
     private void buildPlayerCards() {
-        blackCardRoot = buildOnePlayerCard(blackPlayerBox, "⚫", "黑方", "#1e293b");
-        whiteCardRoot = buildOnePlayerCard(whitePlayerBox, "⚪", "白方", "#cbd5e1");
+        blackCardRoot = buildOnePlayerCard(blackPlayerBox, "⚫", "黑方", ScreenManager.themeColor("#1e293b", "#f8fafc"));
+        whiteCardRoot = buildOnePlayerCard(whitePlayerBox, "⚪", "白方", ScreenManager.themeColor("#cbd5e1", "#cbd5e1"));
     }
 
     private javafx.scene.layout.HBox buildOnePlayerCard(VBox container, String stone, String colorLabel, String avatarBg) {
@@ -680,22 +680,22 @@ public class BoardController implements NetworkListener {
 
         javafx.scene.control.Label nameLabel = new javafx.scene.control.Label("---");
         nameLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-        nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1e293b;");
+        nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
 
         javafx.scene.layout.HBox detailRow = new javafx.scene.layout.HBox(6);
         detailRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
         javafx.scene.control.Label idLabel = new javafx.scene.control.Label("#---");
         idLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-        idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
+        idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#94a3b8") + ";");
 
         javafx.scene.control.Label scoreLabel = new javafx.scene.control.Label("---");
         scoreLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-        scoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
+        scoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + "; -fx-font-weight: bold;");
 
         javafx.scene.control.Label roleLabel = new javafx.scene.control.Label(colorLabel);
         roleLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-        roleLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ("黑方".equals(colorLabel) ? "#1e293b" : "#94a3b8") + ";");
+        roleLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ("黑方".equals(colorLabel) ? ScreenManager.themeColor("#1e293b", "#f8fafc") : "#94a3b8") + ";");
 
         detailRow.getChildren().addAll(idLabel, scoreLabel, roleLabel);
         infoBox.getChildren().addAll(nameLabel, detailRow);
@@ -757,7 +757,7 @@ public class BoardController implements NetworkListener {
                 tag.setVisible(false);
                 tag.setManaged(false);
             }
-            nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1e293b;");
+            nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
             card.setOpacity(1.0);
         } else {
             if (tag != null) {
@@ -797,7 +797,7 @@ public class BoardController implements NetworkListener {
         if (remainingSeconds <= 10) {
             timerLabel.setStyle("-fx-text-fill: #dc2626; -fx-font-size: 18px; -fx-font-weight: bold;");
         } else {
-            timerLabel.setStyle("-fx-text-fill: #334155; -fx-font-size: 18px; -fx-font-weight: bold;");
+            timerLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#334155", "#e2e8f0") + "; -fx-font-size: 18px; -fx-font-weight: bold;");
         }
     }
 
@@ -1310,4 +1310,3 @@ public class BoardController implements NetworkListener {
         }
     }
 }
-

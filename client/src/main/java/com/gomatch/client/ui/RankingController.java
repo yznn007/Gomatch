@@ -112,7 +112,7 @@ public class RankingController implements NetworkListener {
                 if (rankVal == 1) {
                     rankNum.setStyle("-fx-text-fill: #b45309; -fx-font-weight: bold; -fx-font-size: 13px;");
                 } else if (rankVal == 2) {
-                    rankNum.setStyle("-fx-text-fill: #475569; -fx-font-weight: bold; -fx-font-size: 13px;");
+                    rankNum.setStyle("-fx-text-fill: #cbd5e1; -fx-font-weight: bold; -fx-font-size: 13px;");
                 } else if (rankVal == 3) {
                     rankNum.setStyle("-fx-text-fill: #78350f; -fx-font-weight: bold; -fx-font-size: 13px;");
                 }
@@ -144,7 +144,7 @@ public class RankingController implements NetworkListener {
                 nameRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 Label nameLabel = new Label(user.getUsername());
                 nameLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
+                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
                 if (isMe) {
                     nameLabel.setText(nameLabel.getText() + " (我)");
                     nameLabel.setStyle(nameLabel.getStyle() + " -fx-text-fill: #0ea5e9;");
@@ -157,7 +157,7 @@ public class RankingController implements NetworkListener {
                 }
                 Label detailsLabel = new Label("积分: " + user.getScore() + " | 胜率: " + winRateStr);
                 detailsLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                detailsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
+                detailsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
 
                 infoBox.getChildren().addAll(nameRow, detailsLabel);
 

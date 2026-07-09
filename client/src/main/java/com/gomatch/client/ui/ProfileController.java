@@ -170,14 +170,14 @@ public class ProfileController implements NetworkListener {
                 javafx.scene.layout.HBox.setHgrow(infoBox, javafx.scene.layout.Priority.ALWAYS);
 
                 Label opponentLabel = new Label("与 " + record.getOpponent() + " 的对局");
-                opponentLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
+                opponentLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
 
                 int moveCount = record.getMoveCount();
                 int durationSec = record.getDuration();
                 String durationStr = formatDuration(durationSec);
                 Label detailsLabel = new Label("落子: " + (moveCount > 0 ? moveCount : "--") + " 步 | 用时: " + durationStr);
                 detailsLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                detailsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
+                detailsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
 
                 infoBox.getChildren().addAll(opponentLabel, detailsLabel);
 
@@ -186,7 +186,7 @@ public class ProfileController implements NetworkListener {
                 rightBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
                 Label timeLabel = new Label(record.getTime());
-                timeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
+                timeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
 
                 Button replayBtn = new Button("回放");
                 replayBtn.getStyleClass().add("btn-primary");
