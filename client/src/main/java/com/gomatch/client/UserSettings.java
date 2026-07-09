@@ -35,7 +35,7 @@ public final class UserSettings {
     public boolean muteOnBackground = false;
 
     // ---- UI 风格 ----
-    public String theme = "清透白磨砂 (默认)";
+    public String theme = "清透白磨砂 (经典)";
     public boolean dynamicBackground = true;
     public String fontFamily = "等宽 Maple Mono (推荐)";
 

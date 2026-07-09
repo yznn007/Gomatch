@@ -85,6 +85,7 @@ public class SettingsController {
     private User currentUser;
     private boolean previewMode;
     private boolean syncingSongComboBox;
+    private boolean initializing;
 
     // 后台静音：记住音乐启用状态，用于恢复
     private boolean wasGlobalMusicEnabled;
@@ -124,9 +125,7 @@ public class SettingsController {
                 I18N.get("settings.fps.unlimited"));
 
         // 主题
-        themeComboBox.getItems().setAll(
-                I18N.get("settings.theme.default"),
-                I18N.get("settings.theme.dark"));
+        themeComboBox.getItems().setAll(I18N.get("settings.theme.default"), I18N.get("settings.theme.dark"));
 
         // 字体
         fontComboBox.getItems().setAll(
@@ -146,6 +145,7 @@ public class SettingsController {
 
     @FXML
     private void initialize() {
+        initializing = true;
         UserSettings s = UserSettings.get();
 
         // 先填充所有 ComboBox 可选项（i18n）
@@ -161,7 +161,7 @@ public class SettingsController {
 
         if (ClientMain.getConnector().isConnected()) {
             statusLabel.setText(I18N.get("settings.connected"));
-            statusLabel.setStyle("-fx-text-fill: green;");
+            statusLabel.setStyle("-fx-text-fill: #86efac;");
         } else {
             statusLabel.setText(I18N.get("settings.disconnected"));
             statusLabel.setStyle("-fx-text-fill: #dc2626;");
@@ -201,11 +201,7 @@ public class SettingsController {
             fontComboBox.setValue(I18N.get("settings.font.maple"));
         }
         // 根据保存的 theme key 设置当前显示值
-        if (s.theme != null && s.theme.contains("暗夜") || s.theme.contains("Dark")) {
-            themeComboBox.setValue(I18N.get("settings.theme.dark"));
-        } else {
-            themeComboBox.setValue(I18N.get("settings.theme.default"));
-        }
+        themeComboBox.setValue(ScreenManager.isDarkTheme() ? I18N.get("settings.theme.dark") : I18N.get("settings.theme.default"));
         dynamicBgCheckBox.setSelected(s.dynamicBackground);
 
         // 语言
@@ -219,6 +215,7 @@ public class SettingsController {
 
         // 初始激活基础设置标签页
         showBaseTab();
+        initializing = false;
     }
 
     /** 绑定 ElasticVolumeSlider 与 CheckBox 联动（禁用/半透明） */
@@ -340,7 +337,7 @@ public class SettingsController {
         this.previewMode = previewMode;
         if (previewMode) {
             statusLabel.setText(I18N.get("settings.connected") + " (" + (I18N.isEnglish() ? "Preview" : "浏览模式") + ")");
-            statusLabel.setStyle("-fx-text-fill: green;");
+            statusLabel.setStyle("-fx-text-fill: #86efac;");
         }
     }
 
@@ -494,17 +491,16 @@ public class SettingsController {
 
     @FXML
     private void handleTheme() {
+        if (initializing) return;
         String val = themeComboBox.getValue();
         if (val == null) return;
-        String darkKey = I18N.get("settings.theme.dark");
-        if (val.equals(darkKey)) {
-            String defaultKey = I18N.get("settings.theme.default");
-            showInfoAlert(I18N.isEnglish() ? "Dark theme is under development!" : "暗夜黑磨砂主题正在开发中，敬请期待！");
-            themeComboBox.setValue(defaultKey);
-            return;
-        }
         UserSettings.get().theme = val;
         UserSettings.save();
+
+        Stage stage = ScreenManager.getStage();
+        if (stage != null && stage.getScene() != null) {
+            ScreenManager.applyUserTheme(stage.getScene());
+        }
     }
 
     @FXML
@@ -576,7 +572,7 @@ public class SettingsController {
         ClientConfig.saveConfig(host, port);
 
         statusLabel.setText("连接中...");
-        statusLabel.setStyle("-fx-text-fill: #64748b;");
+        statusLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
 
         final String finalHost = host;
         final int finalPort = port;
@@ -586,7 +582,7 @@ public class SettingsController {
                 ClientMain.getConnector().connect(finalHost, finalPort);
                 javafx.application.Platform.runLater(() -> {
                     statusLabel.setText("✅ 已连接 (" + finalHost + ":" + finalPort + ")");
-                    statusLabel.setStyle("-fx-text-fill: green;");
+                    statusLabel.setStyle("-fx-text-fill: #86efac;");
                 });
             } catch (Exception e) {
                 javafx.application.Platform.runLater(() -> {

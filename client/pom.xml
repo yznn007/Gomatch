@@ -79,6 +79,7 @@
                     <mainClass>com.gomatch.client.ClientMain</mainClass>
                     <options>
                         <option>-Dfile.encoding=UTF-8</option>
+                        <option>-Dprism.dirtyopts=false</option>
                     </options>
                 </configuration>
             </plugin>

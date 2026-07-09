@@ -20,7 +20,7 @@
         <HBox spacing="24" alignment="TOP_CENTER" style="-fx-padding: 18 0 0 0;">
             
             <!-- 左侧导航栏 VBox -->
-            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10; -fx-background-color: rgba(245, 247, 250, 0.65);">
+            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10;">
                 <Button fx:id="menuBaseBtn" text="%settings.base" onAction="#showBaseTab" styleClass="sidebar-menu-btn"/>
                 <Button fx:id="menuGraphicsBtn" text="%settings.graphics" onAction="#showGraphicsTab" styleClass="sidebar-menu-btn"/>
                 <Button fx:id="menuAudioBtn" text="%settings.audio" onAction="#showAudioTab" styleClass="sidebar-menu-btn"/>
@@ -191,8 +191,8 @@
                     <!-- 面板 7: 其他 -->
                     <VBox fx:id="otherPane" spacing="16" alignment="TOP_CENTER" maxWidth="380" prefWidth="380" style="-fx-background-color: transparent; -fx-padding: 20 16 20 0;">
                         <Label text="%settings.otherTitle" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
-                        <Button fx:id="logoutBtn" text="%settings.logout" onAction="#handleLogout" styleClass="btn-primary" prefWidth="200" style="-fx-text-fill: #334155; -fx-border-color: transparent transparent rgba(51, 65, 85, 0.2) transparent;"/>
-                        <Button fx:id="exitBtn" text="%settings.exitGame" onAction="#handleExitGame" styleClass="btn-primary" prefWidth="200" style="-fx-text-fill: #dc2626; -fx-border-color: transparent transparent rgba(220, 38, 38, 0.2) transparent;"/>
+                        <Button fx:id="logoutBtn" text="%settings.logout" onAction="#handleLogout" styleClass="btn-primary" prefWidth="200"/>
+                        <Button fx:id="exitBtn" text="%settings.exitGame" onAction="#handleExitGame" styleClass="btn-danger" prefWidth="200"/>
                     </VBox>
                     
                 </StackPane>
