@@ -29,7 +29,7 @@
                 <StackPane alignment="CENTER" style="-fx-background-color: transparent;">
                     
                     <!-- 面板: 积分排行 -->
-                    <VBox fx:id="rankingPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                    <VBox fx:id="rankingPane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
                         <Label fx:id="rankingTitleLabel" text="全服积分排行榜" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
                         <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" prefHeight="320" minHeight="240" VBox.vgrow="ALWAYS">
                             <VBox fx:id="rankingContainer" spacing="10" style="-fx-padding: 8; -fx-background-color: transparent;"/>

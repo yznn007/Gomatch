@@ -8,7 +8,6 @@ import javafx.scene.Cursor;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.transform.Scale;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
@@ -55,8 +54,8 @@ public class ScreenManager {
     public static void init(Stage s) {
         stage = s;
         stage.setTitle("Gomatch");
-        stage.setMinWidth(720);
-        stage.setMinHeight(540);
+        stage.setMinWidth(WIDTH);
+        stage.setMinHeight(HEIGHT);
         stage.setResizable(true);
 
         // 设置为无系统装饰边框窗口，实现自定义沉浸式标题栏
@@ -83,49 +82,17 @@ public class ScreenManager {
             // 1. 创建自定义沉浸式标题栏
             HBox customTitleBar = createCustomTitleBar();
 
-            // 2. 将标题栏与业务 UI 垂直布局
+            // 2. 将标题栏与业务 UI 垂直布局，VBox 自适应填满窗口
             VBox mainLayout = new VBox();
             mainLayout.setStyle("-fx-background-color: transparent;");
             VBox.setVgrow(root, Priority.ALWAYS);
             mainLayout.getChildren().addAll(customTitleBar, root);
-
-            // 锁定 mainLayout 的设计参考尺寸为 1920 x 1080 (绝对 16:9)
-            mainLayout.setMinWidth(WIDTH);
-            mainLayout.setMinHeight(HEIGHT);
-            mainLayout.setPrefWidth(WIDTH);
-            mainLayout.setPrefHeight(HEIGHT);
-            mainLayout.setMaxWidth(WIDTH);
-            mainLayout.setMaxHeight(HEIGHT);
-
-            // 对 mainLayout 应用等比自适应缩放 Scale 变换，以 1920x1080 几何中心为 Pivot
-            Scale scale = new Scale(1.0, 1.0, WIDTH / 2.0, HEIGHT / 2.0);
-            mainLayout.getTransforms().add(scale);
 
             // 3. 包装一层 StackPane，将 ShapeGridBackground 动态粒子点阵放在最底层，主 UI 在上层
             StackPane wrapper = new StackPane();
             wrapper.setStyle("-fx-background-color: transparent;");
             ShapeGridBackground bg = new ShapeGridBackground();
             wrapper.getChildren().addAll(bg, mainLayout);
-
-            // 监听 wrapper 实际宽高变化（窗口大小变化），基于最窄边对 mainLayout 进行平滑缩放，实现绝对等比
-            wrapper.widthProperty().addListener((obs, oldVal, newVal) -> {
-                double cw = newVal.doubleValue();
-                double ch = wrapper.getHeight();
-                if (cw > 0 && ch > 0) {
-                    double sf = Math.min(cw / WIDTH, ch / HEIGHT);
-                    scale.setX(sf);
-                    scale.setY(sf);
-                }
-            });
-            wrapper.heightProperty().addListener((obs, oldVal, newVal) -> {
-                double cw = wrapper.getWidth();
-                double ch = newVal.doubleValue();
-                if (cw > 0 && ch > 0) {
-                    double sf = Math.min(cw / WIDTH, ch / HEIGHT);
-                    scale.setX(sf);
-                    scale.setY(sf);
-                }
-            });
 
             // 4. 监听鼠标移动，将其坐标转发给底层的 ShapeGridBackground
             wrapper.setOnMouseMoved(e -> {

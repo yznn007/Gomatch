@@ -24,13 +24,20 @@ client/src/main/
 │   │   └── ServerConnector.java        # TCP 连接管理与消息收发
 │   └── ui/
 │       ├── AboutController.java        # 关于界面
+│       ├── AiLobbyController.java      # 人机对战难度选择界面
+│       ├── AsciiTextCanvas.java        # 登录页 ASCII 品牌动效画布
 │       ├── AutoCleanupController.java  # 控制器基类（自动清理监听器）
 │       ├── BoardController.java        # 棋盘对战界面
 │       ├── CasualLobbyController.java  # 休闲大厅（房间列表+观战）
+│       ├── ConfirmExitController.java  # 退出确认弹窗
 │       ├── CreateRoomController.java   # 创建房间界面
+│       ├── FriendsController.java      # 好友列表/请求/添加界面
 │       ├── GameOverController.java     # 对局结束弹窗
 │       ├── LobbyController.java        # 主大厅（匹配入口+排行榜抽屉）
 │       ├── LoginController.java        # 登录界面
+│       ├── ManagementController.java   # 存档管理与管理员控制台
+│       ├── MessageDialogController.java # 项目定制消息弹窗
+│       ├── PixelCard.java              # 主题卡片/粒子/悬浮交互组件
 │       ├── ProfileController.java      # 个人中心（对战记录+改密码）
 │       ├── RankedLobbyController.java  # 排位大厅（段位+匹配按钮）
 │       ├── RankingController.java      # 排行榜界面
@@ -38,6 +45,8 @@ client/src/main/
 │       ├── RegisterController.java     # 注册界面
 │       ├── RoomWaitingController.java  # 房间等待界面
 │       ├── ScreenManager.java          # 全局场景/窗口管理器
+│       ├── ServerConfigDialogController.java # 服务器地址配置弹窗
+│       ├── SettingsController.java     # 设置界面
 │       └── ShapeGridBackground.java    # 动态粒子点阵背景
 └── resources/
     ├── client-config.json              # 客户端默认配置文件
@@ -182,17 +191,17 @@ public interface NetworkListener {
 
 | 属性 | 值 |
 |------|----|
-| 默认宽度 | `900px` |
-| 默认高度 | `640px` |
-| 最小宽度 | `720px` |
-| 最小高度 | `540px` |
+| 默认宽度 | `1280px` |
+| 默认高度 | `720px` |
+| 最小宽度 | `1280px` |
+| 最小高度 | `720px` |
 | 窗口样式 | `StageStyle.UNDECORATED`（无系统边框，自定义标题栏） |
 
 #### 主要方法
 
 | 方法 | 说明 |
 |------|------|
-| `init(Stage)` | 初始化主窗口，设置无边框样式和最小尺寸 |
+| `init(Stage)` | 初始化主窗口，设置无边框样式和 1280 x 720 最小尺寸 |
 | `switchTo(fxmlPath)` | 加载 FXML，切换主场景；**切换前自动调用 `clearListeners()`** |
 | `showDialog(fxmlPath)` | 创建模态弹窗（如 GameOver），不清理监听器 |
 | `getStage()` | 获取主窗口 Stage |
@@ -207,6 +216,10 @@ public interface NetworkListener {
   - 拖到顶部 → 最大化
   - 拖到左边 → 左半屏
   - 拖到右边 → 右半屏
+
+#### 响应式布局策略
+
+`ScreenManager` 只负责窗口、标题栏、背景层和场景切换，不再对 `mainLayout` 挂载整页 `Scale` 变换。各 FXML 页面通过自身的布局约束响应窗口尺寸变化，避免固定参考尺寸带来的文字模糊、点击区域偏移和内容被锁死。
 
 #### 层级结构（每次切换）
 
@@ -224,7 +237,7 @@ StackPane (wrapper)
 
 **文件**：[ShapeGridBackground.java](../client/src/main/java/com/gomatch/client/ui/ShapeGridBackground.java)
 
-使用 JavaFX Canvas 绘制动态粒子点阵，粒子会响应鼠标位置产生排斥效果，营造沉浸式视觉体验。
+使用 JavaFX Canvas 绘制动态粒子点阵，粒子会响应鼠标位置产生排斥效果，营造沉浸式视觉体验。背景 Canvas 在尺寸变化小于 1px 时跳过重新设置宽高，避免窗口拉伸期间重复触发布局和绘制。
 
 ---
 
@@ -238,7 +251,11 @@ LoginUI（默认首页）
 
 LobbyUI（主大厅）
   ├─ 对战       → CasualLobbyUI
+  ├─ AI 对战    → AiLobbyUI
   ├─ 排位       → RankedLobbyUI
+  ├─ 好友       → FriendsUI
+  ├─ 管理       → ManagementUI（仅 ADMIN 角色显示入口）
+  ├─ 设置       → SettingsUI
   ├─ 个人中心   → ProfileUI
   ├─ 左上头像   → ProfileUI
   ├─ 排行榜按钮 → 左侧抽屉展开（StackPane 浮层）
@@ -292,6 +309,7 @@ ProfileUI（个人中心）
 - 展示当前用户头像、昵称、积分
 - 排行榜抽屉：以 `StackPane` 浮层展开，不挤压主内容
 - 监听 `RANKING_LIST` 填充排行榜数据
+- 管理入口绑定 `managementBtn`，仅当 `User.role` 为 `ADMIN` 时显示并参与布局
 
 ### 5.4 `CasualLobbyController`
 
@@ -322,7 +340,7 @@ ProfileUI（个人中心）
 
 | 关键特性 | 说明 |
 |----------|------|
-| 动态棋盘 | Canvas 随容器尺寸缩放，`cellSize` 自动计算 |
+| 动态棋盘 | Canvas 随容器尺寸缩放，`cellSize` 自动计算，并跳过 0 尺寸与重复尺寸重绘 |
 | 落子 | 点击 Canvas → 发送 `MOVE|row|col` |
 | 同步 | 收到 `MOVE_SYNC` → 更新 board 数组 → 重绘 |
 | 聊天 | TextArea + TextField，收到 `CHAT` 追加并自动滚底 |
@@ -448,13 +466,13 @@ ProfileUI（个人中心）
 
 | 规范 | 说明 |
 |------|------|
-| 卡片样式 | `.glass-card`：乳白色透明磨砂，圆角 12px |
+| 卡片样式 | `PixelCard` + `.glass-card`：表单页可用静态 PixelCard 外壳，内部保持乳白透明磨砂内容层 |
 | 按钮样式 | 底线描边 + 悬浮遮罩，圆角 8px，无四面外边框 |
 | Hover 反馈 | 背景填充板岩灰 `rgba(148,163,184,0.35)` |
 | 按下反馈 | 高亮白 `rgba(255,255,255,0.95)` |
 | 颜色体系 | 中性无色系（板岩灰、木炭黑），禁用鲜活天蓝色 |
 | 字体 | Maple Mono NF CN（内置），回退到系统等宽字体 |
-| 动态背景 | `ShapeGridBackground` 粒子点阵，响应鼠标位置 |
+| 动态背景 | `ShapeGridBackground` 粒子点阵，响应鼠标位置，并对重复尺寸变化做跳过保护 |
 
 > [!IMPORTANT]
 > FXML 命名空间**不加版本号**：使用 `xmlns="http://javafx.com/javafx"`（写 `/21` 会导致 `FXMLLoadException`）。

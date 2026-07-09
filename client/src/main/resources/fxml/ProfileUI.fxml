@@ -32,9 +32,9 @@
                 <StackPane alignment="CENTER" style="-fx-background-color: transparent;">
                     
                     <!-- 面板 1: 个人信息 (PixelCard) -->
-                    <VBox fx:id="infoPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                    <VBox fx:id="infoPane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
                         <Label text="基本信息" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
-                        <PixelCard variant="blue" showParticles="false" minWidth="380" maxWidth="400" minHeight="450" maxHeight="450">
+                        <PixelCard variant="blue" showParticles="false" minWidth="380" maxWidth="800" minHeight="450">
                             <VBox spacing="16" alignment="TOP_CENTER" style="-fx-padding: 20 18 10 18;">
                                 <!-- 个人头像与昵称ID头部区域 -->
                                 <HBox spacing="16" alignment="CENTER_LEFT" style="-fx-padding: 10 16; -fx-background-color: rgba(255, 255, 255, 0.45); -fx-background-radius: 12px; -fx-border-radius: 12px; -fx-border-color: rgba(100, 116, 139, 0.10); -fx-border-width: 1px;">
@@ -80,7 +80,7 @@
                     </VBox>
 
                     <!-- 面板 2: 对战记录 (Table) -->
-                    <VBox fx:id="recordPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                    <VBox fx:id="recordPane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
                         <Label text="对战记录列表" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
                         <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" prefHeight="320" minHeight="240" VBox.vgrow="ALWAYS">
                             <VBox fx:id="recordsContainer" spacing="10" style="-fx-padding: 8; -fx-background-color: transparent;"/>
@@ -88,7 +88,7 @@
                     </VBox>
 
                     <!-- 面板 3: 修改密码 (Form) -->
-                    <VBox fx:id="pwdPane" spacing="16" alignment="TOP_CENTER" maxWidth="380" prefWidth="380" style="-fx-background-color: transparent; -fx-padding: 20 16 20 0;">
+                    <VBox fx:id="pwdPane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 20 16 20 0;">
                         <PasswordField fx:id="oldPwdField" promptText="请输入旧密码" styleClass="field" prefWidth="380"/>
                         <PasswordField fx:id="newPwdField" promptText="请输入新密码" styleClass="field" prefWidth="380"/>
                         <Label fx:id="errorLabel" text="" styleClass="error-text" wrapText="true" alignment="CENTER"/>

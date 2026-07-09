@@ -77,7 +77,7 @@
     -fx-border-color: rgba(255, 255, 255, 0.85) rgba(236, 72, 153, 0.25) rgba(59, 130, 246, 0.30) rgba(255, 255, 255, 0.85);
     -fx-border-radius: 12;
     -fx-border-width: 1.5;
-    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.10), 30, 0, 0, 12);
+    -fx-effect: none;
     -fx-padding: 40;
 }
 
