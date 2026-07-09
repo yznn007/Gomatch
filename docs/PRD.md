@@ -46,6 +46,7 @@ GoMatch 是一个基于 **JavaFX + Socket 多线程服务端 + JDBC** 三段式�
 | 社交模块 | 聊天、好友系统、观战 | FR-013、FR-016 |
 | 数据统计模块 | 战绩记录、排行榜、个人中心 | FR-014、FR-015 |
 | 断线处理模块 | 断线判负、断线重连 | FR-017 |
+| 用户设置模块 | 头像管理、背景音乐管理、音效设置、语言设置、字体设置、帧率设置、窗口设置、主题设置 | FR-019、FR-020、FR-021、FR-022 |
 
 ### 2.3 页面详情
 
@@ -65,8 +66,13 @@ GoMatch 是一个基于 **JavaFX + Socket 多线程服务端 + JDBC** 三段式�
 | 排行榜界面 | 数据统计 | 排名、用户名、积分、胜率 | UI-012 |
 | 个人中心 | 数据统计 | 用户信息、修改密码 | UI-013 |
 | 好友界面 | 社交模块 | 好友列表、添加好友、好友请求 | UI-014 |
-| 设置界面 | 通用 | 服务器配置、音效设置 | UI-015 |
-| 关于界面 | 通用 | 产品名称、版本、开发者信息 | UI-016 |
+| 设置界面-基础 | 用户设置 | 头像上传/删除、用户名显示 | UI-015 |
+| 设置界面-音频 | 用户设置 | 背景音乐开关/音量、音效开关/音量、背景音乐选择 | UI-016 |
+| 设置界面-语言 | 用户设置 | 语言选择（中文/英文） | UI-017 |
+| 设置界面-图形 | 用户设置 | 字体选择、字体大小、帧率设置、主题切换 | UI-018 |
+| 设置界面-窗口 | 用户设置 | 窗口宽度、窗口高度、应用按钮 | UI-019 |
+| 设置界面-服务器 | 用户设置 | 服务器地址、端口配置 | UI-020 |
+| 关于界面 | 通用 | 产品名称、版本、开发者信息 | UI-021 |
 
 ---
 
@@ -269,13 +275,15 @@ flowchart TD
 | 客户端 UI | JavaFX (FXML + CSS) | 21 | 桌面窗口、棋盘绘制、交互组件 |
 | 网络通信 | Java Socket（TCP） | JDK内置 | 实时双向数据传输，JSON 消息协议 |
 | 并发模型 | Java原生多线程 | JDK内置 | 每连接独立ClientHandler线程 |
-| 数据持久化 | JDBC + MySQL | MySQL 8.x | 用户、战绩、排行榜等数据 |
+| 数据持久化 | JDBC + MySQL | MySQL 8.x | 用户、战绩、排行榜、用户设置等数据 |
 | 缓存 | Redis | 7.x | 会话、排行榜、匹配队列、在线状态 |
+| 对象存储 | 阿里云OSS | - | 头像、背景音乐文件存储 |
 | 连接池 | HikariCP | 5.x | 数据库连接复用 |
 | JSON序列化 | Gson | 2.10+ | 数据序列化/反序列化 |
 | 日志 | SLF4J + Logback | SLF4J 2.x / Logback 1.4+ | 日志输出与追踪 |
 | 密码存储 | 明文 | - | 密码明文比对 |
 | Redis客户端 | Lettuce | - | Redis连接与操作 |
+| OSS SDK | 阿里云OSS Java SDK（可选） | 3.16+ | OSS文件上传、下载、删除（使用阿里云OSS时） |
 
 ---
 
@@ -471,11 +479,11 @@ ServerMain.main()
 |------|------|------|
 | socket | Socket | 客户端连接 |
 | userId | long | 用户 ID |
-| authenticated | boolean | 是否已认证 |
+| authenticated  boolean | 是否已认证 |
 | currentRoom | Room | 当前房间 |
 
 #### 9.3.3 Room - 房间实体
-
+|
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | roomId | String | UUID 前 8 位 |
@@ -565,6 +573,14 @@ K因子 = 32
 | RECONNECT | token | 断线重连 |
 | ADD_FRIEND | friendId\|message | 添加好友 |
 | ACCEPT_FRIEND | requestId | 接受好友请求 |
+| GET_SETTINGS | - | 获取用户设置 |
+| SAVE_SETTINGS | language\|fontFamily\|fontSize\|frameRate\|windowWidth\|windowHeight\|backgroundMusicEnabled\|backgroundMusicVolume\|soundEffectsEnabled\|soundEffectsVolume\|theme | 保存用户设置 |
+| UPLOAD_AVATAR | base64\|fileName | 上传头像 |
+| DELETE_AVATAR | - | 删除头像 |
+| UPLOAD_MUSIC | base64\|fileName\|musicType\|musicName | 上传背景音乐 |
+| DELETE_MUSIC | musicId | 删除背景音乐 |
+| SET_DEFAULT_MUSIC | musicId\|musicType | 设置默认音乐 |
+| MUSIC_LIST | musicType(可选) | 获取音乐列表 |
 
 ### 10.3 服务端 → 客户端响应
 
@@ -580,6 +596,12 @@ K因子 = 32
 | RANKING_LIST | rank\|username\|score\|winRate | 排行榜 |
 | RECORD_LIST | recordId\|player1Name\|player2Name\|winnerId\|result\|createTime | 战绩列表 |
 | ROOM_LIST | roomId\|roomName\|status\|players\|max | 房间列表 |
+| SETTINGS_DATA | userId\|avatarUrl\|language\|fontFamily\|fontSize\|frameRate\|windowWidth\|windowHeight\|backgroundMusicEnabled\|backgroundMusicVolume\|soundEffectsEnabled\|soundEffectsVolume\|lobbyMusicId\|theme | 返回用户设置 |
+| AVATAR_UPLOADED | avatarUrl | 头像上传成功 |
+| AVATAR_DELETED | - | 头像删除成功 |
+| MUSIC_UPLOADED | musicId\|musicName\|musicUrl\|fileName\|fileSize\|duration\|musicType\|isDefault | 音乐上传成功 |
+| MUSIC_DELETED | musicId | 音乐删除成功 |
+| MUSIC_LIST_DATA | musics[] | 返回音乐列表 |
 
 ---
 
@@ -587,12 +609,257 @@ K因子 = 32
 
 ### 11.1 部署架构
 
-```
-客户端（JavaFX） ←— TCP Socket —→ 服务端（多线程） ←— JDBC —→ MySQL
-                                            ←— Redis —→ Redis缓存
+```mermaid
+flowchart LR
+    subgraph 客户端(Client)
+        E[JavaFX桌面应用]
+    end
+    
+    subgraph 服务端程序(Server)
+        A[Socket多线程服务端]
+    end
+    
+    subgraph 数据库(Database)
+        B[MySQL数据库]
+        C[Redis缓存]
+    end
+    
+    subgraph 云存储(Cloud)
+        D[阿里云OSS]
+    end
+    
+    E -->|TCP Socket JSON| A
+    A -->|JDBC| B
+    A -->|Lettuce| C
+    A -->|OSS SDK| D
 ```
 
-### 11.2 编码规范
+### 11.2 数据流转总览
+
+#### 11.2.1 用户设置数据流
+
+```mermaid
+flowchart TD
+    subgraph 客户端
+        A[用户修改设置]
+        B[发送JSON消息]
+        C[接收设置数据]
+        D[应用界面更新]
+    end
+    
+    subgraph 服务端
+        E[解析消息]
+        F[业务处理]
+        G[返回JSON响应]
+    end
+    
+    subgraph 数据库
+        H[MySQL\n保存设置]
+        I[MySQL\n读取设置]
+    end
+    
+    subgraph 云存储
+        J[阿里云OSS]
+    end
+    
+    A --> B
+    B -->|TCP Socket| E
+    E --> F
+    F -->|JDBC写入| H
+    H -->|JDBC读取| I
+    I -->|JDBC返回| F
+    F --> G
+    G -->|TCP Socket| C
+    C --> D
+    
+    F -->|头像上传| J
+    F -->|音乐上传| J
+    F -->|读取URL| J
+```
+
+#### 11.2.2 头像数据流（服务端代理，文件不落地）
+
+**核心设计**：文件不在客户端本地磁盘落地，通过服务端代理获取后直接在内存中渲染。
+
+```mermaid
+flowchart TD
+    subgraph 客户端(内存处理)
+        A[选择头像图片]
+        B[Base64编码]
+        C[发送UPLOAD_AVATAR]
+        D[接收AVATAR_UPLOADED]
+        E[发送GET_AVATAR]
+        F[接收AVATAR_DATA]
+        G[解码Base64为Image]
+        H[渲染头像到组件]
+    end
+    
+    subgraph 服务端
+        I[解析Base64]
+        J[校验格式/大小]
+        K[保存至存储]
+        L[返回avatarPath]
+        M[验证权限]
+        N[读取文件字节]
+        O[Base64编码]
+        P[返回AVATAR_DATA]
+    end
+    
+    subgraph 数据库
+        Q[t_user_settings\n更新头像路径]
+    end
+    
+    subgraph 存储(私有)
+        R[阿里云OSS]
+    end
+    
+    A --> B --> C
+    C -->|TCP Socket| I
+    I --> J
+    J -->|校验失败| S[返回错误]
+    J -->|校验成功| K
+    K -->|内部访问| R
+    R -->|保存成功| K
+    K -->|JDBC| Q
+    Q -->|更新成功| K
+    K --> L
+    L -->|TCP Socket| D
+    
+    E -->|TCP Socket| M
+    M -->|权限验证| N
+    N -->|内部访问| R
+    R -->|文件字节| N
+    N --> O
+    O --> P
+    P -->|TCP Socket| F
+    F --> G --> H
+```
+
+#### 11.2.3 背景音乐数据流（服务端代理，文件不落地）
+
+**核心设计**：音乐文件不在客户端本地磁盘落地，通过服务端代理获取后直接在内存中解码播放。
+
+```mermaid
+flowchart TD
+    subgraph 客户端(内存处理)
+        A[选择音乐文件]
+        B[Base64编码]
+        C[发送UPLOAD_MUSIC]
+        D[接收MUSIC_UPLOADED]
+        E[发送GET_MUSIC]
+        F[接收MUSIC_DATA]
+        G[解码Base64为音频流]
+        H[直接播放]
+        I[发送MUSIC_LIST]
+        J[接收MUSIC_LIST_DATA]
+        K[选择默认音乐]
+        L[发送SET_DEFAULT_MUSIC]
+    end
+    
+    subgraph 服务端
+        M[解析Base64]
+        N[校验格式/大小/数量]
+        O[保存至存储]
+        P[返回音乐信息]
+        Q[验证权限]
+        R[读取文件字节]
+        S[Base64编码]
+        T[返回MUSIC_DATA]
+        U[查询音乐列表]
+        V[设置默认音乐]
+    end
+    
+    subgraph 数据库
+        W[t_user_music\n插入/查询记录]
+        X[t_user_settings\n更新默认音乐]
+    end
+    
+    subgraph 存储(私有)
+        Y[阿里云OSS]
+    end
+    
+    A --> B --> C
+    C -->|TCP Socket| M
+    M --> N
+    N -->|校验失败| Z[返回错误]
+    N -->|校验成功| O
+    O -->|内部访问| Y
+    Y -->|保存成功| O
+    O -->|JDBC| W
+    W -->|插入成功| O
+    O --> P
+    P -->|TCP Socket| D
+    
+    E -->|TCP Socket| Q
+    Q -->|权限验证| R
+    R -->|内部访问| Y
+    Y -->|文件字节| R
+    R --> S
+    S --> T
+    T -->|TCP Socket| F
+    F --> G --> H
+    
+    I -->|TCP Socket| U
+    U -->|JDBC| W
+    W -->|返回列表| U
+    U --> J
+    
+    K --> L
+    L -->|TCP Socket| V
+    V -->|JDBC| X
+    X -->|更新成功| V
+    V -->|JDBC| W
+    W -->|更新is_default| V
+    V --> P
+```
+
+#### 11.2.4 设置加载与保存流程
+
+```mermaid
+flowchart TD
+    subgraph 客户端
+        A[用户登录]
+        B[接收LOGIN_OK含settings]
+        C[解析settings数据]
+        D[应用界面设置]
+        E[用户修改设置]
+        F[发送SAVE_SETTINGS]
+        G[接收SETTINGS_DATA]
+        H[更新本地设置]
+    end
+    
+    subgraph 服务端
+        I[登录验证]
+        J[查询设置]
+        K[返回设置数据]
+        L[接收设置更新]
+        M[保存设置]
+        N[返回更新后数据]
+    end
+    
+    subgraph 数据库
+        O[t_user_settings表]
+    end
+    
+    A -->|LOGIN| I
+    I -->|验证成功| J
+    J -->|JDBC查询| O
+    O -->|返回数据| J
+    J --> K
+    K -->|LOGIN_OK| B
+    B --> C --> D
+    
+    E --> F
+    F -->|SAVE_SETTINGS| L
+    L --> M
+    M -->|JDBC更新| O
+    O -->|保存成功| M
+    M --> N
+    N -->|SETTINGS_DATA| G
+    G --> H --> D
+```
+
+### 11.3 编码规范
 
 | 层级 | 配置项 | 值 |
 |------|--------|-----|
@@ -601,7 +868,7 @@ K因子 = 32
 | 表 | DEFAULT CHARSET | utf8mb4 |
 | JDBC URL | characterEncoding | utf8 |
 
-### 11.3 核心表结构
+### 11.4 核心表结构
 
 #### t_user（用户表）
 
@@ -690,7 +957,61 @@ K因子 = 32
 | status | VARCHAR(20) | NOT NULL | 连接状态 |
 | last_heartbeat | DATETIME | NULL | 最后活跃时间 |
 
-### 11.4 索引设计
+#### t_user_settings（用户设置表）
+
+| 字段名 | 类型 | 约束 | 说明 |
+|--------|------|------|------|
+| settings_id | BIGINT | PK, AUTO_INCREMENT | 设置ID |
+| user_id | BIGINT | UNIQUE, NOT NULL, FK | 用户ID |
+| avatar_path | VARCHAR(500) | NULL | 头像文件路径（服务端内部路径，客户端通过GET_AVATAR获取） |
+| language | VARCHAR(20) | DEFAULT 'zh_CN' | 语言：zh_CN/en_US |
+| font_family | VARCHAR(50) | DEFAULT 'SimSun' | 字体名称 |
+| font_size | INT | DEFAULT 12 | 字体大小(px) |
+| frame_rate | INT | DEFAULT 60 | 帧率：30/60/120 |
+| window_width | INT | DEFAULT 900 | 窗口宽度 |
+| window_height | INT | DEFAULT 640 | 窗口高度 |
+| background_music_enabled | BOOLEAN | DEFAULT TRUE | 背景音乐开关 |
+| background_music_volume | DECIMAL(3,2) | DEFAULT 0.5 | 背景音乐音量(0-1) |
+| sound_effects_enabled | BOOLEAN | DEFAULT TRUE | 音效开关 |
+| sound_effects_volume | DECIMAL(3,2) | DEFAULT 0.7 | 音效音量(0-1) |
+| lobby_music_id | BIGINT | NULL, FK | 当前大厅背景音乐ID |
+| theme | VARCHAR(50) | DEFAULT 'light' | 主题：light/dark |
+| version | INT | DEFAULT 0 | 版本号(乐观锁) |
+| create_time | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+| update_time | DATETIME | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+#### t_user_music（用户音乐表）
+
+| 字段名 | 类型 | 约束 | 说明 |
+|--------|------|------|------|
+| music_id | BIGINT | PK, AUTO_INCREMENT | 音乐ID |
+| user_id | BIGINT | NOT NULL, FK | 用户ID |
+| music_name | VARCHAR(100) | NOT NULL | 音乐名称 |
+| music_path | VARCHAR(500) | NOT NULL | 音乐文件路径（服务端内部路径，客户端通过GET_MUSIC获取） |
+| file_name | VARCHAR(200) | NOT NULL | 原始文件名 |
+| file_size | INT | DEFAULT 0 | 文件大小(字节) |
+| duration | INT | NULL | 音乐时长(秒) |
+| music_type | VARCHAR(20) | DEFAULT 'LOBBY' | 音乐类型：LOBBY/BGM |
+| is_default | BOOLEAN | DEFAULT FALSE | 是否设为默认音乐 |
+| create_time | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+| update_time | DATETIME | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+#### t_audit_log（审计日志表）
+
+| 字段名 | 类型 | 约束 | 说明 |
+|--------|------|------|------|
+| log_id | BIGINT | PK, AUTO_INCREMENT | 日志ID |
+| user_id | BIGINT | NOT NULL | 用户ID |
+| action_type | VARCHAR(50) | NOT NULL | 操作类型 |
+| action_desc | VARCHAR(200) | NULL | 操作描述 |
+| target_type | VARCHAR(50) | NULL | 目标类型 |
+| target_id | BIGINT | NULL | 目标ID |
+| before_data | TEXT | NULL | 修改前数据(JSON) |
+| after_data | TEXT | NULL | 修改后数据(JSON) |
+| ip_address | VARCHAR(50) | NULL | 操作IP地址 |
+| create_time | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+
+### 11.5 索引设计
 
 | 表名 | 索引字段 | 类型 | 用途 |
 |------|----------|------|------|
@@ -699,8 +1020,15 @@ K因子 = 32
 | t_game_record | player1_id, player2_id | INDEX | 个人战绩 |
 | t_rank | score | INDEX | 排行榜 |
 | t_room | status, current_players | INDEX | 房间列表 |
+| t_user_settings | user_id | UNIQUE | 设置查询 |
+| t_user_music | user_id | INDEX | 用户音乐查询 |
+| t_user_music | music_type | INDEX | 音乐类型筛选 |
+| t_user_music | user_id, file_name | UNIQUE | 防重复上传 |
+| t_audit_log | user_id | INDEX | 用户操作日志 |
+| t_audit_log | action_type | INDEX | 操作类型统计 |
+| t_audit_log | create_time | INDEX | 时间范围查询 |
 
-### 11.5 Redis Key 设计
+### 11.6 Redis Key 设计
 
 | Key | 类型 | 说明 | 过期时间 |
 |-----|------|------|----------|
@@ -710,7 +1038,7 @@ K因子 = 32
 | match:queue | List | 快速匹配队列 | 无 |
 | match:ranked | Sorted Set | 排位匹配队列 | 无 |
 
-### 11.6 事务与并发
+### 11.7 事务与并发
 
 | 操作 | 事务要求 | 并发控制 |
 |------|----------|----------|
@@ -745,8 +1073,8 @@ K因子 = 32
 
 ---
 
-**文档版本**：v3.0  
-**编写日期**：2026-07-07  
+**文档版本**：v4.0  
+**编写日期**：2026-07-09  
 
 **修订记录**
 | 版本 | 日期 | 说明 |
@@ -756,4 +1084,5 @@ K因子 = 32
 | v1.2 | 2026-07-05 | 迁移 UI 到 JavaFX |
 | v2.0 | 2026-07-07 | 完善功能需求、通信协议 |
 | v3.0 | 2026-07-07 | 整合客户端、服务端、数据库详细设计 |
+| v4.0 | 2026-07-09 | 添加用户设置模块、阿里云OSS存储、隐私保护设计 |
 

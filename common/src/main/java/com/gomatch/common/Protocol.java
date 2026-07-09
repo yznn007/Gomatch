@@ -77,6 +77,26 @@ public class Protocol {
     public static final String MATCH_TIMEOUT = "MATCH_TIMEOUT";
     public static final String RANKED_MATCH_FOUND = "RANKED_MATCH_FOUND";
     public static final String RANKED_READY = "RANKED_READY";
+    // Settings commands - Client -> Server
+    public static final String GET_SETTINGS      = "GET_SETTINGS";
+    public static final String SAVE_SETTINGS     = "SAVE_SETTINGS";
+    public static final String UPLOAD_AVATAR     = "UPLOAD_AVATAR";
+    public static final String GET_AVATAR        = "GET_AVATAR";
+    public static final String DELETE_AVATAR     = "DELETE_AVATAR";
+    public static final String UPLOAD_MUSIC      = "UPLOAD_MUSIC";
+    public static final String GET_MUSIC         = "GET_MUSIC";
+    public static final String DELETE_MUSIC      = "DELETE_MUSIC";
+    public static final String SET_DEFAULT_MUSIC = "SET_DEFAULT_MUSIC";
+    public static final String MUSIC_LIST        = "MUSIC_LIST";
+    // Settings responses - Server -> Client
+    public static final String SETTINGS_DATA     = "SETTINGS_DATA";
+    public static final String AVATAR_DATA       = "AVATAR_DATA";
+    public static final String AVATAR_UPLOADED   = "AVATAR_UPLOADED";
+    public static final String AVATAR_DELETED    = "AVATAR_DELETED";
+    public static final String MUSIC_DATA        = "MUSIC_DATA";
+    public static final String MUSIC_UPLOADED    = "MUSIC_UPLOADED";
+    public static final String MUSIC_DELETED     = "MUSIC_DELETED";
+    public static final String MUSIC_LIST_DATA   = "MUSIC_LIST_DATA";
 
 }
 

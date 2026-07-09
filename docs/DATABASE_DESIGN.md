@@ -13,26 +13,228 @@
 
 ```mermaid
 flowchart LR
-    subgraph 单机服务器(Server)
-        A[游戏服务端程序]
-        B[MySQL数据库]
-        C[Redis缓存]
-        D[文件存储]
-    end
-    
     subgraph 客户端(Client)
-        E[玩家1电脑]
-        F[玩家2电脑]
+        E[玩家电脑\nJavaFX桌面应用]
     end
     
-    E --> A
-    F --> A
-    A --> B
-    A --> C
-    A --> D
+    subgraph 服务端程序(Server)
+        A[游戏服务端\nSocket多线程]
+    end
+    
+    subgraph 数据库(Database)
+        B[MySQL\n用户/设置/战绩]
+        C[Redis\n会话/排行榜/匹配]
+    end
+    
+    subgraph 云存储(Cloud)
+        D[阿里云OSS\n头像/背景音乐]
+    end
+    
+    E -->|TCP Socket JSON| A
+    A -->|JDBC| B
+    A -->|Lettuce| C
+    A -->|OSS SDK| D
 ```
 
-**说明**：游戏服务端程序、MySQL数据库、Redis缓存、文件存储部署在**同一台服务器**上。
+**说明**：
+- 游戏服务端程序、MySQL数据库、Redis缓存部署在**同一台服务器**上
+- 阿里云OSS为独立云存储服务，用于存储用户头像和背景音乐文件
+- 客户端与服务端通过TCP Socket进行JSON协议通信
+- 服务端通过JDBC访问MySQL，通过Lettuce访问Redis，通过OSS SDK访问阿里云OSS
+
+### 1.2 数据流转总览
+
+#### 1.2.1 用户设置数据流
+
+```mermaid
+flowchart TD
+    subgraph 客户端
+        A[用户修改设置]
+        B[发送JSON消息]
+        C[接收设置数据]
+        D[应用界面更新]
+    end
+    
+    subgraph 服务端
+        E[解析消息]
+        F[业务处理]
+        G[返回JSON响应]
+    end
+    
+    subgraph 数据库
+        H[MySQL\n保存设置]
+        I[MySQL\n读取设置]
+    end
+    
+    subgraph 云存储
+        J[阿里云OSS]
+    end
+    
+    A --> B
+    B -->|TCP Socket| E
+    E --> F
+    F -->|JDBC写入| H
+    H -->|JDBC读取| I
+    I -->|JDBC返回| F
+    F --> G
+    G -->|TCP Socket| C
+    C --> D
+    
+    F -->|头像上传| J
+    F -->|音乐上传| J
+    F -->|读取URL| J
+```
+
+#### 1.2.2 头像数据流
+
+```mermaid
+flowchart TD
+    subgraph 客户端
+        A[选择头像图片]
+        B[Base64编码]
+        C[发送UPLOAD_AVATAR]
+        D[接收AVATAR_UPLOADED]
+        E[渲染头像到组件]
+    end
+    
+    subgraph 服务端
+        F[解析Base64]
+        G[校验格式/大小]
+        H[上传至OSS]
+        I[返回avatarUrl]
+    end
+    
+    subgraph 数据库
+        J[t_user_settings\n更新头像URL]
+    end
+    
+    subgraph 云存储
+        K[gomatch-avatars Bucket]
+    end
+    
+    A --> B --> C
+    C -->|TCP Socket| F
+    F --> G
+    G -->|校验失败| L[返回错误]
+    G -->|校验成功| H
+    H -->|OSS SDK| K
+    K -->|返回URL| H
+    H -->|JDBC| J
+    J -->|更新成功| H
+    H --> I
+    I -->|TCP Socket| D
+    D --> E
+    
+    E -->|HTTPS直接加载| K
+```
+
+#### 1.2.3 背景音乐数据流
+
+```mermaid
+flowchart TD
+    subgraph 客户端
+        A[选择音乐文件]
+        B[Base64编码]
+        C[发送UPLOAD_MUSIC]
+        D[接收MUSIC_UPLOADED]
+        E[播放背景音乐]
+        F[发送MUSIC_LIST]
+        G[接收MUSIC_LIST_DATA]
+        H[选择默认音乐]
+        I[发送SET_DEFAULT_MUSIC]
+    end
+    
+    subgraph 服务端
+        J[解析Base64]
+        K[校验格式/大小/数量]
+        L[上传至OSS]
+        M[返回音乐信息]
+        N[查询音乐列表]
+        O[设置默认音乐]
+    end
+    
+    subgraph 数据库
+        P[t_user_music\n插入/查询记录]
+        Q[t_user_settings\n更新默认音乐]
+    end
+    
+    subgraph 云存储
+        R[gomatch-music Bucket]
+    end
+    
+    A --> B --> C
+    C -->|TCP Socket| J
+    J --> K
+    K -->|校验失败| S[返回错误]
+    K -->|校验成功| L
+    L -->|OSS SDK| R
+    R -->|返回URL| L
+    L -->|JDBC| P
+    P -->|插入成功| L
+    L --> M
+    M -->|TCP Socket| D
+    
+    F -->|TCP Socket| N
+    N -->|JDBC| P
+    P -->|返回列表| N
+    N --> G
+    
+    H --> I
+    I -->|TCP Socket| O
+    O -->|JDBC| Q
+    Q -->|更新成功| O
+    O -->|JDBC| P
+    P -->|更新is_default| O
+    O --> M
+    
+    E -->|HTTPS直接加载| R
+```
+
+#### 1.2.4 设置加载与保存流程
+
+```mermaid
+flowchart TD
+    subgraph 客户端
+        A[用户登录]
+        B[接收LOGIN_OK含settings]
+        C[解析settings数据]
+        D[应用界面设置]
+        E[用户修改设置]
+        F[发送SAVE_SETTINGS]
+        G[接收SETTINGS_DATA]
+        H[更新本地设置]
+    end
+    
+    subgraph 服务端
+        I[登录验证]
+        J[查询设置]
+        K[返回设置数据]
+        L[接收设置更新]
+        M[保存设置]
+        N[返回更新后数据]
+    end
+    
+    subgraph 数据库
+        O[t_user_settings表]
+    end
+    
+    A -->|LOGIN| I
+    I -->|验证成功| J
+    J -->|JDBC查询| O
+    O -->|返回数据| J
+    J --> K
+    K -->|LOGIN_OK| B
+    B --> C --> D
+    
+    E --> F
+    F -->|SAVE_SETTINGS| L
+    L --> M
+    M -->|JDBC更新| O
+    O -->|保存成功| M
+    M --> N
+    N -->|SETTINGS_DATA| G
+    G --> H --> D
+```
 
 ### 1.2 编码规范
 
@@ -205,6 +407,41 @@ erDiagram
         varchar status "请求状态"
         datetime create_time "创建时间"
         datetime respond_time "响应时间"
+    }
+    
+    t_user_settings {
+        bigint settings_id PK "设置ID"
+        bigint user_id FK UK "用户ID"
+        varchar avatar_url "头像URL(阿里云OSS)"
+        varchar language "语言"
+        varchar font_family "字体"
+        int font_size "字体大小"
+        int frame_rate "帧率"
+        int window_width "窗口宽度"
+        int window_height "窗口高度"
+        boolean background_music_enabled "背景音乐开关"
+        decimal background_music_volume "背景音乐音量"
+        boolean sound_effects_enabled "音效开关"
+        decimal sound_effects_volume "音效音量"
+        bigint lobby_music_id FK "当前大厅背景音乐ID"
+        varchar theme "主题"
+        int version "版本号(乐观锁)"
+        datetime create_time "创建时间"
+        datetime update_time "更新时间"
+    }
+    
+    t_user_music {
+        bigint music_id PK "音乐ID"
+        bigint user_id FK "用户ID"
+        varchar music_name "音乐名称"
+        varchar music_url "音乐URL(阿里云OSS)"
+        varchar file_name "文件名"
+        int file_size "文件大小(字节)"
+        varchar duration "时长(秒)"
+        varchar music_type "音乐类型: BGM/LOBBY"
+        boolean is_default "是否默认"
+        datetime create_time "创建时间"
+        datetime update_time "更新时间"
     }
 ```
 
@@ -509,6 +746,76 @@ erDiagram
 - `message`：支持请求时附带消息
 - 请求超时自动标记为EXPIRED（建议24小时）
 
+#### 2.2.12 t_user_settings（用户设置表）
+
+| 字段名 | 类型 | 约束 | 说明 |
+|--------|------|------|------|
+| settings_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | 设置记录唯一标识 |
+| user_id | BIGINT | NOT NULL, UNIQUE, FK | 用户ID，与t_user一对一关联 |
+| avatar_url | VARCHAR(500) | NULL | 头像URL（阿里云OSS地址） |
+| language | VARCHAR(20) | DEFAULT 'zh_CN' | 语言：zh_CN(中文)/en_US(英文) |
+| font_family | VARCHAR(50) | DEFAULT 'SimSun' | 界面字体名称 |
+| font_size | INT | DEFAULT 12 | 字体大小（像素） |
+| frame_rate | INT | DEFAULT 60 | 帧率：30/60/120 |
+| window_width | INT | DEFAULT 900 | 窗口宽度（像素） |
+| window_height | INT | DEFAULT 640 | 窗口高度（像素） |
+| background_music_enabled | BOOLEAN | DEFAULT TRUE | 背景音乐开关 |
+| background_music_volume | DECIMAL(3,2) | DEFAULT 0.5 | 背景音乐音量（0-1） |
+| sound_effects_enabled | BOOLEAN | DEFAULT TRUE | 音效开关 |
+| sound_effects_volume | DECIMAL(3,2) | DEFAULT 0.7 | 音效音量（0-1） |
+| lobby_music_id | BIGINT | FK, NULL | 当前大厅背景音乐ID，关联t_user_music |
+| theme | VARCHAR(50) | DEFAULT 'light' | 主题：light(浅色)/dark(深色) |
+| version | INT | DEFAULT 0 | 版本号（乐观锁） |
+| create_time | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+| update_time | DATETIME | ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引设计**：
+| 索引名 | 字段 | 类型 |
+|--------|------|------|
+| PRIMARY | settings_id | 主键 |
+| uk_user_id | user_id | 唯一索引 |
+| idx_lobby_music_id | lobby_music_id | 普通索引 |
+
+**设计说明**：
+- 用户设置表与用户表一对一关联，用户首次保存设置时创建记录
+- 登录时自动加载设置，客户端重新登录后恢复到之前的状态
+- `avatar_url`：存储阿里云OSS上的头像文件地址
+- `lobby_music_id`：关联用户自定义的背景音乐，支持用户导入自己的音乐文件
+- 所有设置项都有默认值，新用户使用默认配置
+- `version`：乐观锁，防止并发修改冲突
+
+#### 2.2.13 t_user_music（用户音乐表）
+
+| 字段名 | 类型 | 约束 | 说明 |
+|--------|------|------|------|
+| music_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | 音乐记录唯一标识 |
+| user_id | BIGINT | NOT NULL, FK | 用户ID，与t_user多对一关联 |
+| music_name | VARCHAR(100) | NOT NULL | 音乐名称（用户自定义） |
+| music_url | VARCHAR(500) | NOT NULL | 音乐文件URL（阿里云OSS地址） |
+| file_name | VARCHAR(200) | NOT NULL | 原始文件名 |
+| file_size | INT | DEFAULT 0 | 文件大小（字节） |
+| duration | INT | NULL | 音乐时长（秒） |
+| music_type | VARCHAR(20) | NOT NULL, DEFAULT 'LOBBY' | 音乐类型：LOBBY(大厅)/BGM(游戏背景) |
+| is_default | BOOLEAN | DEFAULT FALSE | 是否设为默认音乐 |
+| create_time | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+| update_time | DATETIME | ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引设计**：
+| 索引名 | 字段 | 类型 |
+|--------|------|------|
+| PRIMARY | music_id | 主键 |
+| idx_user_id | user_id | 普通索引 |
+| idx_music_type | music_type | 普通索引 |
+| uk_user_filename | user_id, file_name | 唯一索引 |
+
+**设计说明**：
+- 用户可以导入自己的背景音乐文件，存储到阿里云OSS
+- `music_type`：区分大厅背景音乐和游戏背景音乐
+- `is_default`：标记是否设为默认播放音乐，每个用户每种类型只能有一个默认
+- `uk_user_filename`：防止同一用户上传同名文件
+- 文件大小限制：单个音乐文件不超过10MB
+- 支持格式：mp3、wav、ogg、flac
+
 ### 2.3 索引优化策略
 
 | 表名 | 优化场景 | 索引方案 |
@@ -534,6 +841,7 @@ erDiagram
 | t_friend | 好友关系查询 | user_id+friend_user_id联合索引 |
 | t_friend_request | 待处理请求 | to_user_id+status联合索引 |
 | t_friend_request | 发送请求 | from_user_id普通索引 |
+| t_user_settings | 设置加载 | user_id唯一索引 |
 
 ## 3. Socket会话管理机制
 
@@ -1393,6 +1701,29 @@ CREATE TABLE IF NOT EXISTS `t_friend_request` (
     FOREIGN KEY (`from_user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE,
     FOREIGN KEY (`to_user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='好友请求表';
+
+CREATE TABLE IF NOT EXISTS `t_user_settings` (
+    `settings_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '设置ID',
+    `user_id` BIGINT NOT NULL UNIQUE COMMENT '用户ID',
+    `avatar_url` VARCHAR(500) COMMENT '头像URL(阿里云OSS)',
+    `language` VARCHAR(20) DEFAULT 'zh_CN' COMMENT '语言: zh_CN/en_US',
+    `font_family` VARCHAR(50) DEFAULT 'SimSun' COMMENT '字体',
+    `font_size` INT DEFAULT 12 COMMENT '字体大小(px)',
+    `frame_rate` INT DEFAULT 60 COMMENT '帧率(30/60/120)',
+    `window_width` INT DEFAULT 900 COMMENT '窗口宽度',
+    `window_height` INT DEFAULT 640 COMMENT '窗口高度',
+    `background_music_enabled` BOOLEAN DEFAULT TRUE COMMENT '背景音乐开关',
+    `background_music_volume` DECIMAL(3,2) DEFAULT 0.5 COMMENT '背景音乐音量(0-1)',
+    `sound_effects_enabled` BOOLEAN DEFAULT TRUE COMMENT '音效开关',
+    `sound_effects_volume` DECIMAL(3,2) DEFAULT 0.7 COMMENT '音效音量(0-1)',
+    `lobby_song` VARCHAR(100) DEFAULT 'default' COMMENT '大厅背景音乐',
+    `theme` VARCHAR(50) DEFAULT 'light' COMMENT '主题: light/dark',
+    `version` INT DEFAULT 0 COMMENT '版本号(乐观锁)',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_user_id` (`user_id`),
+    FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户设置表';
 ```
 
 ### 7.4 初始化数据
@@ -1830,4 +2161,1336 @@ flowchart TD
 | 过期会话 | 定时任务 | 超过1小时的断开会话自动清理 |
 | 旧消息 | 定时任务 | 超过30天的消息自动清理 |
 | 过期锁 | 定时任务 | 超过超时时间的锁自动释放 |
+
+## 13. 阿里云OSS存储设计
+
+### 13.1 存储方案概述
+
+为用户头像和背景音乐提供可靠的云存储服务，采用阿里云对象存储OSS作为存储后端。**核心设计原则：存储私有化、服务端代理、文件不落地。**
+
+| 项目 | 值 | 说明 |
+|------|-----|------|
+| 服务 | 阿里云OSS | 对象存储服务 |
+| 区域 | 华北2（北京） | oss-cn-beijing |
+| Bucket名称 | gomatch-storage | 统一存储桶（头像+音乐） |
+| 存储类型 | 标准存储 | 高可用、高可靠 |
+| 访问权限 | 私有 | 仅服务端可访问，客户端通过代理获取 |
+| 文件大小限制 | 头像2MB、音乐10MB | 防止过大文件 |
+
+### 13.2 OSS配置
+
+#### 13.2.1 地域选择说明
+
+**推荐地域：华北2（北京）**
+
+选择理由：
+- 华北地区核心节点，对北京及周边用户访问速度最快
+- 对华北、东北、西北用户都有较好的访问速度
+- 标准存储单价约0.12元/GB/月，价格适中
+
+**地域选择原则**：
+1. 就近原则：选择与主要用户距离最近的地域
+2. 同域内网免费：若服务端部署在阿里云ECS，必须选择同一地域，可使用内网Endpoint，内网传输完全免费
+3. 地域创建后无法更改，选错只能重建Bucket迁移数据
+
+#### 13.2.2 Endpoint配置
+
+根据部署环境选择不同的Endpoint：
+
+| 部署环境 | Endpoint类型 | 示例（华北2） |
+|----------|--------------|---------------|
+| 阿里云ECS同地域部署 | 内网Endpoint | `oss-cn-beijing-internal.aliyuncs.com` |
+| 公网服务器/本地开发 | 外网Endpoint | `oss-cn-beijing.aliyuncs.com` |
+| 全球用户访问 | 传输加速Endpoint | `oss-accelerate.aliyuncs.com` |
+
+**正式配置**：
+
+| 配置项 | 值 |
+|--------|-----|
+| Endpoint（外网） | https://oss-cn-beijing.aliyuncs.com |
+| Endpoint（内网） | https://oss-cn-beijing-internal.aliyuncs.com |
+| Bucket名称 | gomatch-storage |
+| OSS路径（头像） | avatar/{user_id}_{timestamp}.{ext} |
+| OSS路径（音乐） | music/{user_id}/{timestamp}_{filename} |
+
+#### 13.2.3 安全配置
+
+| 配置项 | 值 | 说明 |
+|--------|-----|------|
+| AccessKeyId | 配置文件管理 | 通过环境变量或配置文件注入，禁止硬编码 |
+| AccessKeySecret | 配置文件管理 | 通过环境变量或配置文件注入，禁止硬编码 |
+| 权限策略 | 仅允许服务端写入 | 使用RAM子账号，分配最小权限 |
+| 主账号AK | 禁用 | 禁止直接使用主账号AK，使用RAM子账号 |
+
+### 13.3 文件命名规则
+
+```
+格式: avatar/{user_id}_{timestamp}.{extension}
+示例: avatar/1_20260709123456.png
+```
+
+| 部分 | 说明 |
+|------|------|
+| avatar/ | 固定目录前缀 |
+| {user_id} | 用户ID，确保每个用户的头像隔离 |
+| {timestamp} | 时间戳，防止文件名冲突 |
+| {extension} | 文件扩展名（png/jpg/jpeg/gif） |
+
+### 13.4 存储流程
+
+#### 13.4.1 头像上传流程
+
+```mermaid
+flowchart TD
+    A[客户端选择图片] --> B[压缩图片至2MB以内]
+    B --> C[Base64编码]
+    C --> D[发送UPLOAD_AVATAR消息]
+    D --> E[服务端接收消息]
+    E --> F[解码Base64]
+    F --> G[生成文件名]
+    G --> H[上传至阿里云OSS]
+    H --> I[获取OSS URL]
+    I --> J[更新t_user_settings表]
+    J --> K[返回AVATAR_UPLOADED消息]
+    K --> L[客户端更新头像显示]
+```
+
+#### 13.4.2 头像加载流程（服务端代理，不落地）
+
+**核心设计**：文件不在客户端本地磁盘落地，通过服务端代理获取后直接在内存中渲染。
+
+```mermaid
+flowchart TD
+    subgraph 客户端(内存处理)
+        A[请求头像]
+        B[接收AVATAR_DATA]
+        C[解码Base64为Image]
+        D[渲染到ImageView]
+    end
+    
+    subgraph 服务端
+        E[验证用户身份]
+        F[查询t_user_settings]
+        G[读取文件字节]
+        H[Base64编码]
+        I[返回AVATAR_DATA]
+    end
+    
+    subgraph 存储(私有)
+        J[阿里云OSS]
+    end
+    
+    A -->|GET_AVATAR| E
+    E --> F
+    F --> G
+    G -->|内部访问| J
+    J -->|文件字节| G
+    G --> H
+    H --> I
+    I --> B
+    B --> C --> D
+```
+
+**流程说明**：
+
+| 步骤 | 客户端 | 服务端 |
+|------|--------|--------|
+| 1 | 发送 `GET_AVATAR` 请求 | - |
+| 2 | - | 验证用户身份和权限 |
+| 3 | - | 查询t_user_settings获取文件路径 |
+| 4 | - | 从存储读取文件字节 |
+| 5 | - | 将字节编码为Base64 |
+| 6 | 接收AVATAR_DATA消息 | - |
+| 7 | 解码Base64为Image对象 | - |
+| 8 | 渲染到ImageView组件 | - |
+
+### 13.5 文件管理
+
+#### 13.5.1 文件更新策略
+
+| 场景 | 策略 |
+|------|------|
+| 用户更换头像 | 上传新文件，更新数据库URL，旧文件保留（可定时清理） |
+| 用户删除头像 | 清除数据库URL，删除OSS文件 |
+
+#### 13.5.2 旧文件清理
+
+| 项目 | 说明 |
+|------|------|
+| 清理时机 | 用户更换头像后 |
+| 清理方式 | 记录旧URL，异步任务清理 |
+| 清理策略 | 保留最近3个版本的头像文件 |
+
+### 13.6 OSS工具类设计
+
+#### 13.6.1 接口定义
+
+| 方法名 | 参数 | 返回值 | 说明 |
+|--------|------|--------|------|
+| uploadAvatar | Long userId, String base64Data, String fileName | String | 上传头像，返回URL |
+| deleteAvatar | String avatarUrl | void | 删除头像文件 |
+| getAvatarUrl | Long userId, String fileName | String | 构建头像URL |
+
+#### 13.6.2 错误处理
+
+| 错误类型 | 处理策略 |
+|----------|----------|
+| OSS连接失败 | 返回null，记录日志 |
+| 文件过大 | 拒绝上传，返回错误 |
+| 格式不支持 | 拒绝上传，返回错误 |
+| 权限不足 | 返回null，记录日志 |
+
+### 13.7 数据库与OSS关联
+
+#### 13.7.1 数据流向
+
+| 操作 | 数据库 | OSS |
+|------|--------|-----|
+| 上传头像 | 更新avatar_url字段 | 存储图片文件 |
+| 删除头像 | 清除avatar_url字段 | 删除图片文件 |
+| 查询头像 | 读取avatar_url字段 | 通过URL访问 |
+| 上传音乐 | 插入t_user_music记录 | 存储音乐文件 |
+| 删除音乐 | 删除t_user_music记录 | 删除音乐文件 |
+| 查询音乐 | 读取music_url字段 | 通过URL访问 |
+
+#### 13.7.2 一致性保障
+
+| 场景 | 保障策略 |
+|------|----------|
+| 上传成功但数据库写入失败 | 删除OSS文件，回滚操作 |
+| 数据库写入成功但OSS上传失败 | 数据库事务回滚 |
+| 用户删除时文件删除失败 | 记录错误日志，后续重试 |
+
+### 13.8 用户音乐存储方案
+
+#### 13.8.1 存储配置
+
+| 项目 | 值 | 说明 |
+|------|-----|------|
+| Bucket名称 | gomatch-music | 音乐专用存储桶 |
+| 区域 | 华北2（北京） | oss-cn-beijing |
+| 存储类型 | 标准存储 | 高可用、高可靠 |
+| 访问权限 | 公开读 | 客户端可直接访问 |
+| 文件大小限制 | 10MB | 防止过大文件 |
+
+#### 13.8.2 文件命名规则
+
+```
+格式: music/{user_id}/{timestamp}_{original_filename}
+示例: music/1/20260709123456_my_song.mp3
+```
+
+| 部分 | 说明 |
+|------|------|
+| music/ | 固定目录前缀 |
+| {user_id} | 用户ID，确保每个用户的音乐文件隔离 |
+| {timestamp} | 时间戳，防止文件名冲突 |
+| {original_filename} | 原始文件名，保留用户上传的文件名 |
+
+#### 13.8.3 支持格式
+
+| 格式 | 扩展名 | MIME类型 |
+|------|--------|----------|
+| MP3 | .mp3 | audio/mpeg |
+| WAV | .wav | audio/wav |
+| OGG | .ogg | audio/ogg |
+| FLAC | .flac | audio/flac |
+
+#### 13.8.4 音乐上传流程
+
+```mermaid
+flowchart TD
+    A[用户选择音乐文件] --> B{文件检查}
+    B -->|大小>10MB| C[提示文件过大]
+    B -->|格式不支持| D[提示格式错误]
+    B -->|通过| E[读取文件内容]
+    E --> F[计算文件时长]
+    F --> G[生成文件名]
+    G --> H[上传至阿里云OSS]
+    H --> I[获取OSS URL]
+    I --> J[插入t_user_music表]
+    J --> K{设为默认?}
+    K -->|是| L[更新is_default]
+    L --> M[返回音乐列表]
+    K -->|否| M
+```
+
+#### 13.8.5 音乐加载流程（服务端代理，不落地）
+
+**核心设计**：音乐文件不在客户端本地磁盘落地，通过服务端代理获取后直接在内存中解码播放。
+
+```mermaid
+flowchart TD
+    subgraph 客户端(内存处理)
+        A[请求音乐]
+        B[接收MUSIC_DATA]
+        C[解码Base64为音频流]
+        D[直接播放]
+    end
+    
+    subgraph 服务端
+        E[验证用户身份]
+        F[查询t_user_music]
+        G[读取文件字节]
+        H[Base64编码]
+        I[返回MUSIC_DATA]
+    end
+    
+    subgraph 存储(私有)
+        J[阿里云OSS]
+    end
+    
+    A -->|GET_MUSIC| E
+    E --> F
+    F --> G
+    G -->|内部访问| J
+    J -->|文件字节| G
+    G --> H
+    H --> I
+    I --> B
+    B --> C --> D
+```
+
+**流程说明**：
+
+| 步骤 | 客户端 | 服务端 |
+|------|--------|--------|
+| 1 | 发送 `GET_MUSIC` 请求 | - |
+| 2 | - | 验证用户身份和权限 |
+| 3 | - | 查询t_user_music获取文件路径 |
+| 4 | - | 从存储读取音乐文件字节 |
+| 5 | - | 将字节编码为Base64 |
+| 6 | 接收MUSIC_DATA消息 | - |
+| 7 | 解码Base64为AudioInputStream | - |
+| 8 | 直接播放（不落地） | - |
+
+#### 13.8.6 音乐管理
+
+| 场景 | 策略 |
+|------|------|
+| 用户上传音乐 | 存储到OSS，插入数据库记录 |
+| 用户删除音乐 | 删除OSS文件，删除数据库记录 |
+| 用户设为默认 | 更新is_default字段，取消同类型其他默认 |
+| 用户更换音乐 | 更新lobby_music_id引用 |
+
+#### 13.8.7 OSS工具类扩展
+
+| 方法名 | 参数 | 返回值 | 说明 |
+|--------|------|--------|------|
+| uploadMusic | Long userId, byte[] data, String fileName, String musicType | String | 上传音乐，返回URL |
+| deleteMusic | String musicUrl | void | 删除音乐文件 |
+| getMusicUrl | Long userId, String fileName | String | 构建音乐URL |
+
+#### 13.8.8 音乐文件清理
+
+| 项目 | 说明 |
+|------|------|
+| 清理时机 | 用户删除音乐文件时 |
+| 清理方式 | 删除数据库记录时同步删除OSS文件 |
+| 清理策略 | 无保留策略，删除即清除 |
+| 存储空间限制 | 每个用户最多存储20首音乐文件 |
+
+## 14. 用户设置接口协议设计
+
+### 14.1 协议概述
+
+客户端与服务端通过Socket TCP长连接通信，采用JSON格式传递消息。所有设置相关消息包含`cmd`字段标识命令类型。
+
+**消息通用格式**：
+```json
+{
+  "cmd": "COMMAND_NAME",
+  "data": { ... }
+}
+```
+
+### 14.2 客户端→服务端协议
+
+#### 14.2.1 获取用户设置
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `GET_SETTINGS` |
+| 数据 | 无 |
+
+**请求示例**：
+```json
+{"cmd": "GET_SETTINGS"}
+```
+
+**触发时机**：用户登录成功后
+
+#### 14.2.2 保存用户设置
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `SAVE_SETTINGS` |
+| 数据 | 用户设置对象 |
+
+**请求示例**：
+```json
+{
+  "cmd": "SAVE_SETTINGS",
+  "data": {
+    "language": "zh_CN",
+    "fontFamily": "SimSun",
+    "fontSize": 14,
+    "frameRate": 60,
+    "windowWidth": 900,
+    "windowHeight": 640,
+    "backgroundMusicEnabled": true,
+    "backgroundMusicVolume": 0.5,
+    "soundEffectsEnabled": true,
+    "soundEffectsVolume": 0.7,
+    "theme": "light"
+  }
+}
+```
+
+**字段说明**：
+
+| 字段名 | 类型 | 必填 | 默认值 | 说明 |
+|--------|------|------|--------|------|
+| language | String | 否 | zh_CN | 语言：zh_CN/en_US |
+| fontFamily | String | 否 | SimSun | 字体名称 |
+| fontSize | int | 否 | 12 | 字体大小(px) |
+| frameRate | int | 否 | 60 | 帧率：30/60/120 |
+| windowWidth | int | 否 | 900 | 窗口宽度 |
+| windowHeight | int | 否 | 640 | 窗口高度 |
+| backgroundMusicEnabled | boolean | 否 | true | 背景音乐开关 |
+| backgroundMusicVolume | double | 否 | 0.5 | 背景音乐音量(0-1) |
+| soundEffectsEnabled | boolean | 否 | true | 音效开关 |
+| soundEffectsVolume | double | 否 | 0.7 | 音效音量(0-1) |
+| theme | String | 否 | light | 主题：light/dark |
+
+#### 14.2.3 上传头像
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `UPLOAD_AVATAR` |
+| 数据 | base64编码的图片数据、文件名 |
+
+**请求示例**：
+```json
+{
+  "cmd": "UPLOAD_AVATAR",
+  "data": {
+    "base64": "data:image/png;base64,iVBORw0KGgo...",
+    "fileName": "avatar.png"
+  }
+}
+```
+
+**字段说明**：
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| base64 | String | 是 | Base64编码的图片数据，可包含data:image前缀 |
+| fileName | String | 是 | 原始文件名，用于判断文件类型 |
+
+**限制**：
+- 文件大小：≤2MB
+- 支持格式：png、jpg、jpeg、gif
+
+#### 14.2.4 获取头像（服务端代理）
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `GET_AVATAR` |
+| 数据 | 用户ID、头像尺寸 |
+
+**请求示例**：
+```json
+{
+  "cmd": "GET_AVATAR",
+  "data": {
+    "userId": 1,
+    "size": "normal"
+  }
+}
+```
+
+**字段说明**：
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| userId | long | 是 | 目标用户ID，不传则获取自己的头像 |
+| size | String | 否 | 尺寸：small/normal/large，默认normal |
+
+**权限说明**：
+- 获取自己的头像：始终允许
+- 获取他人头像：仅好友或排行榜可见用户
+
+#### 14.2.4.1 删除头像
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `DELETE_AVATAR` |
+| 数据 | 无 |
+
+**请求示例**：
+```json
+{"cmd": "DELETE_AVATAR"}
+```
+
+#### 14.2.5 上传背景音乐
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `UPLOAD_MUSIC` |
+| 数据 | base64编码的音乐数据、文件名、音乐类型 |
+
+**请求示例**：
+```json
+{
+  "cmd": "UPLOAD_MUSIC",
+  "data": {
+    "base64": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjM3LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAABAAABhgH//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAABAAABhgH//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAABAAABhgH8AAAAAAAAAAD/2Q==",
+    "fileName": "my_song.mp3",
+    "musicType": "LOBBY",
+    "musicName": "我的背景音乐"
+  }
+}
+```
+
+**字段说明**：
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| base64 | String | 是 | Base64编码的音乐数据 |
+| fileName | String | 是 | 原始文件名 |
+| musicType | String | 否 | 音乐类型：LOBBY/BGM，默认LOBBY |
+| musicName | String | 否 | 用户自定义名称，默认使用文件名 |
+
+**限制**：
+- 文件大小：≤10MB
+- 支持格式：mp3、wav、ogg、flac
+- 每个用户最多20首音乐
+
+#### 14.2.6 获取音乐（服务端代理）
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `GET_MUSIC` |
+| 数据 | 音乐ID |
+
+**请求示例**：
+```json
+{
+  "cmd": "GET_MUSIC",
+  "data": {
+    "musicId": 1
+  }
+}
+```
+
+**字段说明**：
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| musicId | long | 是 | 音乐记录ID |
+
+**权限说明**：
+- 仅允许获取自己的音乐文件
+
+#### 14.2.6.1 删除背景音乐
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `DELETE_MUSIC` |
+| 数据 | 音乐ID |
+
+**请求示例**：
+```json
+{
+  "cmd": "DELETE_MUSIC",
+  "data": {
+    "musicId": 1
+  }
+}
+```
+
+**字段说明**：
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| musicId | long | 是 | 音乐记录ID |
+
+#### 14.2.7 设置默认音乐
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `SET_DEFAULT_MUSIC` |
+| 数据 | 音乐ID、音乐类型 |
+
+**请求示例**：
+```json
+{
+  "cmd": "SET_DEFAULT_MUSIC",
+  "data": {
+    "musicId": 1,
+    "musicType": "LOBBY"
+  }
+}
+```
+
+**字段说明**：
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| musicId | long | 是 | 音乐记录ID |
+| musicType | String | 否 | 音乐类型：LOBBY/BGM，默认LOBBY |
+
+#### 14.2.8 获取音乐列表
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `MUSIC_LIST` |
+| 数据 | 音乐类型（可选） |
+
+**请求示例**：
+```json
+{
+  "cmd": "MUSIC_LIST",
+  "data": {
+    "musicType": "LOBBY"
+  }
+}
+```
+
+**字段说明**：
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| musicType | String | 否 | 过滤类型：LOBBY/BGM，不传则返回全部 |
+
+### 14.3 服务端→客户端协议
+
+#### 14.3.1 返回用户设置
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `SETTINGS_DATA` |
+| 数据 | 用户设置对象 |
+
+**响应示例**：
+```json
+{
+  "cmd": "SETTINGS_DATA",
+  "data": {
+    "userId": 1,
+    "avatarPath": "avatar/1_20260709123456.png",
+    "language": "zh_CN",
+    "fontFamily": "SimSun",
+    "fontSize": 14,
+    "frameRate": 60,
+    "windowWidth": 900,
+    "windowHeight": 640,
+    "backgroundMusicEnabled": true,
+    "backgroundMusicVolume": 0.5,
+    "soundEffectsEnabled": true,
+    "soundEffectsVolume": 0.7,
+    "lobbyMusicId": 1,
+    "theme": "light"
+  }
+}
+```
+
+**字段说明**：
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| userId | long | 用户ID |
+| avatarPath | String | 头像文件路径（服务端内部路径，客户端需通过GET_AVATAR获取） |
+| language | String | 语言 |
+| fontFamily | String | 字体 |
+| fontSize | int | 字体大小 |
+| frameRate | int | 帧率 |
+| windowWidth | int | 窗口宽度 |
+| windowHeight | int | 窗口高度 |
+| backgroundMusicEnabled | boolean | 背景音乐开关 |
+| backgroundMusicVolume | double | 背景音乐音量 |
+| soundEffectsEnabled | boolean | 音效开关 |
+| soundEffectsVolume | double | 音效音量 |
+| lobbyMusicId | long | 当前大厅背景音乐ID（可为空） |
+| theme | String | 主题 |
+
+#### 14.3.2 返回头像数据（服务端代理，不落地）
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `AVATAR_DATA` |
+| 数据 | Base64编码的头像数据 |
+
+**响应示例**：
+```json
+{
+  "cmd": "AVATAR_DATA",
+  "data": {
+    "userId": 1,
+    "base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+    "fileName": "avatar.png"
+  }
+}
+```
+
+**字段说明**：
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| userId | long | 用户ID |
+| base64 | String | Base64编码的图片数据，包含data:image前缀 |
+| fileName | String | 原始文件名，用于判断文件类型 |
+
+**客户端处理**：直接解码Base64为Image对象渲染，不保存到本地磁盘。
+
+#### 14.3.3 头像上传成功
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `AVATAR_UPLOADED` |
+| 数据 | 头像文件路径 |
+
+**响应示例**：
+```json
+{
+  "cmd": "AVATAR_UPLOADED",
+  "data": {
+    "avatarPath": "avatar/1_20260709123456.png"
+  }
+}
+```
+
+#### 14.3.4 头像删除成功
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `AVATAR_DELETED` |
+| 数据 | 无 |
+
+**响应示例**：
+```json
+{"cmd": "AVATAR_DELETED"}
+```
+
+#### 14.3.5 返回音乐数据（服务端代理，不落地）
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `MUSIC_DATA` |
+| 数据 | Base64编码的音乐数据 |
+
+**响应示例**：
+```json
+{
+  "cmd": "MUSIC_DATA",
+  "data": {
+    "musicId": 1,
+    "base64": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjM3LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAABAAABhgH//tQ==",
+    "fileName": "bgm.mp3",
+    "duration": 180
+  }
+}
+```
+
+**字段说明**：
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| musicId | long | 音乐记录ID |
+| base64 | String | Base64编码的音乐数据，包含data:audio前缀 |
+| fileName | String | 原始文件名 |
+| duration | int | 音乐时长（秒） |
+
+**客户端处理**：直接解码Base64为AudioInputStream播放，不保存到本地磁盘。
+
+#### 14.3.6 音乐上传成功
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `MUSIC_UPLOADED` |
+| 数据 | 音乐信息 |
+
+**响应示例**：
+```json
+{
+  "cmd": "MUSIC_UPLOADED",
+  "data": {
+    "musicId": 1,
+    "musicName": "我的背景音乐",
+    "musicPath": "music/1/20260709123456_my_song.mp3",
+    "fileName": "my_song.mp3",
+    "fileSize": 5242880,
+    "duration": 180,
+    "musicType": "LOBBY",
+    "isDefault": false
+  }
+}
+```
+
+**字段说明**：
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| musicId | long | 音乐记录ID |
+| musicName | String | 音乐名称 |
+| musicPath | String | 音乐文件路径（服务端内部路径，客户端需通过GET_MUSIC获取） |
+| fileName | String | 原始文件名 |
+| fileSize | int | 文件大小（字节） |
+| duration | int | 音乐时长（秒） |
+| musicType | String | 音乐类型 |
+| isDefault | boolean | 是否为默认音乐 |
+
+#### 14.3.7 音乐删除成功
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `MUSIC_DELETED` |
+| 数据 | 音乐ID |
+
+**响应示例**：
+```json
+{
+  "cmd": "MUSIC_DELETED",
+  "data": {
+    "musicId": 1
+  }
+}
+```
+
+#### 14.3.8 返回音乐列表
+
+| 项目 | 值 |
+|------|-----|
+| 命令 | `MUSIC_LIST_DATA` |
+| 数据 | 音乐列表数组 |
+
+**响应示例**：
+```json
+{
+  "cmd": "MUSIC_LIST_DATA",
+  "data": {
+    "musics": [
+      {
+        "musicId": 1,
+        "musicName": "我的背景音乐",
+        "musicPath": "music/1/20260709123456_my_song.mp3",
+        "fileName": "my_song.mp3",
+        "fileSize": 5242880,
+        "duration": 180,
+        "musicType": "LOBBY",
+        "isDefault": true,
+        "createTime": "2026-07-09 12:34:56"
+      },
+      {
+        "musicId": 2,
+        "musicName": "游戏背景音乐",
+        "musicPath": "music/1/20260709130000_game_bgm.mp3",
+        "fileName": "game_bgm.mp3",
+        "fileSize": 3145728,
+        "duration": 120,
+        "musicType": "BGM",
+        "isDefault": false,
+        "createTime": "2026-07-09 13:00:00"
+      }
+    ]
+  }
+}
+```
+
+### 14.4 错误响应
+
+所有接口失败时返回统一错误格式：
+
+**响应示例**：
+```json
+{
+  "cmd": "ERROR",
+  "data": {
+    "code": "ERROR_CODE",
+    "msg": "错误描述信息"
+  }
+}
+```
+
+**错误码说明**：
+
+| 错误码 | 说明 |
+|--------|------|
+| AVATAR_TOO_LARGE | 头像文件超过2MB |
+| AVATAR_FORMAT_INVALID | 头像格式不支持 |
+| MUSIC_TOO_LARGE | 音乐文件超过10MB |
+| MUSIC_FORMAT_INVALID | 音乐格式不支持 |
+| MUSIC_LIMIT_EXCEEDED | 音乐数量超过20首限制 |
+| MUSIC_NOT_FOUND | 音乐不存在 |
+| SETTINGS_SAVE_FAILED | 设置保存失败 |
+| OSS_UPLOAD_FAILED | OSS上传失败 |
+| OSS_DELETE_FAILED | OSS删除失败 |
+
+### 14.5 登录时自动返回设置
+
+用户登录成功时，`LOGIN_OK` 响应中自动包含用户设置：
+
+**响应示例**：
+```json
+{
+  "cmd": "LOGIN_OK",
+  "data": {
+    "userId": 1,
+    "username": "player1",
+    "score": 1500,
+    "role": "USER",
+    "settings": {
+      "avatarPath": "avatar/1_20260709123456.png",
+      "language": "zh_CN",
+      "fontFamily": "SimSun",
+      "fontSize": 14,
+      "frameRate": 60,
+      "windowWidth": 900,
+      "windowHeight": 640,
+      "backgroundMusicEnabled": true,
+      "backgroundMusicVolume": 0.5,
+      "soundEffectsEnabled": true,
+      "soundEffectsVolume": 0.7,
+      "lobbyMusicId": 1,
+      "theme": "light"
+    }
+  }
+}
+```
+
+### 14.6 协议交互流程
+
+#### 14.6.1 头像上传流程
+
+```mermaid
+flowchart TD
+    A[客户端选择图片] --> B[压缩至2MB以内]
+    B --> C[Base64编码]
+    C --> D[发送 UPLOAD_AVATAR]
+    D --> E[服务端解码Base64]
+    E --> F[校验格式和大小]
+    F -->|失败| G[返回 ERROR]
+    F -->|成功| H[上传至阿里云OSS]
+    H --> I[更新t_user_settings]
+    I --> J[返回 AVATAR_UPLOADED]
+    J --> K[客户端更新头像显示]
+```
+
+#### 14.6.2 设置加载流程
+
+```mermaid
+flowchart TD
+    A[用户登录] --> B[返回 LOGIN_OK 含settings]
+    B --> C[解析settings数据]
+    C --> D[应用界面设置]
+    D --> E{用户修改设置}
+    E -->|是| F[发送 SAVE_SETTINGS]
+    F --> G[服务端保存到数据库]
+    G --> H[返回 SETTINGS_DATA]
+    H --> I[更新本地设置]
+    E -->|否| J[保持当前设置]
+```
+
+#### 14.6.3 音乐管理流程
+
+```mermaid
+flowchart TD
+    A[用户上传音乐] --> B[发送 UPLOAD_MUSIC]
+    B --> C[服务端校验并上传OSS]
+    C --> D[插入t_user_music]
+    D --> E[返回 MUSIC_UPLOADED]
+    E --> F[用户设置默认]
+    F --> G[发送 SET_DEFAULT_MUSIC]
+    G --> H[更新is_default字段]
+    H --> I[更新t_user_settings.lobby_music_id]
+    I --> J[返回 MUSIC_UPLOADED]
+    J --> K[用户删除音乐]
+    K --> L[发送 DELETE_MUSIC]
+    L --> M[删除OSS文件]
+    M --> N[删除t_user_music记录]
+    N --> O[返回 MUSIC_DELETED]
+```
+
+## 15. 用户设置隐私保护设计
+
+### 15.1 隐私保护原则
+
+| 原则 | 说明 |
+|------|------|
+| **最小化收集** | 只收集必要的设置信息，不收集无关数据 |
+| **加密存储** | 敏感数据加密存储，防止数据泄露 |
+| **访问控制** | 严格的权限控制，用户只能访问自己的设置 |
+| **传输加密** | 数据传输全程加密，防止中间人攻击 |
+| **用户控制** | 用户拥有数据的完全控制权，可随时删除 |
+| **安全审计** | 记录所有数据访问操作，便于追溯 |
+| **合规性** | 遵循相关法律法规要求 |
+
+### 15.2 数据加密存储
+
+#### 15.2.1 数据库字段加密
+
+| 字段 | 加密方式 | 说明 |
+|------|----------|------|
+| avatar_path | 不加密 | 服务端内部路径，非公开URL |
+| music_path | 不加密 | 服务端内部路径，非公开URL |
+| language | 不加密 | 非敏感数据 |
+| fontFamily | 不加密 | 非敏感数据 |
+| fontSize | 不加密 | 非敏感数据 |
+| frameRate | 不加密 | 非敏感数据 |
+| windowWidth/Height | 不加密 | 非敏感数据 |
+| backgroundMusicEnabled/Volume | 不加密 | 非敏感数据 |
+| soundEffectsEnabled/Volume | 不加密 | 非敏感数据 |
+| theme | 不加密 | 非敏感数据 |
+
+**说明**：用户设置数据主要为界面配置信息，不包含敏感隐私数据（如密码、身份证号等），因此采用明文存储。但需确保数据库访问权限严格控制。
+
+#### 15.2.2 阿里云OSS加密
+
+| 项目 | 加密方式 | 说明 |
+|------|----------|------|
+| 静态数据加密 | SSE-OSS | OSS使用服务端加密，使用阿里云托管密钥 |
+| 传输加密 | SSL/TLS | 所有数据传输使用SSL/TLS加密 |
+| 文件访问控制 | 私有 | 仅服务端可访问，客户端通过代理获取 |
+
+### 15.3 访问控制机制
+
+#### 15.3.1 数据库访问控制
+
+| 角色 | 权限 |
+|------|------|
+| 应用程序 | 读写所有用户设置表 |
+| 管理员 | 只读用户设置（用于排查问题） |
+| 用户 | 仅能读写自己的设置 |
+
+**实现方式**：
+- 所有SQL查询必须包含 `user_id` 条件
+- 使用参数化查询防止SQL注入
+- 数据库用户权限最小化
+
+#### 15.3.2 服务端访问控制
+
+| 接口 | 访问限制 |
+|------|----------|
+| GET_SETTINGS | 仅当前登录用户 |
+| SAVE_SETTINGS | 仅当前登录用户 |
+| UPLOAD_AVATAR | 仅当前登录用户 |
+| GET_AVATAR | 自己或好友/排行榜用户 |
+| DELETE_AVATAR | 仅当前登录用户 |
+| UPLOAD_MUSIC | 仅当前登录用户 |
+| GET_MUSIC | 仅当前登录用户 |
+| DELETE_MUSIC | 仅当前登录用户 |
+| SET_DEFAULT_MUSIC | 仅当前登录用户 |
+| MUSIC_LIST | 仅当前登录用户 |
+
+**实现方式**：
+- 使用 `userId` 关联当前连接的用户
+- 在 `ClientHandler` 中验证操作权限
+- 禁止跨用户访问
+
+#### 15.3.3 文件存储访问控制
+
+| 角色 | 权限 |
+|------|------|
+| 服务端 | 读写权限（通过OSS SDK） |
+| 客户端 | 无直接访问权限（通过服务端代理） |
+| 公网用户 | 无访问权限（存储为私有） |
+
+**实现方式**：
+- OSS：设置Bucket为私有，仅服务端通过SDK访问
+- 客户端：通过Socket协议获取文件数据，不直接访问存储
+
+### 15.4 文件不落地设计（核心隐私保护）
+
+#### 15.4.1 设计原则
+
+| 原则 | 说明 |
+|------|------|
+| **不落地** | 文件不在客户端本地磁盘保存 |
+| **内存处理** | 数据获取后直接在内存中处理 |
+| **即时渲染** | 图片直接渲染到界面组件 |
+| **即时播放** | 音乐直接解码播放 |
+
+#### 15.4.2 头像处理流程
+
+```mermaid
+flowchart TD
+    A[客户端请求头像] --> B[服务端验证权限]
+    B --> C[读取文件字节]
+    C --> D[Base64编码]
+    D --> E[返回AVATAR_DATA]
+    E --> F[客户端解码为Image]
+    F --> G[渲染到ImageView]
+    G --> H[内存缓存]
+```
+
+**客户端处理代码逻辑**：
+
+```java
+// 获取头像后直接在内存中渲染，不保存到磁盘
+private void handleAvatarData(JSONObject data) {
+    String base64 = data.getString("base64");
+    byte[] imageBytes = Base64.getDecoder().decode(base64.split(",")[1]);
+    Image image = new Image(new ByteArrayInputStream(imageBytes));
+    avatarImageView.setImage(image);
+}
+```
+
+#### 15.4.3 音乐处理流程
+
+```mermaid
+flowchart TD
+    A[客户端请求音乐] --> B[服务端验证权限]
+    B --> C[读取文件字节]
+    C --> D[Base64编码]
+    D --> E[返回MUSIC_DATA]
+    E --> F[客户端解码为音频流]
+    F --> G[直接播放]
+    G --> H[内存缓存]
+```
+
+**客户端处理代码逻辑**：
+
+```java
+// 获取音乐后直接在内存中播放，不保存到磁盘
+private void handleMusicData(JSONObject data) {
+    String base64 = data.getString("base64");
+    byte[] audioBytes = Base64.getDecoder().decode(base64.split(",")[1]);
+    AudioInputStream audioStream = AudioSystem.getAudioInputStream(
+        new ByteArrayInputStream(audioBytes));
+    Clip clip = AudioSystem.getClip();
+    clip.open(audioStream);
+    clip.start();
+}
+```
+
+#### 15.4.4 内存缓存策略
+
+| 项目 | 策略 |
+|------|------|
+| 头像缓存 | 登录期间缓存，退出登录清除 |
+| 音乐缓存 | 当前会话缓存，切换场景清除 |
+| 缓存上限 | 最多缓存10个头像、5首音乐 |
+| 淘汰策略 | LRU（最近最少使用） |
+
+**缓存类设计**：
+
+```java
+public class MemoryCache {
+    private static final Map<String, Image> avatarCache = new ConcurrentHashMap<>();
+    private static final Map<String, byte[]> musicCache = new ConcurrentHashMap<>();
+    
+    public static void putAvatar(String userId, Image image) {
+        avatarCache.put(userId, image);
+    }
+    
+    public static Image getAvatar(String userId) {
+        return avatarCache.get(userId);
+    }
+    
+    public static void putMusic(String musicId, byte[] data) {
+        musicCache.put(musicId, data);
+    }
+    
+    public static byte[] getMusic(String musicId) {
+        return musicCache.get(musicId);
+    }
+    
+    public static void clear() {
+        avatarCache.clear();
+        musicCache.clear();
+    }
+}
+```
+
+### 15.5 传输加密
+
+#### 15.5.1 Socket通信加密
+
+| 项目 | 说明 |
+|------|------|
+| 协议 | TCP + SSL/TLS |
+| 证书 | 使用SSL证书加密传输 |
+| 加密算法 | AES-256 |
+
+**说明**：设置数据通过Socket传输时，应使用SSL/TLS加密，防止中间人攻击。
+
+#### 15.5.2 文件数据传输
+
+| 项目 | 说明 |
+|------|------|
+| 编码方式 | Base64 |
+| 传输通道 | Socket（与游戏数据共用） |
+| 加密方式 | SSL/TLS（与Socket通信一致） |
+
+### 15.6 用户数据控制权
+
+#### 15.6.1 数据删除
+
+| 操作 | 删除范围 |
+|------|----------|
+| 删除头像 | 清除数据库路径 + 删除存储文件 |
+| 删除音乐 | 删除数据库记录 + 删除存储文件 |
+| 重置设置 | 恢复所有设置为默认值 |
+| 用户注销 | 删除所有用户数据（包括设置、音乐、头像） |
+
+#### 15.5.2 数据导出
+
+| 操作 | 导出内容 |
+|------|----------|
+| 导出设置 | 导出用户所有设置为JSON文件 |
+| 导出音乐 | 下载用户上传的所有音乐文件 |
+
+### 15.6 安全审计
+
+#### 15.6.1 操作日志
+
+| 日志类型 | 记录内容 |
+|----------|----------|
+| 设置修改 | 用户ID、修改时间、修改内容 |
+| 头像上传 | 用户ID、时间、文件大小、URL |
+| 头像删除 | 用户ID、时间、原URL |
+| 音乐上传 | 用户ID、时间、文件大小、URL |
+| 音乐删除 | 用户ID、时间、音乐ID |
+| 设置重置 | 用户ID、时间 |
+
+#### 15.6.2 日志存储
+
+| 项目 | 值 |
+|------|-----|
+| 存储位置 | 独立日志表 `t_audit_log` |
+| 保留时间 | 90天 |
+| 访问权限 | 仅管理员可查询 |
+
+### 15.7 合规性
+
+#### 15.7.1 数据分类
+
+| 分类 | 说明 |
+|------|------|
+| 公开数据 | 头像URL、音乐URL（公开访问） |
+| 用户私有数据 | 界面设置（仅用户自己访问） |
+| 敏感数据 | 无（设置数据不含敏感信息） |
+
+#### 15.7.2 法律法规遵循
+
+| 法规 | 遵循要点 |
+|------|----------|
+| 《个人信息保护法》 | 用户有权删除、导出自己的数据 |
+| 《网络安全法》 | 数据传输加密、访问控制 |
+| GDPR（如涉及海外用户） | 用户数据控制权、数据最小化 |
+
+### 15.8 安全最佳实践
+
+#### 15.8.1 开发安全
+
+| 实践 | 说明 |
+|------|------|
+| 参数化查询 | 防止SQL注入 |
+| 输入验证 | 验证文件类型、大小、格式 |
+| 异常处理 | 不暴露系统内部信息 |
+| 日志脱敏 | 日志中不记录敏感数据 |
+
+#### 15.8.2 运维安全
+
+| 实践 | 说明 |
+|------|------|
+| 定期备份 | 数据库定期备份 |
+| 安全审计 | 定期安全检查 |
+| 密钥管理 | RAM密钥定期轮换 |
+| 访问监控 | 异常访问告警 |
+
+#### 15.8.3 数据安全
+
+| 实践 | 说明 |
+|------|------|
+| 数据隔离 | 开发/测试环境使用模拟数据 |
+| 定期清理 | 过期日志定期清理 |
+| 数据备份 | 设置数据随用户数据一起备份 |
+
+### 15.9 新增审计日志表
+
+#### 15.9.1 t_audit_log（审计日志表）
+
+| 字段名 | 类型 | 约束 | 说明 |
+|--------|------|------|------|
+| log_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | 日志ID |
+| user_id | BIGINT | NOT NULL | 用户ID |
+| action_type | VARCHAR(50) | NOT NULL | 操作类型 |
+| action_desc | VARCHAR(200) | NULL | 操作描述 |
+| target_type | VARCHAR(50) | NULL | 目标类型 |
+| target_id | BIGINT | NULL | 目标ID |
+| before_data | TEXT | NULL | 修改前数据（JSON格式） |
+| after_data | TEXT | NULL | 修改后数据（JSON格式） |
+| ip_address | VARCHAR(50) | NULL | 操作IP地址 |
+| create_time | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+
+**索引设计**：
+| 索引名 | 字段 | 类型 |
+|--------|------|------|
+| PRIMARY | log_id | 主键 |
+| idx_user_id | user_id | 普通索引 |
+| idx_action_type | action_type | 普通索引 |
+| idx_create_time | create_time | 普通索引 |
+
+**操作类型枚举**：
+
+| 操作类型 | 说明 |
+|----------|------|
+| SETTINGS_GET | 获取设置 |
+| SETTINGS_SAVE | 保存设置 |
+| AVATAR_UPLOAD | 上传头像 |
+| AVATAR_DELETE | 删除头像 |
+| MUSIC_UPLOAD | 上传音乐 |
+| MUSIC_DELETE | 删除音乐 |
+| MUSIC_SET_DEFAULT | 设置默认音乐 |
+| SETTINGS_RESET | 重置设置 |
+
+### 15.10 SQL脚本更新
+
+**新增审计日志表**：
+
+```sql
+CREATE TABLE IF NOT EXISTS `t_audit_log` (
+    `log_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '日志ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `action_type` VARCHAR(50) NOT NULL COMMENT '操作类型',
+    `action_desc` VARCHAR(200) COMMENT '操作描述',
+    `target_type` VARCHAR(50) COMMENT '目标类型',
+    `target_id` BIGINT COMMENT '目标ID',
+    `before_data` TEXT COMMENT '修改前数据(JSON)',
+    `after_data` TEXT COMMENT '修改后数据(JSON)',
+    `ip_address` VARCHAR(50) COMMENT '操作IP地址',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_action_type` (`action_type`),
+    INDEX `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审计日志表';
+```
+
+### 15.11 隐私保护流程图
+
+```mermaid
+flowchart TD
+    A[用户操作] --> B{验证权限}
+    B -->|未登录| C[拒绝访问]
+    B -->|已登录| D{操作类型}
+    D -->|读取设置| E[验证用户身份]
+    E --> F[返回当前用户设置]
+    D -->|修改设置| G[验证用户身份]
+    G --> H[记录审计日志]
+    H --> I[更新数据库]
+    I --> J[返回成功]
+    D -->|上传文件| K[验证文件大小/格式]
+    K -->|失败| L[返回错误]
+    K -->|成功| M[上传至OSS]
+    M --> N[记录审计日志]
+    N --> O[保存数据库记录]
+    O --> P[返回成功]
+    D -->|删除数据| Q[验证用户身份]
+    Q --> R[记录审计日志]
+    R --> S[删除OSS文件]
+    S --> T[删除数据库记录]
+    T --> U[返回成功]
+```
 

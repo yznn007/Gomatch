@@ -195,6 +195,64 @@ CREATE TABLE IF NOT EXISTS `t_friend_request` (
     FOREIGN KEY (`to_user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='好友请求表';
 
+CREATE TABLE IF NOT EXISTS `t_user_settings` (
+    `settings_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '设置ID',
+    `user_id` BIGINT NOT NULL UNIQUE COMMENT '用户ID',
+    `avatar_path` VARCHAR(500) COMMENT '头像文件路径(阿里云OSS)',
+    `language` VARCHAR(20) DEFAULT 'zh_CN' COMMENT '语言: zh_CN/en_US',
+    `font_family` VARCHAR(50) DEFAULT 'SimSun' COMMENT '字体',
+    `font_size` INT DEFAULT 12 COMMENT '字体大小(px)',
+    `frame_rate` INT DEFAULT 60 COMMENT '帧率(30/60/120)',
+    `window_width` INT DEFAULT 900 COMMENT '窗口宽度',
+    `window_height` INT DEFAULT 640 COMMENT '窗口高度',
+    `background_music_enabled` BOOLEAN DEFAULT TRUE COMMENT '背景音乐开关',
+    `background_music_volume` DECIMAL(3,2) DEFAULT 0.5 COMMENT '背景音乐音量(0-1)',
+    `sound_effects_enabled` BOOLEAN DEFAULT TRUE COMMENT '音效开关',
+    `sound_effects_volume` DECIMAL(3,2) DEFAULT 0.7 COMMENT '音效音量(0-1)',
+    `lobby_music_id` BIGINT COMMENT '当前大厅背景音乐ID',
+    `theme` VARCHAR(50) DEFAULT 'light' COMMENT '主题: light/dark',
+    `version` INT DEFAULT 0 COMMENT '版本号(乐观锁)',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_lobby_music_id` (`lobby_music_id`),
+    FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户设置表';
+
+CREATE TABLE IF NOT EXISTS `t_user_music` (
+    `music_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '音乐ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `music_name` VARCHAR(100) NOT NULL COMMENT '音乐名称',
+    `music_path` VARCHAR(500) NOT NULL COMMENT '音乐文件路径(阿里云OSS)',
+    `file_name` VARCHAR(200) NOT NULL COMMENT '原始文件名',
+    `file_size` INT DEFAULT 0 COMMENT '文件大小(字节)',
+    `duration` INT COMMENT '音乐时长(秒)',
+    `music_type` VARCHAR(20) NOT NULL DEFAULT 'LOBBY' COMMENT '音乐类型: LOBBY/BGM',
+    `is_default` BOOLEAN DEFAULT FALSE COMMENT '是否设为默认音乐',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_music_type` (`music_type`),
+    UNIQUE INDEX `uk_user_filename` (`user_id`, `file_name`),
+    FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户音乐表';
+
+CREATE TABLE IF NOT EXISTS `t_audit_log` (
+    `log_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '日志ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `action_type` VARCHAR(50) NOT NULL COMMENT '操作类型',
+    `action_desc` VARCHAR(200) COMMENT '操作描述',
+    `target_type` VARCHAR(50) COMMENT '目标类型',
+    `target_id` BIGINT COMMENT '目标ID',
+    `before_data` TEXT COMMENT '修改前数据(JSON)',
+    `after_data` TEXT COMMENT '修改后数据(JSON)',
+    `ip_address` VARCHAR(50) COMMENT '操作IP地址',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_action_type` (`action_type`),
+    INDEX `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审计日志表';
+
 INSERT INTO `t_user` (`username`, `password`, `email`, `role`, `status`, `score`, `win_count`, `lose_count`, `draw_count`) VALUES
 ('admin',   '${GOMATCH_SEED_PASSWORD}', '[redacted-email]',   'ADMIN',  'ACTIVE', 9999, 0, 0, 0),
 ('player1', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', 'PLAYER', 'ACTIVE', 1300, 8, 4, 1),
