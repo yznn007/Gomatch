@@ -128,6 +128,7 @@ public class ClientHandler implements Runnable {
             case Protocol.CHAT            -> handleChat(msg);
             case Protocol.SURRENDER       -> handleSurrender();
             case Protocol.SPECTATE        -> handleSpectate(msg);
+            case Protocol.LEAVE_SPECTATE -> handleLeaveSpectate();
             case Protocol.ROOM_LIST       -> handleRoomList();
             case Protocol.QUICK_MATCH     -> handleQuickMatch();
             case Protocol.CANCEL_MATCH    -> handleCancelMatch();
@@ -337,6 +338,10 @@ public class ClientHandler implements Runnable {
 
         if (oldPassword == null || newPassword == null || newPassword.length() < 6) {
             send(Message.of(Protocol.ERROR, "msg", "新密码至少6位"));
+            return;
+        }
+        if (newPassword.equals(oldPassword)) {
+            send(Message.of(Protocol.ERROR, "msg", "新密码不能与旧密码相同"));
             return;
         }
 
@@ -561,12 +566,6 @@ public class ClientHandler implements Runnable {
 
             room.broadcastAll(room.buildGameStartMessage());
 
-            send(Message.builder(Protocol.JOIN_OK)
-                    .set("roomId", room.getRoomId())
-                    .set("roomName", room.getRoomName())
-                    .set("players", room.getPlayerCount() + "/" + 2)
-                    .build());
-
             log.info("玩家 {} 配对成功，房间: {}", userId, room.getRoomId());
         } else {
             send(Message.of(Protocol.ERROR, "msg", "等待对手... (" + roomManager.getMatchQueueSize() + "/2)"));
@@ -577,6 +576,10 @@ public class ClientHandler implements Runnable {
 
     private void handleCancelMatch() {
         if (!authenticated) return;
+        if (currentRoom != null && currentRoom.isGameStarted()) {
+            send(Message.of(Protocol.ERROR, "msg", "对局已开始，无法取消"));
+            return;
+        }
         roomManager.cancelMatch(userId);
         roomManager.cancelRankedMatch(userId);
         send(Message.of(Protocol.CANCEL_MATCH, "msg", "已取消匹配"));
@@ -791,6 +794,21 @@ public class ClientHandler implements Runnable {
         log.info("玩家 {} 开始观战房间 {} (已回放 {} 步)", userId, roomId, room.getGame().getMoveHistory().size());
     }
 
+    private void handleLeaveSpectate() {
+        if (currentRoom == null) {
+            send(Message.of(Protocol.ERROR, "msg", "不在房间中"));
+            return;
+        }
+
+        if (!currentRoom.isObserver(this)) {
+            send(Message.of(Protocol.ERROR, "msg", "不是观战者"));
+            return;
+        }
+
+        roomManager.leaveRoom(this);
+        log.info("玩家 {} 退出观战房间", userId);
+    }
+
     // ==================== 排行榜 ====================
 
     private void handleRanking(Message msg) {
@@ -933,7 +951,7 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        boolean accept = msg.getInt("accept") == 1;
+        boolean accept = msg.getBoolean("accept");
         boolean success = currentRoom.replyUndo(userId, accept);
         if (success) {
             if (accept) {
@@ -992,7 +1010,7 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        boolean accept = msg.getInt("accept") == 1;
+        boolean accept = msg.getBoolean("accept");
         boolean success = currentRoom.replyDraw(userId, accept);
         if (success) {
             if (accept) {

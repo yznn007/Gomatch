@@ -24,10 +24,10 @@
                 </HBox>
                 <Region HBox.hgrow="ALWAYS"/>
                 <HBox spacing="6" alignment="CENTER_RIGHT">
-                    <Button text="排行榜" onAction="#handleRankingPage" styleClass="icon-btn"/>
-                    <Button text="好友" onAction="#handleFriends" styleClass="icon-btn"/>
-                    <Button text="管理" fx:id="managementBtn" onAction="#handleManagement" styleClass="icon-btn"/>
-                    <Button text="设置" onAction="#handleSettings" styleClass="icon-btn"/>
+                    <Button text="%lobby.ranking" onAction="#handleRankingPage" styleClass="icon-btn"/>
+                    <Button text="%lobby.friends" onAction="#handleFriends" styleClass="icon-btn"/>
+                    <Button text="%lobby.management" fx:id="managementBtn" onAction="#handleManagement" styleClass="icon-btn"/>
+                    <Button text="%lobby.settings" onAction="#handleSettings" styleClass="icon-btn"/>
                 </HBox>
             </HBox>
             <Separator styleClass="section-divider" prefWidth="Infinity" mouseTransparent="true"/>
@@ -48,7 +48,7 @@
                                HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
                         <VBox alignment="CENTER" spacing="12">
                             <Label text="⚔" styleClass="arena-icon"/>
-                            <Label text="匹  配" styleClass="arena-title"/>
+                            <Label text="%lobby.match" styleClass="arena-title"/>
                             <Label text="MATCH" styleClass="arena-sub"/>
                         </VBox>
                     </PixelCard>
@@ -57,7 +57,7 @@
                                HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
                         <VBox alignment="CENTER" spacing="12">
                             <Label text="🤖" styleClass="arena-icon"/>
-                            <Label text="AI 对战" styleClass="arena-title"/>
+                            <Label text="%lobby.ai" styleClass="arena-title"/>
                             <Label text="VS AI" styleClass="arena-sub"/>
                         </VBox>
                     </PixelCard>
@@ -66,7 +66,7 @@
                                HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
                         <VBox alignment="CENTER" spacing="12">
                             <Label text="♛" styleClass="arena-icon"/>
-                            <Label text="排  位" styleClass="arena-title"/>
+                            <Label text="%lobby.rank" styleClass="arena-title"/>
                             <Label text="RANK" styleClass="arena-sub"/>
                         </VBox>
                     </PixelCard>
@@ -79,7 +79,7 @@
                   managed="false" visible="false"
                   StackPane.alignment="TOP_LEFT">
                 <HBox spacing="8" alignment="CENTER_LEFT">
-                    <Label text="排行榜" styleClass="section-label"/>
+                    <Label text="%lobby.ranking" styleClass="section-label"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Button text="«" onAction="#toggleRankDrawer" styleClass="drawer-toggle"/>
                 </HBox>

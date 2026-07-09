@@ -1,5 +1,7 @@
 package com.gomatch.client.ui;
 
+import com.gomatch.client.UserSettings;
+
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -22,6 +24,11 @@ public class ShapeGridBackground extends Pane {
     private double mouseY = -1000;
     private double targetMouseX = -1000;
     private double targetMouseY = -1000;
+    private boolean enabled = true;
+    private AnimationTimer timer;
+
+    // 帧率限制：记录上次渲染时间，超过目标间隔才渲染
+    private long lastRenderTime = 0;
 
     private static final int CELL_SIZE = 65; // 点阵间距稍微拉开一点
     private static final double MAX_REACTION_DIST = 180.0; // 鼠标影响半径
@@ -48,13 +55,32 @@ public class ShapeGridBackground extends Pane {
         heightProperty().addListener((obs, oldVal, newVal) -> resizeCanvas());
 
         // 启动高性能动画渲染渲染器
-        AnimationTimer timer = new AnimationTimer() {
+        timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
                 if (points == null) {
                     lastTime = now;
                     return;
                 }
+
+                // 帧率限制：根据用户设置计算目标帧间隔
+                int targetFps;
+                try {
+                    targetFps = Integer.parseInt(UserSettings.get().fpsLimit);
+                } catch (NumberFormatException e) {
+                    targetFps = 60;
+                }
+                if (targetFps <= 0) targetFps = 999; // "无限制"模式
+
+                long frameIntervalNanos = 1_000_000_000L / targetFps;
+                if (lastRenderTime > 0 && (now - lastRenderTime) < frameIntervalNanos) {
+                    // 跳过此帧，但仍然更新鼠标缓动
+                    mouseX += (targetMouseX - mouseX) * 0.15;
+                    mouseY += (targetMouseY - mouseY) * 0.15;
+                    return;
+                }
+                lastRenderTime = now;
+
                 if (lastTime == 0) {
                     lastTime = now;
                 }
@@ -74,6 +100,28 @@ public class ShapeGridBackground extends Pane {
             }
         };
         timer.start();
+    }
+
+    /**
+     * 开启/关闭动态背景效果。
+     * 关闭时隐藏画布并停止动画定时器，显示时恢复。
+     */
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+        if (enabled) {
+            canvas.setVisible(true);
+            if (timer != null) timer.start();
+        } else {
+            canvas.setVisible(false);
+            if (timer != null) timer.stop();
+            // 清空画布
+            GraphicsContext gc = canvas.getGraphicsContext2D();
+            gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        }
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 
     /**

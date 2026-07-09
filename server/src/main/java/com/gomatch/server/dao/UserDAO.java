@@ -61,7 +61,7 @@ public class UserDAO {
             log.warn("Register failed: username too long");
             return false;
         }
-        if (existsByUsername(username)) {
+        if (existsByUsername(username.trim())) {
             log.warn("Register failed: username already exists: {}", username);
             return false;
         }
@@ -226,8 +226,12 @@ public class UserDAO {
                     return false;
                 }
                 String currentPassword = rs.getString("password");
-                if (!newPassword.equals(oldPassword) && !oldPassword.equals(currentPassword)) {
+                if (!oldPassword.equals(currentPassword)) {
                     log.warn("Change password failed: old password mismatch, userId={}", userId);
+                    return false;
+                }
+                if (newPassword.equals(oldPassword)) {
+                    log.warn("Change password failed: new password same as old, userId={}", userId);
                     return false;
                 }
             }
@@ -381,9 +385,12 @@ public class UserDAO {
      * 搜索用户
      */
     public List<UserInfo> searchUsers(String keyword, int page, int size) {
+        List<UserInfo> result = new ArrayList<>();
+        if (keyword == null) {
+            return result;
+        }
         String sql = "SELECT user_id, username, score, win_count, lose_count, draw_count, role, status " +
                      "FROM t_user WHERE username LIKE ? ORDER BY user_id ASC LIMIT ? OFFSET ?";
-        List<UserInfo> result = new ArrayList<>();
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, "%" + keyword + "%");

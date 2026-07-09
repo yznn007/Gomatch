@@ -196,7 +196,10 @@ public class ProfileController implements NetworkListener {
                     String movesStr = record.getMoves();
                     if (isReplayDataValid(movesStr)) {
                         BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-                        ctrl.setReplayMode(true);
+                        // 传入 player1/2 信息，让回放时黑白方卡片显示真实玩家名
+                        ctrl.setReplayMode(true,
+                            record.getPlayer1Id(), record.getPlayer1Name(),
+                            record.getPlayer2Id(), record.getPlayer2Name());
                         ctrl.replayMoves(movesStr);
                     } else {
                         Alert alert = new Alert(Alert.AlertType.INFORMATION, "暂无棋谱数据");
@@ -335,6 +338,10 @@ public class ProfileController implements NetworkListener {
             errorLabel.setText("新密码长度需 ≥6 位");
             return;
         }
+        if (newPwd.equals(oldPwd)) {
+            errorLabel.setText("新密码不能与旧密码相同");
+            return;
+        }
         if (ClientMain.getConnector().isConnected()) {
             ClientMain.getConnector().send(Message.of(Protocol.CHANGE_PWD, "oldPassword", oldPwd, "newPassword", newPwd));
         } else {
@@ -401,6 +408,11 @@ public class ProfileController implements NetworkListener {
                     gr.setMoveCount(moveCount);
                     gr.setDuration(duration);
                     gr.setScoreChange(scoreChange);
+                    // 保存 player1/2 信息，用于回放时正确显示黑白方名字
+                    gr.setPlayer1Id(String.valueOf(r.optLong("player1Id", 0)));
+                    gr.setPlayer1Name(p1Name);
+                    gr.setPlayer2Id(String.valueOf(r.optLong("player2Id", 0)));
+                    gr.setPlayer2Name(p2Name);
                     recordData.add(gr);
                 }
             } catch (Exception e) {

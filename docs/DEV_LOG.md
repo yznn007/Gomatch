@@ -74,6 +74,9 @@
 | 60 | 再来一局（Rematch）功能 | 已完成 |
 | 61 | GAME_START 协议增强（传递用户名/积分） | 已完成 |
 | 62 | 修复快速匹配 GAME_START 数据丢失 + 注册用户名并发重复 | 已完成 |
+| 63 | 设置页面交互功能实现 | 已完成 |
+| 64 | UserSettings 用户偏好持久化 | 已完成 |
+| 65 | 国际化中英文切换 | 已完成 |
 
 ### 状态说明
 
@@ -254,3 +257,8 @@
 | 2026-07-09 | Contributor| **原因**：CasualLobbyController.onMessage(GAME_START) 只调用了 3 参数版 setGameInfo(bId, wId, username)，丢弃了服务端传来的 blackUsername/blackScore/whiteUsername/whiteScore 全部数据；同时 JOIN_OK 在 GAME_START 后又被发送，导致已切入 BoardUI 的客户端又被切回 RoomWaitingUI。**修复**：1. GAME_START 处理改为解析全部 6 个字段（blackUsername/blackScore/whiteUsername/whiteScore），传递到 BoardController.setGameInfo() 的完整参数重载；2. 新增 joinedGame 标记位，在已进入 GAME_START 对局后忽略后续 JOIN_OK 消息，防止界面回切到等待室 | 编译通过 |
 | 2026-07-09 | Contributor| 1. 定位大厅音乐未播放原因为 JavaFX Media 对 FLAC 运行时支持不稳定且原逻辑静默降级；2. 使用 ShareX ffmpeg 将原曲转为纯音频 lobby-theme.mp3；3. BackgroundMusicManager 改为加载 MP3，移除未使用 FLAC 资源；4. MODULE_CLIENT.md 同步资源路径。 | 媒体探针 READY；编译通过 |
 | 2026-07-09 | Contributor| 将 BackgroundMusicManager 的默认全局音乐音量从 80 调整为 45、背景音乐音量从 70 调整为 35，初始实际播放音量由 56% 降至约 16%；SettingsUI.fxml 同步默认滑杆显示值。 | 编译通过 |
+| 2026-07-09 | Contributor| 1. 全屏模式：stage.setFullScreen() 即时生效；2. 分辨率切换：动态调整 stage 宽高并居中；3. 动态背景：ShapeGridBackground.setEnabled() 控制粒子网格显隐；4. 帧率限制：ShapeGridBackground 跳帧逻辑实现 60/120/无限制；5. 字体切换：修改 scene root 的 -fx-font-family 属性；6. 开机自启：VBS 脚本写入 Windows %APPDATA%\Startup；7. 记住密码：LoginController 读取 UserSettings 控制默认勾选；8. 后台静音：窗口失焦暂停音乐、获焦恢复；9. 音频控制：ElasticVolumeSlider 双向绑定 BackgroundMusicManager | 编译通过 |
+| 2026-07-09 | Contributor| 新增 UserSettings 类，将全屏/分辨率/帧率/音量/背景/字体/主题/语言/开机自启/记住密码等 15 项偏好保存到 ~/.gomatch/user-settings.json，启动时自动加载 | 编译通过 |
+| 2026-07-09 | Contributor| 1. 新增 I18N 工具类，支持 ResourceBundle 动态切换；2. 新增 messages_zh.properties 和 messages_en.properties 资源文件（240+ key）；3. 所有 21 个 FXML 中文文本替换为 %key 占位符；4. ScreenManager 加载 FXML 时传入 ResourceBundle；5. ClientMain 启动时初始化语言；6. SettingsController 语言切换后重载场景 | 编译通过 |
+| 2026-07-09 | Contributor| root.setStyle() 会覆盖所有内联样式导致 -fx-background-color 丢失；改为 appendFontFamily() 追加/替换 -fx-font-family 属性，保留其他样式 | 编译通过 |
+| 2026-07-09 | Contributor| updateTurnLabel() 中 if-else 块后多了一个 }，导致 updatePlayerCardHighlight() 脱离方法体 | 编译通过 |

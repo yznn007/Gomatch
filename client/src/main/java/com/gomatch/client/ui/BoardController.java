@@ -2,6 +2,7 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
@@ -53,6 +54,8 @@ public class BoardController implements NetworkListener {
     @FXML private Button toggleSidebarBtn;
     @FXML private VBox sidebarContent;
     @FXML private Region dragHandle;
+    @FXML private VBox spectatorControls;
+    @FXML private Button leaveSpectateBtn;
 
     private double dragStartX;
     private double dragStartWidth;
@@ -84,6 +87,12 @@ public class BoardController implements NetworkListener {
     private long lastLocalChatTime;
     private int lastMoveX = -1;
     private int lastMoveY = -1;
+
+    private static boolean isEmpty(String s) {
+        return s == null || s.isEmpty();
+    }
+
+
 
     private Label blackPlayerNameLabel;
     private Label whitePlayerNameLabel;
@@ -285,6 +294,11 @@ public class BoardController implements NetworkListener {
             myTurn = false;
             myColor = "spectator";
             applySpectatorMode();
+        } else {
+            if (spectatorControls != null) {
+                spectatorControls.setVisible(false);
+                spectatorControls.setManaged(false);
+            }
         }
         updateActionButtons();
 
@@ -301,6 +315,10 @@ public class BoardController implements NetworkListener {
         if (chatInput != null) {
             chatInput.setVisible(false);
             chatInput.setManaged(false);
+        }
+        if (spectatorControls != null) {
+            spectatorControls.setVisible(true);
+            spectatorControls.setManaged(true);
         }
         if (chatArea != null) {
             chatArea.appendText("[系统] 观战模式 - 无法落子或操作\n");
@@ -349,6 +367,11 @@ public class BoardController implements NetworkListener {
 
         updateTurnLabel();
         updateActionButtons();
+
+        if (spectatorControls != null) {
+            spectatorControls.setVisible(false);
+            spectatorControls.setManaged(false);
+        }
 
         // 处理断线角标：如果对手仍在断线中，显示断线标记
         if (disconnectedUserId != null && !disconnectedUserId.isEmpty()
@@ -410,20 +433,49 @@ public class BoardController implements NetworkListener {
     }
 
     public void setReplayMode(boolean replayMode) {
+        setReplayMode(replayMode, null, null, null, null);
+    }
+
+    /**
+     * 设置回放模式（带玩家信息）。
+     * @param blackId      黑方用户ID（可为 null，用占位符）
+     * @param blackName    黑方显示名（可为 null）
+     * @param whiteId      白方用户ID
+     * @param whiteName    白方显示名
+     */
+    public void setReplayMode(boolean replayMode,
+                              String blackId, String blackName,
+                              String whiteId, String whiteName) {
+        System.out.println("[DEBUG-SETREPLAY] replayMode=" + replayMode
+                + " blackId=" + blackId + " blackName=" + blackName
+                + " whiteId=" + whiteId + " whiteName=" + whiteName
+                + " hasBlackLbl=" + (blackPlayerNameLabel != null)
+                + " hasBlackIdLbl=" + (blackPlayerIdLabel != null)
+                + " hasWhiteLbl=" + (whitePlayerNameLabel != null)
+                + " hasWhiteIdLbl=" + (whitePlayerIdLabel != null));
         this.replayMode = replayMode;
         if (replayMode) {
             gameOver = true;
             myTurn = false;
-            blackName = "黑方";
-            whiteName = "白方";
+            // 兜底：名字为空时回退到 ID，再不行用"黑方/白方"
+            this.blackName = (blackName != null && !blackName.isEmpty()) ? blackName : (isEmpty(blackId) ? "黑方" : blackId);
+            this.whiteName = (whiteName != null && !whiteName.isEmpty()) ? whiteName : (isEmpty(whiteId) ? "白方" : whiteId);
+            this.blackId = blackId != null ? blackId : "";
+            this.whiteId = whiteId != null ? whiteId : "";
             myColor = "black";
             currentTurn = 1;
-            if (blackPlayerNameLabel != null) blackPlayerNameLabel.setText(blackName);
-            if (whitePlayerNameLabel != null) whitePlayerNameLabel.setText(whiteName);
-            if (blackPlayerIdLabel != null) blackPlayerIdLabel.setText("#---");
-            if (whitePlayerIdLabel != null) whitePlayerIdLabel.setText("#---");
+            if (blackPlayerNameLabel != null) blackPlayerNameLabel.setText(this.blackName);
+            if (whitePlayerNameLabel != null) whitePlayerNameLabel.setText(this.whiteName);
+            if (blackPlayerIdLabel != null) blackPlayerIdLabel.setText(this.blackId.isEmpty() ? "#---" : "#" + this.blackId);
+            if (whitePlayerIdLabel != null) whitePlayerIdLabel.setText(this.whiteId.isEmpty() ? "#---" : "#" + this.whiteId);
             if (blackPlayerScoreLabel != null) blackPlayerScoreLabel.setText("?");
             if (whitePlayerScoreLabel != null) whitePlayerScoreLabel.setText("?");
+            // 回放模式无倒计时：清空 timerLabel 并停止任何 timeline
+            if (timerLabel != null) {
+                timerLabel.setText("");
+                timerLabel.setVisible(false);
+                timerLabel.setManaged(false);
+            }
             updateTurnLabel();
 
             if (gameControls != null) {
@@ -433,6 +485,10 @@ public class BoardController implements NetworkListener {
             if (replayControls != null) {
                 replayControls.setVisible(true);
                 replayControls.setManaged(true);
+            }
+            if (spectatorControls != null) {
+                spectatorControls.setVisible(false);
+                spectatorControls.setManaged(false);
             }
             if (chatInput != null) {
                 chatInput.setVisible(false);
@@ -573,13 +629,14 @@ public class BoardController implements NetworkListener {
     }
 
     private void updateTurnLabel() {
-        if (blackName == null) blackName = "黑方";
-        if (whiteName == null) whiteName = "白方";
+        if (blackName == null) blackName = I18N.isEnglish() ? "Black" : "黑方";
+        if (whiteName == null) whiteName = I18N.isEnglish() ? "White" : "白方";
+        String turnSuffix = I18N.isEnglish() ? "'s Turn" : " 回合";
         if (currentTurn == 1) {
-            turnLabel.setText("⚫ " + blackName + " 回合");
+            turnLabel.setText("⚫ " + blackName + turnSuffix);
         } else {
-            turnLabel.setText("⚪ " + whiteName + " 回合");
-        }
+            turnLabel.setText("⚪ " + whiteName + turnSuffix);
+}
         updatePlayerCardHighlight();
     }
 
@@ -770,6 +827,20 @@ public class BoardController implements NetworkListener {
             return;
         }
         ClientMain.getConnector().send(Protocol.SURRENDER);
+    }
+
+    @FXML
+    private void handleLeaveSpectate() {
+        if (previewMode) {
+            LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+            ctrl.setCurrentUser(AppConfig.getCurrentUser());
+            ctrl.setPreviewMode(true);
+            return;
+        }
+        ClientMain.getConnector().send(Protocol.LEAVE_SPECTATE);
+        LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        ctrl.setCurrentUser(AppConfig.getCurrentUser());
+        ctrl.setPreviewMode(false);
     }
 
     /**
