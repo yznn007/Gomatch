@@ -275,6 +275,9 @@
 | 2026-07-09 | Contributor| BoardUI.fxml 将回放按钮容器从 HBox（水平排列）改为 VBox（垂直排列），按钮 maxWidth="Infinity" 充分利用侧边栏宽度 | 编译通过 |
 | 2026-07-09 | Contributor| FriendsUI.fxml 将操作列宽度从 100px 增加到 140px，确保"接受"和"拒绝"按钮完整显示 | 编译通过 |
 | 2026-07-09 | Contributor| client-config.properties 中 server.host 从错误值改为 127.0.0.1 | 编译通过 |
+| 2026-07-09 | Contributor| 1. 发送悔棋/求和请求后显示等待弹窗（带加载动画），禁止落子和重复请求；2. 收到回复后关闭弹窗，恢复正常游戏；3. 游戏结束时自动关闭等待弹窗 |
+| 2026-07-09 | Contributor| 1. 发送请求时停止倒计时；2. 收到请求时停止倒计时；3. 收到回复后恢复倒计时；4. 悔棋同意时重置为60秒，拒绝时继续当前剩余时间；5. 求和拒绝时继续当前剩余时间 |
+| 2026-07-09 | Contributor| 观战者在对局结束时弹出游戏结束对话框，显示获胜者信息（黑方/白方 + 用户名）和"返回大厅"按钮 |
 | 2026-07-09 | Contributor| 1. style.css 追加暗夜磨砂主题覆盖层，将全局背景、卡片、输入框、按钮、表格、列表、弹窗、滚动条和音量滑杆统一为近黑玻璃与冷灰描边；2. 清理多处 FXML 浅色内联背景，避免覆盖全局主题；3. 设置页暗夜主题选项从"开发中"改为可用并持久化；4. 同步 CLIENT_STYLE_GUIDE.md、requirements.md 与 AGENTS.md 的 UI 约定。 | mvn -f client/pom.xml compile -e 通过 |
 | 2026-07-09 | Contributor| 1. ScreenManager 新增 theme-light/theme-dark 根类切换与 themeColor(light,dark) 动态色辅助；2. 设置页恢复"清透白磨砂 (经典)"与"暗夜黑磨砂"两个选项，切换后即时应用当前 Scene；3. 暗色 CSS 统一限定在 `.theme-dark`，动态列表/棋盘玩家卡/个人资料头部跟随主题；4. FXML 清理残留暗色内联样式并同步设计规范。 | 编译通过，FXML XML 解析通过 |
 | 2026-07-09 | Contributor| 根因是最外层 StackPane 背景链路在浅色/暗色间没有统一归口：固定透明会让暗色露出 Scene 白底，删除透明又会露出 `.root` 浅色蓝白渐变；改为由 ScreenManager.applyUserTheme() 按主题写入 wrapper 背景，浅色透明、暗色近黑渐变，并补齐暗色 editable ComboBox 的 text-field/arrow-button 子节点样式。 | 编译通过 |
