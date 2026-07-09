@@ -4,6 +4,7 @@ import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.ClientConfig;
+import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -16,7 +17,13 @@ public class SettingsController {
     @FXML private ComboBox<String> ipComboBox;
     @FXML private TextField portField;
     @FXML private Label statusLabel;
+    @FXML private CheckBox globalMusicCheckBox;
+    @FXML private ElasticVolumeSlider globalVolumeSlider;
+    @FXML private CheckBox backgroundMusicCheckBox;
+    @FXML private ElasticVolumeSlider backgroundVolumeSlider;
     @FXML private CheckBox soundCheckBox;
+    @FXML private ElasticVolumeSlider soundVolumeSlider;
+    @FXML private ComboBox<String> lobbySongComboBox;
     @FXML private Button exitBtn;
     @FXML private Button logoutBtn;
 
@@ -57,8 +64,17 @@ public class SettingsController {
             statusLabel.setText("未连接 (网络离线)");
             statusLabel.setStyle("-fx-text-fill: #dc2626;");
         }
+        bindAudioControl(globalMusicCheckBox, globalVolumeSlider);
+        bindAudioControl(backgroundMusicCheckBox, backgroundVolumeSlider);
+        bindAudioControl(soundCheckBox, soundVolumeSlider);
+
         // 初始激活基础设置标签页
         showBaseTab();
+    }
+
+    private void bindAudioControl(CheckBox toggle, ElasticVolumeSlider slider) {
+        slider.disableProperty().bind(toggle.selectedProperty().not());
+        slider.opacityProperty().bind(Bindings.when(toggle.selectedProperty()).then(1.0).otherwise(0.48));
     }
 
     public void setCurrentUser(User user) {

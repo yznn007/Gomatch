@@ -1012,6 +1012,52 @@
     -fx-font-weight: bold;
 }
 
+.audio-control-row {
+    -fx-padding: 0;
+}
+.audio-control-row .check-box {
+    -fx-min-width: 22;
+    -fx-pref-width: 22;
+    -fx-max-width: 22;
+}
+.audio-control-row .elastic-slider {
+    -fx-translate-y: -1;
+}
+/* ---------- Elastic volume slider ---------- */
+.elastic-slider {
+    -fx-padding: 0 0 2 0;
+}
+.elastic-slider-wrapper {
+    -fx-padding: 2 0;
+}
+.elastic-slider-icon {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-min-width: 22px;
+    -fx-alignment: CENTER;
+}
+.elastic-slider-value {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 -4 0;
+}
+.elastic-slider-root {
+    -fx-cursor: hand;
+    -fx-padding: 14 0;
+}
+.elastic-slider-track-wrapper {
+    -fx-background-color: transparent;
+}
+.elastic-slider-track {
+    -fx-background-color: rgba(128, 128, 128, 0.28);
+    -fx-background-radius: 999;
+}
+.elastic-slider-range {
+    -fx-background-color: #64748b;
+    -fx-background-radius: 999;
+}
 /* ---------- Card-based custom list style ---------- */
 .list-item-card {
     -fx-background-color: rgba(255, 255, 255, 0.32); /* 超清透液态玻璃 */
@@ -1216,6 +1262,4 @@
     -fx-background-color: rgba(255, 255, 255, 0.95);
     -fx-border-color: transparent transparent #475569 transparent;
 }
-
-
 

@@ -31,6 +31,7 @@ client/src/main/
 │       ├── CasualLobbyController.java  # 休闲大厅（房间列表+观战）
 │       ├── ConfirmExitController.java  # 退出确认弹窗
 │       ├── CreateRoomController.java   # 创建房间界面
+│       ├── ElasticVolumeSlider.java    # 设置页弹性音量滑杆
 │       ├── FriendsController.java      # 好友列表/请求/添加界面
 │       ├── GameOverController.java     # 对局结束弹窗
 │       ├── LobbyController.java        # 主大厅（匹配入口+排行榜抽屉）
@@ -468,6 +469,7 @@ ProfileUI（个人中心）
 |------|------|
 | 卡片样式 | `PixelCard` + `.glass-card`：表单页可用静态 PixelCard 外壳，内部保持乳白透明磨砂内容层 |
 | 按钮样式 | 底线描边 + 悬浮遮罩，圆角 8px，无四面外边框 |
+| 音量滑杆 | `ElasticVolumeSlider`：设置页的全局音乐、背景音乐、音效使用 JavaFX 自定义弹性滑杆，开关以无文字勾选框放在音量条左侧；大厅歌曲仅保留歌曲下拉选择 |
 | Hover 反馈 | 背景填充板岩灰 `rgba(148,163,184,0.35)` |
 | 按下反馈 | 高亮白 `rgba(255,255,255,0.95)` |
 | 颜色体系 | 中性无色系（板岩灰、木炭黑），禁用鲜活天蓝色 |

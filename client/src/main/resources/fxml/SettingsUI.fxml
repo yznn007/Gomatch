@@ -4,6 +4,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.collections.FXCollections?>
 <?import java.lang.String?>
+<?import com.gomatch.client.ui.ElasticVolumeSlider?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.gomatch.client.ui.SettingsController"
@@ -100,20 +101,59 @@
                                 <ColumnConstraints minWidth="240" prefWidth="240" halignment="LEFT"/>
                             </columnConstraints>
                             
-                            <Label text="全局音量" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
-                            <Slider min="0" max="100" value="80" showTickLabels="true" showTickMarks="true" prefWidth="200" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                            <Label text="全局音乐" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
+                            <HBox spacing="10" alignment="CENTER_LEFT" styleClass="audio-control-row" GridPane.rowIndex="0" GridPane.columnIndex="1">
+                                <CheckBox fx:id="globalMusicCheckBox" styleClass="remember-checkbox" selected="true"/>
+                                <ElasticVolumeSlider fx:id="globalVolumeSlider"
+                                                     startingValue="0"
+                                                     maxValue="100"
+                                                     value="80"
+                                                     stepped="true"
+                                                     stepSize="5"
+                                                     leftIconText="−"
+                                                     rightIconText="+"/>
+                            </HBox>
                             
                             <Label text="背景音乐" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
-                            <CheckBox text="启用背景音乐" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="remember-checkbox" selected="true"/>
+                            <HBox spacing="10" alignment="CENTER_LEFT" styleClass="audio-control-row" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                                <CheckBox fx:id="backgroundMusicCheckBox" styleClass="remember-checkbox" selected="true"/>
+                                <ElasticVolumeSlider fx:id="backgroundVolumeSlider"
+                                                     startingValue="0"
+                                                     maxValue="100"
+                                                     value="70"
+                                                     stepped="true"
+                                                     stepSize="5"
+                                                     leftIconText="−"
+                                                     rightIconText="+"/>
+                            </HBox>
                             
                             <Label text="音效" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="muted"/>
-                            <CheckBox fx:id="soundCheckBox" text="启用游戏音效" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="remember-checkbox" selected="true"/>
+                            <HBox spacing="10" alignment="CENTER_LEFT" styleClass="audio-control-row" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                                <CheckBox fx:id="soundCheckBox" styleClass="remember-checkbox" selected="true"/>
+                                <ElasticVolumeSlider fx:id="soundVolumeSlider"
+                                                     startingValue="0"
+                                                     maxValue="100"
+                                                     value="85"
+                                                     stepped="true"
+                                                     stepSize="5"
+                                                     leftIconText="−"
+                                                     rightIconText="+"/>
+                            </HBox>
                             
-                            <Label text="大厅音乐" GridPane.rowIndex="3" GridPane.columnIndex="0" styleClass="muted"/>
-                            <CheckBox text="启用大厅背景音乐" GridPane.rowIndex="3" GridPane.columnIndex="1" styleClass="remember-checkbox" selected="true"/>
+                            <Label text="大厅歌曲" GridPane.rowIndex="3" GridPane.columnIndex="0" styleClass="muted"/>
+                            <ComboBox fx:id="lobbySongComboBox" prefWidth="220" value="默认主题曲" GridPane.rowIndex="3" GridPane.columnIndex="1">
+                                <items>
+                                    <FXCollections fx:factory="observableArrayList">
+                                        <String fx:value="默认主题曲"/>
+                                        <String fx:value="清晨棋局"/>
+                                        <String fx:value="静夜对弈"/>
+                                        <String fx:value="赛场低语"/>
+                                    </FXCollections>
+                                </items>
+                            </ComboBox>
                             
                             <Label text="后台静音" GridPane.rowIndex="4" GridPane.columnIndex="0" styleClass="muted"/>
-                            <CheckBox text="应用在后台时静音" GridPane.rowIndex="4" GridPane.columnIndex="1" styleClass="remember-checkbox" selected="false"/>
+                            <CheckBox GridPane.rowIndex="4" GridPane.columnIndex="1" styleClass="remember-checkbox" selected="false"/>
                         </GridPane>
                     </VBox>
 
