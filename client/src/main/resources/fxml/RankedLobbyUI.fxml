@@ -9,8 +9,8 @@
     <top>
         <VBox spacing="0">
             <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 0 0 10 0;">
-                <Button text="« 返回" onAction="#handleBack" styleClass="icon-btn"/>
-                <Label text="排位大厅" styleClass="title"/>
+                <Button text="%settings.back" onAction="#handleBack" styleClass="icon-btn"/>
+                <Label text="%ranked.title" styleClass="title"/>
             </HBox>
             <Separator styleClass="section-divider" prefWidth="Infinity"/>
         </VBox>
@@ -18,9 +18,9 @@
     <center>
         <VBox spacing="20" alignment="CENTER" style="-fx-padding: 40 0 0 0;">
             <Region VBox.vgrow="ALWAYS"/>
-            <Label fx:id="rankLabel" text="当前段位: 未定级" styleClass="title" style="-fx-font-size: 28px;"/>
-            <Label text="排位胜负会计入积分与段位" styleClass="subtitle"/>
-            <Button fx:id="matchBtn" text="开 始 排 位 匹 配" onAction="#handleMatch" styleClass="btn-primary"
+            <Label fx:id="rankLabel" text="%ranked.tier" styleClass="title" style="-fx-font-size: 28px;"/>
+            <Label text="%ranked.desc" styleClass="subtitle"/>
+            <Button fx:id="matchBtn" text="%ranked.start" onAction="#handleMatch" styleClass="btn-primary"
                     maxWidth="480" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-pref-height: 80;"/>
             <Label fx:id="matchStatus" text="" styleClass="subtitle" style="-fx-padding: 10 0 0 0;"/>
             <Label fx:id="countdownLabel" text="" styleClass="subtitle" style="-fx-padding: 5 0 0 0; -fx-text-fill: #ef4444; -fx-font-size: 14px;"/>

@@ -137,7 +137,15 @@ public class RankedLobbyController implements NetworkListener {
 
     @FXML
     private void handleBack() {
-        if (isMatching || isFound) {
+        if (isFound) {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+            alert.setTitle("提示");
+            alert.setHeaderText(null);
+            alert.setContentText("您当前在准备阶段，不能返回大厅");
+            ScreenManager.showStyledAlert(alert);
+            return;
+        }
+        if (isMatching) {
             ClientMain.getConnector().send(Protocol.CANCEL_MATCH);
             stopMatching();
         }

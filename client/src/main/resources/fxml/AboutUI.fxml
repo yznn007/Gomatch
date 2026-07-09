@@ -9,12 +9,12 @@
     <center>
         <VBox styleClass="card-padded" alignment="CENTER" spacing="14" maxWidth="420">
             <Label text="Gomatch" styleClass="title"/>
-            <Label text="网络五子棋联机对战平台" styleClass="subtitle"/>
+            <Label text="%about.subtitle" styleClass="subtitle"/>
             <Region prefHeight="10"/>
-            <Label text="版本: 1.0.0" styleClass="muted"/>
-            <Label text="技术栈: JavaFX + Socket + JDBC" styleClass="muted"/>
+            <Label text="%about.versionText" styleClass="muted"/>
+            <Label text="%about.techStack" styleClass="muted"/>
             <Region VBox.vgrow="ALWAYS"/>
-            <Button text="关闭" onAction="#handleClose" styleClass="btn-secondary"/>
+            <Button text="%about.close" onAction="#handleClose" styleClass="btn-secondary"/>
         </VBox>
     </center>
 </BorderPane>

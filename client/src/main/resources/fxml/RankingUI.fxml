@@ -9,8 +9,8 @@
     <top>
         <VBox spacing="0">
             <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 0 0 10 0;">
-                <Button text="« 返回" onAction="#handleBack" styleClass="icon-btn"/>
-                <Label text="排行榜大厅" styleClass="title"/>
+                <Button text="%settings.back" onAction="#handleBack" styleClass="icon-btn"/>
+                <Label text="%ranking.title" styleClass="title"/>
             </HBox>
             <Separator styleClass="section-divider" prefWidth="Infinity"/>
         </VBox>
@@ -20,8 +20,8 @@
             
             <!-- 左侧导航栏 VBox -->
             <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10; -fx-background-color: rgba(245, 247, 250, 0.65);">
-                <Button fx:id="menuGlobalBtn" text="🏆 全服排行" onAction="#showGlobalRanking" styleClass="sidebar-menu-btn"/>
-                <Button fx:id="menuFriendsBtn" text="👥 好友排行" onAction="#showFriendsRanking" styleClass="sidebar-menu-btn"/>
+                <Button fx:id="menuGlobalBtn" text="%ranking.global" onAction="#showGlobalRanking" styleClass="sidebar-menu-btn"/>
+                <Button fx:id="menuFriendsBtn" text="%ranking.friends" onAction="#showFriendsRanking" styleClass="sidebar-menu-btn"/>
             </VBox>
 
             <!-- 右侧内容区域 -->
@@ -30,7 +30,7 @@
                     
                     <!-- 面板: 积分排行 -->
                     <VBox fx:id="rankingPane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
-                        <Label fx:id="rankingTitleLabel" text="全服积分排行榜" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
+                        <Label fx:id="rankingTitleLabel" text="%ranking.globalTitle" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
                         <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" prefHeight="320" minHeight="240" VBox.vgrow="ALWAYS">
                             <VBox fx:id="rankingContainer" spacing="10" style="-fx-padding: 8; -fx-background-color: transparent;"/>
                         </ScrollPane>
