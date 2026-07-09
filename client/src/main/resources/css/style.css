@@ -1,14 +1,14 @@
 /* ============================================================
    Gomatch — Frosted Glass Light Theme
-   背景：淡蓝白渐变  卡片：磨砂玻璃半透明  按钮：渐变+光晕
+   背景：中性雾白  卡片：磨砂玻璃半透明  按钮：渐变+光晕
    ============================================================ */
 
 /* ---------- 全局根节点 ---------- */
 .root {
     -fx-font-family: "Maple Mono NF CN", "Maple-Mono-NF-CN", "Maple Mono", "Maple Mono SC", "Maple Mono NF", "Maple Mono SC NF", "Segoe UI", "Microsoft YaHei", sans-serif;
     -fx-font-size: 14px;
-    /* 细腻的蓝白渐变背景，比纯白更有层次 */
-    -fx-background-color: linear-gradient(to bottom right, #eef2ff, #e8edf8);
+    /* 中性雾白背景，避免浅色主题泛蓝 */
+    -fx-background-color: linear-gradient(to bottom right, #f8fafc, #eef0f3);
 }
 
 /* ---------- 页面根节点 ---------- */
@@ -51,7 +51,7 @@
 
 /* ---------- 磨砂玻璃卡片（核心设计语言）---------- */
 .card {
-    -fx-background-color: rgba(255, 255, 255, 0.32); /* 超清透液态玻璃 */
+    -fx-background-color: rgba(255, 255, 255, 0.18); /* 超清透液态玻璃 */
     -fx-background-radius: 16;
     /* 使用四色渐变折射边框来模拟液态玻璃折射 (左/上白色高光，右/下带极轻微的蓝粉色偏色) */
     -fx-border-color: rgba(255, 255, 255, 0.80) rgba(236, 72, 153, 0.20) rgba(59, 130, 246, 0.25) rgba(255, 255, 255, 0.80);
@@ -61,7 +61,7 @@
 }
 
 .card-padded {
-    -fx-background-color: rgba(255, 255, 255, 0.32); /* 超清透液态玻璃 */
+    -fx-background-color: rgba(255, 255, 255, 0.18); /* 超清透液态玻璃 */
     -fx-background-radius: 16;
     -fx-border-color: rgba(255, 255, 255, 0.80) rgba(236, 72, 153, 0.20) rgba(59, 130, 246, 0.25) rgba(255, 255, 255, 0.80);
     -fx-border-radius: 16;
@@ -70,13 +70,17 @@
     -fx-padding: 28 32;
 }
 
+
+.auth-pixel-card {
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.06), 12, 0, 0, 4);
+}
 /* 登录/注册页专用玻璃卡片 */
 .glass-card {
-    -fx-background-color: rgba(255, 255, 255, 0.28); /* 超轻量清透液态玻璃 */
-    -fx-background-radius: 12;
+    -fx-background-color: rgba(255, 255, 255, 0.15); /* 超轻量清透液态玻璃 */
+    -fx-background-radius: 8;
     -fx-border-color: rgba(255, 255, 255, 0.85) rgba(236, 72, 153, 0.25) rgba(59, 130, 246, 0.30) rgba(255, 255, 255, 0.85);
-    -fx-border-radius: 12;
-    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-border-width: 1.2;
     -fx-effect: none;
     -fx-padding: 40;
 }
@@ -477,11 +481,11 @@
 
 /* ---------- 顶部信息栏 ---------- */
 .top-bar {
-    -fx-background-color: rgba(255, 255, 255, 0.72);
+    -fx-background-color: transparent;
     -fx-background-radius: 0;
     -fx-border-color: transparent;
     -fx-border-width: 0;
-    -fx-effect: dropshadow(gaussian, rgba(100, 116, 139, 0.08), 8, 0, 0, 2);
+    -fx-effect: none;
     -fx-padding: 0 0 12 0;
 }
 .top-btn {
@@ -649,10 +653,10 @@
     -fx-effect: none; /* 去除卡片投影，保持白色极简 */
 }
 .pixel-card-body {
-    -fx-background-color: rgba(255, 255, 255, 0.32); /* 超清透液态玻璃 */
+    -fx-background-color: rgba(255, 255, 255, 0.18); /* 超清透液态玻璃 */
     -fx-background-radius: 8;
     -fx-border-radius: 8;
-    -fx-border-color: rgba(255, 255, 255, 0.80) rgba(236, 72, 153, 0.20) rgba(59, 130, 246, 0.25) rgba(255, 255, 255, 0.80);
+    -fx-border-color: rgba(255, 255, 255, 0.85) rgba(236, 72, 153, 0.25) rgba(59, 130, 246, 0.30) rgba(255, 255, 255, 0.85);
     -fx-border-width: 1.2;
     -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 20, 0, 0, 6);
 }
@@ -815,7 +819,7 @@
 
 /* ---------- 自定义顶部标题栏（无边框窗口）---------- */
 .custom-title-bar {
-    -fx-background-color: rgba(255, 255, 255, 0.45);
+    -fx-background-color: transparent;
     -fx-padding: 0 16;
     -fx-alignment: CENTER_LEFT;
     -fx-pref-height: 38;
@@ -920,9 +924,18 @@
     -fx-text-fill: #1e293b;
 }
 .sidebar-menu-btn.active {
-    -fx-background-color: rgba(71, 85, 105, 0.10); /* 选中微透背景 */
+    -fx-background-color: rgba(100, 116, 139, 0.60); /* 选中背景与 nav-btn-active 统一 */
     -fx-text-fill: #1e293b;
     -fx-border-color: transparent transparent transparent #475569; /* 激活时左侧显示板岩灰竖条 */
+}
+
+
+.profile-header-card {
+    -fx-background-color: rgba(255, 255, 255, 0.45);
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-border-color: rgba(148, 163, 184, 0.18);
+    -fx-border-width: 1px;
 }
 
 /* ============================================================
@@ -1263,3 +1276,175 @@
     -fx-border-color: transparent transparent #475569 transparent;
 }
 
+/* ============================================================
+   Night Frosted Theme Override
+   暗夜黑磨砂主题覆盖层：仅在 Scene 根节点带 theme-dark 时生效。
+   ============================================================ */
+.root.theme-dark {
+    -fx-background-color: linear-gradient(to bottom right, #010208, #040713 46%, #080c16);
+}
+.theme-dark .title { -fx-text-fill: #f8fafc; }
+.theme-dark .subtitle, .theme-dark .muted { -fx-text-fill: #a7b0c2; }
+.theme-dark .section-label, .theme-dark .timer-label, .theme-dark .turn-indicator { -fx-text-fill: #e2e8f0; }
+.theme-dark .error-text { -fx-text-fill: #fca5a5; }
+.theme-dark .card, .theme-dark .card-padded, .theme-dark .glass-card, .theme-dark .table-card, .theme-dark .list-card,
+.theme-dark .chat-area, .theme-dark .feature-card, .theme-dark .side-drawer, .theme-dark .dialog-pane {
+    -fx-background-color: rgba(6, 9, 17, 0.42);
+    -fx-border-color: rgba(226, 232, 240, 0.12);
+    -fx-effect: dropshadow(gaussian, rgba(248, 250, 252, 0.10), 24, 0, 0, 9);
+}
+
+.theme-dark .glass-card {
+    -fx-background-color: rgba(5, 8, 15, 0.60);
+    -fx-border-color: rgba(248, 250, 252, 0.10) rgba(100, 116, 139, 0.08) rgba(0, 0, 0, 0.85) rgba(100, 116, 139, 0.08);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 20, 0, 0, 6);
+}
+.theme-dark .auth-pixel-card .pixel-card-body {
+    -fx-background-color: rgba(5, 8, 15, 0.55);
+    -fx-border-color: rgba(248, 250, 252, 0.10) rgba(100, 116, 139, 0.08) rgba(0, 0, 0, 0.85) rgba(100, 116, 139, 0.08);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.20), 16, 0, 0, 5);
+}
+.theme-dark .glass-card .input-field-group, .theme-dark .field, .theme-dark .combo-box {
+    -fx-background-color: rgba(7, 10, 18, 0.74);
+    -fx-border-color: transparent transparent rgba(203, 213, 225, 0.24) transparent;
+    -fx-text-fill: #f8fafc;
+    -fx-prompt-text-fill: #7f8da3;
+}
+.theme-dark .glass-card .input-field-group:hover, .theme-dark .field:hover, .theme-dark .combo-box:hover {
+    -fx-background-color: rgba(51, 65, 85, 0.72);
+    -fx-border-color: transparent transparent rgba(226, 232, 240, 0.44) transparent;
+}
+.theme-dark .glass-card .input-field-group:focused-within, .theme-dark .field:focused, .theme-dark .combo-box:focused, .theme-dark .combo-box:showing {
+    -fx-background-color: rgba(3, 5, 10, 0.96);
+    -fx-border-color: transparent transparent #e2e8f0 transparent;
+    -fx-effect: dropshadow(gaussian, rgba(148, 163, 184, 0.18), 8, 0, 0, 2);
+}
+.theme-dark .glass-card .glass-input, .theme-dark .glass-card .glass-input:focused, .theme-dark .glass-card .glass-input .text, .theme-dark .glass-input {
+    -fx-background-color: transparent;
+    -fx-text-fill: #f8fafc;
+    -fx-prompt-text-fill: #7f8da3;
+}
+.theme-dark .combo-box .list-cell { -fx-background-color: transparent; -fx-text-fill: #f8fafc; }
+.theme-dark .combo-box .arrow { -fx-background-color: #cbd5e1; }
+.theme-dark .combo-box .arrow-button,
+.theme-dark .combo-box-base:editable > .arrow-button {
+    -fx-background-color: transparent;
+}
+.theme-dark .combo-box-base:editable > .text-field,
+.theme-dark .combo-box .text-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: #f8fafc;
+    -fx-prompt-text-fill: #7f8da3;
+    -fx-highlight-fill: rgba(71, 85, 105, 0.80);
+    -fx-highlight-text-fill: #f8fafc;
+}
+.theme-dark .combo-box-popup .list-view { -fx-background-color: rgba(10, 15, 28, 0.98); -fx-border-color: rgba(248, 250, 252, 0.16); }
+.theme-dark .combo-box-popup .list-view .list-cell { -fx-text-fill: #dbe4f0; }
+.theme-dark .combo-box-popup .list-view .list-cell:hover, .theme-dark .combo-box-popup .list-view .list-cell:selected {
+    -fx-background-color: rgba(71, 85, 105, 0.72);
+    -fx-text-fill: #f8fafc;
+}
+.theme-dark .btn-primary, .theme-dark .btn-secondary, .theme-dark .icon-btn, .theme-dark .mode-btn-primary, .theme-dark .dialog-pane .button {
+    -fx-background-color: rgba(30, 41, 59, 0.62);
+    -fx-text-fill: #e2e8f0;
+    -fx-border-color: transparent transparent rgba(203, 213, 225, 0.26) transparent;
+    -fx-effect: none;
+}
+.theme-dark .btn-primary:hover, .theme-dark .btn-secondary:hover, .theme-dark .icon-btn:hover, .theme-dark .top-btn:hover,
+.theme-dark .nav-btn:hover, .theme-dark .drawer-toggle:hover, .theme-dark .sidebar-menu-btn:hover, .theme-dark .dialog-pane .button:hover {
+    -fx-background-color: rgba(71, 85, 105, 0.72);
+    -fx-border-color: transparent transparent rgba(226, 232, 240, 0.52) transparent;
+    -fx-text-fill: #f8fafc;
+}
+.theme-dark .btn-primary:armed, .theme-dark .btn-secondary:armed, .theme-dark .icon-btn:pressed, .theme-dark .mode-btn-primary:armed, .theme-dark .dialog-pane .button:pressed {
+    -fx-background-color: rgba(226, 232, 240, 0.18);
+    -fx-border-color: transparent transparent #f8fafc transparent;
+}
+.theme-dark .btn-secondary:disabled { -fx-background-color: rgba(30, 41, 59, 0.35); -fx-text-fill: #64748b; }
+.theme-dark .btn-link { -fx-background-color: transparent; -fx-text-fill: #cbd5e1; }
+.theme-dark .btn-link:hover { -fx-text-fill: #f8fafc; }
+.theme-dark .btn-danger { -fx-background-color: rgba(127, 29, 29, 0.72); -fx-text-fill: #fee2e2; -fx-border-color: transparent transparent rgba(252, 165, 165, 0.58) transparent; -fx-effect: none; }
+.theme-dark .btn-danger:hover { -fx-background-color: rgba(153, 27, 27, 0.86); }
+.theme-dark .btn-success { -fx-background-color: rgba(20, 83, 45, 0.72); -fx-text-fill: #dcfce7; -fx-border-color: transparent transparent rgba(134, 239, 172, 0.54) transparent; -fx-effect: none; }
+.theme-dark .custom-title-bar, .theme-dark .top-bar {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-effect: none;
+}
+.theme-dark .title-bar-btn { -fx-background-color: transparent; -fx-text-fill: #cbd5e1; }
+.theme-dark .title-bar-btn:hover { -fx-background-color: rgba(71, 85, 105, 0.72); -fx-text-fill: #f8fafc; }
+.theme-dark .title-bar-close:hover { -fx-background-color: #991b1b; -fx-text-fill: #fee2e2; }
+.theme-dark .top-btn, .theme-dark .drawer-toggle, .theme-dark .nav-btn, .theme-dark .sidebar-menu-btn { -fx-text-fill: #cbd5e1; }
+.theme-dark .nav-btn:pressed { -fx-background-color: rgba(100, 116, 139, 0.80); -fx-text-fill: #f8fafc; }
+.theme-dark .nav-btn-active, .theme-dark .sidebar-menu-btn.active { -fx-background-color: rgba(71, 85, 105, 0.72); -fx-text-fill: #f8fafc; }
+.theme-dark .sidebar-menu-btn.active { -fx-border-color: transparent transparent transparent #e2e8f0; }
+.theme-dark .brand-logo { -fx-text-fill: #f8fafc; -fx-effect: dropshadow(gaussian, rgba(148, 163, 184, 0.28), 16, 0, 0, 3); }
+.theme-dark .brand-sub, .theme-dark .feature-card-desc, .theme-dark .mode-sub-inline, .theme-dark .arena-sub, .theme-dark .arena-desc { -fx-text-fill: #94a3b8; }
+.theme-dark .feature-card-title, .theme-dark .arena-title, .theme-dark .player-name { -fx-text-fill: #f8fafc; }
+.theme-dark .feature-card:hover, .theme-dark .list-item-card:hover, .theme-dark .drawer-rank-row:hover, .theme-dark .player-chip:hover { -fx-background-color: rgba(51, 65, 85, 0.74); }
+.theme-dark .feature-card:pressed { -fx-background-color: rgba(100, 116, 139, 0.82); -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 6, 0, 0, 2); }
+.theme-dark .mode-casual, .theme-dark .mode-ranked, .theme-dark .pixel-card-body {
+    -fx-background-color: rgba(5, 8, 15, 0.44);
+    -fx-text-fill: #f8fafc;
+    -fx-border-color: rgba(248, 250, 252, 0.18) rgba(148, 163, 184, 0.12) rgba(0, 0, 0, 0.85) rgba(248, 250, 252, 0.12);
+    -fx-effect: dropshadow(gaussian, rgba(248, 250, 252, 0.08), 20, 0, 0, 7);
+}
+.theme-dark .mode-casual:hover, .theme-dark .mode-ranked:hover { -fx-background-color: rgba(30, 41, 59, 0.88); -fx-border-color: rgba(226, 232, 240, 0.36); }
+.theme-dark .mode-casual:pressed { -fx-background-color: rgba(30, 41, 59, 0.95); -fx-text-fill: #f8fafc; -fx-border-color: transparent; -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 6, 0, 0, 2); }
+.theme-dark .mode-ranked:pressed { -fx-background-color: linear-gradient(to bottom right, #0f172a, #020617); -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 6, 0, 0, 2); }
+.theme-dark .arena-casual .arena-icon, .theme-dark .arena-ranked .arena-icon { -fx-text-fill: #cbd5e1; }
+.theme-dark .arena-casual .arena-title, .theme-dark .arena-ranked .arena-title { -fx-text-fill: #f8fafc; }
+.theme-dark .arena-casual .arena-sub, .theme-dark .arena-ranked .arena-sub, .theme-dark .arena-casual .arena-desc, .theme-dark .arena-ranked .arena-desc { -fx-text-fill: #94a3b8; }
+.theme-dark .arena-casual:pressed .pixel-card-body, .theme-dark .arena-ranked:pressed .pixel-card-body { -fx-background-color: rgba(226, 232, 240, 0.18); -fx-border-color: transparent transparent #f8fafc transparent; -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.22), 12, 0, 0, 3); }
+.theme-dark .arena-match:hover .pixel-card-body { -fx-background-color: rgba(30, 58, 138, 0.42); -fx-border-color: transparent transparent rgba(147, 197, 253, 0.48) transparent; -fx-effect: dropshadow(gaussian, rgba(248, 250, 252, 0.10), 24, 0, 0, 8); }
+.theme-dark .arena-ai:hover .pixel-card-body { -fx-background-color: rgba(113, 63, 18, 0.42); -fx-border-color: transparent transparent rgba(253, 230, 138, 0.48) transparent; -fx-effect: dropshadow(gaussian, rgba(248, 250, 252, 0.10), 24, 0, 0, 8); }
+.theme-dark .arena-ranked:hover .pixel-card-body { -fx-background-color: rgba(136, 19, 55, 0.42); -fx-border-color: transparent transparent rgba(251, 207, 232, 0.48) transparent; -fx-effect: dropshadow(gaussian, rgba(248, 250, 252, 0.10), 24, 0, 0, 8); }
+.theme-dark .avatar, .theme-dark .avatar-badge { -fx-background-color: linear-gradient(to bottom right, #1f2937, #030712); -fx-background-radius: 999; -fx-border-radius: 999; -fx-border-color: rgba(248, 250, 252, 0.22); -fx-text-fill: #f8fafc; }
+.theme-dark .avatar-badge .label, .theme-dark .avatar .label { -fx-background-color: transparent; }
+.theme-dark .avatar-badge-text, .theme-dark .result-badge-text, .theme-dark .rank-number-text { -fx-text-fill: #f8fafc; }
+.theme-dark .player-score { -fx-text-fill: #cbd5e1; }
+.theme-dark .player-info-card-inner { -fx-background-color: rgba(5, 8, 15, 0.48); -fx-border-color: rgba(248, 250, 252, 0.10); }
+.theme-dark .player-info-card-active { -fx-background-color: rgba(71, 85, 105, 0.74); -fx-border-color: rgba(226, 232, 240, 0.42); }
+.theme-dark .table-view, .theme-dark .list-view, .theme-dark .scroll-pane, .theme-dark .scroll-pane .viewport { -fx-background-color: transparent; -fx-border-color: transparent; }
+.theme-dark .table-view .column-header-background { -fx-background-color: rgba(15, 23, 42, 0.82); }
+.theme-dark .table-view .column-header, .theme-dark .table-view .column-header .label { -fx-text-fill: #cbd5e1; }
+.theme-dark .table-view .table-row-cell, .theme-dark .list-view .list-cell { -fx-background-color: transparent; -fx-text-fill: #dbe4f0; }
+.theme-dark .table-view .table-row-cell:hover, .theme-dark .list-view .list-cell:hover { -fx-background-color: rgba(51, 65, 85, 0.62); }
+.theme-dark .table-view .table-row-cell:selected, .theme-dark .table-view .table-row-cell:focused, .theme-dark .list-view .list-cell:selected { -fx-background-color: rgba(71, 85, 105, 0.76); }
+.theme-dark .table-view .table-cell { -fx-text-fill: #dbe4f0; }
+.theme-dark .table-view .table-row-cell:selected .table-cell, .theme-dark .table-view .table-row-cell:focused .table-cell,
+.theme-dark .list-view .list-cell:selected, .theme-dark .list-view .list-cell:selected .label { -fx-text-fill: #f8fafc; }
+.theme-dark .chat-area { -fx-text-fill: #e2e8f0; -fx-prompt-text-fill: #7f8da3; -fx-control-inner-background: rgba(15, 23, 42, 0.62); -fx-highlight-fill: rgba(71, 85, 105, 0.80); -fx-highlight-text-fill: #f8fafc; }
+.theme-dark .list-item-card { -fx-background-color: rgba(5, 8, 15, 0.42); -fx-border-color: rgba(248, 250, 252, 0.10); }
+.theme-dark .list-item-card-highlight { -fx-background-color: rgba(71, 85, 105, 0.78); -fx-border-color: transparent transparent #e2e8f0 transparent; }
+.theme-dark .separator *.line, .theme-dark .section-divider:horizontal *.line, .theme-dark .section-divider:vertical *.line { -fx-border-color: rgba(148, 163, 184, 0.24); }
+.theme-dark .divider-line { -fx-background-color: rgba(148, 163, 184, 0.24); }
+.theme-dark .check-box, .theme-dark .remember-checkbox { -fx-text-fill: #dbe4f0; }
+.theme-dark .check-box .box { -fx-background-color: rgba(15, 23, 42, 0.72); -fx-border-color: rgba(203, 213, 225, 0.30); }
+.theme-dark .check-box:hover .box { -fx-background-color: rgba(71, 85, 105, 0.54); -fx-border-color: rgba(226, 232, 240, 0.48); }
+.theme-dark .check-box:focused .box, .theme-dark .check-box:selected .box { -fx-background-color: rgba(226, 232, 240, 0.20); -fx-border-color: #e2e8f0; }
+.theme-dark .check-box:selected .mark { -fx-background-color: #f8fafc; }
+.theme-dark .status-dot-online, .theme-dark .result-badge-win { -fx-background-color: #15803d; }
+.theme-dark .status-dot-offline, .theme-dark .result-badge-draw { -fx-background-color: #64748b; }
+.theme-dark .result-badge-lose { -fx-background-color: #b91c1c; }
+.theme-dark .tag-badge-green { -fx-background-color: rgba(21, 128, 61, 0.20); -fx-text-fill: #bbf7d0; -fx-border-color: rgba(134, 239, 172, 0.42); }
+.theme-dark .tag-badge-grey, .theme-dark .rank-badge, .theme-dark .rank-number-badge { -fx-background-color: rgba(100, 116, 139, 0.22); -fx-text-fill: #e2e8f0; -fx-border-color: rgba(148, 163, 184, 0.42); }
+.theme-dark .tag-badge-blue { -fx-background-color: rgba(30, 64, 175, 0.22); -fx-text-fill: #bfdbfe; -fx-border-color: rgba(147, 197, 253, 0.42); }
+.theme-dark .scroll-bar .thumb { -fx-background-color: rgba(148, 163, 184, 0.34); }
+.theme-dark .scroll-bar .thumb:hover { -fx-background-color: rgba(203, 213, 225, 0.52); }
+.theme-dark .scroll-bar .thumb:pressed { -fx-background-color: rgba(226, 232, 240, 0.70); }
+.theme-dark .elastic-slider-icon, .theme-dark .elastic-slider-value { -fx-text-fill: #cbd5e1; }
+.theme-dark .elastic-slider-track { -fx-background-color: rgba(148, 163, 184, 0.26); }
+.theme-dark .elastic-slider-range { -fx-background-color: #cbd5e1; }
+.theme-dark .dialog-pane .header-panel, .theme-dark .dialog-pane .content { -fx-background-color: transparent; }
+.theme-dark .dialog-pane .header-panel .label { -fx-text-fill: #f8fafc; }
+.theme-dark .dialog-pane .content, .theme-dark .dialog-pane .content.label { -fx-text-fill: #dbe4f0; }
+.theme-dark .profile-header-card {
+    -fx-background-color: rgba(5, 8, 15, 0.48);
+    -fx-border-color: rgba(248, 250, 252, 0.12);
+}
+
+
+.theme-dark .auth-pixel-card {
+    -fx-effect: dropshadow(gaussian, rgba(248, 250, 252, 0.12), 24, 0, 0, 9);
+}

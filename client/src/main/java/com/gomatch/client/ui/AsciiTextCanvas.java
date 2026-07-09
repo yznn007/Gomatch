@@ -31,6 +31,7 @@ public class AsciiTextCanvas extends Canvas {
     // 3D 旋转角度物理角
     private double meshRotX = 0;
     private double meshRotY = 0;
+    private boolean lastDarkTheme = false;
 
     public AsciiTextCanvas() {
         // 初始化非零尺寸，防止 GPU RTTexture 分配失败
@@ -87,10 +88,16 @@ public class AsciiTextCanvas extends Canvas {
 
         Canvas tempCanvas = new Canvas(rawW, rawH);
         GraphicsContext gc = tempCanvas.getGraphicsContext2D();
-        gc.setFill(Color.BLACK);
-        gc.fillRect(0, 0, rawW, rawH);
-
-        gc.setFill(Color.WHITE);
+        boolean dark = ScreenManager.isDarkTheme();
+        if (dark) {
+            gc.setFill(Color.WHITE);
+            gc.fillRect(0, 0, rawW, rawH);
+            gc.setFill(Color.BLACK);
+        } else {
+            gc.setFill(Color.BLACK);
+            gc.fillRect(0, 0, rawW, rawH);
+            gc.setFill(Color.WHITE);
+        }
         gc.setFont(font);
         
         double textY = rawH / 2.0 + layoutH / 4.0;
@@ -150,6 +157,12 @@ public class AsciiTextCanvas extends Canvas {
         double w = getWidth();
         double h = getHeight();
         if (w <= 0 || h <= 0) return;
+
+        boolean dark = ScreenManager.isDarkTheme();
+        if (dark != lastDarkTheme) {
+            lastDarkTheme = dark;
+            initTextImage();
+        }
 
         GraphicsContext gc = getGraphicsContext2D();
         gc.clearRect(0, 0, w, h);
@@ -290,16 +303,28 @@ public class AsciiTextCanvas extends Canvas {
                     int bClr = (int) (b * 255);
 
                     // 文字主色调判定：门槛下放至 45（极暗临界），彻底拉满纯黑字身的所占比例
-                    if (rClr > 45 && gClr > 45 && bClr > 45) {
-                        // 文字核心：极简深黑色主色调
-                        gc.setFill(Color.web("#09090b"));
+                    if (dark) {
+                        // 暗色模式：白底黑字采样，核心用浅色，边缘用柔和浅色偏色
+                        if (rClr < 210 && gClr < 210 && bClr < 210) {
+                            gc.setFill(Color.web("#f8fafc"));
+                        } else {
+                            int lightR = Math.min(255, (int) ((255 - rClr) * 0.8 + 60));
+                            int lightG = Math.min(255, (int) ((255 - gClr) * 0.8 + 60));
+                            int lightB = Math.min(255, (int) ((255 - bClr) * 0.8 + 60));
+                            gc.setFill(Color.rgb(lightR, lightG, lightB, a));
+                        }
                     } else {
-                        // 边缘偏色：取消高亮拉满，对红色和蓝色色散通道实施大幅衰减，融入黑色色系
-                        // 这会使左侧红色边缘转为深红黑，右侧蓝色边缘转为深蓝黑，高冷内敛
-                        int darkR = (int) (rClr * 0.22);
-                        int darkG = (int) (gClr * 0.35); // 绿色/黄色稍微保留一点微弱的灰调
-                        int darkB = (int) (bClr * 0.20);
-                        gc.setFill(Color.rgb(darkR, darkG, darkB, a));
+                        if (rClr > 45 && gClr > 45 && bClr > 45) {
+                            // 文字核心：极简深黑色主色调
+                            gc.setFill(Color.web("#09090b"));
+                        } else {
+                            // 边缘偏色：取消高亮拉满，对红色和蓝色色散通道实施大幅衰减，融入黑色色系
+                            // 这会使左侧红色边缘转为深红黑，右侧蓝色边缘转为深蓝黑，高冷内敛
+                            int darkR = (int) (rClr * 0.22);
+                            int darkG = (int) (gClr * 0.35); // 绿色/黄色稍微保留一点微弱的灰调
+                            int darkB = (int) (bClr * 0.20);
+                            gc.setFill(Color.rgb(darkR, darkG, darkB, a));
+                        }
                     }
 
                     double dx = col * charW;
