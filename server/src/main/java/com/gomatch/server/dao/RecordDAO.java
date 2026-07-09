@@ -106,11 +106,13 @@ public class RecordDAO {
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
+                    long winnerId = rs.getLong("winner_id");
+                    String winnerIdStr = rs.wasNull() ? "0" : String.valueOf(winnerId);
                     result.add(new String[]{
                         String.valueOf(rs.getLong("record_id")),
                         String.valueOf(rs.getLong("player1_id")),
                         String.valueOf(rs.getLong("player2_id")),
-                        String.valueOf(rs.getLong("winner_id")),
+                        winnerIdStr,
                         rs.getString("result"),
                         String.valueOf(rs.getInt("move_count")),
                         String.valueOf(rs.getInt("duration")),

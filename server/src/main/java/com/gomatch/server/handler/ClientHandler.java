@@ -1248,19 +1248,17 @@ public class ClientHandler implements Runnable {
         }
 
         List<FriendDAO.FriendRequestInfo> requests = friendDAO.getPendingRequests(userId);
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\"cmd\":\"FRIEND_REQUEST_LIST\",\"data\":{\"requests\":[");
-        for (int i = 0; i < requests.size(); i++) {
-            if (i > 0) sb.append(",");
-            var r = requests.get(i);
-            sb.append("{\"requestId\":\"").append(r.getRequestId())
-              .append("\",\"fromUserId\":\"").append(r.getFromUserId())
-              .append("\",\"fromUsername\":\"").append(r.getFromUsername())
-              .append("\",\"fromScore\":\"").append(r.getFromScore())
-              .append("\",\"message\":\"").append(r.getMessage() != null ? r.getMessage() : "").append("\"}");
+        JSONArray arr = new JSONArray();
+        for (var r : requests) {
+            JSONObject obj = new JSONObject();
+            obj.put("requestId", r.getRequestId());
+            obj.put("fromUserId", r.getFromUserId());
+            obj.put("fromUsername", r.getFromUsername());
+            obj.put("fromScore", r.getFromScore());
+            obj.put("message", r.getMessage() != null ? r.getMessage() : "");
+            arr.put(obj);
         }
-        sb.append("]}}");
-        send(sb.toString());
+        send(Message.builder("FRIEND_REQUEST_LIST").set("requests", arr).build());
         log.info("发送好友请求列表给玩家 {}: {} 个请求", userId, requests.size());
     }
 
