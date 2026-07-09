@@ -1,6 +1,7 @@
 package com.gomatch.client.ui;
 
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.UserSettings;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -80,6 +81,7 @@ public class ScreenManager {
             ClientMain.getConnector().clearListeners();
 
             FXMLLoader loader = new FXMLLoader(ScreenManager.class.getResource(fxmlPath));
+            loader.setResources(I18N.getBundle());
             Parent root = loader.load();
             T controller = loader.getController();
 
@@ -167,6 +169,7 @@ public class ScreenManager {
     public static <T> T showDialog(String fxmlPath, java.util.function.Consumer<T> setupCallback) {
         try {
             FXMLLoader loader = new FXMLLoader(ScreenManager.class.getResource(fxmlPath));
+            loader.setResources(I18N.getBundle());
             Parent root = loader.load();
             T controller = loader.getController();
             if (setupCallback != null) {
@@ -374,13 +377,27 @@ public class ScreenManager {
         }
     }
 
-    /** 根据用户偏好设置全局字体 */
-    private static void applyUserFont(Scene scene) {
+    /** 根据用户偏好设置全局字体（不覆盖其他内联样式） */
+    public static void applyUserFont(Scene scene) {
         if (scene.getRoot() == null) return;
         String fontFamily = UserSettings.get().fontFamily;
-        if (fontFamily != null && fontFamily.contains("系统默认")) {
-            scene.getRoot().setStyle("-fx-font-family: \"Segoe UI\", \"Microsoft YaHei\", sans-serif;");
+        if (fontFamily != null) {
+            if (fontFamily.contains("系统默认") || fontFamily.contains("System")) {
+                scene.getRoot().setStyle(appendFontFamily(scene.getRoot().getStyle(), "\"Segoe UI\", \"Microsoft YaHei\", sans-serif"));
+            } else {
+                scene.getRoot().setStyle(appendFontFamily(scene.getRoot().getStyle(), "\"Maple Mono NF CN\", \"Maple-Mono-NF-CN\", \"Maple Mono\", sans-serif"));
+            }
         }
+    }
+
+    /** 在已有 style 字符串中追加或替换 -fx-font-family，保留其他属性 */
+    private static String appendFontFamily(String existingStyle, String fontFamilyValue) {
+        String newProp = "-fx-font-family: " + fontFamilyValue + ";";
+        if (existingStyle == null || existingStyle.isBlank()) return newProp;
+        if (existingStyle.contains("-fx-font-family:")) {
+            return existingStyle.replaceAll("-fx-font-family:\\s*[^;]+;", newProp);
+        }
+        return existingStyle + " " + newProp;
     }
 
     /** 获取当前场景的动态背景实例，供设置页实时切换 */

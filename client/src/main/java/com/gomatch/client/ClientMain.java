@@ -1,6 +1,7 @@
 package com.gomatch.client;
 
 import com.gomatch.client.network.ServerConnector;
+import com.gomatch.client.I18N;
 import com.gomatch.client.audio.BackgroundMusicManager;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.client.ui.ScreenManager;
@@ -22,6 +23,8 @@ public class ClientMain extends Application {
         javafx.scene.text.Font.loadFont(getClass().getResourceAsStream("/fonts/MapleMono-NF-CN-Bold.ttf"), 14);
 
         connector = new ServerConnector();
+        // 初始化国际化语言
+        I18N.init(UserSettings.get().language);
         // 全局断线监听器
         connector.addListener(new NetworkListener() {
             @Override
