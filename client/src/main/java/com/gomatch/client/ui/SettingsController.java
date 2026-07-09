@@ -1,11 +1,14 @@
 package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
-import com.gomatch.client.audio.BackgroundMusicManager;
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
+import com.gomatch.client.UserSettings;
+import com.gomatch.client.audio.BackgroundMusicManager;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.ClientConfig;
 import javafx.beans.binding.Bindings;
+import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -13,11 +16,25 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 public class SettingsController {
+    // 服务器配置
     @FXML private ComboBox<String> ipComboBox;
     @FXML private TextField portField;
     @FXML private Label statusLabel;
+
+    // 基础设置
+    @FXML private CheckBox autoStartCheckBox;
+    @FXML private CheckBox rememberPasswordCheckBox;
+
+    // 图像设置
+    @FXML private ComboBox<String> resolutionComboBox;
+    @FXML private CheckBox fullscreenCheckBox;
+    @FXML private CheckBox vsyncCheckBox;
+    @FXML private ComboBox<String> fpsComboBox;
+
+    // 声音设置（远程新增的 ElasticVolumeSlider 控件）
     @FXML private CheckBox globalMusicCheckBox;
     @FXML private ElasticVolumeSlider globalVolumeSlider;
     @FXML private CheckBox backgroundMusicCheckBox;
@@ -25,10 +42,23 @@ public class SettingsController {
     @FXML private CheckBox soundCheckBox;
     @FXML private ElasticVolumeSlider soundVolumeSlider;
     @FXML private ComboBox<String> lobbySongComboBox;
+
+    // 后台静音
+    @FXML private CheckBox muteOnBgCheckBox;
+
+    // UI 风格
+    @FXML private ComboBox<String> themeComboBox;
+    @FXML private CheckBox dynamicBgCheckBox;
+    @FXML private ComboBox<String> fontComboBox;
+
+    // 语言
+    @FXML private ComboBox<String> languageComboBox;
+
+    // 其他
     @FXML private Button exitBtn;
     @FXML private Button logoutBtn;
 
-    // 左侧导航菜单按钮与右侧面板绑定的 FXML 变量
+    // 左侧导航
     @FXML private Button menuBaseBtn;
     @FXML private Button menuGraphicsBtn;
     @FXML private Button menuAudioBtn;
@@ -37,6 +67,7 @@ public class SettingsController {
     @FXML private Button menuLanguageBtn;
     @FXML private Button menuOtherBtn;
 
+    // 面板
     @FXML private VBox basePane;
     @FXML private VBox graphicsPane;
     @FXML private VBox audioPane;
@@ -48,9 +79,77 @@ public class SettingsController {
     private User currentUser;
     private boolean previewMode;
 
+    // 后台静音：记住音乐启用状态，用于恢复
+    private boolean wasGlobalMusicEnabled;
+    private boolean wasBgMusicEnabled;
+
+    /** 分辨率字符串 → 宽高映射（使用 i18n key 解析实际尺寸） */
+    private int[] parseResolution(String displayText) {
+        // 从显示文本中提取数字部分，如 "900x640 (默认)" → 900,640
+        try {
+            String nums = displayText.replaceAll("[^0-9x].*", "").trim();
+            String[] parts = nums.split("x");
+            if (parts.length >= 2) {
+                return new int[]{Integer.parseInt(parts[0].trim()), Integer.parseInt(parts[1].trim())};
+            }
+        } catch (Exception ignored) {}
+        return new int[]{900, 640};
+    }
+
+    private String resolutionToDisplay(int w, int h) {
+        if (w == 1024 && h == 768) return I18N.get("settings.resolution.2");
+        if (w == 1280 && h == 720) return I18N.get("settings.resolution.3");
+        return I18N.get("settings.resolution.1");
+    }
+
+    /** 填充所有 ComboBox 的可选项（i18n） */
+    private void populateComboBoxItems() {
+        // 分辨率
+        resolutionComboBox.getItems().setAll(
+                I18N.get("settings.resolution.1"),
+                I18N.get("settings.resolution.2"),
+                I18N.get("settings.resolution.3"));
+
+        // 帧率
+        fpsComboBox.getItems().setAll(
+                I18N.get("settings.fps.60"),
+                I18N.get("settings.fps.120"),
+                I18N.get("settings.fps.unlimited"));
+
+        // 主题
+        themeComboBox.getItems().setAll(
+                I18N.get("settings.theme.default"),
+                I18N.get("settings.theme.dark"));
+
+        // 字体
+        fontComboBox.getItems().setAll(
+                I18N.get("settings.font.maple"),
+                I18N.get("settings.font.system"));
+
+        // 大厅歌曲
+        lobbySongComboBox.getItems().setAll(
+                I18N.get("settings.song.default"),
+                I18N.get("settings.song.morning"),
+                I18N.get("settings.song.night"),
+                I18N.get("settings.song.arena"));
+
+        // 语言
+        languageComboBox.getItems().setAll(
+                I18N.get("settings.language.zh"),
+                I18N.get("settings.language.en"));
+
+        // IP
+        ipComboBox.getItems().setAll("127.0.0.1");
+    }
+
     @FXML
     private void initialize() {
-        // 绑定IP和端口默认值
+        UserSettings s = UserSettings.get();
+
+        // 先填充所有 ComboBox 可选项（i18n）
+        populateComboBoxItems();
+
+        // 服务器配置
         String currentHost = AppConfig.SERVER_HOST;
         if (currentHost == null || currentHost.trim().isEmpty()) {
             currentHost = "127.0.0.1";
@@ -59,32 +158,82 @@ public class SettingsController {
         portField.setText(String.valueOf(AppConfig.SERVER_PORT));
 
         if (ClientMain.getConnector().isConnected()) {
-            statusLabel.setText("已连接");
+            statusLabel.setText(I18N.get("settings.connected"));
             statusLabel.setStyle("-fx-text-fill: green;");
         } else {
-            statusLabel.setText("未连接 (网络离线)");
+            statusLabel.setText(I18N.get("settings.disconnected"));
             statusLabel.setStyle("-fx-text-fill: #dc2626;");
         }
+
+        // 绑定远程新增的音频控件到 BackgroundMusicManager
         bindAudioControl(globalMusicCheckBox, globalVolumeSlider);
         bindAudioControl(backgroundMusicCheckBox, backgroundVolumeSlider);
         bindAudioControl(soundCheckBox, soundVolumeSlider);
         bindBackgroundMusicSettings();
 
+        // 基础设置
+        autoStartCheckBox.setSelected(s.autoStart);
+        rememberPasswordCheckBox.setSelected(s.rememberPassword);
+
+        // 图像设置
+        Stage stage = ScreenManager.getStage();
+        if (stage != null) {
+            resolutionComboBox.setValue(resolutionToDisplay((int) stage.getWidth(), (int) stage.getHeight()));
+            fullscreenCheckBox.setSelected(stage.isFullScreen());
+        } else {
+            resolutionComboBox.setValue(I18N.get("settings.resolution.1"));
+            fullscreenCheckBox.setSelected(s.fullscreen);
+        }
+        vsyncCheckBox.setSelected(s.vsync);
+        fpsComboBox.setValue(s.fpsLimit.equals("0") ? I18N.get("settings.fps.unlimited") : s.fpsLimit + " FPS");
+
+        // 后台静音
+        muteOnBgCheckBox.setSelected(s.muteOnBackground);
+        setupMuteOnBackground();
+
+        // UI 风格
+        // 根据保存的 fontFamily key 设置当前显示值
+        if (s.fontFamily != null && s.fontFamily.contains("系统")) {
+            fontComboBox.setValue(I18N.get("settings.font.system"));
+        } else {
+            fontComboBox.setValue(I18N.get("settings.font.maple"));
+        }
+        // 根据保存的 theme key 设置当前显示值
+        if (s.theme != null && s.theme.contains("暗夜") || s.theme.contains("Dark")) {
+            themeComboBox.setValue(I18N.get("settings.theme.dark"));
+        } else {
+            themeComboBox.setValue(I18N.get("settings.theme.default"));
+        }
+        dynamicBgCheckBox.setSelected(s.dynamicBackground);
+
+        // 语言
+        if (s.language != null && s.language.contains("English")) {
+            languageComboBox.setValue(I18N.get("settings.language.en"));
+        } else {
+            languageComboBox.setValue(I18N.get("settings.language.zh"));
+        }
+
+        // 大厅歌曲
+        lobbySongComboBox.setValue(I18N.get("settings.song.default"));
+
         // 初始激活基础设置标签页
         showBaseTab();
     }
 
+    /** 绑定 ElasticVolumeSlider 与 CheckBox 联动（禁用/半透明） */
     private void bindAudioControl(CheckBox toggle, ElasticVolumeSlider slider) {
         slider.disableProperty().bind(toggle.selectedProperty().not());
         slider.opacityProperty().bind(Bindings.when(toggle.selectedProperty()).then(1.0).otherwise(0.48));
     }
 
+    /** 绑定 BackgroundMusicManager 音频系统，实时控制音乐播放 */
     private void bindBackgroundMusicSettings() {
         globalMusicCheckBox.setSelected(BackgroundMusicManager.globalMusicEnabledProperty().get());
         backgroundMusicCheckBox.setSelected(BackgroundMusicManager.backgroundMusicEnabledProperty().get());
         globalVolumeSlider.setValue(BackgroundMusicManager.globalVolumeProperty().get());
         backgroundVolumeSlider.setValue(BackgroundMusicManager.backgroundVolumeProperty().get());
 
+        // 双向绑定：UI ↔ BackgroundMusicManager
         globalMusicCheckBox.selectedProperty().addListener((obs, oldVal, newVal) ->
                 BackgroundMusicManager.globalMusicEnabledProperty().set(newVal));
         backgroundMusicCheckBox.selectedProperty().addListener((obs, oldVal, newVal) ->
@@ -93,6 +242,36 @@ public class SettingsController {
                 BackgroundMusicManager.globalVolumeProperty().set(newVal.doubleValue()));
         backgroundVolumeSlider.valueProperty().addListener((obs, oldVal, newVal) ->
                 BackgroundMusicManager.backgroundVolumeProperty().set(newVal.doubleValue()));
+
+        // 音量变更时保存偏好
+        ChangeListener<Number> volumeSaveListener = (obs, oldVal, newVal) -> {
+            UserSettings.get().volume = globalVolumeSlider.getValue();
+            UserSettings.save();
+        };
+        globalVolumeSlider.valueProperty().addListener(volumeSaveListener);
+        backgroundVolumeSlider.valueProperty().addListener(volumeSaveListener);
+    }
+
+    /** 后台静音：窗口失焦时暂停音乐，获焦时恢复 */
+    private void setupMuteOnBackground() {
+        Stage stage = ScreenManager.getStage();
+        if (stage == null) return;
+
+        stage.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (!muteOnBgCheckBox.isSelected()) return;
+
+            if (!isNowFocused) {
+                // 窗口失焦：记住当前音乐状态，然后暂停
+                wasGlobalMusicEnabled = globalMusicCheckBox.isSelected();
+                wasBgMusicEnabled = backgroundMusicCheckBox.isSelected();
+                globalMusicCheckBox.setSelected(false);
+                backgroundMusicCheckBox.setSelected(false);
+            } else {
+                // 窗口获焦：恢复之前的音乐状态
+                globalMusicCheckBox.setSelected(wasGlobalMusicEnabled);
+                backgroundMusicCheckBox.setSelected(wasBgMusicEnabled);
+            }
+        });
     }
 
     public void setCurrentUser(User user) {
@@ -102,27 +281,21 @@ public class SettingsController {
     public void setPreviewMode(boolean previewMode) {
         this.previewMode = previewMode;
         if (previewMode) {
-            statusLabel.setText("已连接 (浏览模式)");
+            statusLabel.setText(I18N.get("settings.connected") + " (" + (I18N.isEnglish() ? "Preview" : "浏览模式") + ")");
             statusLabel.setStyle("-fx-text-fill: green;");
         }
     }
 
-    // 标签页动态切换逻辑
+    // ========== 标签页切换 ==========
+
     private void switchTab(VBox activePane, Button activeBtn) {
-        basePane.setVisible(false);
-        basePane.setManaged(false);
-        graphicsPane.setVisible(false);
-        graphicsPane.setManaged(false);
-        audioPane.setVisible(false);
-        audioPane.setManaged(false);
-        stylePane.setVisible(false);
-        stylePane.setManaged(false);
-        serverPane.setVisible(false);
-        serverPane.setManaged(false);
-        languagePane.setVisible(false);
-        languagePane.setManaged(false);
-        otherPane.setVisible(false);
-        otherPane.setManaged(false);
+        basePane.setVisible(false);        basePane.setManaged(false);
+        graphicsPane.setVisible(false);    graphicsPane.setManaged(false);
+        audioPane.setVisible(false);       audioPane.setManaged(false);
+        stylePane.setVisible(false);       stylePane.setManaged(false);
+        serverPane.setVisible(false);      serverPane.setManaged(false);
+        languagePane.setVisible(false);    languagePane.setManaged(false);
+        otherPane.setVisible(false);       otherPane.setManaged(false);
 
         activePane.setVisible(true);
         activePane.setManaged(true);
@@ -138,65 +311,185 @@ public class SettingsController {
         activeBtn.getStyleClass().add("active");
     }
 
-    @FXML
-    private void showBaseTab() {
-        switchTab(basePane, menuBaseBtn);
-    }
+    @FXML private void showBaseTab()     { switchTab(basePane, menuBaseBtn); }
+    @FXML private void showGraphicsTab() { switchTab(graphicsPane, menuGraphicsBtn); }
+    @FXML private void showAudioTab()    { switchTab(audioPane, menuAudioBtn); }
+    @FXML private void showStyleTab()    { switchTab(stylePane, menuStyleBtn); }
+    @FXML private void showServerTab()   { switchTab(serverPane, menuServerBtn); }
+    @FXML private void showLanguageTab() { switchTab(languagePane, menuLanguageBtn); }
+    @FXML private void showOtherTab()    { switchTab(otherPane, menuOtherBtn); }
+
+    // ========== 基础设置 ==========
 
     @FXML
-    private void showGraphicsTab() {
-        switchTab(graphicsPane, menuGraphicsBtn);
-    }
+    private void handleAutoStart() {
+        boolean enabled = autoStartCheckBox.isSelected();
+        UserSettings.get().autoStart = enabled;
+        UserSettings.save();
 
-    @FXML
-    private void showAudioTab() {
-        switchTab(audioPane, menuAudioBtn);
-    }
+        String startupDir = System.getenv("APPDATA");
+        if (startupDir == null) return;
+        java.io.File startupFolder = new java.io.File(startupDir,
+                "Microsoft\\Windows\\Start Menu\\Programs\\Startup");
+        java.io.File scriptFile = new java.io.File(startupFolder, "Gomatch.vbs");
 
-    @FXML
-    private void showStyleTab() {
-        switchTab(stylePane, menuStyleBtn);
-    }
-
-    @FXML
-    private void showServerTab() {
-        switchTab(serverPane, menuServerBtn);
-    }
-
-    @FXML
-    private void showLanguageTab() {
-        switchTab(languagePane, menuLanguageBtn);
-    }
-
-    @FXML
-    private void showOtherTab() {
-        switchTab(otherPane, menuOtherBtn);
-    }
-
-    @FXML
-    private void handleLogout() {
-        ClientMain.getConnector().disconnect();
-        AppConfig.setCurrentUser(null);
-        ScreenManager.switchTo("/fxml/LoginUI.fxml");
-    }
-
-    @FXML
-    private void handleExitGame() {
-        // 使用项目自定义UI风格的二级确认对话框
-        ConfirmExitController ctrl = ScreenManager.showDialog("/fxml/ConfirmExitUI.fxml");
-        if (ctrl != null && ctrl.isConfirmed()) {
-            ClientMain.getConnector().disconnect();
-            javafx.application.Platform.exit();
-            System.exit(0);
+        try {
+            if (enabled) {
+                String scriptPath = new java.io.File(System.getProperty("user.dir"))
+                        .getAbsolutePath() + "\\scripts\\hln-client.ps1";
+                String content = "Set objShell = CreateObject(\"WScript.Shell\")\r\n"
+                        + "objShell.Run \"powershell -ExecutionPolicy Bypass -File \"\""
+                        + scriptPath.replace("\"", "\"\"\"")
+                        + "\"\"\", 0, False\r\n";
+                try (java.io.FileWriter fw = new java.io.FileWriter(scriptFile)) {
+                    fw.write(content);
+                }
+            } else {
+                if (scriptFile.exists()) {
+                    scriptFile.delete();
+                }
+            }
+        } catch (Exception e) {
+            showInfoAlert("设置开机自启失败：" + e.getMessage());
+            autoStartCheckBox.setSelected(!enabled);
         }
     }
 
     @FXML
-    private void handleBack() {
-        LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+    private void handleRememberPassword() {
+        UserSettings.get().rememberPassword = rememberPasswordCheckBox.isSelected();
+        UserSettings.save();
+    }
+
+    // ========== 图像设置 ==========
+
+    @FXML
+    private void handleResolution() {
+        String val = resolutionComboBox.getValue();
+        if (val == null) return;
+        int[] size = parseResolution(val);
+        if (size == null) return;
+
+        Stage stage = ScreenManager.getStage();
+        if (stage != null) {
+            stage.setFullScreen(false);
+            fullscreenCheckBox.setSelected(false);
+            stage.setWidth(size[0]);
+            stage.setHeight(size[1]);
+            stage.centerOnScreen();
+        }
+
+        UserSettings.get().resolution = size[0] + "x" + size[1];
+        UserSettings.save();
+    }
+
+    @FXML
+    private void handleFullscreen() {
+        boolean fullscreen = fullscreenCheckBox.isSelected();
+        Stage stage = ScreenManager.getStage();
+        if (stage != null) {
+            stage.setFullScreen(fullscreen);
+        }
+        UserSettings.get().fullscreen = fullscreen;
+        UserSettings.save();
+    }
+
+    @FXML
+    private void handleVSync() {
+        UserSettings.get().vsync = vsyncCheckBox.isSelected();
+        UserSettings.save();
+    }
+
+    @FXML
+    private void handleFpsLimit() {
+        String val = fpsComboBox.getValue();
+        if (val == null) return;
+        String unlimited = I18N.get("settings.fps.unlimited");
+        if (val.equals(unlimited)) {
+            UserSettings.get().fpsLimit = "0";
+        } else {
+            UserSettings.get().fpsLimit = val.replace(" FPS", "");
+        }
+        UserSettings.save();
+    }
+
+    // ========== 声音设置 ==========
+
+    @FXML
+    private void handleMuteOnBackground() {
+        boolean enabled = muteOnBgCheckBox.isSelected();
+        UserSettings.get().muteOnBackground = enabled;
+        UserSettings.save();
+
+        // 如果取消了后台静音，立即恢复音乐（如果之前因失焦被暂停）
+        if (!enabled) {
+            Stage stage = ScreenManager.getStage();
+            if (stage != null && !stage.isFocused()) {
+                // 窗口仍在后台但用户取消了静音，恢复之前状态
+                globalMusicCheckBox.setSelected(wasGlobalMusicEnabled);
+                backgroundMusicCheckBox.setSelected(wasBgMusicEnabled);
+            }
+        }
+    }
+
+    // ========== UI 风格 ==========
+
+    @FXML
+    private void handleTheme() {
+        String val = themeComboBox.getValue();
+        if (val == null) return;
+        String darkKey = I18N.get("settings.theme.dark");
+        if (val.equals(darkKey)) {
+            String defaultKey = I18N.get("settings.theme.default");
+            showInfoAlert(I18N.isEnglish() ? "Dark theme is under development!" : "暗夜黑磨砂主题正在开发中，敬请期待！");
+            themeComboBox.setValue(defaultKey);
+            return;
+        }
+        UserSettings.get().theme = val;
+        UserSettings.save();
+    }
+
+    @FXML
+    private void handleDynamicBackground() {
+        boolean enabled = dynamicBgCheckBox.isSelected();
+        UserSettings.get().dynamicBackground = enabled;
+        UserSettings.save();
+
+        ShapeGridBackground bg = ScreenManager.getCurrentBackground();
+        if (bg != null) {
+            bg.setEnabled(enabled);
+        }
+    }
+
+    @FXML
+    private void handleFontFamily() {
+        String val = fontComboBox.getValue();
+        if (val == null) return;
+        UserSettings.get().fontFamily = val;
+        UserSettings.save();
+
+        Stage stage = ScreenManager.getStage();
+        if (stage != null && stage.getScene() != null) {
+            ScreenManager.applyUserFont(stage.getScene());
+        }
+    }
+
+    // ========== 语言 ==========
+
+    @FXML
+    private void handleLanguage() {
+        String val = languageComboBox.getValue();
+        if (val == null) return;
+        UserSettings.get().language = val;
+        UserSettings.save();
+        // 切换语言并重载当前场景
+        I18N.init(val);
+        SettingsController ctrl = ScreenManager.switchTo("/fxml/SettingsUI.fxml");
         ctrl.setCurrentUser(currentUser);
         ctrl.setPreviewMode(previewMode);
     }
+
+    // ========== 服务器配置 ==========
 
     @FXML
     private void handleSaveConfig() {
@@ -220,16 +513,13 @@ public class SettingsController {
             return;
         }
 
-        // 1. 保存到内存 AppConfig 与本地配置文件
         AppConfig.SERVER_HOST = host;
         AppConfig.SERVER_PORT = port;
         ClientConfig.saveConfig(host, port);
 
-        // 2. 显示连接中，禁用按钮防止重复点击
         statusLabel.setText("连接中...");
         statusLabel.setStyle("-fx-text-fill: #64748b;");
 
-        // 3. 在后台线程执行阻塞的 disconnect + connect，避免卡死 UI
         final String finalHost = host;
         final int finalPort = port;
         Thread connectThread = new Thread(() -> {
@@ -249,5 +539,38 @@ public class SettingsController {
         });
         connectThread.setDaemon(true);
         connectThread.start();
+    }
+
+    // ========== 其他 ==========
+
+    @FXML
+    private void handleLogout() {
+        ClientMain.getConnector().disconnect();
+        AppConfig.setCurrentUser(null);
+        ScreenManager.switchTo("/fxml/LoginUI.fxml");
+    }
+
+    @FXML
+    private void handleExitGame() {
+        ConfirmExitController ctrl = ScreenManager.showDialog("/fxml/ConfirmExitUI.fxml");
+        if (ctrl != null && ctrl.isConfirmed()) {
+            ClientMain.getConnector().disconnect();
+            javafx.application.Platform.exit();
+            System.exit(0);
+        }
+    }
+
+    @FXML
+    private void handleBack() {
+        LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        ctrl.setCurrentUser(currentUser);
+        ctrl.setPreviewMode(previewMode);
+    }
+
+    private void showInfoAlert(String msg) {
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.INFORMATION, msg);
+        alert.setHeaderText(null);
+        ScreenManager.showStyledAlert(alert);
     }
 }

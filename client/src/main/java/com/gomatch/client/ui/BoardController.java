@@ -2,6 +2,7 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
@@ -593,13 +594,14 @@ public class BoardController implements NetworkListener {
     }
 
     private void updateTurnLabel() {
-        if (blackName == null) blackName = "黑方";
-        if (whiteName == null) whiteName = "白方";
+        if (blackName == null) blackName = I18N.isEnglish() ? "Black" : "黑方";
+        if (whiteName == null) whiteName = I18N.isEnglish() ? "White" : "白方";
+        String turnSuffix = I18N.isEnglish() ? "'s Turn" : " 回合";
         if (currentTurn == 1) {
-            turnLabel.setText("⚫ " + blackName + " 回合");
+            turnLabel.setText("⚫ " + blackName + turnSuffix);
         } else {
-            turnLabel.setText("⚪ " + whiteName + " 回合");
-        }
+            turnLabel.setText("⚪ " + whiteName + turnSuffix);
+}
         updatePlayerCardHighlight();
     }
 

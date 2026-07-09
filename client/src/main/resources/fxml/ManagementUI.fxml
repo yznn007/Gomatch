@@ -9,9 +9,9 @@
     <top>
         <VBox spacing="10">
             <HBox alignment="CENTER_LEFT" spacing="12">
-                <Button text="« 返回" onAction="#handleBack" styleClass="icon-btn"/>
+                <Button text="%settings.back" onAction="#handleBack" styleClass="icon-btn"/>
                 <VBox spacing="2">
-                    <Label text="功能管理" styleClass="title"/>
+                    <Label text="%management.title" styleClass="title"/>
                     <Label fx:id="statusLabel" text="" styleClass="subtitle"/>
                 </VBox>
             </HBox>
@@ -21,65 +21,65 @@
 
     <left>
         <VBox spacing="10" prefWidth="210" minWidth="190" style="-fx-padding: 20 18 0 0;">
-            <Button fx:id="menuSavesBtn" text="存档管理" onAction="#showSavesTab" styleClass="sidebar-menu-btn" maxWidth="Infinity"/>
-            <Button fx:id="menuChatBtn" text="聊天历史" onAction="#showChatTab" styleClass="sidebar-menu-btn" maxWidth="Infinity"/>
-            <Button fx:id="menuWatchBtn" text="观战历史" onAction="#showWatchTab" styleClass="sidebar-menu-btn" maxWidth="Infinity"/>
-            <Button fx:id="menuAdminBtn" text="管理员" onAction="#showAdminTab" styleClass="sidebar-menu-btn" maxWidth="Infinity"/>
+            <Button fx:id="menuSavesBtn" text="%management.saves" onAction="#showSavesTab" styleClass="sidebar-menu-btn" maxWidth="Infinity"/>
+            <Button fx:id="menuChatBtn" text="%management.chatHistory" onAction="#showChatTab" styleClass="sidebar-menu-btn" maxWidth="Infinity"/>
+            <Button fx:id="menuWatchBtn" text="%management.watchHistory" onAction="#showWatchTab" styleClass="sidebar-menu-btn" maxWidth="Infinity"/>
+            <Button fx:id="menuAdminBtn" text="%management.admin" onAction="#showAdminTab" styleClass="sidebar-menu-btn" maxWidth="Infinity"/>
         </VBox>
     </left>
 
     <center>
         <StackPane style="-fx-padding: 20 0 0 0;">
             <VBox fx:id="savesPane" spacing="14" styleClass="card-padded">
-                <Label text="棋局存档" styleClass="section-label"/>
+                <Label text="%management.savesTitle" styleClass="section-label"/>
                 <HBox spacing="10">
-                    <TextField fx:id="saveNameField" promptText="当前对局存档名" styleClass="field" HBox.hgrow="ALWAYS"/>
-                    <Button text="保存当前对局" onAction="#handleSaveCurrentGame" styleClass="btn-primary"/>
-                    <Button text="刷新" onAction="#requestSaves" styleClass="btn-secondary"/>
+                    <TextField fx:id="saveNameField" promptText="%management.saveName" styleClass="field" HBox.hgrow="ALWAYS"/>
+                    <Button text="%management.saveCurrent" onAction="#handleSaveCurrentGame" styleClass="btn-primary"/>
+                    <Button text="%management.refresh" onAction="#requestSaves" styleClass="btn-secondary"/>
                 </HBox>
                 <ListView fx:id="savesList" VBox.vgrow="ALWAYS" minHeight="320"/>
                 <HBox spacing="10" alignment="CENTER_RIGHT">
-                    <Button text="加载" onAction="#handleLoadSave" styleClass="btn-secondary"/>
-                    <Button text="删除" onAction="#handleDeleteSave" styleClass="btn-danger"/>
+                    <Button text="%management.load" onAction="#handleLoadSave" styleClass="btn-secondary"/>
+                    <Button text="%management.delete" onAction="#handleDeleteSave" styleClass="btn-danger"/>
                 </HBox>
             </VBox>
 
             <VBox fx:id="chatPane" spacing="14" styleClass="card-padded" visible="false" managed="false">
-                <Label text="聊天历史" styleClass="section-label"/>
+                <Label text="%management.chatTitle" styleClass="section-label"/>
                 <HBox spacing="10">
-                    <TextField fx:id="chatRoomIdField" promptText="房间ID" styleClass="field" HBox.hgrow="ALWAYS"/>
-                    <Button text="查询" onAction="#requestChatHistory" styleClass="btn-primary"/>
+                    <TextField fx:id="chatRoomIdField" promptText="%management.roomId" styleClass="field" HBox.hgrow="ALWAYS"/>
+                    <Button text="%management.query" onAction="#requestChatHistory" styleClass="btn-primary"/>
                 </HBox>
                 <ListView fx:id="chatHistoryList" VBox.vgrow="ALWAYS" minHeight="380"/>
             </VBox>
 
             <VBox fx:id="watchPane" spacing="14" styleClass="card-padded" visible="false" managed="false">
-                <Label text="观战历史" styleClass="section-label"/>
+                <Label text="%management.watchTitle" styleClass="section-label"/>
                 <HBox spacing="10" alignment="CENTER_RIGHT">
-                    <Button text="刷新" onAction="#requestWatcherHistory" styleClass="btn-secondary"/>
+                    <Button text="%management.refresh" onAction="#requestWatcherHistory" styleClass="btn-secondary"/>
                 </HBox>
                 <ListView fx:id="watchHistoryList" VBox.vgrow="ALWAYS" minHeight="400"/>
             </VBox>
 
             <VBox fx:id="adminPane" spacing="14" styleClass="card-padded" visible="false" managed="false">
-                <Label text="管理员控制台" styleClass="section-label"/>
+                <Label text="%management.adminTitle" styleClass="section-label"/>
                 <Label fx:id="adminStatsLabel" text="" styleClass="subtitle"/>
                 <HBox spacing="10">
-                    <TextField fx:id="adminKeywordField" promptText="用户名关键字" styleClass="field" HBox.hgrow="ALWAYS"/>
-                    <Button text="用户列表" onAction="#requestUserList" styleClass="btn-primary"/>
-                    <Button text="统计" onAction="#requestAdminStats" styleClass="btn-secondary"/>
+                    <TextField fx:id="adminKeywordField" promptText="%management.usernameKeyword" styleClass="field" HBox.hgrow="ALWAYS"/>
+                    <Button text="%management.userList" onAction="#requestUserList" styleClass="btn-primary"/>
+                    <Button text="%management.stats" onAction="#requestAdminStats" styleClass="btn-secondary"/>
                 </HBox>
                 <ListView fx:id="adminUsersList" VBox.vgrow="ALWAYS" minHeight="240"/>
                 <HBox spacing="10">
-                    <TextField fx:id="adminUserIdField" promptText="用户ID" styleClass="field" HBox.hgrow="ALWAYS"/>
-                    <TextField fx:id="adminRoleField" promptText="角色 ADMIN / PLAYER" styleClass="field" HBox.hgrow="ALWAYS"/>
-                    <Button text="封禁" onAction="#handleBanUser" styleClass="btn-danger"/>
-                    <Button text="解封" onAction="#handleUnbanUser" styleClass="btn-secondary"/>
-                    <Button text="改角色" onAction="#handleUpdateRole" styleClass="btn-primary"/>
+                    <TextField fx:id="adminUserIdField" promptText="%management.userId" styleClass="field" HBox.hgrow="ALWAYS"/>
+                    <TextField fx:id="adminRoleField" promptText="%management.role" styleClass="field" HBox.hgrow="ALWAYS"/>
+                    <Button text="%management.ban" onAction="#handleBanUser" styleClass="btn-danger"/>
+                    <Button text="%management.unban" onAction="#handleUnbanUser" styleClass="btn-secondary"/>
+                    <Button text="%management.changeRole" onAction="#handleUpdateRole" styleClass="btn-primary"/>
                 </HBox>
                 <HBox spacing="10">
-                    <TextField fx:id="adminRoomIdField" promptText="房间ID" styleClass="field" HBox.hgrow="ALWAYS"/>
-                    <Button text="强制关闭房间" onAction="#handleForceCloseRoom" styleClass="btn-danger"/>
+                    <TextField fx:id="adminRoomIdField" promptText="%management.roomId" styleClass="field" HBox.hgrow="ALWAYS"/>
+                    <Button text="%management.forceClose" onAction="#handleForceCloseRoom" styleClass="btn-danger"/>
                 </HBox>
             </VBox>
         </StackPane>

@@ -11,8 +11,8 @@
     <top>
         <VBox spacing="0" cache="true" cacheHint="QUALITY" viewOrder="-2.0">
             <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 0 0 4 0;">
-                <Button text="« 返回" onMouseClicked="#handleBack" styleClass="icon-btn"/>
-                <Label text="AI 对战难度" styleClass="title"/>
+                <Button text="%settings.back" onMouseClicked="#handleBack" styleClass="icon-btn"/>
+                <Label text="%ai.title" styleClass="title"/>
             </HBox>
             <Separator styleClass="section-divider" prefWidth="Infinity" mouseTransparent="true"/>
         </VBox>
@@ -25,9 +25,9 @@
                            HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
                     <VBox alignment="CENTER" spacing="12">
                         <Label text="🌱" styleClass="arena-icon"/>
-                        <Label text="简  单" styleClass="arena-title"/>
+                        <Label text="%ai.easy" styleClass="arena-title"/>
                         <Label text="EASY" styleClass="arena-sub"/>
-                        <Label text="AI 会做出基础的防守和进攻&#10;适合新手入门练习" styleClass="arena-desc" wrapText="true" textAlignment="CENTER"/>
+                        <Label text="%ai.easy.desc" styleClass="arena-desc" wrapText="true" textAlignment="CENTER"/>
                     </VBox>
                 </PixelCard>
                 
@@ -36,9 +36,9 @@
                            HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
                     <VBox alignment="CENTER" spacing="12">
                         <Label text="⚡" styleClass="arena-icon"/>
-                        <Label text="中  等" styleClass="arena-title"/>
+                        <Label text="%ai.medium" styleClass="arena-title"/>
                         <Label text="MEDIUM" styleClass="arena-sub"/>
-                        <Label text="AI 会评估局势做出策略选择&#10;具备一定挑战性" styleClass="arena-desc" wrapText="true" textAlignment="CENTER"/>
+                        <Label text="%ai.medium.desc" styleClass="arena-desc" wrapText="true" textAlignment="CENTER"/>
                     </VBox>
                 </PixelCard>
                 
@@ -47,9 +47,9 @@
                            HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
                     <VBox alignment="CENTER" spacing="12">
                         <Label text="🔥" styleClass="arena-icon"/>
-                        <Label text="困  难" styleClass="arena-title"/>
+                        <Label text="%ai.hard" styleClass="arena-title"/>
                         <Label text="HARD" styleClass="arena-sub"/>
-                        <Label text="AI 采用启发式评分算法&#10;智商极高，难以战胜" styleClass="arena-desc" wrapText="true" textAlignment="CENTER"/>
+                        <Label text="%ai.hard.desc" styleClass="arena-desc" wrapText="true" textAlignment="CENTER"/>
                     </VBox>
                 </PixelCard>
             </HBox>

@@ -26,36 +26,36 @@
                        style="-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 12, 0, 0, 4);">
                 <VBox alignment="CENTER" spacing="22" styleClass="glass-card"
                       style="-fx-background-color: rgba(255,255,255,0.72); -fx-background-radius: 16; -fx-padding: 28 32;">
-                    <Label text="登录" styleClass="title" style="-fx-font-size: 26px; -fx-padding: 0 0 10 0;"/>
+                    <Label text="%login.title" styleClass="title" style="-fx-font-size: 26px; -fx-padding: 0 0 10 0;"/>
 
                     <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
-                        <TextField fx:id="usernameField" styleClass="glass-input" promptText="用户名 / 邮箱"/>
+                        <TextField fx:id="usernameField" styleClass="glass-input" promptText="%login.username"/>
                     </VBox>
 
                     <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
-                        <PasswordField fx:id="passwordField" styleClass="glass-input" promptText="密码"/>
+                        <PasswordField fx:id="passwordField" styleClass="glass-input" promptText="%login.password"/>
                     </VBox>
 
                     <Label fx:id="errorLabel" text="" styleClass="error-text" maxWidth="320"/>
 
                     <HBox spacing="10" alignment="CENTER_LEFT" maxWidth="320">
-                        <CheckBox fx:id="rememberCheckBox" text="记住密码" styleClass="remember-checkbox"/>
+                        <CheckBox fx:id="rememberCheckBox" text="%login.remember" styleClass="remember-checkbox"/>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <Button text="忘记密码？" styleClass="btn-link" style="-fx-font-size: 13px; -fx-padding: 0;"/>
+                        <Button text="%login.forgot" styleClass="btn-link" style="-fx-font-size: 13px; -fx-padding: 0;"/>
                     </HBox>
 
-                    <Button text="进 入 游 戏" onAction="#handleLogin" styleClass="btn-primary"
+                    <Button text="%login.enter" onAction="#handleLogin" styleClass="btn-primary"
                             maxWidth="320" style="-fx-font-size: 15px;"/>
 
                     <VBox alignment="CENTER" spacing="8" maxWidth="320">
                         <HBox alignment="CENTER" spacing="4">
-                            <Label text="还没有账号？" styleClass="subtitle" style="-fx-text-fill: #64748b;"/>
-                            <Button text="立即注册" onAction="#handleRegister" styleClass="btn-link" style="-fx-padding: 0; -fx-font-size: 13px;"/>
+                            <Label text="%login.noAccount" styleClass="subtitle" style="-fx-text-fill: #64748b;"/>
+                            <Button text="%login.register" onAction="#handleRegister" styleClass="btn-link" style="-fx-padding: 0; -fx-font-size: 13px;"/>
                         </HBox>
-                        <Button text="以游客身份进入 »" onAction="#handlePreview" styleClass="btn-link" style="-fx-padding: 4 0 0 0; -fx-font-size: 13px;"/>
+                        <Button text="%login.preview" onAction="#handlePreview" styleClass="btn-link" style="-fx-padding: 4 0 0 0; -fx-font-size: 13px;"/>
                     </VBox>
 
-                    <Button text="⚙ 服务器地址" onAction="#handleOpenServerConfig"
+                    <Button text="%login.server" onAction="#handleOpenServerConfig"
                             styleClass="btn-link" style="-fx-font-size: 12px; -fx-text-fill: #94a3b8; -fx-padding: 0;"/>
                 </VBox>
             </PixelCard>

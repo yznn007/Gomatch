@@ -2,6 +2,7 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.UserSettings;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
@@ -31,6 +32,8 @@ public class LoginController implements NetworkListener {
 
     @FXML
     private void initialize() {
+        // 读取用户偏好：记住密码默认勾选状态
+        rememberCheckBox.setSelected(UserSettings.get().rememberPassword);
         loadSavedCredentials();
     }
 

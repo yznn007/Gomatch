@@ -8,7 +8,7 @@
             styleClass="page-root">
     <top>
         <VBox spacing="0">
-            <Label text="对战记录" styleClass="title"/>
+            <Label text="%record.title" styleClass="title"/>
             <Separator styleClass="section-divider" prefWidth="Infinity" style="-fx-padding: 12 0 0 0;"/>
         </VBox>
     </top>
@@ -21,7 +21,7 @@
         <VBox spacing="0">
             <Separator styleClass="section-divider" prefWidth="Infinity"/>
             <HBox alignment="CENTER" style="-fx-padding: 14 0 0 0;">
-                <Button text="返回大厅" onAction="#handleBack" styleClass="btn-primary"/>
+                <Button text="%record.back" onAction="#handleBack" styleClass="btn-primary"/>
             </HBox>
         </VBox>
     </bottom>
