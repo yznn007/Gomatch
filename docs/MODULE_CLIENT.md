@@ -53,7 +53,7 @@ client/src/main/
 │       └── ShapeGridBackground.java    # 动态粒子点阵背景
 └── resources/
     ├── audio/
-    │   └── lobby-theme.flac            # 大厅/客户端背景音乐资源
+    │   └── lobby-theme.mp3             # 大厅/客户端背景音乐资源
     ├── client-config.json              # 客户端默认配置文件
     ├── css/style.css                   # 全局 CSS 样式表
     ├── fonts/
@@ -119,7 +119,7 @@ main() → Application.launch()
 
 **文件**：[BackgroundMusicManager.java](../client/src/main/java/com/gomatch/client/audio/BackgroundMusicManager.java)
 
-负责加载 `/audio/lobby-theme.flac` 并通过 JavaFX `MediaPlayer` 循环播放。全局音乐与背景音乐的开关、音量值暴露为 JavaFX Property，设置页可直接同步到实际播放状态。若当前运行环境不支持该音频格式，管理器会释放播放器并保持客户端正常启动。
+负责加载 `/audio/lobby-theme.mp3` 并通过 JavaFX `MediaPlayer` 循环播放。全局音乐与背景音乐的开关、音量值暴露为 JavaFX Property，设置页可直接同步到实际播放状态。若当前运行环境不支持该音频格式，管理器会释放播放器并保持客户端正常启动。
 
 ---
 
