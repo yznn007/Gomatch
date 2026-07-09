@@ -23,6 +23,7 @@ public class Protocol {
     public static final String QUICK_MATCH  = "QUICK_MATCH";
     public static final String RANKED_MATCH = "RANKED_MATCH";
     public static final String SPECTATE     = "SPECTATE";
+    public static final String LEAVE_SPECTATE = "LEAVE_SPECTATE";
     public static final String ADD_FRIEND   = "ADD_FRIEND";
     public static final String ACCEPT_FRIEND = "ACCEPT_FRIEND";
     public static final String REJECT_FRIEND = "REJECT_FRIEND";
