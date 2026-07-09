@@ -55,10 +55,10 @@ ClientMain (extends Application)
 ### UI 约定
 
 - FXML 命名空间 **不含版本号**：`xmlns="http://javafx.com/javafx"`（写 `/21` 会导致 FXML LoadException）
-- 白色极简风格：采用乳白色透明磨砂质感卡片（`.glass-card`、`.card` 等）与 `Separator` 分割区域，禁用深色卡片阴影或粗糙渐变
+- 双主题磨砂风格：清透白磨砂原色作为基础 CSS，暗夜黑磨砂只通过 Scene 根节点 `.theme-dark` 覆盖层生效；禁止新增未加 `.theme-dark` 作用域的暗色全局覆盖
 - 极简底划线控件：文本框与所有按钮元素（包含主次按钮、控制按钮、匹配卡片入口）高度统一样式，去除四面外边框与卡片阴影，仅留底部 1.5px 极简下划线描边
-- 按钮圆角与交互反馈：放弃之前的切角形状，统一使用 8px 圆角结构。鼠标悬停时背景填充板岩灰 Cover 遮罩（`rgba(148, 163, 184, 0.35)`），点击按下（armed）时切换为高亮聚焦实白（`rgba(255, 255, 255, 0.95)`）
-- 显式定义 hover/pressed/focused 伪类，全界面杜绝鲜活天蓝色，一律归一化为板岩灰和木炭黑等中性无色系，保证白色极简的高级感
+- 按钮圆角与交互反馈：统一使用 8px 圆角结构。鼠标悬停时使用板岩灰/冷灰 Cover 遮罩，点击按下（armed）时切换为轻量高光反馈；浅色与暗色分别在基础 CSS 和 `.theme-dark` 中定义
+- 显式定义 hover/pressed/focused 伪类，全界面杜绝鲜活天蓝色和高饱和霓虹色；动态生成控件的内联文字色必须使用 `ScreenManager.themeColor(light, dark)` 保证主题切换后可读
 
 ### FXML ↔ Controller 映射
 
@@ -116,5 +116,3 @@ mvn -f server/pom.xml exec:java ...
 - 若某命令依赖 JDK 21，**用文字注明前提**（如"需确保 JDK 21 已配置"），而非内嵌 `$env:JAVA_HOME=...` 设置
 - 推荐用户使用 `scripts/` 目录下的启动脚本，脚本内已内置跨平台的 JDK 自动检测逻辑
 - 若确实需要展示环境变量设置方式，用**占位符**而非具体路径，例如：`$env:JAVA_HOME = "<你的JDK21路径>"`
-
-

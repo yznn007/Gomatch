@@ -377,7 +377,7 @@ gomatch/                                # 项目根目录
 │   │   └── model/                      # 数据模型（User/RoomInfo 等）
 │   └── src/main/resources/
 │       ├── fxml/                       # FXML 布局文件
-│       └── css/style.css               # 全局 CSS（白色极简风）
+│       └── css/style.css               # 全局 CSS（清透白/暗夜黑双主题磨砂风）
 │   └── pom.xml                         # 客户端 Maven 配置
 ├── server/                             # 服务端模块（多线程 Socket 服务）
 │   ├── src/main/java/com/gomatch/server/
@@ -424,5 +424,4 @@ gomatch/                                # 项目根目录
 | v1.0 | 2026-07-04 | 初版 |
 | v1.1 | 2026-07-04 | 优化章节结构，补充 1.2 产品定位、2.2 部署架构、2.3 通信模型；统一密码存储方案为明文（实训演示） |
 | v1.2 | 2026-07-05 | 迁移核心 UI 从 Swing 到 JavaFX，确立“下划线底线 + Cover 遮罩”的白色极简设计语言，新增字体内置集成 |
-
-
+| v1.3 | 2026-07-09 | 客户端视觉基调升级为可切换双主题：清透白磨砂原色 + 暗夜黑磨砂覆盖层 |

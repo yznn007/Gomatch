@@ -151,6 +151,7 @@
 | 2026-07-08 | Contributor| 匹配大厅界面优化 |
 | 2026-07-08 | Contributor| BoardController 新增 handleRequestRematch/handleReplyRematch 方法及 rematchRequested 状态；对局结束弹窗 GameOverController 新增"再来一局"按钮；BoardController 监听 REMATCH_REQUESTED/REMATCH_ACCEPTED/REMATCH_REJECTED 消息，同意后自动重置棋盘开始新对局 |
 | 2026-07-08 | Contributor| BoardController.onMessage(GAME_START) 解析新增的 blackUsername/blackScore/whiteUsername/whiteScore 字段；新增带分数的 setGameInfo 重载，对手卡片显示真实用户名和积分而非 ID 和问号 |
+| 2026-07-09 | Contributor| 1. 将 .theme-dark .glass-card 背景不透明度从 0.48 提升至 0.60；新增 .theme-dark .auth-pixel-card .pixel-card-body 专属深色磨砂背景（0.55 不透明度）并改用深色投影；保留 .theme-dark .auth-pixel-card 外层白色高光投影。2. 将浅色/暗色模式下的 .custom-title-bar 和 .top-bar 背景统一为透明并去除投影。3. 统一侧栏菜单 active/导航按钮/标题栏按钮 hover/active 背景色。4. 补齐暗色模式下缺失的 pressed 状态。5. AsciiTextCanvas 支持暗色模式：根据 ScreenManager.isDarkTheme() 动态切换采样贴图（白底黑字）和输出色调，核心字符使用 #f8fafc，边缘使用柔和浅色偏色，使登录页 Gomatch 标题在暗色背景下清晰可见且风格统一。 | mvn -f client/pom.xml compile 通过 |
 
 ### 服务端（Server）
 
@@ -274,3 +275,9 @@
 | 2026-07-09 | Contributor| BoardUI.fxml 将回放按钮容器从 HBox（水平排列）改为 VBox（垂直排列），按钮 maxWidth="Infinity" 充分利用侧边栏宽度 | 编译通过 |
 | 2026-07-09 | Contributor| FriendsUI.fxml 将操作列宽度从 100px 增加到 140px，确保"接受"和"拒绝"按钮完整显示 | 编译通过 |
 | 2026-07-09 | Contributor| client-config.properties 中 server.host 从错误值改为 127.0.0.1 | 编译通过 |
+| 2026-07-09 | Contributor| 1. style.css 追加暗夜磨砂主题覆盖层，将全局背景、卡片、输入框、按钮、表格、列表、弹窗、滚动条和音量滑杆统一为近黑玻璃与冷灰描边；2. 清理多处 FXML 浅色内联背景，避免覆盖全局主题；3. 设置页暗夜主题选项从"开发中"改为可用并持久化；4. 同步 CLIENT_STYLE_GUIDE.md、requirements.md 与 AGENTS.md 的 UI 约定。 | mvn -f client/pom.xml compile -e 通过 |
+| 2026-07-09 | Contributor| 1. ScreenManager 新增 theme-light/theme-dark 根类切换与 themeColor(light,dark) 动态色辅助；2. 设置页恢复"清透白磨砂 (经典)"与"暗夜黑磨砂"两个选项，切换后即时应用当前 Scene；3. 暗色 CSS 统一限定在 `.theme-dark`，动态列表/棋盘玩家卡/个人资料头部跟随主题；4. FXML 清理残留暗色内联样式并同步设计规范。 | 编译通过，FXML XML 解析通过 |
+| 2026-07-09 | Contributor| 根因是最外层 StackPane 背景链路在浅色/暗色间没有统一归口：固定透明会让暗色露出 Scene 白底，删除透明又会露出 `.root` 浅色蓝白渐变；改为由 ScreenManager.applyUserTheme() 按主题写入 wrapper 背景，浅色透明、暗色近黑渐变，并补齐暗色 editable ComboBox 的 text-field/arrow-button 子节点样式。 | 编译通过 |
+| 2026-07-09 | Contributor| 将 style.css 的 `.root` 背景从蓝白渐变改为中性雾白渐变，避免浅色或背景链路兜底时出现泛蓝底色。 | CSS 调整 |
+| 2026-07-09 | Contributor| 1. 暗色根背景、顶栏、玻璃卡片、列表卡、PixelCard 统一压深到黑曜石色阶；2. 登录/注册页移除 `.glass-card` 的白色内联背景，交由主题 CSS 接管；3. 暗色头像/头像徽章补稳定圆角与透明子标签，避免白色方框露底。 | 编译通过，FXML XML 解析通过 |
+| 2026-07-09 | Contributor| **真正根因**：`PixelCard.layoutChildren()` 把内部 `cardBody`（Region，默认 maxWidth=MAX_VALUE）和 FXML 内层 `glass-card`（VBox，默认 maxWidth=USE_COMPUTED_SIZE=preferred）都放在同一卡片身体区域内，虽都传 `fillWidth=true/fillHeight=true`，但 VBox 的 max 限制使其只按内容 preferred size 居中、不被拉满，导致内层比外层小、形成 2-3px 间隙的双线。次要原因：两层圆角/线宽参数原本也不一致（pixel-card-body 8/1.2 vs glass-card 12/1.5，且 FXML 内联 `-fx-background-radius:16` 又把背景圆角顶成 16）。**修复**：1. `PixelCard.java` layoutChildren 遍历 FXML 子节点时，对 Region 先 setMaxWidth/Height(Double.POSITIVE_INFINITY) 再 layoutInArea，使内层被拉到与 cardBody 完全一致的尺寸；2. `.glass-card` 的 background-radius/border-radius 统一为 8、border-width 改 1.2，同步外层规格；3. 移除 LoginUI.fxml、RegisterUI.fxml 内联 `-fx-background-radius:16`，并加 maxWidth/maxHeight=Infinity 兜底。 | mvn compile 通过；PrintWindow 截图经多模态确认已由双线变为单条干净描边 |
