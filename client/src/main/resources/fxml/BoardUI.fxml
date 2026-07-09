@@ -49,6 +49,11 @@
                     <Button text="%board.next" fx:id="nextBtn" onAction="#handleReplayNext" styleClass="btn-secondary" maxWidth="Infinity"/>
                     <Button text="%board.exitReplay" fx:id="exitBtn" onAction="#handleReplayExit" styleClass="btn-danger" maxWidth="Infinity"/>
                 </VBox>
+
+                <!-- 观战控制区 -->
+                <VBox fx:id="spectatorControls" spacing="12" maxWidth="Infinity" visible="false" managed="false">
+                    <Button text="退出观战" fx:id="leaveSpectateBtn" onAction="#handleLeaveSpectate" styleClass="btn-danger" maxWidth="Infinity"/>
+                </VBox>
             </VBox>
         </HBox>
     </right>

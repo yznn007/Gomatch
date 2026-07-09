@@ -54,6 +54,8 @@ public class BoardController implements NetworkListener {
     @FXML private Button toggleSidebarBtn;
     @FXML private VBox sidebarContent;
     @FXML private Region dragHandle;
+    @FXML private VBox spectatorControls;
+    @FXML private Button leaveSpectateBtn;
 
     private double dragStartX;
     private double dragStartWidth;
@@ -286,6 +288,11 @@ public class BoardController implements NetworkListener {
             myTurn = false;
             myColor = "spectator";
             applySpectatorMode();
+        } else {
+            if (spectatorControls != null) {
+                spectatorControls.setVisible(false);
+                spectatorControls.setManaged(false);
+            }
         }
         updateActionButtons();
 
@@ -302,6 +309,10 @@ public class BoardController implements NetworkListener {
         if (chatInput != null) {
             chatInput.setVisible(false);
             chatInput.setManaged(false);
+        }
+        if (spectatorControls != null) {
+            spectatorControls.setVisible(true);
+            spectatorControls.setManaged(true);
         }
         if (chatArea != null) {
             chatArea.appendText("[系统] 观战模式 - 无法落子或操作\n");
@@ -350,6 +361,11 @@ public class BoardController implements NetworkListener {
 
         updateTurnLabel();
         updateActionButtons();
+
+        if (spectatorControls != null) {
+            spectatorControls.setVisible(false);
+            spectatorControls.setManaged(false);
+        }
 
         // 处理断线角标：如果对手仍在断线中，显示断线标记
         if (disconnectedUserId != null && !disconnectedUserId.isEmpty()
@@ -434,6 +450,10 @@ public class BoardController implements NetworkListener {
             if (replayControls != null) {
                 replayControls.setVisible(true);
                 replayControls.setManaged(true);
+            }
+            if (spectatorControls != null) {
+                spectatorControls.setVisible(false);
+                spectatorControls.setManaged(false);
             }
             if (chatInput != null) {
                 chatInput.setVisible(false);
@@ -772,6 +792,20 @@ public class BoardController implements NetworkListener {
             return;
         }
         ClientMain.getConnector().send(Protocol.SURRENDER);
+    }
+
+    @FXML
+    private void handleLeaveSpectate() {
+        if (previewMode) {
+            LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+            ctrl.setCurrentUser(AppConfig.getCurrentUser());
+            ctrl.setPreviewMode(true);
+            return;
+        }
+        ClientMain.getConnector().send(Protocol.LEAVE_SPECTATE);
+        LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        ctrl.setCurrentUser(AppConfig.getCurrentUser());
+        ctrl.setPreviewMode(false);
     }
 
     /**
