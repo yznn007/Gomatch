@@ -108,3 +108,597 @@ Gomatch 客户端保留两套可切换视觉基调：**清透白磨砂**作为�
 *   **禁用原生 Alert**：禁止使用 JDK 原生 `new Alert(...)` 展示提示信息。
 *   **使用沉浸式模态弹窗**：一律使用 `ScreenManager.showDialog("/fxml/MessageDialogUI.fxml")` 或自定义对话框 FXML。
 *   **弹窗外壳特性**：通过 `ScreenManager` 弹出的模态窗自动采用 `StageStyle.UNDECORATED`（无系统窗口栏），背景集成点阵网格粒子特效，并包含项目定制的极简关闭/关闭标题栏，整体风格完美统一。
+
+---
+
+## 7. 可复用前端组件模板 (Reusable UI Templates)
+
+本章提供给 FXML 与 Controller 直接复用的组件样式模板。模板强调**结构、间距、圆角、边框、状态反馈、布局约束**，颜色只沿用 `style.css` 已有双主题规则；新增暗色样式时必须写在 `.theme-dark` 作用域内，避免破坏主题切换。
+
+### 7.1 使用原则
+
+*   **优先使用样式类**：FXML 中使用 `styleClass="btn-primary"`、`styleClass="card-padded"` 等已有类；Controller 动态创建节点时通过 `getStyleClass().add(...)` 添加类。
+*   **减少内联样式**：内联样式只允许写尺寸、间距、对齐等一次性布局参数；颜色、边框、背景、阴影、hover/pressed/focused 状态必须沉淀到 CSS 类。
+*   **动态文字色跟随主题**：Controller 中确实需要设置文字颜色时，必须使用 `ScreenManager.themeColor(light, dark)`。
+*   **组件 class 命名**：页面通用组件使用语义名，如 `.list-item-card`、`.form-section`；页面私有组件使用页面前缀，如 `.profile-header-card`、`.board-sidebar`。
+
+### 7.2 按钮模板
+
+#### 主操作按钮
+
+适用于登录、保存、开始匹配、确认等页面主动作。默认使用已有 `.btn-primary`。
+
+```xml
+<Button text="确认" styleClass="btn-primary" prefWidth="180"/>
+```
+
+```css
+.btn-primary {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 0 0 1.5 0;
+    -fx-padding: 9 24;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-effect: none;
+}
+.btn-primary:hover,
+.btn-primary:armed,
+.btn-primary:focused {
+    -fx-border-width: 0 0 1.5 0;
+}
+```
+
+#### 次操作按钮
+
+适用于返回、取消、刷新、查看详情等动作。默认使用已有 `.btn-secondary`。
+
+```xml
+<Button text="返回" styleClass="btn-secondary" prefWidth="140"/>
+```
+
+```css
+.btn-secondary {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 0 0 1.5 0;
+    -fx-padding: 9 24;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-effect: none;
+}
+.btn-secondary:disabled {
+    -fx-cursor: default;
+    -fx-opacity: 0.55;
+}
+```
+
+#### 危险操作按钮
+
+适用于退出、删除、投降、取消匹配等不可逆或负向动作。危险按钮允许使用柔和红色状态，但形状仍保持 8px 圆角与底划线语言。
+
+```xml
+<Button text="退出" styleClass="btn-danger" prefWidth="140"/>
+```
+
+```css
+.btn-danger {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 0 0 1.5 0;
+    -fx-padding: 9 24;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+.btn-danger:hover,
+.btn-danger:armed {
+    -fx-border-width: 0 0 1.5 0;
+}
+```
+
+#### 顶部栏与导航按钮
+
+适用于大厅顶部、底部导航、设置页侧栏菜单。按钮应轻量、透明、无投影。
+
+```xml
+<Button text="个人中心" styleClass="top-btn"/>
+<Button text="设置" styleClass="nav-btn"/>
+```
+
+```css
+.top-btn,
+.nav-btn,
+.sidebar-menu-btn {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+    -fx-border-width: 0;
+    -fx-padding: 8 14;
+    -fx-cursor: hand;
+    -fx-effect: none;
+}
+.top-btn:hover,
+.nav-btn:hover,
+.sidebar-menu-btn:hover,
+.nav-btn-active,
+.sidebar-menu-btn.active {
+    -fx-background-radius: 8;
+}
+.nav-btn-active,
+.sidebar-menu-btn.active {
+    -fx-font-weight: bold;
+}
+```
+
+#### 列表内小按钮
+
+适用于房间卡片的“加入”、好友请求的“接受/拒绝”、记录行的“回放”。它继承主/次按钮，但尺寸更紧凑。
+
+```java
+Button actionBtn = new Button("加入");
+actionBtn.getStyleClass().addAll("btn-primary", "btn-compact");
+```
+
+```css
+.btn-compact {
+    -fx-padding: 4 14;
+    -fx-font-size: 12px;
+    -fx-min-height: 28;
+    -fx-pref-height: 28;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+```
+
+### 7.3 卡片模板
+
+#### 普通内容卡片
+
+适用于页面主体区域、个人信息区、设置分组。优先使用 `.card-padded`。
+
+```xml
+<VBox styleClass="card-padded" spacing="16" maxWidth="Infinity">
+    <Label text="标题" styleClass="section-label"/>
+</VBox>
+```
+
+```css
+.card-padded {
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-width: 1.2;
+    -fx-padding: 28 32;
+}
+```
+
+#### 表单玻璃卡片
+
+适用于登录、注册、服务器配置等聚焦输入页面。外层可用 `PixelCard`，内层使用 `.glass-card`。
+
+```xml
+<VBox styleClass="glass-card" spacing="18" maxWidth="Infinity" maxHeight="Infinity">
+    <Label text="登录" styleClass="title"/>
+    <VBox styleClass="input-field-group">
+        <TextField promptText="账号" styleClass="glass-input"/>
+    </VBox>
+    <Button text="登录" styleClass="btn-primary" maxWidth="Infinity"/>
+</VBox>
+```
+
+```css
+.glass-card {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 1.2;
+    -fx-padding: 40;
+    -fx-effect: none;
+}
+.glass-card .input-field-group {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 0 0 1.5 0;
+    -fx-padding: 6 14;
+    -fx-spacing: 2;
+}
+.glass-card .input-field-group:hover,
+.glass-card .input-field-group:focused-within {
+    -fx-border-width: 0 0 1.5 0;
+}
+.glass-card .glass-input {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 4 0;
+}
+```
+
+#### 入口功能卡片
+
+适用于大厅模式入口、AI/匹配/排位入口。结构必须可点击，文字区垂直排列，卡片本身承担 hover/pressed。
+
+```xml
+<VBox styleClass="feature-card" spacing="6" prefWidth="240">
+    <Label text="休闲对战" styleClass="feature-card-title"/>
+    <Label text="创建房间或快速加入" styleClass="feature-card-desc" wrapText="true"/>
+</VBox>
+```
+
+```css
+.feature-card {
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-padding: 16 18;
+    -fx-spacing: 6;
+    -fx-cursor: hand;
+}
+.feature-card:hover,
+.feature-card:pressed {
+    -fx-background-radius: 14;
+}
+.feature-card-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+.feature-card-desc {
+    -fx-font-size: 13px;
+}
+```
+
+#### 列表项卡片
+
+适用于房间列表、观战列表、好友列表、排行榜行。建议 Controller 动态创建时统一用 `HBox` 根节点。
+
+```java
+HBox card = new HBox(14);
+card.getStyleClass().add("list-item-card");
+card.setAlignment(Pos.CENTER_LEFT);
+HBox.setHgrow(card, Priority.ALWAYS);
+
+VBox infoBox = new VBox(4);
+HBox.setHgrow(infoBox, Priority.ALWAYS);
+
+Button actionBtn = new Button("加入");
+actionBtn.getStyleClass().addAll("btn-primary", "btn-compact");
+card.getChildren().addAll(avatar, infoBox, actionBtn);
+```
+
+```css
+.list-item-card {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 0 0 1.5 0;
+    -fx-padding: 12 14;
+    -fx-spacing: 14;
+    -fx-alignment: center-left;
+    -fx-cursor: hand;
+}
+.list-item-card:hover,
+.list-item-card-highlight {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+.list-item-card-highlight {
+    -fx-border-width: 0 0 1.5 0;
+}
+```
+
+#### 玩家信息卡片
+
+适用于棋盘侧栏、对局状态、回合提示。外层只负责占位，内层负责视觉。
+
+```xml
+<VBox styleClass="player-info-card">
+    <HBox styleClass="player-info-card-inner" spacing="10" alignment="CENTER_LEFT">
+        <StackPane styleClass="avatar-badge"/>
+        <VBox spacing="2" HBox.hgrow="ALWAYS"/>
+    </HBox>
+</VBox>
+```
+
+```css
+.player-info-card {
+    -fx-padding: 0;
+    -fx-min-height: 0;
+}
+.player-info-card-inner {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-padding: 8 12;
+    -fx-alignment: center-left;
+}
+.player-info-card-active {
+    -fx-border-width: 1;
+}
+```
+
+### 7.4 布局模板
+
+#### 页面根布局
+
+所有业务页根节点使用透明背景，由 `ScreenManager` 负责最外层主题背景和动态背景。
+
+```xml
+<BorderPane styleClass="page-root" xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml">
+</BorderPane>
+```
+
+```css
+.page-root {
+    -fx-background-color: transparent;
+    -fx-padding: 10 30 30 30;
+}
+```
+
+#### 顶部栏
+
+顶部栏只承担导航与信息密度，不做厚重卡片。
+
+```xml
+<HBox styleClass="top-bar" alignment="CENTER_LEFT" spacing="12">
+    <Label text="Gomatch" styleClass="section-label"/>
+    <Region HBox.hgrow="ALWAYS"/>
+    <Button text="设置" styleClass="top-btn"/>
+</HBox>
+```
+
+```css
+.top-bar {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-effect: none;
+    -fx-padding: 0 0 12 0;
+}
+```
+
+#### 双栏页面
+
+适用于登录页、设置页、列表+详情页。使用 `GridPane` 或 `HBox`，通过 `hgrow/vgrow` 分配空间，不用整页缩放。
+
+```xml
+<GridPane styleClass="page-root" hgap="24" vgap="0">
+    <columnConstraints>
+        <ColumnConstraints percentWidth="42"/>
+        <ColumnConstraints percentWidth="58"/>
+    </columnConstraints>
+    <VBox GridPane.columnIndex="0" styleClass="brand-panel"/>
+    <VBox GridPane.columnIndex="1" styleClass="glass-card" maxWidth="520"/>
+</GridPane>
+```
+
+```css
+.layout-two-column {
+    -fx-background-color: transparent;
+    -fx-padding: 10 30 30 30;
+    -fx-hgap: 24;
+}
+.layout-sidebar {
+    -fx-background-color: transparent;
+    -fx-spacing: 8;
+    -fx-padding: 0 18 0 0;
+}
+.layout-content {
+    -fx-background-color: transparent;
+    -fx-spacing: 16;
+}
+```
+
+#### 列表页工具栏
+
+适用于房间大厅、好友、记录、排行榜等页面。
+
+```xml
+<VBox styleClass="card-padded" spacing="14">
+    <HBox styleClass="list-toolbar" alignment="CENTER_LEFT" spacing="10">
+        <Label text="房间列表" styleClass="section-label"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="刷新" styleClass="btn-secondary"/>
+        <Button text="创建" styleClass="btn-primary"/>
+    </HBox>
+    <VBox fx:id="roomsContainer" styleClass="list-stack" spacing="10"/>
+</VBox>
+```
+
+```css
+.list-toolbar {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 8 0;
+    -fx-spacing: 10;
+    -fx-alignment: center-left;
+}
+.list-stack {
+    -fx-background-color: transparent;
+    -fx-spacing: 10;
+}
+```
+
+### 7.5 输入与表单模板
+
+#### 普通输入框
+
+```xml
+<TextField promptText="请输入昵称" styleClass="field" prefWidth="240"/>
+<PasswordField promptText="请输入密码" styleClass="field" prefWidth="240"/>
+```
+
+```css
+.field {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 0 0 1.5 0;
+    -fx-padding: 8 14;
+    -fx-font-size: 14px;
+}
+.field:hover,
+.field:focused {
+    -fx-border-width: 0 0 1.5 0;
+}
+```
+
+#### 表单行
+
+```xml
+<GridPane styleClass="form-grid" hgap="24" vgap="16">
+    <Label text="服务器" styleClass="muted" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+    <TextField styleClass="field" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+</GridPane>
+```
+
+```css
+.form-grid {
+    -fx-background-color: transparent;
+    -fx-padding: 10 0;
+    -fx-hgap: 24;
+    -fx-vgap: 16;
+}
+.form-section {
+    -fx-background-color: transparent;
+    -fx-spacing: 16;
+    -fx-alignment: top-center;
+}
+.form-actions {
+    -fx-background-color: transparent;
+    -fx-spacing: 12;
+    -fx-alignment: center-right;
+    -fx-padding: 10 0 0 0;
+}
+```
+
+### 7.6 表格、列表与滚动容器模板
+
+#### TableView 容器
+
+```xml
+<VBox styleClass="table-card" VBox.vgrow="ALWAYS">
+    <TableView fx:id="recordTable" VBox.vgrow="ALWAYS"/>
+</VBox>
+```
+
+```css
+.table-card {
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-padding: 0;
+}
+.table-view {
+    -fx-background-color: transparent;
+    -fx-background-radius: 14;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+.table-view .table-row-cell {
+    -fx-background-radius: 8;
+    -fx-border-width: 0;
+    -fx-padding: 4 8;
+}
+.table-view .table-cell {
+    -fx-border-width: 0;
+    -fx-padding: 6 12;
+    -fx-alignment: center;
+}
+```
+
+#### ListView 容器
+
+```xml
+<VBox styleClass="list-card" VBox.vgrow="ALWAYS">
+    <ListView fx:id="messageList" VBox.vgrow="ALWAYS"/>
+</VBox>
+```
+
+```css
+.list-card {
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 0;
+}
+.list-view {
+    -fx-background-color: transparent;
+    -fx-background-radius: 10;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+.list-view .list-cell {
+    -fx-background-radius: 8;
+    -fx-padding: 10 14;
+    -fx-border-width: 0;
+}
+```
+
+### 7.7 弹窗模板
+
+所有确认、提示、输入类弹窗应使用 FXML 自定义弹窗，避免原生系统窗口破坏风格。
+
+```xml
+<VBox styleClass="dialog-pane" spacing="14" xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml">
+    <Label text="提示" styleClass="section-label"/>
+    <Label text="确认执行该操作？" styleClass="muted" wrapText="true"/>
+    <HBox styleClass="form-actions">
+        <Button text="取消" styleClass="btn-secondary"/>
+        <Button text="确认" styleClass="btn-primary"/>
+    </HBox>
+</VBox>
+```
+
+```css
+.dialog-pane {
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 16;
+}
+.dialog-pane .button {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 0 0 1.5 0;
+    -fx-padding: 6 16;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+```
+
+### 7.8 暗色主题覆盖模板
+
+新增组件时，浅色样式写在基础 class，暗色差异只写 `.theme-dark`。不要在基础 class 中写黑色背景来“兼容暗色”。
+
+```css
+.new-component {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 0 0 1.5 0;
+    -fx-padding: 12 14;
+}
+.new-component:hover {
+    -fx-background-radius: 8;
+}
+
+.theme-dark .new-component {
+    -fx-border-width: 0 0 1.5 0;
+}
+.theme-dark .new-component:hover {
+    -fx-border-width: 0 0 1.5 0;
+}
+```
+
+### 7.9 禁止写法
+
+以下写法会破坏双主题、响应式或统一组件语言，除临时调试外禁止提交。
+
+```java
+// 禁止：动态控件写死浅色或暗色，切换主题后不可读。
+label.setStyle("-fx-text-fill: #000000;");
+
+// 允许：确实需要动态色时使用主题辅助。
+label.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
+```
+
+```xml
+<!-- 禁止：FXML 中直接写背景、边框、阴影等视觉样式。 -->
+<VBox style="-fx-background-color: white; -fx-border-color: #ddd; -fx-effect: dropshadow(...);"/>
+
+<!-- 允许：使用样式类承接视觉，只在 FXML 中保留布局参数。 -->
+<VBox styleClass="card-padded" spacing="16" maxWidth="Infinity"/>
+```

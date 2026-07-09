@@ -13,7 +13,7 @@
 | 数据持久化 | JDBC + MySQL | MySQL 8.x |
 | 缓存 | Redis | 7.x |
 | 连接池 | HikariCP | 5.x |
-| JSON 序列化 | Gson | 2.10+ |
+| JSON 序列化 | org.json / Gson | - |
 | 日志 | SLF4J + Logback | SLF4J 2.x / Logback 1.4+ |
 | 密码存储 | 明文 | - |
 | Redis 客户端 | Lettuce | - |
@@ -68,7 +68,8 @@ Gomatch/
 │   └── src/main/resources/      # 配置文件
 ├── common/                      # 公共模块（协议定义）
 │   └── src/main/java/com/gomatch/common/
-│       └── Protocol.java        # 协议常量与编解码
+│       ├── Protocol.java        # 协议常量
+│       └── Message.java         # JSON 消息模型
 ├── database/                    # 数据库模块（工具类）
 ├── sql/                         # SQL 脚本
 ├── docs/                        # 文档目录
@@ -80,9 +81,11 @@ Gomatch/
 
 ## 文档索引
 
-项目所有的设计、架构、数据库、规范以及模块开发文档均已整合在文档中心。请直接查阅：
+项目所有设计、架构、数据库、规范以及模块开发文档均已整合在文档中心：
 
-*   📖 **[项目文档中心索引 (docs/README.md)](docs/README.md)**：包含全部详细设计说明书、需求规格、技术架构、开发规范标准、模块技术细节及部署指南。
+*   **[项目文档中心索引](docs/README.md)**：按阅读场景组织需求、架构、模块、UI、启动联调和实训资料。
+*   **[客户端 UI 规范](docs/CLIENT_STYLE_GUIDE.md)**：双主题磨砂风格与可复用按钮、卡片、布局 CSS 模板。
+*   **[common 协议文档](docs/MODULE_COMMON.md)**：JSON 消息协议、`Message` 模型与 `Protocol` 常量。
 
 ## 开发命令
 
