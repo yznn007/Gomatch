@@ -2,10 +2,13 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
 import com.gomatch.client.audio.BackgroundMusicManager;
+import com.gomatch.client.audio.PlayOrder;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.ClientConfig;
 import javafx.beans.binding.Bindings;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -13,6 +16,8 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+
+import java.util.Map;
 
 public class SettingsController {
     @FXML private ComboBox<String> ipComboBox;
@@ -25,6 +30,7 @@ public class SettingsController {
     @FXML private CheckBox soundCheckBox;
     @FXML private ElasticVolumeSlider soundVolumeSlider;
     @FXML private ComboBox<String> lobbySongComboBox;
+    @FXML private Button playOrderBtn;
     @FXML private Button exitBtn;
     @FXML private Button logoutBtn;
 
@@ -47,6 +53,7 @@ public class SettingsController {
 
     private User currentUser;
     private boolean previewMode;
+    private boolean syncingSongComboBox;
 
     @FXML
     private void initialize() {
@@ -93,6 +100,63 @@ public class SettingsController {
                 BackgroundMusicManager.globalVolumeProperty().set(newVal.doubleValue()));
         backgroundVolumeSlider.valueProperty().addListener((obs, oldVal, newVal) ->
                 BackgroundMusicManager.backgroundVolumeProperty().set(newVal.doubleValue()));
+
+        populateSongComboBox();
+        setupPlayOrderButton();
+    }
+
+    private void populateSongComboBox() {
+        Map<String, String> songs = BackgroundMusicManager.getAvailableSongs();
+        ObservableList<String> items = FXCollections.observableArrayList(songs.values());
+        lobbySongComboBox.setItems(items);
+
+        String currentName = BackgroundMusicManager.getCurrentSongName();
+        if (currentName != null && !currentName.isEmpty()) {
+            lobbySongComboBox.setValue(currentName);
+        } else if (!items.isEmpty()) {
+            lobbySongComboBox.setValue(items.get(0));
+        }
+
+        lobbySongComboBox.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null || newVal.equals(oldVal) || syncingSongComboBox) {
+                return;
+            }
+            String path = songs.entrySet().stream()
+                    .filter(e -> e.getValue().equals(newVal))
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .orElse(null);
+            if (path != null) {
+                BackgroundMusicManager.switchSong(path);
+            }
+        });
+
+        BackgroundMusicManager.currentSongNameProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null || newVal.equals(lobbySongComboBox.getValue())) {
+                return;
+            }
+            syncingSongComboBox = true;
+            lobbySongComboBox.setValue(newVal);
+            syncingSongComboBox = false;
+        });
+    }
+
+    private void setupPlayOrderButton() {
+        updatePlayOrderButtonText();
+    }
+
+    private void updatePlayOrderButtonText() {
+        PlayOrder current = BackgroundMusicManager.getCurrentPlayOrder();
+        playOrderBtn.setText(current.getDisplayName());
+    }
+
+    @FXML
+    private void handlePlayOrderCycle() {
+        PlayOrder current = BackgroundMusicManager.getCurrentPlayOrder();
+        PlayOrder[] orders = PlayOrder.values();
+        PlayOrder next = orders[(current.ordinal() + 1) % orders.length];
+        BackgroundMusicManager.setPlayOrder(next);
+        updatePlayOrderButtonText();
     }
 
     public void setCurrentUser(User user) {
