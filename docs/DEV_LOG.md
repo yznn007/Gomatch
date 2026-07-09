@@ -248,3 +248,4 @@
 | 2026-07-09 | Contributor| 1. ScreenManager 移除整页 Scale 缩放，改由 FXML 布局约束自适应；2. 登录/注册页改用静态 PixelCard 外壳，列表页和个人中心释放固定宽度；3. 非 ADMIN 用户隐藏管理入口；4. BoardController 与 ShapeGridBackground 增加 0 尺寸和重复尺寸重绘保护；5. 同步更新 CLIENT_STYLE_GUIDE.md 与 MODULE_CLIENT.md。 |
 | 2026-07-09 | Contributor| 1. 新增 ElasticVolumeSlider 自定义控件，用 JavaFX 属性、鼠标事件和 Timeline 实现 React Bits ElasticSlider 风格的悬浮放大、轨道变粗、越界衰减与松手回弹；2. SettingsUI.fxml 将全局音量原生 Slider 替换为 0-100、步长 5 的弹性滑杆；3. style.css 补充中性板岩灰轨道、图标和数值提示样式；4. 新增 PRODUCT.md 记录产品设计上下文。 | 编译通过 |
 | 2026-07-09 | Contributor| 1. 全局音乐新增独立开关与弹性音量条；2. 背景音乐、音效保留无文字开关并新增 ElasticVolumeSlider；3. 将“大厅音乐”改名为“大厅歌曲”，仅保留歌曲下拉选择（默认主题曲、清晨棋局、静夜对弈、赛场低语）；4. SettingsController 绑定开关与对应音量条的禁用和透明度状态。 | 编译通过 |
+| 2026-07-09 | Contributor| 1. 新增 audio/lobby-theme.flac，来自用户指定的 D:\CloudMusic 原曲；2. 新增 BackgroundMusicManager，通过 JavaFX MediaPlayer 循环播放并在退出时释放；3. ClientMain 启动时播放背景音乐，SettingsController 将全局音乐/背景音乐开关与音量条同步到实际播放状态；4. client/pom.xml 补充 javafx-media 依赖。 | 编译通过 |

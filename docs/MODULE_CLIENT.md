@@ -14,6 +14,8 @@ client/src/main/
 │   ├── ClientMain.java                 # JavaFX Application 入口
 │   ├── ai/
 │   │   └── GomokuAI.java               # 本地启发式 AI
+│   ├── audio/
+│   │   └── BackgroundMusicManager.java # 客户端背景音乐循环播放管理器
 │   ├── model/
 │   │   ├── GameRecord.java             # 对战记录数据模型
 │   │   ├── RoomInfo.java               # 房间信息数据模型
@@ -50,6 +52,8 @@ client/src/main/
 │       ├── SettingsController.java     # 设置界面
 │       └── ShapeGridBackground.java    # 动态粒子点阵背景
 └── resources/
+    ├── audio/
+    │   └── lobby-theme.flac            # 大厅/客户端背景音乐资源
     ├── client-config.json              # 客户端默认配置文件
     ├── css/style.css                   # 全局 CSS 样式表
     ├── fonts/
@@ -70,6 +74,7 @@ main() → Application.launch()
        ├─ 创建 ServerConnector 单例
        ├─ 注册全局断线监听（DISCONNECT → 弹窗 → 跳回 LoginUI）
        ├─ ScreenManager.init(stage)
+       ├─ BackgroundMusicManager.playLobbyTheme()
        └─ ScreenManager.switchTo("/fxml/LoginUI.fxml")
 ```
 
@@ -86,8 +91,8 @@ main() → Application.launch()
 |------|------|------|
 | `connector` | `static ServerConnector` | 全局唯一连接器，通过 `getConnector()` 获取 |
 | `disconnectHandled` | `static volatile boolean` | 防止断线事件重复处理的标志 |
-| `start(Stage)` | 方法 | JavaFX 应用启动入口，初始化字体、连接器、ScreenManager |
-| `stop()` | 方法 | 应用退出时关闭 Socket 连接 |
+| `start(Stage)` | 方法 | JavaFX 应用启动入口，初始化字体、连接器、ScreenManager，并启动循环背景音乐 |
+| `stop()` | 方法 | 应用退出时关闭 Socket 连接并释放背景音乐播放器 |
 | `getConnector()` | `static` | 全局获取 `ServerConnector` 实例 |
 
 ---
@@ -110,7 +115,15 @@ main() → Application.launch()
 
 ---
 
-### 3.3 `ServerConnector` — 网络层
+### 3.3 `BackgroundMusicManager` — 背景音乐管理器
+
+**文件**：[BackgroundMusicManager.java](../client/src/main/java/com/gomatch/client/audio/BackgroundMusicManager.java)
+
+负责加载 `/audio/lobby-theme.flac` 并通过 JavaFX `MediaPlayer` 循环播放。全局音乐与背景音乐的开关、音量值暴露为 JavaFX Property，设置页可直接同步到实际播放状态。若当前运行环境不支持该音频格式，管理器会释放播放器并保持客户端正常启动。
+
+---
+
+### 3.4 `ServerConnector` — 网络层
 
 **文件**：[ServerConnector.java](../client/src/main/java/com/gomatch/client/network/ServerConnector.java)
 
@@ -153,7 +166,7 @@ main() → Application.launch()
 
 ---
 
-### 3.4 `NetworkListener` — 消息监听接口
+### 3.5 `NetworkListener` — 消息监听接口
 
 **文件**：[NetworkListener.java](../client/src/main/java/com/gomatch/client/network/NetworkListener.java)
 
@@ -169,7 +182,7 @@ public interface NetworkListener {
 
 ---
 
-### 3.5 `ClientConfig` — 本地与包内配置管理
+### 3.6 `ClientConfig` — 本地与包内配置管理
 
 **文件**：[ClientConfig.java](../client/src/main/java/com/gomatch/client/network/ClientConfig.java)  
 **类型**：静态配置读写类
@@ -183,7 +196,7 @@ public interface NetworkListener {
 
 ---
 
-### 3.6 `ScreenManager` — 场景管理器
+### 3.7 `ScreenManager` — 场景管理器
 
 **文件**：[ScreenManager.java](../client/src/main/java/com/gomatch/client/ui/ScreenManager.java)  
 **类型**：静态工具类（全局唯一 `Stage`）
@@ -234,7 +247,7 @@ StackPane (wrapper)
 
 ---
 
-### 3.7 `ShapeGridBackground` — 动态背景
+### 3.8 `ShapeGridBackground` — 动态背景
 
 **文件**：[ShapeGridBackground.java](../client/src/main/java/com/gomatch/client/ui/ShapeGridBackground.java)
 

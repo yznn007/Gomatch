@@ -1,6 +1,7 @@
 package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
+import com.gomatch.client.audio.BackgroundMusicManager;
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.ClientConfig;
@@ -67,6 +68,7 @@ public class SettingsController {
         bindAudioControl(globalMusicCheckBox, globalVolumeSlider);
         bindAudioControl(backgroundMusicCheckBox, backgroundVolumeSlider);
         bindAudioControl(soundCheckBox, soundVolumeSlider);
+        bindBackgroundMusicSettings();
 
         // 初始激活基础设置标签页
         showBaseTab();
@@ -75,6 +77,22 @@ public class SettingsController {
     private void bindAudioControl(CheckBox toggle, ElasticVolumeSlider slider) {
         slider.disableProperty().bind(toggle.selectedProperty().not());
         slider.opacityProperty().bind(Bindings.when(toggle.selectedProperty()).then(1.0).otherwise(0.48));
+    }
+
+    private void bindBackgroundMusicSettings() {
+        globalMusicCheckBox.setSelected(BackgroundMusicManager.globalMusicEnabledProperty().get());
+        backgroundMusicCheckBox.setSelected(BackgroundMusicManager.backgroundMusicEnabledProperty().get());
+        globalVolumeSlider.setValue(BackgroundMusicManager.globalVolumeProperty().get());
+        backgroundVolumeSlider.setValue(BackgroundMusicManager.backgroundVolumeProperty().get());
+
+        globalMusicCheckBox.selectedProperty().addListener((obs, oldVal, newVal) ->
+                BackgroundMusicManager.globalMusicEnabledProperty().set(newVal));
+        backgroundMusicCheckBox.selectedProperty().addListener((obs, oldVal, newVal) ->
+                BackgroundMusicManager.backgroundMusicEnabledProperty().set(newVal));
+        globalVolumeSlider.valueProperty().addListener((obs, oldVal, newVal) ->
+                BackgroundMusicManager.globalVolumeProperty().set(newVal.doubleValue()));
+        backgroundVolumeSlider.valueProperty().addListener((obs, oldVal, newVal) ->
+                BackgroundMusicManager.backgroundVolumeProperty().set(newVal.doubleValue()));
     }
 
     public void setCurrentUser(User user) {

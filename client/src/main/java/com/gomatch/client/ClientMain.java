@@ -1,6 +1,7 @@
 package com.gomatch.client;
 
 import com.gomatch.client.network.ServerConnector;
+import com.gomatch.client.audio.BackgroundMusicManager;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.client.ui.ScreenManager;
 import com.gomatch.common.Message;
@@ -37,6 +38,7 @@ public class ClientMain extends Application {
             }
         });
         ScreenManager.init(primaryStage);
+        BackgroundMusicManager.playLobbyTheme();
         ScreenManager.switchTo("/fxml/LoginUI.fxml");
     }
 
@@ -45,6 +47,7 @@ public class ClientMain extends Application {
         if (connector != null) {
             connector.disconnect();
         }
+        BackgroundMusicManager.stop();
     }
 
     public static ServerConnector getConnector() {
