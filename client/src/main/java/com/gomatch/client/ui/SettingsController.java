@@ -9,7 +9,6 @@ import com.gomatch.client.UserSettings;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.ClientConfig;
 import javafx.beans.binding.Bindings;
-import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -86,6 +85,7 @@ public class SettingsController {
     private boolean previewMode;
     private boolean syncingSongComboBox;
     private boolean initializing;
+    private boolean audioConfigSyncSuppressed;
 
     // 后台静音：记住音乐启用状态，用于恢复
     private boolean wasGlobalMusicEnabled;
@@ -236,6 +236,24 @@ public class SettingsController {
                 BackgroundMusicManager.globalMusicEnabledProperty().set(newVal));
         backgroundMusicCheckBox.selectedProperty().addListener((obs, oldVal, newVal) ->
                 BackgroundMusicManager.backgroundMusicEnabledProperty().set(newVal));
+        globalMusicCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            if (!initializing && !audioConfigSyncSuppressed) {
+                UserSettings.get().lobbyMusic = newVal;
+                UserSettings.save();
+            }
+        });
+        backgroundMusicCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            if (!initializing && !audioConfigSyncSuppressed) {
+                UserSettings.get().bgMusic = newVal;
+                UserSettings.save();
+            }
+        });
+        soundCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            if (!initializing && !audioConfigSyncSuppressed) {
+                UserSettings.get().soundEffect = newVal;
+                UserSettings.save();
+            }
+        });
         globalVolumeSlider.valueProperty().addListener((obs, oldVal, newVal) ->
                 BackgroundMusicManager.globalVolumeProperty().set(newVal.doubleValue()));
         backgroundVolumeSlider.valueProperty().addListener((obs, oldVal, newVal) ->
@@ -243,14 +261,17 @@ public class SettingsController {
 
         populateSongComboBox();
         setupPlayOrderButton();
+    }
 
-        // 音量变更时保存偏好
-        ChangeListener<Number> volumeSaveListener = (obs, oldVal, newVal) -> {
-            UserSettings.get().volume = globalVolumeSlider.getValue();
-            UserSettings.save();
-        };
-        globalVolumeSlider.valueProperty().addListener(volumeSaveListener);
-        backgroundVolumeSlider.valueProperty().addListener(volumeSaveListener);
+    /** 滑块拖动期间只更新本地音频；松开鼠标时再落盘并发送一次 Socket 请求。 */
+    @FXML
+    private void handleAudioVolumeReleased() {
+        if (initializing) return;
+        UserSettings settings = UserSettings.get();
+        settings.volume = globalVolumeSlider.getValue();
+        settings.bgMusic = backgroundMusicCheckBox.isSelected();
+        settings.soundEffect = soundCheckBox.isSelected();
+        UserSettings.save();
     }
 
     private void populateSongComboBox() {
@@ -319,16 +340,24 @@ public class SettingsController {
                 // 窗口失焦：记住当前音乐状态，然后暂停
                 wasGlobalMusicEnabled = globalMusicCheckBox.isSelected();
                 wasBgMusicEnabled = backgroundMusicCheckBox.isSelected();
-                globalMusicCheckBox.setSelected(false);
-                backgroundMusicCheckBox.setSelected(false);
+                setAudioEnabled(globalMusicCheckBox, false);
+                setAudioEnabled(backgroundMusicCheckBox, false);
             } else {
                 // 窗口获焦：恢复之前的音乐状态
-                globalMusicCheckBox.setSelected(wasGlobalMusicEnabled);
-                backgroundMusicCheckBox.setSelected(wasBgMusicEnabled);
+                setAudioEnabled(globalMusicCheckBox, wasGlobalMusicEnabled);
+                setAudioEnabled(backgroundMusicCheckBox, wasBgMusicEnabled);
             }
         });
     }
 
+    private void setAudioEnabled(CheckBox toggle, boolean enabled) {
+        audioConfigSyncSuppressed = true;
+        try {
+            toggle.setSelected(enabled);
+        } finally {
+            audioConfigSyncSuppressed = false;
+        }
+    }
     public void setCurrentUser(User user) {
         this.currentUser = user;
     }
@@ -481,8 +510,8 @@ public class SettingsController {
             Stage stage = ScreenManager.getStage();
             if (stage != null && !stage.isFocused()) {
                 // 窗口仍在后台但用户取消了静音，恢复之前状态
-                globalMusicCheckBox.setSelected(wasGlobalMusicEnabled);
-                backgroundMusicCheckBox.setSelected(wasBgMusicEnabled);
+                setAudioEnabled(globalMusicCheckBox, wasGlobalMusicEnabled);
+                setAudioEnabled(backgroundMusicCheckBox, wasBgMusicEnabled);
             }
         }
     }

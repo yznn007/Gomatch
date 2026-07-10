@@ -8,6 +8,7 @@ import com.gomatch.server.redis.RedisManager;
 import com.gomatch.server.room.Room;
 import com.gomatch.server.room.RoomManager;
 import com.gomatch.server.session.SessionManager;
+import com.gomatch.server.service.ConfigService;
 import com.gomatch.server.storage.StorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,7 @@ public class ClientHandler implements Runnable {
     private static final RankDAO rankDAO = new RankDAO();
     private static final RoomManager roomManager = RoomManager.getInstance();
     private static final SessionManager sessionManager = SessionManager.getInstance();
+    private static final ConfigService configService = ConfigService.getInstance();
 
     private final Socket socket;
     private BufferedReader reader;
@@ -160,6 +162,8 @@ public class ClientHandler implements Runnable {
             case Protocol.WATCHER_HISTORY -> handleWatcherHistory(msg);
             case Protocol.LOGOUT          -> handleLogout();
             case Protocol.HEARTBEAT       -> handleHeartbeat();
+            case Protocol.REQ_GET_CONFIG  -> handleGetConfig();
+            case Protocol.REQ_UPDATE_CONFIG -> handleUpdateConfig(msg);
             case Protocol.AI_MATCH        -> handleAiMatch(msg);
             case Protocol.UPLOAD_AVATAR   -> handleUploadAvatar(msg);
             case Protocol.GET_AVATAR      -> handleGetAvatar(msg);
@@ -338,6 +342,8 @@ public class ClientHandler implements Runnable {
                             .set("disconnectedUserId", String.valueOf(disconnectedId))
                             .build());
 
+                    sendConfig();
+
                     // 回放已有落子（在 LOGIN_OK 之后发送，确保客户端先初始化对局界面）
                     activeRoom.replayMovesTo(this);
 
@@ -369,6 +375,7 @@ public class ClientHandler implements Runnable {
                     .set("phone", userInfo.getPhone() != null ? userInfo.getPhone() : "")
                     .set("token", session.token)
                     .build());
+            sendConfig();
             
             log.info("User logged in: {} (id={}, score={}, token={})", 
                     userInfo.getUsername(), userInfo.getUserId(), userInfo.getScore(),
@@ -379,6 +386,29 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    private void handleGetConfig() {
+        if (!authenticated) {
+            send(Message.of(Protocol.ERROR, "msg", "请先登录"));
+            return;
+        }
+        sendConfig();
+    }
+
+    private void handleUpdateConfig(Message msg) {
+        if (!authenticated) {
+            send(Message.of(Protocol.ERROR, "msg", "请先登录"));
+            return;
+        }
+        boolean updated = configService.updateConfig(userId, msg.getString("configJson"));
+        send(Message.of(Protocol.RESP_UPDATE_CONFIG, "success", updated));
+    }
+
+    private void sendConfig() {
+        String configJson = configService.getConfigJson(userId);
+        if (configJson != null) {
+            send(Message.of(Protocol.RESP_GET_CONFIG, "configJson", configJson));
+        }
+    }
     // ==================== 修改密码 ====================
 
     private void handleChangePassword(Message msg) {
@@ -2084,6 +2114,7 @@ public class ClientHandler implements Runnable {
         if (authenticated && userId > 0) {
             roomManager.cancelMatch(userId);
             sessionManager.updateSessionHandler(userId, null);
+            configService.flushAsync(userId);
             RedisManager.getInstance().setOffline(userId);
             log.info("用户 {} 断开连接，保留会话等待重连", userId);
         }

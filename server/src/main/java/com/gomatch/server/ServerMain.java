@@ -7,6 +7,7 @@ import com.gomatch.server.handler.ClientHandler;
 import com.gomatch.server.redis.RedisManager;
 import com.gomatch.server.room.RoomManager;
 import com.gomatch.server.security.ConnectionGuard;
+import com.gomatch.server.service.ConfigService;
 import com.gomatch.server.security.GuardedSocket;
 import com.gomatch.server.security.ProtocolRequestGuard;
 import com.gomatch.server.storage.StorageManager;
@@ -163,6 +164,7 @@ public class ServerMain {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+        ConfigService.getInstance().shutdown();
         RedisManager.getInstance().close();
         DBUtil.close();
         log.info("Server stopped. Final connections: {}", connectionCount.get());

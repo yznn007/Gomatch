@@ -23,6 +23,7 @@ public class ClientMain extends Application {
         javafx.scene.text.Font.loadFont(getClass().getResourceAsStream("/fonts/MapleMono-NF-CN-Bold.ttf"), 14);
 
         connector = new ServerConnector();
+        ConfigManager.getInstance().loadLocal();
         // 初始化国际化语言
         I18N.init(UserSettings.get().language);
         // 全局断线监听器

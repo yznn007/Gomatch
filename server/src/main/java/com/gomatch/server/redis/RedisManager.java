@@ -505,10 +505,17 @@ public class RedisManager {
             log.warn("Failed to setex key {}: {}", key, e.getMessage());
         }
     }
+    /** 设置 key 的值，不设置过期时间。 */
+    public void set(String key, String value) {
+        if (!isConnected()) return;
+        try {
+            syncCommands.set(key, value);
+        } catch (Exception e) {
+            log.warn("Failed to set key {}: {}", key, e.getMessage());
+        }
+    }
 
-    /**
-     * 获取 key 的值。
-     */
+    /** 获取 key 的值。 */
     public String get(String key) {
         if (!isConnected()) return null;
         try {

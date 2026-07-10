@@ -27,6 +27,12 @@ CREATE TABLE IF NOT EXISTS `t_user` (
     INDEX `idx_role_status` (`role`, `status`),
     INDEX `idx_score` (`score`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
+CREATE TABLE IF NOT EXISTS `t_user_profile` (
+    `user_id` BIGINT PRIMARY KEY COMMENT '用户ID',
+    `config_json` JSON NOT NULL COMMENT '客户端配置(JSON)',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后同步时间',
+    CONSTRAINT `fk_user_profile_user` FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户云端配置表';
 
 CREATE TABLE IF NOT EXISTS `t_room` (
     `room_id` VARCHAR(50) PRIMARY KEY COMMENT '房间ID(UUID)',

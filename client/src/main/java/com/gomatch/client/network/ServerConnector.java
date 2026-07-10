@@ -1,6 +1,7 @@
 package com.gomatch.client.network;
 
 import com.gomatch.client.AppConfig;
+import com.gomatch.client.ConfigManager;
 import com.gomatch.client.model.User;
 import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
@@ -122,6 +123,7 @@ public class ServerConnector {
                     }
                     Message message = parsed.get();
                     lastServerResponseTime.set(System.currentTimeMillis());
+                    ConfigManager.getInstance().handleServerMessage(message);
                     if ("RECONNECT_OK".equals(message.getCmd())) {
                         handleReconnectOk(message);
                         continue;

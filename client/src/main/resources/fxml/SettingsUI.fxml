@@ -86,7 +86,7 @@
                             <Label text="%settings.globalMusic" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
                             <HBox spacing="10" alignment="CENTER_LEFT" styleClass="audio-control-row" GridPane.rowIndex="0" GridPane.columnIndex="1">
                                 <CheckBox fx:id="globalMusicCheckBox" styleClass="remember-checkbox" selected="true"/>
-                                <ElasticVolumeSlider fx:id="globalVolumeSlider"
+                                <ElasticVolumeSlider fx:id="globalVolumeSlider" onMouseReleased="#handleAudioVolumeReleased"
                                                      startingValue="0"
                                                      maxValue="100"
                                                      value="45"
@@ -99,7 +99,7 @@
                             <Label text="%settings.bgMusic" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
                             <HBox spacing="10" alignment="CENTER_LEFT" styleClass="audio-control-row" GridPane.rowIndex="1" GridPane.columnIndex="1">
                                 <CheckBox fx:id="backgroundMusicCheckBox" styleClass="remember-checkbox" selected="true"/>
-                                <ElasticVolumeSlider fx:id="backgroundVolumeSlider"
+                                <ElasticVolumeSlider fx:id="backgroundVolumeSlider" onMouseReleased="#handleAudioVolumeReleased"
                                                      startingValue="0"
                                                      maxValue="100"
                                                      value="35"
@@ -112,7 +112,7 @@
                             <Label text="%settings.sound" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="muted"/>
                             <HBox spacing="10" alignment="CENTER_LEFT" styleClass="audio-control-row" GridPane.rowIndex="2" GridPane.columnIndex="1">
                                 <CheckBox fx:id="soundCheckBox" styleClass="remember-checkbox" selected="true"/>
-                                <ElasticVolumeSlider fx:id="soundVolumeSlider"
+                                <ElasticVolumeSlider fx:id="soundVolumeSlider" onMouseReleased="#handleAudioVolumeReleased"
                                                      startingValue="0"
                                                      maxValue="100"
                                                      value="85"
