@@ -163,8 +163,8 @@ public class PixelCard extends StackPane {
             this.setViewOrder(-1.0); // 悬停时层级置顶，防止边缘被相邻卡片遮挡
             targetScale = 1.05;      // 悬停轻微放大 1.05 倍
             
-            // 鼠标滑入时施加一个初速度的微弱摆动力学推力 (由 1.5 削减为 0.25)
-            double push = (new Random().nextDouble() - 0.5) * 0.25;
+            // 鼠标滑入时施加一个初速度的微弱摆动力学推力 (由 0.25 削减为 0.06，避免过大摆动)
+            double push = (new Random().nextDouble() - 0.5) * 0.06;
             angularVelocity += push;
             
             lastMouseX = e.getScreenX();
@@ -258,7 +258,12 @@ public class PixelCard extends StackPane {
                 double dt = 0.016; 
                 double gravityVal = 6.5;   // 重力恢复系数（调高使摆角回正力更强）
                 double dampingVal = 3.5;   // 摆动阻尼（调高使摆动能快速静止）
-                double angularAcceleration = -gravityVal * Math.sin(angle) - dampingVal * angularVelocity;
+                
+                // 偏移越远阻力（回弹恢复力与阻尼系数）越大，限制过度偏转并提供更好的物理拉力表现
+                double currentDamping = dampingVal * (1.0 + 8.0 * Math.abs(angle));
+                double currentGravity = gravityVal * (1.0 + 12.0 * angle * angle);
+                
+                double angularAcceleration = -currentGravity * Math.sin(angle) - currentDamping * angularVelocity;
                 angularVelocity += angularAcceleration * dt;
                 angle += angularVelocity * dt;
                 
@@ -563,10 +568,10 @@ public class PixelCard extends StackPane {
             double dt = (now - lastTime) / 1_000_000_000.0;
             if (dt > 0) {
                 double mouseVx = dx / dt;
-                // 力学推力系数：根据鼠标横向速度，产生 Z 轴角度角加速度 (由 0.00008 调小为 0.000025，使晃动幅度变得轻柔优雅)
-                double force = mouseVx * 0.000025;
-                // 限制最大瞬时力，防止甩动过度 (限制从 0.6 缩减为 0.15)
-                force = Math.max(-0.15, Math.min(0.15, force));
+                // 力学推力系数：根据鼠标横向速度，产生 Z 轴角度角加速度 (由 0.000025 进一步降低为 0.000006，微调使卡片平稳摆动)
+                double force = mouseVx * 0.000006;
+                // 限制最大瞬时力，防止甩动过度 (从 0.15 削减为 0.04)
+                force = Math.max(-0.04, Math.min(0.04, force));
                 angularVelocity += force;
             }
         }
