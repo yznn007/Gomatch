@@ -3,12 +3,15 @@ package com.gomatch.server.storage;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.model.OSSObject;
+import com.aliyun.oss.model.GeneratePresignedUrlRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.Base64;
+import java.util.Date;
 
 public class OssService {
     private static final Logger logger = LoggerFactory.getLogger(OssService.class);
@@ -115,6 +118,34 @@ public class OssService {
         try {
             ossClient = createOssClient();
             return ossClient.doesObjectExist(bucketName, filePath);
+        } finally {
+            if (ossClient != null) {
+                ossClient.shutdown();
+            }
+        }
+    }
+
+    public String generatePresignedUrl(String filePath) {
+        return generatePresignedUrl(filePath, 3600);
+    }
+
+    public String generatePresignedUrl(String filePath, int expirationSeconds) {
+        String objectKey = filePath;
+        if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+            String bucketHost = bucketName + "." + endpoint.replace("https://", "").replace("http://", "");
+            if (filePath.contains(bucketHost)) {
+                objectKey = filePath.substring(filePath.indexOf(bucketHost) + bucketHost.length() + 1);
+            }
+        }
+        OSS ossClient = null;
+        try {
+            ossClient = createOssClient();
+            Date expiration = new Date(System.currentTimeMillis() + (long) expirationSeconds * 1000);
+            GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucketName, objectKey);
+            request.setExpiration(expiration);
+            URL url = ossClient.generatePresignedUrl(request);
+            logger.info("Generated presigned URL for: {}, expires in {} seconds", objectKey, expirationSeconds);
+            return url.toString();
         } finally {
             if (ossClient != null) {
                 ossClient.shutdown();

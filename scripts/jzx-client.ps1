@@ -19,10 +19,10 @@ if (-not $jdkFound) {
 # Set console code page to UTF-8
 chcp 65001 | Out-Null
 
-# Compile common module first
+# Compile common module first (must reference root pom.xml for reactor)
 Write-Host "[BUILD] Installing common module..." -ForegroundColor Yellow
-mvn install -pl common -am -DskipTests -q
+mvn -f "$PSScriptRoot/../pom.xml" install -pl common -am -DskipTests -q
 
-# Start client
-Write-Host "[START] Starting client..." -ForegroundColor Green
-mvn -f "$PSScriptRoot/../client/pom.xml" javafx:run "-Dfile.encoding=UTF-8"
+# Compile + run (compile ensures latest sources are built; skip clean to allow multiple instances)
+Write-Host "[START] Compiling & starting client..." -ForegroundColor Green
+mvn -f "$PSScriptRoot/../client/pom.xml" compile javafx:run "-Dfile.encoding=UTF-8"

@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.Circle?>
 <?import com.gomatch.client.ui.PixelCard?>
 
 <!--
@@ -16,7 +18,14 @@
         <VBox spacing="0" cache="true" cacheHint="QUALITY" viewOrder="-2.0">
             <HBox alignment="CENTER_LEFT" spacing="18">
                 <HBox fx:id="playerInfoBox" styleClass="player-chip" onMouseClicked="#handleProfile" spacing="12">
-                    <Label fx:id="avatarLabel" text="U" styleClass="avatar" prefWidth="44" prefHeight="44" minWidth="44" minHeight="44"/>
+                    <StackPane fx:id="lobbyAvatarPane" prefWidth="44" prefHeight="44" minWidth="44" minHeight="44" styleClass="avatar-badge" style="-fx-background-color: #0ea5e9; -fx-cursor: hand;" onMouseClicked="#handleAvatarClick">
+                        <Label fx:id="avatarLabel" text="U" styleClass="avatar-badge-text" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                        <ImageView fx:id="avatarImageView" fitWidth="44" fitHeight="44" visible="false">
+                            <clip>
+                                <Circle centerX="22" centerY="22" radius="22"/>
+                            </clip>
+                        </ImageView>
+                    </StackPane>
                     <VBox spacing="2" alignment="CENTER_LEFT">
                         <Label fx:id="userInfoLabel" text="" styleClass="player-name"/>
                         <Label fx:id="userScoreLabel" text="" styleClass="player-score"/>
@@ -84,7 +93,7 @@
                     <Button text="«" onAction="#toggleRankDrawer" styleClass="drawer-toggle"/>
                 </HBox>
                 <Separator styleClass="section-divider" prefWidth="Infinity"/>
-                <ListView fx:id="rankDrawerList" VBox.vgrow="ALWAYS"/>
+                <ListView fx:id="rankDrawerList" VBox.vgrow="ALWAYS" styleClass="drawer-list"/>
             </VBox>
         </StackPane>
     </center>

@@ -734,7 +734,7 @@ gomatch:game:{roomId}  ->  游戏事件频道
 
 | 文件 | 行数 | 说明 |
 |------|------|------|
-| ClientHandler.java | ~1400 | 协议分发 + 所有业务处理方法 |
+| ClientHandler.java | ~1900 | 协议分发 + 所有业务处理方法 + 头像预签名 URL 补全 |
 | Room.java | ~500 | 房间状态机 + 游戏逻辑 + 再来一局 |
 | RoomManager.java | ~200 | 房间管理 + 匹配逻辑 |
 | Game.java | ~150 | 棋盘状态 + 胜负判定 |
@@ -751,7 +751,7 @@ gomatch:game:{roomId}  ->  游戏事件频道
 | GameActionDAO.java | ~80 | 游戏操作记录 |
 | SocketSessionDAO.java | ~120 | Socket会话持久化 |
 | RoomDAO.java | ~100 | 房间持久化 |
-| **合计** | **~3400** | **全部功能已实现** |
+| **合计** | **~3900** | **全部功能已实现** |
 
 ---
 

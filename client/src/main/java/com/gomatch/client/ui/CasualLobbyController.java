@@ -286,6 +286,9 @@ public class CasualLobbyController implements NetworkListener {
             int wScore = msg.has("whiteScore") ? msg.getInt("whiteScore") : 0;
             String username = currentUser != null ? currentUser.getUsername() : "unknown";
             ctrl.setGameInfo(bId, bName, wId, wName, username, bScore, wScore);
+            String bAvatar = msg.has("blackAvatarUrl") ? msg.getString("blackAvatarUrl") : "";
+            String wAvatar = msg.has("whiteAvatarUrl") ? msg.getString("whiteAvatarUrl") : "";
+            ctrl.setPlayerAvatars(bAvatar, wAvatar);
         } else if (Protocol.MATCH_TIMEOUT.equals(cmd)) {
             stopMatching();
             setStatus("匹配超时，请重试", true);
@@ -439,9 +442,12 @@ public class CasualLobbyController implements NetworkListener {
                     }
                 } catch (Exception ignored) {}
 
-                // Avatar Icon (Eye 👁️)
+                // Avatar Icon (Eye 👁️) —— 固定 48x48 圆形，避免在 HBox 里被拉伸成椭圆
                 javafx.scene.layout.StackPane avatar = new javafx.scene.layout.StackPane();
                 avatar.getStyleClass().add("avatar-badge");
+                avatar.setPrefSize(48, 48);
+                avatar.setMinSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
+                avatar.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
                 avatar.setStyle("-fx-background-color: #a78bfa;"); // Purple for spectating
                 Label avatarText = new Label("观");
                 avatarText.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);

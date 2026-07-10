@@ -9,6 +9,9 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
@@ -186,7 +189,13 @@ public class FriendsController implements NetworkListener {
             if (friends != null) {
                 for (int i = 0; i < friends.length(); i++) {
                     org.json.JSONObject f = friends.getJSONObject(i);
-                    friendsData.add(new FriendInfoModel(String.valueOf(f.getLong("friendUserId")), f.getString("friendUsername"), String.valueOf(f.getInt("friendScore")), f.optBoolean("online", false)));
+                    friendsData.add(new FriendInfoModel(
+                            String.valueOf(f.getLong("friendUserId")), 
+                            f.getString("friendUsername"), 
+                            String.valueOf(f.getInt("friendScore")), 
+                            f.optBoolean("online", false),
+                            f.optString("avatarUrl", "")
+                    ));
                 }
             }
         } else if ("FRIEND_REQUEST_LIST".equals(cmd)) {
@@ -233,18 +242,25 @@ public class FriendsController implements NetworkListener {
         private final String friendUsername;
         private final String friendScore;
         private final boolean online;
+        private final String avatarUrl;
 
         public FriendInfoModel(String friendUserId, String friendUsername, String friendScore, boolean online) {
+            this(friendUserId, friendUsername, friendScore, online, "");
+        }
+
+        public FriendInfoModel(String friendUserId, String friendUsername, String friendScore, boolean online, String avatarUrl) {
             this.friendUserId = friendUserId;
             this.friendUsername = friendUsername;
             this.friendScore = friendScore;
             this.online = online;
+            this.avatarUrl = avatarUrl;
         }
 
         public String getFriendUserId() { return friendUserId; }
         public String getFriendUsername() { return friendUsername; }
         public String getFriendScore() { return friendScore; }
         public boolean isOnline() { return online; }
+        public String getAvatarUrl() { return avatarUrl; }
     }
 
     public static class FriendRequestModel {
@@ -289,17 +305,58 @@ public class FriendsController implements NetworkListener {
                 javafx.scene.layout.HBox.setHgrow(card, javafx.scene.layout.Priority.ALWAYS);
 
                 // Avatar with Status Dot
+                final double AVATAR_SIZE = 44;
                 javafx.scene.layout.StackPane avatarContainer = new javafx.scene.layout.StackPane();
                 avatarContainer.setAlignment(javafx.geometry.Pos.BOTTOM_RIGHT);
+                avatarContainer.setPrefSize(AVATAR_SIZE + 4, AVATAR_SIZE + 4);
 
                 javafx.scene.layout.StackPane avatar = new javafx.scene.layout.StackPane();
                 avatar.getStyleClass().add("avatar-badge");
+                avatar.setPrefSize(AVATAR_SIZE, AVATAR_SIZE);
+                avatar.setMinSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
+                avatar.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
                 String name = friend.getFriendUsername() != null ? friend.getFriendUsername() : "F";
                 String charVal = name.isEmpty() ? "F" : name.substring(0, 1).toUpperCase();
                 Label avatarText = new Label(charVal);
                 avatarText.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 avatarText.getStyleClass().add("avatar-badge-text");
-                avatar.getChildren().add(avatarText);
+
+                String avatarUrl = friend.getAvatarUrl();
+                if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                    try {
+                        Image image = new Image(avatarUrl, true);
+                        ImageView avatarImg = new ImageView();
+                        avatarImg.setFitWidth(AVATAR_SIZE);
+                        avatarImg.setFitHeight(AVATAR_SIZE);
+                        // 圆形裁剪
+                        javafx.scene.shape.Circle imgClip = new javafx.scene.shape.Circle(
+                                AVATAR_SIZE / 2.0, AVATAR_SIZE / 2.0, AVATAR_SIZE / 2.0);
+                        avatarImg.setClip(imgClip);
+                        image.errorProperty().addListener((obs, oldVal, newVal) -> {
+                            if (newVal) {
+                                avatarImg.setVisible(false);
+                                avatarText.setVisible(true);
+                            }
+                        });
+                        image.progressProperty().addListener((obs, oldVal, newVal) -> {
+                            if (newVal.doubleValue() >= 1.0 && !image.isError()) {
+                                avatarImg.setImage(image);
+                                avatarImg.setVisible(true);
+                                avatarText.setVisible(false);
+                            }
+                        });
+                        if (!image.isBackgroundLoading() && !image.isError()) {
+                            avatarImg.setImage(image);
+                            avatarImg.setVisible(true);
+                            avatarText.setVisible(false);
+                        }
+                        avatar.getChildren().addAll(avatarText, avatarImg);
+                    } catch (Exception e) {
+                        avatar.getChildren().add(avatarText);
+                    }
+                } else {
+                    avatar.getChildren().add(avatarText);
+                }
 
                 // Status dot
                 javafx.scene.shape.Circle statusDot = new javafx.scene.shape.Circle(5);
@@ -311,6 +368,15 @@ public class FriendsController implements NetworkListener {
                 statusDot.setTranslateY(2);
 
                 avatarContainer.getChildren().addAll(avatar, statusDot);
+
+                // 点击头像放大预览
+                String previewUrl = avatarUrl;
+                String previewName = name;
+                avatarContainer.setOnMouseClicked((MouseEvent e) -> {
+                    e.consume();
+                    showAvatarPreview(previewUrl, previewName);
+                });
+                avatarContainer.setStyle("-fx-cursor: hand;");
 
                 // Info VBox
                 VBox infoBox = new VBox(4);
@@ -388,9 +454,13 @@ public class FriendsController implements NetworkListener {
                 javafx.scene.layout.HBox.setHgrow(card, javafx.scene.layout.Priority.ALWAYS);
 
                 // Avatar Circle
+                final double REQ_AVATAR_SIZE = 44;
                 javafx.scene.layout.StackPane avatar = new javafx.scene.layout.StackPane();
                 avatar.getStyleClass().add("avatar-badge");
                 avatar.setStyle("-fx-background-color: #f59e0b;"); // Orange for requests
+                avatar.setPrefSize(REQ_AVATAR_SIZE, REQ_AVATAR_SIZE);
+                avatar.setMinSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
+                avatar.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
                 String name = req.getFromUsername() != null ? req.getFromUsername() : "R";
                 String charVal = name.isEmpty() ? "R" : name.substring(0, 1).toUpperCase();
                 Label avatarText = new Label(charVal);
@@ -442,5 +512,18 @@ public class FriendsController implements NetworkListener {
                 requestsContainer.getChildren().add(card);
             }
         });
+    }
+
+    private void showAvatarPreview(String avatarUrl, String username) {
+        ScreenManager.showDialog("/fxml/AvatarPreviewUI.fxml",
+            (AvatarPreviewController ctrl) -> {
+                if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                    Image image = new Image(avatarUrl, true);
+                    ctrl.setAvatar(image, username);
+                } else {
+                    ctrl.setAvatar(null, username);
+                }
+            }
+        );
     }
 }

@@ -21,8 +21,8 @@ chcp 65001 | Out-Null
 
 # Compile common module first
 Write-Host "[BUILD] Installing common module..." -ForegroundColor Yellow
-mvn install -pl common -am -DskipTests -q
+mvn -f "$PSScriptRoot/../pom.xml" install -pl common -am -DskipTests -q
 
-# Start client
-Write-Host "[START] Starting client..." -ForegroundColor Green
-mvn -f "$PSScriptRoot/../client/pom.xml" javafx:run "-Dfile.encoding=UTF-8"
+# Compile + run
+Write-Host "[START] Compiling & starting client..." -ForegroundColor Green
+mvn -f "$PSScriptRoot/../client/pom.xml" compile javafx:run "-Dfile.encoding=UTF-8"

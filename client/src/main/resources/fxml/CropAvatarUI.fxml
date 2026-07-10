@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.Group?>
+<?import javafx.scene.shape.Rectangle?>
+
+<!--
+  图片固定铺满画布，用户拖动白色裁剪框选择 640×640 区域。
+  遮罩用 Group 包裹 4 个 Rectangle（Group 不做 layout，Rectangle 自己的尺寸生效）。
+-->
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.gomatch.client.ui.CropAvatarController"
+      spacing="0" alignment="CENTER"
+      prefWidth="540" prefHeight="640"
+      minWidth="540" minHeight="640"
+      style="-fx-background-color: #111827;">
+
+    <!-- 顶部标题 -->
+    <HBox alignment="CENTER_LEFT" prefHeight="36" style="-fx-padding: 0 16 0 16;">
+        <Label text="拖动方框调整裁剪区域"
+               style="-fx-font-size: 13px; -fx-text-fill: #e2e8f0;"/>
+    </HBox>
+
+    <!-- 主画布 -->
+    <StackPane fx:id="canvasContainer"
+               VBox.vgrow="ALWAYS"
+               style="-fx-background-color: #000000;">
+
+        <!-- 图片层 -->
+        <ImageView fx:id="imageView"
+                   preserveRatio="false"
+                   mouseTransparent="true"
+                   StackPane.alignment="CENTER"/>
+
+        <!-- 遮罩层：Group 不做自动 layout -->
+        <Group fx:id="maskGroup" mouseTransparent="false">
+            <Rectangle fx:id="maskTop"
+                       fill="rgba(0,0,0,0.45)"
+                       mouseTransparent="true"/>
+            <Rectangle fx:id="maskBottom"
+                       fill="rgba(0,0,0,0.45)"
+                       mouseTransparent="true"/>
+            <Rectangle fx:id="maskLeft"
+                       fill="rgba(0,0,0,0.45)"
+                       mouseTransparent="true"/>
+            <Rectangle fx:id="maskRight"
+                       fill="rgba(0,0,0,0.45)"
+                       mouseTransparent="true"/>
+
+            <!-- 可拖动的透明裁剪框（接收鼠标事件，无边框） -->
+            <Rectangle fx:id="cropFrame"
+                       fill="transparent"
+                       stroke="transparent"
+                       strokeWidth="0"
+                       mouseTransparent="false"/>
+        </Group>
+    </StackPane>
+
+    <!-- 底部按钮栏 -->
+    <HBox spacing="30" alignment="CENTER" prefHeight="64"
+          style="-fx-padding: 0 20 0 20; -fx-background-color: #111827;">
+
+        <Button text="取消" onAction="#handleCancel"
+                prefWidth="90" prefHeight="36"
+                style="-fx-font-size: 13px;
+                       -fx-background-color: transparent;
+                       -fx-text-fill: #cbd5e1;
+                       -fx-border-color: #475569;
+                       -fx-border-radius: 4;
+                       -fx-background-radius: 4;"/>
+
+        <Button text="确定" onAction="#handleConfirm"
+                prefWidth="90" prefHeight="36"
+                style="-fx-font-size: 13px;
+                       -fx-font-weight: bold;
+                       -fx-background-color: #22c55e;
+                       -fx-text-fill: white;
+                       -fx-background-radius: 4;"/>
+    </HBox>
+</VBox>

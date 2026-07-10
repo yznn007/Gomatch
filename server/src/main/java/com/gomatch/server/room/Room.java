@@ -11,6 +11,7 @@ import com.gomatch.server.dao.RankDAO;
 import com.gomatch.server.dao.RecordDAO;
 import com.gomatch.server.dao.RoomWatcherDAO;
 import com.gomatch.server.dao.UserDAO;
+import com.gomatch.server.storage.StorageManager;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +53,8 @@ public class Room {
     private String whiteUsername;
     private int blackScore;
     private int whiteScore;
+    private String blackAvatarUrl;
+    private String whiteAvatarUrl;
     private boolean gameStarted;
     private Instant gameStartTime;
     private boolean blackReady = false;
@@ -379,9 +382,11 @@ public class Room {
             whiteUserId = -1;
             whiteUsername = "AI";
             whiteScore = 0;
-            // 查询黑方积分
+            whiteAvatarUrl = "";
+            // 查询黑方积分和头像
             UserDAO.UserInfo blackInfo = userDAO.getUserById(blackUserId);
             blackScore = blackInfo != null ? blackInfo.getScore() : 0;
+            blackAvatarUrl = resolvePlayerAvatar(blackUserId);
             aiPlayer = new AIPlayer(Game.WHITE, aiDifficulty);
             log.info("AI game started in room {}: BLACK={}, AI=WHITE, difficulty={}, startTime={}",
                     roomId, blackUserId, aiDifficulty, gameStartTime);
@@ -390,11 +395,13 @@ public class Room {
                 log.error("startGame rejected: whiteUserId={} is not set", whiteUserId);
                 return false;
             }
-            // 查询双方积分
+            // 查询双方积分和头像
             UserDAO.UserInfo blackInfo = userDAO.getUserById(blackUserId);
             UserDAO.UserInfo whiteInfo = userDAO.getUserById(whiteUserId);
             blackScore = blackInfo != null ? blackInfo.getScore() : 0;
             whiteScore = whiteInfo != null ? whiteInfo.getScore() : 0;
+            blackAvatarUrl = resolvePlayerAvatar(blackUserId);
+            whiteAvatarUrl = resolvePlayerAvatar(whiteUserId);
             log.info("Game started in room {}: BLACK={}({}分), WHITE={}({}分), startTime={}",
                     roomId, blackUserId, blackScore, whiteUserId, whiteScore, gameStartTime);
         }
@@ -602,6 +609,22 @@ public class Room {
             UserDAO.UserInfo p2Info = userDAO.getUserById(player2Id);
             String p1Name = p1Info != null ? p1Info.getUsername() : "未知";
             String p2Name = p2Info != null ? p2Info.getUsername() : (aiMode ? "AI" : "未知");
+            // 解析双方头像 URL：优先用本房间已解析过的 blackAvatarUrl/whiteAvatarUrl，回退到重新查询
+            // 这样回放/记录列表页面就能直接显示双方头像图片
+            String p1Avatar = "";
+            String p2Avatar = "";
+            if (player1Id == blackUserId) {
+                p1Avatar = blackAvatarUrl != null ? blackAvatarUrl : resolvePlayerAvatar(blackUserId);
+            } else if (player1Id == whiteUserId) {
+                p1Avatar = whiteAvatarUrl != null ? whiteAvatarUrl : resolvePlayerAvatar(whiteUserId);
+            }
+            if (player2Id == blackUserId) {
+                p2Avatar = blackAvatarUrl != null ? blackAvatarUrl : resolvePlayerAvatar(blackUserId);
+            } else if (player2Id == whiteUserId) {
+                p2Avatar = whiteAvatarUrl != null ? whiteAvatarUrl : resolvePlayerAvatar(whiteUserId);
+            }
+            if (p1Avatar == null) p1Avatar = "";
+            if (p2Avatar == null) p2Avatar = "";
             long now = System.currentTimeMillis();
             String createTime = java.time.Instant.now().toString().replace("T", " ").substring(0, 19);
 
@@ -623,8 +646,12 @@ public class Room {
             recForP1.put("recordId", currentRecordId);
             recForP1.put("player1Id", player1Id);
             recForP1.put("player1Name", p1Name);
+            recForP1.put("player1Score", blackScore);
+            recForP1.put("player1Avatar", p1Avatar);
             recForP1.put("player2Id", player2Id);
             recForP1.put("player2Name", p2Name);
+            recForP1.put("player2Score", whiteScore);
+            recForP1.put("player2Avatar", p2Avatar);
             recForP1.put("winnerId", winnerId);
             recForP1.put("result", result);
             recForP1.put("moveCount", moveCount);
@@ -638,8 +665,12 @@ public class Room {
             recForP2.put("recordId", currentRecordId);
             recForP2.put("player1Id", player1Id);
             recForP2.put("player1Name", p1Name);
+            recForP2.put("player1Score", blackScore);
+            recForP2.put("player1Avatar", p1Avatar);
             recForP2.put("player2Id", player2Id);
             recForP2.put("player2Name", p2Name);
+            recForP2.put("player2Score", whiteScore);
+            recForP2.put("player2Avatar", p2Avatar);
             recForP2.put("winnerId", winnerId);
             recForP2.put("result", result);
             recForP2.put("moveCount", moveCount);
@@ -1023,6 +1054,10 @@ public class Room {
             UserDAO.UserInfo whiteInfo = userDAO.getUserById(whiteUserId);
             blackScore = blackInfo != null ? blackInfo.getScore() : 0;
             whiteScore = whiteInfo != null ? whiteInfo.getScore() : 0;
+            blackAvatarUrl = resolvePlayerAvatar(blackUserId);
+            whiteAvatarUrl = resolvePlayerAvatar(whiteUserId);
+        } else {
+            blackAvatarUrl = resolvePlayerAvatar(blackUserId);
         }
 
         // 广播新游戏开始（附带用户名和积分）
@@ -1306,15 +1341,17 @@ public class Room {
                 roomId, roomName, status, players.size(), 2);
     }
 
-    /** 构建包含用户名和积分的 GAME_START 消息 */
+    /** 构建包含用户名、积分和头像的 GAME_START 消息 */
     public Message buildGameStartMessage() {
         return Message.of(Protocol.GAME_START,
                 "blackUserId", blackUserId,
                 "blackUsername", blackUsername != null ? blackUsername : String.valueOf(blackUserId),
                 "blackScore", blackScore,
+                "blackAvatarUrl", blackAvatarUrl != null ? blackAvatarUrl : "",
                 "whiteUserId", whiteUserId,
                 "whiteUsername", whiteUsername != null ? whiteUsername : String.valueOf(whiteUserId),
-                "whiteScore", whiteScore);
+                "whiteScore", whiteScore,
+                "whiteAvatarUrl", whiteAvatarUrl != null ? whiteAvatarUrl : "");
     }
 
     public static List<String[]> getRoomListInfo(Map<String, Room> rooms) {
@@ -1341,5 +1378,56 @@ public class Room {
         }
         log.debug("getRoomListInfo completed: {} rooms listed", list.size());
         return list;
+    }
+
+    /**
+     * 查询玩家的头像 URL（OSS 预签名 30 天有效），失败则返回空字符串。
+     */
+    private String resolvePlayerAvatar(long userId) {
+        try {
+            String avatarPath = userDAO.getAvatar(userId);
+            if (avatarPath == null || avatarPath.isEmpty()) {
+                log.debug("resolvePlayerAvatar: userId={} has no avatar in DB", userId);
+                return "";
+            }
+            String lower = avatarPath.toLowerCase();
+            // 已带签名参数（如 ?Expires=...）的 URL 直接返回，不需要重新签名
+            if (avatarPath.contains("?") && (lower.startsWith("http://") || lower.startsWith("https://"))) {
+                log.info("resolvePlayerAvatar: userId={} already has presigned URL, length={}", userId, avatarPath.length());
+                return avatarPath;
+            }
+            // 纯 OSS URL 无签名参数（历史数据 bug）→ 提取 object key 重新签名
+            if (lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("file://")) {
+                try {
+                    java.net.URI uri = java.net.URI.create(avatarPath);
+                    String urlPath = uri.getPath(); // e.g. /avatar/74_xxx.png
+                    if (urlPath != null && !urlPath.isEmpty()) {
+                        String key = urlPath.startsWith("/") ? urlPath.substring(1) : urlPath;
+                        if (!StorageManager.getInstance().isEnabled()) {
+                            log.warn("resolvePlayerAvatar: userId={} OSS not enabled, skip presign for key={}", userId, key);
+                            return avatarPath; // 降级返回原 URL
+                        }
+                        String presigned = StorageManager.getInstance().getOssService().generatePresignedUrl(key, 86400 * 30);
+                        log.info("resolvePlayerAvatar: userId={} plain URL -> regenerated presigned, length={}", userId,
+                                presigned != null ? presigned.length() : 0);
+                        return presigned != null ? presigned : avatarPath;
+                    }
+                } catch (Exception e) {
+                    log.warn("resolvePlayerAvatar: userId={} failed to parse URL: {}", userId, avatarPath, e);
+                }
+                return avatarPath; // 降级返回原 URL
+            }
+            // 防御：OSS 未启用时避免 NPE
+            if (!StorageManager.getInstance().isEnabled()) {
+                log.warn("resolvePlayerAvatar: userId={} OSS not enabled, skip presign for path={}", userId, avatarPath);
+                return "";
+            }
+            String url = StorageManager.getInstance().getOssService().generatePresignedUrl(avatarPath, 86400 * 30);
+            log.info("resolvePlayerAvatar: userId={} path={} -> url length={}", userId, avatarPath, url != null ? url.length() : 0);
+            return url;
+        } catch (Exception e) {
+            log.debug("Failed to resolve avatar for userId={}: {}", userId, e.getMessage());
+            return "";
+        }
     }
 }

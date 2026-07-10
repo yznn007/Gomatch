@@ -16,6 +16,8 @@ import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -104,6 +106,18 @@ public class BoardController implements NetworkListener {
     private javafx.scene.layout.HBox whiteCardRoot;
     private Label blackOfflineTag;
     private Label whiteOfflineTag;
+    private Label blackSelfTag;
+    private Label whiteSelfTag;
+
+    // 双方头像组件引用
+    private ImageView blackAvatarImageView;
+    private ImageView whiteAvatarImageView;
+    private Label blackAvatarText;
+    private Label whiteAvatarText;
+    private StackPane blackAvatarPane;
+    private StackPane whiteAvatarPane;
+    private javafx.scene.image.Image blackAvatarImage;  // 防止 GC
+    private javafx.scene.image.Image whiteAvatarImage;  // 防止 GC
 
     // 本地倒计时
     private Timeline countdownTimeline;
@@ -280,10 +294,12 @@ public class BoardController implements NetworkListener {
                 whiteDisplay = username;
             }
         }
+        boolean isBlackForScore = myIdStr.equals(this.blackId) || (username != null && username.equals(this.blackId));
+        boolean isWhiteForScore = myIdStr.equals(this.whiteId) || (username != null && username.equals(this.whiteId));
         setPlayerCardLabels(blackPlayerNameLabel, blackPlayerIdLabel, blackPlayerScoreLabel,
-                blackDisplay, this.blackId, myIdStr.equals(this.blackId) ? myScore : -1);
+                blackDisplay, this.blackId, isBlackForScore ? myScore : -1);
         setPlayerCardLabels(whitePlayerNameLabel, whitePlayerIdLabel, whitePlayerScoreLabel,
-                whiteDisplay, this.whiteId, myIdStr.equals(this.whiteId) ? myScore : -1);
+                whiteDisplay, this.whiteId, isWhiteForScore ? myScore : -1);
 
         myColor = isBlack ? "black" : "white";
         myTurn  = isBlack;
@@ -304,6 +320,29 @@ public class BoardController implements NetworkListener {
 
         if (!replayMode) {
             startCountdown();
+        }
+        updatePlayerCardSelfMark();
+    }
+
+    /**
+     * 在 setGameInfo 之后调用，根据 myColor 给"自己"那方的卡片增加 self 标记（蓝色徽章 + 边框高亮）。
+     * 观战/未登录时清空双方 self 标记。
+     */
+    private void updatePlayerCardSelfMark() {
+        boolean isMyBlack = "black".equals(myColor);
+        boolean isMyWhite = "white".equals(myColor);
+        applySelfMark(blackCardRoot, blackSelfTag, isMyBlack);
+        applySelfMark(whiteCardRoot, whiteSelfTag, isMyWhite);
+    }
+
+    private void applySelfMark(javafx.scene.layout.HBox cardRoot, Label selfTag, boolean isSelf) {
+        if (cardRoot != null) {
+            cardRoot.getStyleClass().remove("player-info-card-self");
+            if (isSelf) cardRoot.getStyleClass().add("player-info-card-self");
+        }
+        if (selfTag != null) {
+            selfTag.setVisible(isSelf);
+            selfTag.setManaged(isSelf);
         }
     }
 
@@ -405,6 +444,75 @@ public class BoardController implements NetworkListener {
         }
     }
 
+    /**
+     * 更新单个玩家的头像：有头像 URL 时加载图片，失败则回退到首字母。
+     * @param pane         头像 StackPane
+     * @param textLabel    首字母 Label（回退用）
+     * @param imageView    头像 ImageView
+     * @param avatarUrl    头像 URL（空字符串表示无头像）
+     * @param isBlack      true 为黑方（存储引用防止 GC）
+     */
+    private void updatePlayerAvatar(StackPane pane, Label textLabel, ImageView imageView, String avatarUrl, boolean isBlack) {
+        if (pane == null || textLabel == null || imageView == null) {
+            return;
+        }
+        if (avatarUrl == null || avatarUrl.isEmpty()) {
+            textLabel.setVisible(true);
+            imageView.setVisible(false);
+            return;
+        }
+        try {
+            javafx.scene.image.Image image = new javafx.scene.image.Image(avatarUrl, true);
+            // 存储引用防止 GC
+            if (isBlack) {
+                this.blackAvatarImage = image;
+            } else {
+                this.whiteAvatarImage = image;
+            }
+            image.errorProperty().addListener((obs, o, n) -> {
+                if (n) {
+                    Platform.runLater(() -> {
+                        imageView.setVisible(false);
+                        textLabel.setVisible(true);
+                    });
+                }
+            });
+            image.progressProperty().addListener((obs, o, n) -> {
+                if (n.doubleValue() >= 1.0 && !image.isError()) {
+                    Platform.runLater(() -> {
+                        imageView.setImage(image);
+                        imageView.setVisible(true);
+                        textLabel.setVisible(false);
+                    });
+                }
+            });
+            // 缓存命中：后台加载完成但 progress 已是 1.0，监听器不会触发
+            if (image.isBackgroundLoading() && image.getProgress() >= 1.0 && !image.isError()) {
+                imageView.setImage(image);
+                imageView.setVisible(true);
+                textLabel.setVisible(false);
+            } else if (!image.isBackgroundLoading() && !image.isError()) {
+                // 同步加载立即完成
+                imageView.setImage(image);
+                imageView.setVisible(true);
+                textLabel.setVisible(false);
+            }
+        } catch (Exception e) {
+            textLabel.setVisible(true);
+            imageView.setVisible(false);
+        }
+    }
+
+    /**
+     * 供外部 Controller（AiLobby / CasualLobby / RankedLobby / RoomWaiting）在切换场景时
+     * 主动注入双方头像 URL。因为 CopyOnWriteArrayList 快照迭代导致 BoardController 在
+     * switchTo 期间注册为监听器后，无法收到同一条 GAME_START 消息，必须通过此方法显式传递。
+     */
+    public void setPlayerAvatars(String blackAvatarUrl, String whiteAvatarUrl) {
+        updatePlayerAvatar(blackAvatarPane, blackAvatarText, blackAvatarImageView, blackAvatarUrl, true);
+        updatePlayerAvatar(whiteAvatarPane, whiteAvatarText, whiteAvatarImageView, whiteAvatarUrl, false);
+    }
+
     public void setPreviewMode(boolean previewMode) {
         this.previewMode = previewMode;
         if (previewMode) {
@@ -446,13 +554,43 @@ public class BoardController implements NetworkListener {
     public void setReplayMode(boolean replayMode,
                               String blackId, String blackName,
                               String whiteId, String whiteName) {
-        System.out.println("[DEBUG-SETREPLAY] replayMode=" + replayMode
-                + " blackId=" + blackId + " blackName=" + blackName
-                + " whiteId=" + whiteId + " whiteName=" + whiteName
-                + " hasBlackLbl=" + (blackPlayerNameLabel != null)
-                + " hasBlackIdLbl=" + (blackPlayerIdLabel != null)
-                + " hasWhiteLbl=" + (whitePlayerNameLabel != null)
-                + " hasWhiteIdLbl=" + (whitePlayerIdLabel != null));
+        setReplayMode(replayMode, blackId, blackName, whiteId, whiteName, -1, -1, null, null);
+    }
+
+    /**
+     * 设置回放模式（带玩家信息、积分与头像 URL）。
+     * @param blackId       黑方用户ID（可为 null，用占位符）
+     * @param blackName     黑方显示名（可为 null）
+     * @param whiteId       白方用户ID
+     * @param whiteName     白方显示名
+     * @param blackScore    黑方积分（-1表示未知）
+     * @param whiteScore    白方积分（-1表示未知）
+     * @param blackAvatarUrl 黑方头像 URL（null/空表示用首字母占位）
+     * @param whiteAvatarUrl 白方头像 URL（null/空表示用首字母占位）
+     */
+    public void setReplayMode(boolean replayMode,
+                              String blackId, String blackName,
+                              String whiteId, String whiteName,
+                              int blackScore, int whiteScore,
+                              String blackAvatarUrl, String whiteAvatarUrl) {
+        setReplayMode(replayMode, blackId, blackName, whiteId, whiteName, blackScore, whiteScore);
+        // 同步设置双方头像（来自 record 中的 player1Avatar/player2Avatar）
+        setPlayerAvatars(blackAvatarUrl, whiteAvatarUrl);
+    }
+
+    /**
+     * 设置回放模式（带玩家信息和积分）。
+     * @param blackId      黑方用户ID（可为 null，用占位符）
+     * @param blackName    黑方显示名（可为 null）
+     * @param whiteId      白方用户ID
+     * @param whiteName    白方显示名
+     * @param blackScore   黑方积分（-1表示未知）
+     * @param whiteScore   白方积分（-1表示未知）
+     */
+    public void setReplayMode(boolean replayMode,
+                              String blackId, String blackName,
+                              String whiteId, String whiteName,
+                              int blackScore, int whiteScore) {
         this.replayMode = replayMode;
         if (replayMode) {
             gameOver = true;
@@ -468,8 +606,24 @@ public class BoardController implements NetworkListener {
             if (whitePlayerNameLabel != null) whitePlayerNameLabel.setText(this.whiteName);
             if (blackPlayerIdLabel != null) blackPlayerIdLabel.setText(this.blackId.isEmpty() ? "#---" : "#" + this.blackId);
             if (whitePlayerIdLabel != null) whitePlayerIdLabel.setText(this.whiteId.isEmpty() ? "#---" : "#" + this.whiteId);
-            if (blackPlayerScoreLabel != null) blackPlayerScoreLabel.setText("?");
-            if (whitePlayerScoreLabel != null) whitePlayerScoreLabel.setText("?");
+            if (blackPlayerScoreLabel != null) {
+                if (blackScore >= 0) {
+                    blackPlayerScoreLabel.setText(blackScore + "分");
+                    blackPlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
+                } else {
+                    blackPlayerScoreLabel.setText("?");
+                    blackPlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
+                }
+            }
+            if (whitePlayerScoreLabel != null) {
+                if (whiteScore >= 0) {
+                    whitePlayerScoreLabel.setText(whiteScore + "分");
+                    whitePlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
+                } else {
+                    whitePlayerScoreLabel.setText("?");
+                    whitePlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
+                }
+            }
             // 回放模式无倒计时：清空 timerLabel 并停止任何 timeline
             if (timerLabel != null) {
                 timerLabel.setText("");
@@ -660,19 +814,47 @@ public class BoardController implements NetworkListener {
     private javafx.scene.layout.HBox buildOnePlayerCard(VBox container, String stone, String colorLabel, String avatarBg) {
         if (container == null) return null;
 
+        boolean isBlack = "黑方".equals(colorLabel);
+
         javafx.scene.layout.HBox card = new javafx.scene.layout.HBox();
         card.getStyleClass().add("player-info-card-inner");
         card.setSpacing(10);
         card.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
+        final double AVATAR_SIZE = 28.0;
         javafx.scene.layout.StackPane avatar = new javafx.scene.layout.StackPane();
         avatar.getStyleClass().add("avatar-badge");
-        avatar.setStyle("-fx-background-color: " + avatarBg + "; -fx-min-width: 28px; -fx-max-width: 28px; -fx-min-height: 28px; -fx-max-height: 28px;");
+        avatar.setStyle("-fx-background-color: " + avatarBg + "; -fx-min-width: " + AVATAR_SIZE + "px; -fx-max-width: "
+                + AVATAR_SIZE + "px; -fx-min-height: " + AVATAR_SIZE + "px; -fx-max-height: " + AVATAR_SIZE + "px;");
         javafx.scene.control.Label avatarText = new javafx.scene.control.Label(colorLabel.substring(0, 1));
         avatarText.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
         avatarText.getStyleClass().add("avatar-badge-text");
         avatarText.setStyle("-fx-font-size: 12px;");
-        avatar.getChildren().add(avatarText);
+
+        // 真实头像 ImageView（默认隐藏，加载成功后才显示）
+        ImageView avatarImageView = new ImageView();
+        avatarImageView.setFitWidth(AVATAR_SIZE);
+        avatarImageView.setFitHeight(AVATAR_SIZE);
+        avatarImageView.setPreserveRatio(true);
+        avatarImageView.setVisible(false);
+        // 用圆角 Rectangle 替代 Circle 作为 clip，避免 JavaFX 21 BoxBounds ClassCastException
+        javafx.scene.shape.Rectangle imgClip = new javafx.scene.shape.Rectangle(AVATAR_SIZE, AVATAR_SIZE);
+        imgClip.setArcWidth(AVATAR_SIZE);
+        imgClip.setArcHeight(AVATAR_SIZE);
+        avatarImageView.setClip(imgClip);
+
+        avatar.getChildren().addAll(avatarText, avatarImageView);
+
+        // 保存引用
+        if (isBlack) {
+            blackAvatarPane = avatar;
+            blackAvatarText = avatarText;
+            blackAvatarImageView = avatarImageView;
+        } else {
+            whiteAvatarPane = avatar;
+            whiteAvatarText = avatarText;
+            whiteAvatarImageView = avatarImageView;
+        }
 
         VBox infoBox = new VBox(2);
         infoBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
@@ -718,8 +900,27 @@ public class BoardController implements NetworkListener {
         offlineTag.setVisible(false);
         offlineTag.setManaged(false);
 
-        StackPane cardWrapper = new StackPane(card, offlineTag);
+        // "你"徽章（默认隐藏），紧贴卡片左上角，用于一眼区分自己是黑方/白方
+        Label selfTag = new Label("你");
+        selfTag.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        selfTag.setStyle(
+                "-fx-background-color: #2563eb;"
+                + "-fx-text-fill: #ffffff;"
+                + "-fx-font-size: 10px;"
+                + "-fx-font-weight: bold;"
+                + "-fx-padding: 2 7 2 7;"
+                + "-fx-background-radius: 8;"
+                + "-fx-border-color: #1d4ed8;"
+                + "-fx-border-radius: 8;"
+                + "-fx-border-width: 1;"
+        );
+        selfTag.setVisible(false);
+        selfTag.setManaged(false);
+
+        StackPane cardWrapper = new StackPane(card, offlineTag, selfTag);
         StackPane.setAlignment(offlineTag, javafx.geometry.Pos.BOTTOM_RIGHT);
+        StackPane.setAlignment(selfTag, javafx.geometry.Pos.TOP_LEFT);
+        StackPane.setMargin(selfTag, new javafx.geometry.Insets(-6, 0, 0, -6));
 
         container.getChildren().clear();
         container.getChildren().add(cardWrapper);
@@ -730,12 +931,14 @@ public class BoardController implements NetworkListener {
             blackPlayerScoreLabel = scoreLabel;
             blackCardRoot = card;
             blackOfflineTag = offlineTag;
+            blackSelfTag = selfTag;
         } else {
             whitePlayerNameLabel = nameLabel;
             whitePlayerIdLabel = idLabel;
             whitePlayerScoreLabel = scoreLabel;
             whiteCardRoot = card;
             whiteOfflineTag = offlineTag;
+            whiteSelfTag = selfTag;
         }
 
         return card;
@@ -1016,12 +1219,17 @@ public class BoardController implements NetworkListener {
             String wName = msg.has("whiteUsername") ? msg.getString("whiteUsername") : wId;
             int bScore = msg.has("blackScore") ? msg.getInt("blackScore") : 0;
             int wScore = msg.has("whiteScore") ? msg.getInt("whiteScore") : 0;
+            String bAvatar = msg.has("blackAvatarUrl") ? msg.getString("blackAvatarUrl") : "";
+            String wAvatar = msg.has("whiteAvatarUrl") ? msg.getString("whiteAvatarUrl") : "";
             // 优先使用实例字段；为空时从 AppConfig 取，避免新建 Board 后 myUsername 未初始化导致白方卡片显示 "unknown"
             if (myUsername == null) {
                 User cu0 = AppConfig.getCurrentUser();
                 myUsername = cu0 != null ? cu0.getUsername() : null;
             }
             setGameInfo(bId, bName, wId, wName, myUsername, bScore, wScore);
+            // 应用双方头像（存储 Image 引用防止 GC）
+            updatePlayerAvatar(blackAvatarPane, blackAvatarText, blackAvatarImageView, bAvatar, true);
+            updatePlayerAvatar(whiteAvatarPane, whiteAvatarText, whiteAvatarImageView, wAvatar, false);
             redrawAll();
             startCountdown();
         } else if (Protocol.MOVE_SYNC.equals(cmd)) {

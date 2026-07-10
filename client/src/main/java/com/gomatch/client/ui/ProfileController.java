@@ -11,14 +11,25 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import java.io.File;
+import java.util.Base64;
 
 public class ProfileController implements NetworkListener {
     @FXML private Label userIdLabel;
     @FXML private Label usernameLabel;
     @FXML private Label profileAvatarLabel;
+    @FXML private ImageView profileAvatarImg;
+    @FXML private StackPane profileAvatarPane;
+    @FXML private Button uploadAvatarBtn;
+    @FXML private Label uploadStatusLabel;
     @FXML private Label scoreLabel;
     @FXML private Label winLabel;
     @FXML private Label loseLabel;
@@ -196,10 +207,13 @@ public class ProfileController implements NetworkListener {
                     String movesStr = record.getMoves();
                     if (isReplayDataValid(movesStr)) {
                         BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-                        // 传入 player1/2 信息，让回放时黑白方卡片显示真实玩家名
+                        // 传入 player1/2 信息 + 头像 URL，让回放时黑白方卡片显示真实玩家名、积分与头像
+                        // 必须用 8 参数版本（带 blackAvatarUrl/whiteAvatarUrl），否则头像会缺失
                         ctrl.setReplayMode(true,
                             record.getPlayer1Id(), record.getPlayer1Name(),
-                            record.getPlayer2Id(), record.getPlayer2Name());
+                            record.getPlayer2Id(), record.getPlayer2Name(),
+                            record.getPlayer1Score(), record.getPlayer2Score(),
+                            record.getPlayer1Avatar(), record.getPlayer2Avatar());
                         ctrl.replayMoves(movesStr);
                     } else {
                         Alert alert = new Alert(Alert.AlertType.INFORMATION, "暂无棋谱数据");
@@ -284,10 +298,59 @@ public class ProfileController implements NetworkListener {
         }
         userIdLabel.setText("#" + user.getUserId());
         usernameLabel.setText(user.getUsername());
-        if (profileAvatarLabel != null) {
+        
+        if (profileAvatarLabel != null && profileAvatarImg != null) {
             String name = user.getUsername();
-            profileAvatarLabel.setText(name == null || name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase());
+            String avatarUrl = user.getAvatarUrl();
+            
+            if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                try {
+                    Image image = new Image(avatarUrl, true);
+                    image.errorProperty().addListener((obs, oldVal, newVal) -> {
+                        if (newVal) {
+                            profileAvatarImg.setVisible(false);
+                            profileAvatarLabel.setVisible(true);
+                            profileAvatarLabel.setText(name == null || name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase());
+                        }
+                    });
+                    image.progressProperty().addListener((obs, oldVal, newVal) -> {
+                        if (newVal.doubleValue() >= 1.0 && !image.isError()) {
+                            profileAvatarImg.setImage(image);
+                            profileAvatarImg.setVisible(true);
+                            profileAvatarLabel.setVisible(false);
+                        }
+                    });
+                    if (image.isBackgroundLoading() && image.getProgress() >= 1.0 && !image.isError()) {
+                        profileAvatarImg.setImage(image);
+                        profileAvatarImg.setVisible(true);
+                        profileAvatarLabel.setVisible(false);
+                    } else if (!image.isBackgroundLoading()) {
+                        if (!image.isError()) {
+                            profileAvatarImg.setImage(image);
+                            profileAvatarImg.setVisible(true);
+                            profileAvatarLabel.setVisible(false);
+                        } else {
+                            profileAvatarImg.setVisible(false);
+                            profileAvatarLabel.setVisible(true);
+                            profileAvatarLabel.setText(name == null || name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase());
+                        }
+                    }
+                } catch (Exception e) {
+                    profileAvatarImg.setVisible(false);
+                    profileAvatarLabel.setVisible(true);
+                    profileAvatarLabel.setText(name == null || name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase());
+                }
+            } else {
+                profileAvatarImg.setVisible(false);
+                profileAvatarLabel.setVisible(true);
+                profileAvatarLabel.setText(name == null || name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase());
+            }
         }
+        
+        if (uploadAvatarBtn != null) {
+            uploadAvatarBtn.setVisible(!isPreview());
+        }
+        
         scoreLabel.setText(user.getScore() > 0 ? String.valueOf(user.getScore()) : "未定级");
         winLabel.setText(String.valueOf(user.getWinCount()));
         loseLabel.setText(String.valueOf(user.getLoseCount()));
@@ -358,6 +421,54 @@ public class ProfileController implements NetworkListener {
         ctrl.setPreviewMode(previewMode);
     }
 
+    @FXML
+    private void handleAvatarClick(MouseEvent e) {
+        if (currentUser == null) return;
+        String url = currentUser.getAvatarUrl();
+        String name = currentUser.getUsername();
+        showAvatarPreview(url, name);
+    }
+
+    @FXML
+    private void handleUploadAvatar() {
+        if (isPreview() || !ClientMain.getConnector().isConnected()) {
+            showUploadStatus("预览模式：头像上传功能不可用", "orange");
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("选择头像图片");
+        fileChooser.getExtensionFilters().addAll(
+            new FileChooser.ExtensionFilter("图片文件", "*.png", "*.jpg", "*.jpeg", "*.gif"),
+            new FileChooser.ExtensionFilter("PNG", "*.png"),
+            new FileChooser.ExtensionFilter("JPG", "*.jpg", "*.jpeg")
+        );
+
+        File selectedFile = fileChooser.showOpenDialog(uploadAvatarBtn.getScene().getWindow());
+        if (selectedFile == null) {
+            return;
+        }
+
+        // 弹出裁剪对话框，让用户自由裁剪 640×640 头像
+        ScreenManager.showDialog("/fxml/CropAvatarUI.fxml",
+            (CropAvatarController ctrl) -> {
+                ctrl.setSourceFile(selectedFile);
+                ctrl.setOnCropComplete(croppedBytes -> {
+                    String base64Data = Base64.getEncoder().encodeToString(croppedBytes);
+                    ClientMain.getConnector().send(Message.of("UPLOAD_AVATAR", "data", base64Data));
+                    showUploadStatus("正在上传头像...", "blue");
+                });
+            }
+        );
+    }
+    
+    private void showUploadStatus(String message, String color) {
+        if (uploadStatusLabel != null) {
+            uploadStatusLabel.setText(message);
+            uploadStatusLabel.setStyle("-fx-text-fill: " + color + ";");
+        }
+    }
+
     @Override
     public void onMessage(Message msg) {
         String cmd = msg.getCmd();
@@ -369,6 +480,24 @@ public class ProfileController implements NetworkListener {
         } else if (Protocol.ERROR.equals(cmd)) {
             errorLabel.setStyle("-fx-text-fill: red;");
             errorLabel.setText(msg.has("msg") ? msg.getString("msg") : "操作失败");
+        } else if ("AVATAR_UPLOADED".equals(cmd)) {
+            String url = msg.getString("url");
+            String message = msg.getString("msg");
+            if (url != null && !url.isEmpty()) {
+                showUploadStatus("头像上传成功", "green");
+                if (currentUser != null) {
+                    currentUser.setAvatarUrl(url);
+                    setCurrentUser(currentUser);
+                }
+            } else {
+                showUploadStatus(message != null ? message : "头像上传失败", "red");
+            }
+        } else if ("AVATAR_DATA".equals(cmd)) {
+            String url = msg.getString("url");
+            if (currentUser != null && url != null) {
+                currentUser.setAvatarUrl(url);
+                setCurrentUser(currentUser);
+            }
         } else if (Protocol.RECORD_LIST.equals(cmd)) {
             if (currentUser == null) {
                 return;
@@ -389,6 +518,8 @@ public class ProfileController implements NetworkListener {
                     int moveCount = r.optInt("moveCount", 0);
                     int duration = r.optInt("duration", 0);
                     int scoreChange = r.optInt("scoreChange", 0);
+                    int player1Score = r.optInt("player1Score", -1);
+                    int player2Score = r.optInt("player2Score", -1);
 
                     // 判断结果：比较 winnerId 与当前用户 ID
                     String result;
@@ -408,17 +539,35 @@ public class ProfileController implements NetworkListener {
                     gr.setMoveCount(moveCount);
                     gr.setDuration(duration);
                     gr.setScoreChange(scoreChange);
-                    // 保存 player1/2 信息，用于回放时正确显示黑白方名字
+                    // 保存 player1/2 信息，用于回放时正确显示黑白方名字和积分
                     gr.setPlayer1Id(String.valueOf(r.optLong("player1Id", 0)));
                     gr.setPlayer1Name(p1Name);
+                    gr.setPlayer1Score(player1Score);
+                    // 保存头像 URL，用于回放页面显示双方头像（从服务端 record 中读取）
+                    gr.setPlayer1Avatar(r.optString("player1Avatar", ""));
                     gr.setPlayer2Id(String.valueOf(r.optLong("player2Id", 0)));
                     gr.setPlayer2Name(p2Name);
+                    gr.setPlayer2Score(player2Score);
+                    gr.setPlayer2Avatar(r.optString("player2Avatar", ""));
                     recordData.add(gr);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    private void showAvatarPreview(String avatarUrl, String username) {
+        ScreenManager.showDialog("/fxml/AvatarPreviewUI.fxml",
+            (AvatarPreviewController ctrl) -> {
+                if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                    Image image = new Image(avatarUrl, true);
+                    ctrl.setAvatar(image, username);
+                } else {
+                    ctrl.setAvatar(null, username);
+                }
+            }
+        );
     }
 
 

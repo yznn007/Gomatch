@@ -38,7 +38,7 @@ chcp 65001 | Out-Null
 
 # Compile common module first
 Write-Host "[BUILD] Installing common module..." -ForegroundColor Yellow
-mvn install -pl common -am -DskipTests -q
+mvn -f "$PSScriptRoot/../pom.xml" install -pl common -am -DskipTests -q
 
 # Start server
 Write-Host "[START] Starting server..." -ForegroundColor Green

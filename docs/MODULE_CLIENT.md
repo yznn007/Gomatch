@@ -29,6 +29,7 @@ client/src/main/
 │       ├── AiLobbyController.java      # 人机对战难度选择界面
 │       ├── AsciiTextCanvas.java        # 登录页 ASCII 品牌动效画布
 │       ├── AutoCleanupController.java  # 控制器基类（自动清理监听器）
+│       ├── AvatarPreviewController.java # 头像大图预览弹窗
 │       ├── BoardController.java        # 棋盘对战界面
 │       ├── CasualLobbyController.java  # 休闲大厅（房间列表+观战）
 │       ├── ConfirmExitController.java  # 退出确认弹窗
@@ -413,6 +414,17 @@ ProfileUI（个人中心）
 
 纯展示界面，从服务端或 AppConfig 获取数据后填充 UI 控件。
 
+### 5.11 `AvatarPreviewController`（新增）
+
+**FXML**：`/fxml/AvatarPreviewUI.fxml`  
+**显示方式**：`ScreenManager.showDialog()` 模态弹窗
+
+| 关键特性 | 说明 |
+|----------|------|
+| 头像大图预览 | 点击顶栏或好友列表中头像弹出 300×300 大头像，支持图片加载和首字母回退 |
+| 渐变背景 | 使用与 `LobbyController.gradientFor` 完全一致的 7 色渐变调色板，保证同一用户在小头像、排行榜、大头像预览中颜色一致 |
+| 点击关闭 | 点击弹窗任意位置关闭（StackPane 顶层 onMouseClicked） |
+
 ---
 
 ## 6. 数据模型
@@ -448,6 +460,14 @@ ProfileUI（个人中心）
 | `opponentName` | `String` | 对手用户名 |
 | `result` | `String` | 对局结果：`WIN`/`LOSE`/`DRAW` |
 | `myColor` | `String` | 执子颜色：`BLACK`/`WHITE` |
+| `player1Id` | `String` | 黑方用户 ID |
+| `player1Name` | `String` | 黑方用户名 |
+| `player1Score` | `int` | 黑方积分 |
+| `player1Avatar` | `String` | 黑方头像预签名 URL（用于回放显示） |
+| `player2Id` | `String` | 白方用户 ID |
+| `player2Name` | `String` | 白方用户名 |
+| `player2Score` | `int` | 白方积分 |
+| `player2Avatar` | `String` | 白方头像预签名 URL（用于回放显示） |
 | `createdAt` | `String` | 对局时间 |
 
 ---

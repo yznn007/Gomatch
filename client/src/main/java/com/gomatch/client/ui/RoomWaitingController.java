@@ -157,6 +157,9 @@ public class RoomWaitingController implements NetworkListener {
             int wScore = msg.has("whiteScore") ? msg.getInt("whiteScore") : 0;
             String username = currentUser != null ? currentUser.getUsername() : "";
             ctrl.setGameInfo(bId, bName, wId, wName, username, bScore, wScore);
+            String bAvatar = msg.has("blackAvatarUrl") ? msg.getString("blackAvatarUrl") : "";
+            String wAvatar = msg.has("whiteAvatarUrl") ? msg.getString("whiteAvatarUrl") : "";
+            ctrl.setPlayerAvatars(bAvatar, wAvatar);
         } else if ("UNDO_REQUESTED".equals(cmd)) {
             statusLabel.setText("玩家 " + msg.getString("requesterName") + " 请求悔棋");
         } else if ("UNDO_ACCEPTED".equals(cmd)) {
