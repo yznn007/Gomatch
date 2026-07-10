@@ -22,6 +22,7 @@ target/
 dependency-reduced-pom.xml
 
 # IDE
+.codex
 .vscode/
 .idea/
 *.iml
@@ -46,3 +47,9 @@ oss.properties
 .workbuddy/
 .agent/
 .agents/
+
+# 忽略 Redis 快照文件
+dump.rdb
+
+#  AOF 持久化
+*.aof
