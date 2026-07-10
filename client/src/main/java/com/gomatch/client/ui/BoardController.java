@@ -1167,7 +1167,7 @@ public class BoardController implements NetworkListener {
             Stage dialog = new Stage();
             dialog.initOwner(ScreenManager.getStage());
             dialog.initModality(javafx.stage.Modality.WINDOW_MODAL);
-            dialog.initStyle(javafx.stage.StageStyle.UNDECORATED);
+            dialog.initStyle(javafx.stage.StageStyle.TRANSPARENT);
 
             // 给弹窗添加基本包装
             javafx.scene.layout.VBox layout = new javafx.scene.layout.VBox();
@@ -1176,9 +1176,9 @@ public class BoardController implements NetworkListener {
             layout.getChildren().add(root);
 
             javafx.scene.Scene scene = new javafx.scene.Scene(layout);
+            scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
             ScreenManager.applyStylesheetPublic(scene);
-            ScreenManager.applyUserTheme(scene);
-            ScreenManager.applyUserFont(scene);
+            ScreenManager.applyDialogTheme(scene);
             dialog.setScene(scene);
             dialog.setResizable(false);
             dialog.show();
@@ -1213,12 +1213,12 @@ public class BoardController implements NetworkListener {
         pendingRequestStage.setTitle(title);
         pendingRequestStage.initOwner(ScreenManager.getStage());
         pendingRequestStage.initModality(javafx.stage.Modality.WINDOW_MODAL);
-        pendingRequestStage.initStyle(javafx.stage.StageStyle.UNDECORATED);
+        pendingRequestStage.initStyle(javafx.stage.StageStyle.TRANSPARENT);
 
         javafx.scene.Scene scene = new javafx.scene.Scene(layout);
+        scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
         ScreenManager.applyStylesheetPublic(scene);
-        ScreenManager.applyUserTheme(scene);
-        ScreenManager.applyUserFont(scene);
+        ScreenManager.applyDialogTheme(scene);
         pendingRequestStage.setScene(scene);
         pendingRequestStage.setResizable(false);
         pendingRequestStage.show();
