@@ -104,8 +104,8 @@ public class BoardController implements NetworkListener {
     private Label whitePlayerIdLabel;
     private Label blackPlayerScoreLabel;
     private Label whitePlayerScoreLabel;
-    private javafx.scene.layout.HBox blackCardRoot;
-    private javafx.scene.layout.HBox whiteCardRoot;
+    private javafx.scene.layout.Pane blackCardRoot;
+    private javafx.scene.layout.Pane whiteCardRoot;
     private Label blackOfflineTag;
     private Label whiteOfflineTag;
     private Label blackSelfTag;
@@ -129,8 +129,10 @@ public class BoardController implements NetworkListener {
     private void initialize() {
         ClientMain.getConnector().addListener(this);
         
-        boardContainer.widthProperty().addListener((obs, o, n) -> resizeBoard());
-        boardContainer.heightProperty().addListener((obs, o, n) -> resizeBoard());
+        // 延迟到下一帧 runLater：避免在 JavaFX 布局脉冲中同步 setWidth/setHeight
+        // → 触发新一轮 boardContainer 尺寸变化 → listener 再次进入 resizeBoard 的连锁循环。
+        boardContainer.widthProperty().addListener((obs, o, n) -> Platform.runLater(this::resizeBoard));
+        boardContainer.heightProperty().addListener((obs, o, n) -> Platform.runLater(this::resizeBoard));
 
         canvas = new Canvas(1, 1) {
             @Override
@@ -187,9 +189,11 @@ public class BoardController implements NetworkListener {
             sidebarRatio = newWidth / totalW;
         });
 
-        // 窗口拉伸时，侧边栏基于比例自适应调整
+        // 窗口拉伸时，侧边栏基于比例自适应调整。
+        // **不要监听 boardContainer.heightProperty**：adjustSidebarSize 设置 sidebar 宽度
+        // → BorderPane 重布局 → boardContainer 宽高变化 → heightProperty 回调
+        // adjustSidebarSize 再次设置 sidebar 宽度，形成跨帧反馈循环，导致"棋盘放大+不停抖动"
         rootPane.widthProperty().addListener((obs, o, n) -> adjustSidebarSize());
-        boardContainer.heightProperty().addListener((obs, o, n) -> adjustSidebarSize());
     }
 
     /** 根据容器尺寸重新计算 cellSize 并重绘全盘 */
@@ -337,7 +341,7 @@ public class BoardController implements NetworkListener {
         applySelfMark(whiteCardRoot, whiteSelfTag, isMyWhite);
     }
 
-    private void applySelfMark(javafx.scene.layout.HBox cardRoot, Label selfTag, boolean isSelf) {
+    private void applySelfMark(javafx.scene.layout.Pane cardRoot, Label selfTag, boolean isSelf) {
         if (cardRoot != null) {
             cardRoot.getStyleClass().remove("player-info-card-self");
             if (isSelf) cardRoot.getStyleClass().add("player-info-card-self");
@@ -372,6 +376,15 @@ public class BoardController implements NetworkListener {
      */
     public void resumeFromLogin(String blackUserId, String whiteUserId, String username,
                                  int currentColor, String disconnectedUserId) {
+        resumeFromLogin(blackUserId, whiteUserId, username, currentColor, disconnectedUserId, "", "");
+    }
+
+    /**
+     * 断线后重开客户端登录时恢复对局（带头像 URL）。由 LoginController 在收到携带 roomId 的 LOGIN_OK 后调用。
+     */
+    public void resumeFromLogin(String blackUserId, String whiteUserId, String username,
+                                 int currentColor, String disconnectedUserId,
+                                 String blackAvatarUrl, String whiteAvatarUrl) {
         this.blackId = blackUserId != null ? blackUserId : "";
         this.whiteId = whiteUserId != null ? whiteUserId : "";
         this.blackName = blackUserId != null ? blackUserId : "黑方";
@@ -408,6 +421,9 @@ public class BoardController implements NetworkListener {
 
         updateTurnLabel();
         updateActionButtons();
+        // 断线重连后也必须刷新"你"标记（蓝色 self 徽章 + 左边框高亮），
+        // 否则走 resumeFromLogin 路径的玩家卡片没有 self 标识，无法一眼看出自己是黑方/白方。
+        updatePlayerCardSelfMark();
 
         if (spectatorControls != null) {
             spectatorControls.setVisible(false);
@@ -425,6 +441,11 @@ public class BoardController implements NetworkListener {
 
         chatArea.appendText("[系统] 已恢复对局\n");
         chatArea.setScrollTop(Double.MAX_VALUE);
+
+        // 恢复双方头像（断线重连后不会收到 GAME_START 推送，必须主动注入）
+        if (blackAvatarPane != null && whiteAvatarPane != null) {
+            setPlayerAvatars(blackAvatarUrl, whiteAvatarUrl);
+        }
 
         if (!replayMode) {
             startCountdown();
@@ -447,9 +468,9 @@ public class BoardController implements NetworkListener {
     }
 
     /**
-     * 更新单个玩家的头像：有头像 URL 时加载图片，失败则回退到首字母。
+     * 更新单个玩家的头像：有头像 URL 时加载图片，加载完成显示图片；否则显示首字母 fallback。
      * @param pane         头像 StackPane
-     * @param textLabel    首字母 Label（回退用）
+     * @param textLabel    首字母 Label（无图片时显示）
      * @param imageView    头像 ImageView
      * @param avatarUrl    头像 URL（空字符串表示无头像）
      * @param isBlack      true 为黑方（存储引用防止 GC）
@@ -458,9 +479,10 @@ public class BoardController implements NetworkListener {
         if (pane == null || textLabel == null || imageView == null) {
             return;
         }
+        // 默认显示首字母，等图片加载完成后再隐藏
+        textLabel.setVisible(true);
+        imageView.setVisible(false);
         if (avatarUrl == null || avatarUrl.isEmpty()) {
-            textLabel.setVisible(true);
-            imageView.setVisible(false);
             return;
         }
         try {
@@ -500,8 +522,7 @@ public class BoardController implements NetworkListener {
                 textLabel.setVisible(false);
             }
         } catch (Exception e) {
-            textLabel.setVisible(true);
-            imageView.setVisible(false);
+            // 仅首字母可见
         }
     }
 
@@ -787,12 +808,16 @@ public class BoardController implements NetworkListener {
     private void updateTurnLabel() {
         if (blackName == null) blackName = I18N.isEnglish() ? "Black" : "黑方";
         if (whiteName == null) whiteName = I18N.isEnglish() ? "White" : "白方";
-        String turnSuffix = I18N.isEnglish() ? "'s Turn" : " 回合";
-        if (currentTurn == 1) {
-            turnLabel.setText("⚫ " + blackName + turnSuffix);
+        if (I18N.isEnglish()) {
+            String turnSuffix = "'s Turn";
+            turnLabel.setText(currentTurn == 1
+                    ? "[Black] " + blackName + turnSuffix
+                    : "[White] " + whiteName + turnSuffix);
         } else {
-            turnLabel.setText("⚪ " + whiteName + turnSuffix);
-}
+            turnLabel.setText(currentTurn == 1
+                    ? "【黑方】" + blackName + " 回合"
+                    : "【白方】" + whiteName + " 回合");
+        }
         updatePlayerCardHighlight();
     }
 
@@ -813,15 +838,10 @@ public class BoardController implements NetworkListener {
         whiteCardRoot = buildOnePlayerCard(whitePlayerBox, "⚪", "白方", ScreenManager.themeColor("#cbd5e1", "#cbd5e1"));
     }
 
-    private javafx.scene.layout.HBox buildOnePlayerCard(VBox container, String stone, String colorLabel, String avatarBg) {
+    private javafx.scene.layout.Pane buildOnePlayerCard(VBox container, String stone, String colorLabel, String avatarBg) {
         if (container == null) return null;
 
         boolean isBlack = "黑方".equals(colorLabel);
-
-        javafx.scene.layout.HBox card = new javafx.scene.layout.HBox();
-        card.getStyleClass().add("player-info-card-inner");
-        card.setSpacing(10);
-        card.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
         final double AVATAR_SIZE = 28.0;
         javafx.scene.layout.StackPane avatar = new javafx.scene.layout.StackPane();
@@ -860,7 +880,8 @@ public class BoardController implements NetworkListener {
 
         VBox infoBox = new VBox(2);
         infoBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        javafx.scene.layout.HBox.setHgrow(infoBox, javafx.scene.layout.Priority.ALWAYS);
+        // infoBox 现在放在 Pane cardPane 中（绝对定位），不再用 HBox.setHgrow
+        // （HBox.setHgrow 是 HBox 的静态方法，要求 child 是 HBox 的子节点；这里 infoBox 在 Pane 里）
 
         javafx.scene.control.Label nameLabel = new javafx.scene.control.Label("---");
         nameLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
@@ -883,26 +904,27 @@ public class BoardController implements NetworkListener {
 
         detailRow.getChildren().addAll(idLabel, scoreLabel, roleLabel);
         infoBox.getChildren().addAll(nameLabel, detailRow);
-        card.getChildren().addAll(avatar, infoBox);
 
-        // 断线角标（默认隐藏），紧贴卡片右下角
+        // 断线角标（默认隐藏）。
+        // 之前用 #fef2f2 浅红 + #dc2626 文字在浅色背景下几乎不可见，
+        // 改用饱和度高的 #dc2626 红色背景 + 白色文字，确保任何主题下都清晰可见。
         Label offlineTag = new Label("断线中");
         offlineTag.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
         offlineTag.setStyle(
-                "-fx-background-color: #fef2f2;"
-                + "-fx-text-fill: #dc2626;"
+                "-fx-background-color: #dc2626;"
+                + "-fx-text-fill: #ffffff;"
                 + "-fx-font-size: 10px;"
                 + "-fx-font-weight: bold;"
                 + "-fx-padding: 2 6 2 6;"
                 + "-fx-background-radius: 8;"
-                + "-fx-border-color: #fecaca;"
+                + "-fx-border-color: #b91c1c;"
                 + "-fx-border-radius: 8;"
                 + "-fx-border-width: 1;"
         );
         offlineTag.setVisible(false);
         offlineTag.setManaged(false);
 
-        // "你"徽章（默认隐藏），紧贴卡片左上角，用于一眼区分自己是黑方/白方
+        // "你"徽章（默认隐藏）
         Label selfTag = new Label("你");
         selfTag.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
         selfTag.setStyle(
@@ -919,58 +941,95 @@ public class BoardController implements NetworkListener {
         selfTag.setVisible(false);
         selfTag.setManaged(false);
 
-        StackPane cardWrapper = new StackPane(card, offlineTag, selfTag);
-        StackPane.setAlignment(offlineTag, javafx.geometry.Pos.BOTTOM_RIGHT);
-        StackPane.setAlignment(selfTag, javafx.geometry.Pos.TOP_LEFT);
-        StackPane.setMargin(selfTag, new javafx.geometry.Insets(-6, 0, 0, -6));
+        // **根治方案**：把 HBox card 改成 Pane，绝对定位 avatar + infoBox + selfTag + offlineTag。
+        // Pane 直接装进 VBox container，**不再用任何中转层**。
+        // 关键修复：之前所有方案都失败的根本原因是 `.player-info-card { -fx-min-height: 0 }`
+        // 把 VBox 高度锁死到 0，导致两个 cardWrapper 叠在一起。本轮 CSS 已删掉 min-height:0。
+        // 但中转层（StackPane/Pane wrapper）也有 prefHeight 抖动问题，所以这一轮连中转层也不要了。
+        javafx.scene.layout.Pane cardPane = new javafx.scene.layout.Pane();
+        cardPane.getStyleClass().add("player-info-card-inner");
+        cardPane.setMinSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
+        cardPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        cardPane.prefWidthProperty().bind(container.widthProperty());
+
+        // avatar 绝对定位：水平 padding-left 40px 起，垂直居中
+        avatar.setLayoutX(40);
+        avatar.layoutYProperty().bind(cardPane.heightProperty().subtract(28).divide(2));
+
+        // infoBox 绝对定位：avatar 右侧 (spacing=10)，垂直居中
+        infoBox.setLayoutX(40 + 28 + 10);
+        infoBox.layoutYProperty().bind(cardPane.heightProperty().subtract(infoBox.heightProperty()).divide(2));
+
+        // "你"徽章：左上角 padding 区 (4,4)，不参与 Pane 高度计算（setManaged(false)）
+        selfTag.setLayoutX(4);
+        selfTag.setLayoutY(4);
+
+        // "断线中"徽章：右下角 padding 区 (4,4)，跟随 card 宽高变化
+        offlineTag.layoutXProperty().bind(cardPane.widthProperty().subtract(offlineTag.widthProperty()).subtract(4));
+        offlineTag.layoutYProperty().bind(cardPane.heightProperty().subtract(offlineTag.heightProperty()).subtract(4));
+
+        // 一次性把所有子节点加到 Pane
+        cardPane.getChildren().addAll(avatar, infoBox, selfTag, offlineTag);
 
         container.getChildren().clear();
-        container.getChildren().add(cardWrapper);
+        container.getChildren().add(cardPane);
 
-        if ("黑方".equals(colorLabel)) {
+        if (isBlack) {
             blackPlayerNameLabel = nameLabel;
             blackPlayerIdLabel = idLabel;
             blackPlayerScoreLabel = scoreLabel;
-            blackCardRoot = card;
+            blackCardRoot = cardPane;
             blackOfflineTag = offlineTag;
             blackSelfTag = selfTag;
         } else {
             whitePlayerNameLabel = nameLabel;
             whitePlayerIdLabel = idLabel;
             whitePlayerScoreLabel = scoreLabel;
-            whiteCardRoot = card;
+            whiteCardRoot = cardPane;
             whiteOfflineTag = offlineTag;
             whiteSelfTag = selfTag;
         }
 
-        return card;
+        return cardPane;
     }
 
     /**
      * 切换玩家在线/断线视觉状态。
+     *
+     * <p><b>关键修复：offlineTag 永不做 setManaged(true)</b>。offlineTag 的 layoutY
+     * 绑定到 cardPane.heightProperty()（公式：cardPane.height - tag.height - 4），
+     * 若将它设为 managed，其 layoutY 变化会改变 Pane 的 computePrefHeight，
+     * 导致 cardPane height 再次变化 → layoutY 再次变化 → 形成跨帧"无限布局反馈循环"，
+     * 链条为 cardPane ↔ VBox ↔ sidebar ↔ BorderPane ↔ boardContainer ↔ resizeBoard，
+     * 最终表现为棋盘不停抖动。</p>
+     *
+     * <p>解法：offlineTag 永远 setManaged(false)，仅通过 setVisible 切换显示。
+     * 因为它在 Pane 中绝对定位（layoutX/Y），不参与布局不会影响父容器尺寸，
+     * 但 layoutY 绑定仍能保证窗口拉伸时徽章跟随移动到卡片右下角。</p>
+     *
      * @param isBlack true=黑方, false=白方
      * @param online  true=正常, false=断线中
      */
     private void setPlayerOnline(boolean isBlack, boolean online) {
         Label nameLabel = isBlack ? blackPlayerNameLabel : whitePlayerNameLabel;
         Label tag = isBlack ? blackOfflineTag : whiteOfflineTag;
-        javafx.scene.layout.HBox card = isBlack ? blackCardRoot : whiteCardRoot;
+        javafx.scene.layout.Pane card = isBlack ? blackCardRoot : whiteCardRoot;
         if (nameLabel == null || card == null) return;
 
         if (online) {
             if (tag != null) {
                 tag.setVisible(false);
-                tag.setManaged(false);
             }
+            // 恢复正常视觉：移除 offline class + 名字恢复主题色
+            card.getStyleClass().remove("player-info-card-offline");
             nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
-            card.setOpacity(1.0);
         } else {
             if (tag != null) {
                 tag.setVisible(true);
-                tag.setManaged(true);
             }
-            nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #dc2626;");
-            card.setOpacity(0.55);
+            // 断线视觉：offlineTag 红底白字 + 卡片浅红背景 + 红色 innershadow（不影响 layoutBounds）
+            card.getStyleClass().add("player-info-card-offline");
+            nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
         }
     }
 
@@ -1472,7 +1531,7 @@ public class BoardController implements NetworkListener {
             resumeCountdown();
             chatArea.appendText("[系统] 对手拒绝求和\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
-        } else if ("REMATCH_REQUESTED".equals(cmd)) {
+        } else if (Protocol.REMATCH_REQUESTED.equals(cmd)) {
             // 收到对手的再来一局请求
             String requesterName = msg.getString("requesterName");
             chatArea.appendText("[系统] 玩家 " + requesterName + " 请求再来一局\n");
@@ -1481,33 +1540,40 @@ public class BoardController implements NetworkListener {
             alert.setTitle("再来一局请求");
             alert.setHeaderText("玩家 " + requesterName + " 请求再来一局");
             alert.setContentText("是否同意再来一局？");
-            ScreenManager.showStyledAlert(alert).ifPresent(response -> {
-                if (response == ButtonType.OK) {
-                    // 同意：关闭结算弹窗，发送同意消息
-                    closeGameOverDialog();
-                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_REMATCH, "accept", "1"));
-                } else {
-                    // 拒绝：直接发送拒绝消息，弹窗稍后由 REMATCH_REJECTED 统一关闭
-                    ClientMain.getConnector().send(Message.of(Protocol.REPLY_REMATCH, "accept", "0"));
-                }
-            });
-        } else if ("REMATCH_ACCEPTED".equals(cmd)) {
+            java.util.Optional<ButtonType> response = ScreenManager.showStyledAlert(alert);
+            if (response.isPresent() && response.get() == ButtonType.OK) {
+                // 同意：关闭结算弹窗，发送同意消息
+                closeGameOverDialog();
+                ClientMain.getConnector().send(Message.of(Protocol.REPLY_REMATCH, "accept", true));
+            } else {
+                // 拒绝 / 关闭弹窗：发送拒绝消息，关闭结算弹窗，返回大厅
+                ClientMain.getConnector().send(Message.of(Protocol.REPLY_REMATCH, "accept", false));
+                closeGameOverDialog();
+                LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+                ctrl.setCurrentUser(AppConfig.getCurrentUser());
+                ctrl.setPreviewMode(AppConfig.isPreviewMode());
+            }
+        } else if (Protocol.REMATCH_ACCEPTED.equals(cmd)) {
             // 对手同意了再来一局，或双方都已同意
             closeGameOverDialog();
             chatArea.appendText("[系统] 双方同意再来一局，准备开始新对局...\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
             // 服务端随后会发送 GAME_START，棋盘将在 onMessage(GAME_START) 中重置
-        } else if ("REMATCH_REJECTED".equals(cmd)) {
-            // 对手拒绝了再来一局
+        } else if (Protocol.REMATCH_REJECTED.equals(cmd)) {
+            // 对手拒绝了再来一局，关闭结算弹窗并弹提示，再返回大厅
             closeGameOverDialog();
             String replierName = msg.getString("replierName");
-            chatArea.appendText("[系统] " + (replierName != null ? replierName : "对方") + " 拒绝了再来一局\n");
+            String displayName = (replierName != null && !replierName.isEmpty()) ? replierName : "对方";
+            chatArea.appendText("[系统] " + displayName + " 拒绝了再来一局\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
-            Platform.runLater(() -> {
-                LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
-                ctrl.setCurrentUser(AppConfig.getCurrentUser());
-                ctrl.setPreviewMode(AppConfig.isPreviewMode());
-            });
+            Alert info = new Alert(Alert.AlertType.INFORMATION);
+            info.setTitle("再来一局");
+            info.setHeaderText(displayName + " 拒绝了再来一局");
+            info.setContentText("将返回大厅");
+            info.showAndWait();
+            LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+            ctrl.setCurrentUser(AppConfig.getCurrentUser());
+            ctrl.setPreviewMode(AppConfig.isPreviewMode());
         } else if (Protocol.TURN_TIMEOUT.equals(cmd)) {
             gameOver = true;
             stopCountdown();

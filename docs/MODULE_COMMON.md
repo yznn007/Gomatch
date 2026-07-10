@@ -157,6 +157,7 @@ String username = parsed.getString("username");
 | `UPLOAD_MUSIC` / `GET_MUSIC` / `DELETE_MUSIC` / `SET_DEFAULT_MUSIC` / `MUSIC_LIST` | 同名值 | 音乐数据 |
 | `BAN_USER` / `UNBAN_USER` / `FORCE_CLOSE_ROOM` / `USER_LIST` / `ADMIN_STATS` / `UPDATE_USER_ROLE` | 同名值 | 管理端操作 |
 | `LOGOUT` | `LOGOUT` | 退出登录 |
+| `FORGOT_PASSWORD` / `VERIFY_FORGOT_CODE` / `FORGOT_PWD_RESET` | 同名值 | 忘记密码：发送验证码 / 校验验证码 / 重置密码 |
 
 ### 4.2 服务端 -> 客户端响应
 
@@ -184,6 +185,8 @@ String username = parsed.getString("username");
 | `ERROR` | `ERROR` | 通用错误响应 |
 | `DISCONNECT` | `DISCONNECT` | 服务端主动断开通知 |
 | `LOGOUT_OK` | `LOGOUT_OK` | 退出登录成功 |
+| `REMATCH_REQUESTED` / `REMATCH_ACCEPTED` / `REMATCH_REJECTED` | 同名值 | 再来一局：收到请求 / 对方同意 / 对方拒绝 |
+| `FORGOT_PWD_CODE` / `FORGOT_PWD_VERIFY_OK` / `FORGOT_PWD_OK` / `FORGOT_PWD_FAIL` | 同名值 | 忘记密码：发送验证码 / 验证通过 / 重置成功 / 操作失败 |
 
 ---
 

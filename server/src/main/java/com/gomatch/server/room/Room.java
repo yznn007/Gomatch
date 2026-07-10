@@ -154,6 +154,13 @@ public class Room {
         }
         return String.valueOf(userId);
     }
+    /** 根据 userId 查找玩家 ClientHandler（用于定向发送消息） */
+    public synchronized ClientHandler findPlayerById(long userId) {
+        for (ClientHandler p : players) {
+            if (p.getUserId() == userId) return p;
+        }
+        return null;
+    }
     public int getObserverCount() { return observers.size(); }
 
     public synchronized boolean isObserver(ClientHandler handler) {
@@ -274,9 +281,24 @@ public class Room {
                     handler.getUserId(), roomId, players.size());
 
             // 对局进行中玩家断线
-            if (status == Status.PLAYING && !aiMode 
+            if (status == Status.PLAYING
                     && (handler.getUserId() == blackUserId || handler.getUserId() == whiteUserId)) {
                 long uid = handler.getUserId();
+
+                // AI 对战中玩家断线：直接判 AI 胜（玩家负），无重连机会
+                if (aiMode) {
+                    long aiWinnerId = (uid == blackUserId) ? whiteUserId : blackUserId;
+                    String loserName = getPlayerUsername(uid);
+                    log.info("AI mode: player {} disconnected from room {}, AI (id={}) wins by disconnect",
+                            uid, roomId, aiWinnerId);
+                    endGame(aiWinnerId, "ai_disconnect",
+                            loserName + " 断线，AI 获胜");
+                    broadcastAll(Message.of("AI_PLAYER_DISCONNECTED",
+                            "userId", uid,
+                            "msg", loserName + " 断线，AI 获胜"));
+                    return;
+                }
+
                 int count = playerDisconnectCounts.getOrDefault(uid, 0) + 1;
                 playerDisconnectCounts.put(uid, count);
 
@@ -993,34 +1015,36 @@ public class Room {
 
     /**
      * 回复再来一局请求。如果双方同意，重置房间并重新开始对局。
+     * 返回请求方 userId（accept 或 reject 时都需要，供 ClientHandler 定向通知），失败返回 -1。
      */
-    public synchronized boolean replyRematch(long replierId, boolean accept) {
+    public synchronized long replyRematch(long replierId, boolean accept) {
         log.debug("replyRematch called for room {}: replierId={}, accept={}", roomId, replierId, accept);
 
         if (rematchRequesterId == null) {
             log.warn("replyRematch rejected: no pending rematch request");
-            return false;
+            return -1;
         }
 
         if (replierId == rematchRequesterId) {
             log.warn("replyRematch rejected: requester cannot reply to own request");
-            return false;
+            return -1;
         }
 
         if (!isValidPlayer(replierId)) {
             log.warn("replyRematch rejected: {} is not a valid player", replierId);
-            return false;
+            return -1;
         }
 
+        long requesterId = rematchRequesterId;
         rematchRequesterId = null;
 
         if (accept) {
             log.info("Rematch accepted in room {}: both players agreed", roomId);
             resetAndRestartGame();
-            return true;
+            return requesterId;
         } else {
             log.info("Rematch rejected by {} in room {}", replierId, roomId);
-            return true;
+            return requesterId;
         }
     }
 

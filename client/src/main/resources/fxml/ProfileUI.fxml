@@ -41,7 +41,7 @@
                                 <!-- 个人头像与昵称ID头部区域 -->
                                 <HBox spacing="16" alignment="CENTER_LEFT" styleClass="profile-header-card" style="-fx-padding: 10 16;">
                                     <!-- 头像圆形 -->
-                                    <StackPane fx:id="profileAvatarPane" prefWidth="56" prefHeight="56" minWidth="56" minHeight="56" styleClass="avatar-badge" style="-fx-background-color: #0ea5e9; -fx-cursor: hand;" onMouseClicked="#handleAvatarClick">
+                                    <StackPane fx:id="profileAvatarPane" prefWidth="56" prefHeight="56" minWidth="56" minHeight="56" styleClass="avatar-badge" style="-fx-cursor: hand;" onMouseClicked="#handleAvatarClick">
                                         <Label fx:id="profileAvatarLabel" text="U" styleClass="avatar-badge-text" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;"/>
                                         <ImageView fx:id="profileAvatarImg" fitWidth="56" fitHeight="56" visible="false">
                                             <clip>

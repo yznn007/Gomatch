@@ -1208,7 +1208,14 @@
 /* ---------- Board: 玩家信息卡片 ---------- */
 .player-info-card {
     -fx-padding: 0;
-    -fx-min-height: 0;
+    /* 关键：绝对不能 -fx-min-height: 0。
+       之前为了避免 VBox blackPlayerBox/whitePlayerBox 出现 4px 蓝色左边框
+       + dropshadow 形成的"内边距视觉"，加上了 -fx-min-height: 0，
+       但这会让 VBox 的高度被 minHeight=0 锁死，无法被 child (HBox card) 撑高，
+       直接造成两个 cardWrapper prefHeight=0、被 VBox 叠在一起——这就是
+       "你"徽章明明在卡片内部左上角，kim1 与 AI 两张卡片却完全叠在一起的根因。
+       现在保留 minHeight 默认（USE_COMPUTED_SIZE），VBox 高度 = max(子节点)，
+       黑色左边框/dropshadow 的外凸部分自然由 card 的 dropshadow 渲染，不影响布局。 */
 }
 .player-info-card-inner {
     -fx-background-color: rgba(255, 255, 255, 0.28);
@@ -1216,7 +1223,10 @@
     -fx-border-radius: 8px;
     -fx-border-color: transparent;
     -fx-border-width: 1px;
-    -fx-padding: 8px 12px;
+    /* padding-left 加大到 40px，专门为"你"徽章留出内嵌空间，
+       避免 selfTag 覆盖 avatar（avatar 在 padding=40px 之后 28px 处，
+       selfTag 宽 ~30px 内嵌在 0-40px 区域，与 avatar 0-28px 完全不重叠）。 */
+    -fx-padding: 8px 12px 8px 40px;
     -fx-alignment: CENTER_LEFT;
     -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.03), 8, 0.06, 0, 3);
 }
@@ -1226,15 +1236,31 @@
     -fx-border-width: 1px;
     -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 14, 0.08, 0, 5);
 }
-/* 当前玩家自己的卡片：左侧高亮条 + 蓝色描边，与 active 状态叠加 */
+/* 当前玩家自己的卡片：左侧高亮条 + 蓝色描边。 */
 .player-info-card-self {
     -fx-border-color: #2563eb;
     -fx-border-width: 0 0 0 4px;
     -fx-background-color: rgba(219, 234, 254, 0.45);
 }
+/* self + active 组合：仅加深背景与阴影，依然只保留 4px 蓝色左边框。
+   注意：(1) 绝对不能再叠 1px 四边蓝色，否则上方卡片的右/下边会与下方
+   紧邻卡片的边框形成"重叠"视觉。(2) dropshadow 偏移必须收得很小（y<=2），
+   否则蓝色阴影会向下侵入紧邻下方卡片的顶部区域，让两卡片"视觉粘连"。 */
 .player-info-card-self.player-info-card-active {
     -fx-background-color: rgba(219, 234, 254, 0.7);
-    -fx-effect: dropshadow(gaussian, rgba(37, 99, 235, 0.18), 14, 0.18, 0, 5);
+    -fx-effect: dropshadow(gaussian, rgba(37, 99, 235, 0.16), 12, 0.16, 0, 1);
+    -fx-border-color: transparent transparent transparent #2563eb;
+    -fx-border-width: 0 0 0 4px;
+}
+
+/* 断线中卡片：浅红背景 + 红色内阴影，完全不影响布局尺寸。
+   修复"对方断线后卡片几乎不可见"的问题（之前用 setOpacity(0.55) 让
+   .player-info-card-inner 的半透明白背景 + 浅色页面背景融合成"完全空白"），
+   同时避免 border 改变 Pane 的 layoutBounds 导致连锁布局反馈。 */
+.player-info-card-offline {
+    -fx-background-color: rgba(254, 242, 242, 0.85);
+    -fx-background-radius: 8px;
+    -fx-effect: innershadow(gaussian, #dc2626, 6, 0.35, 0, 0);
 }
 
 /* ---------- Board: 回合指示器 ---------- */
@@ -1421,6 +1447,7 @@
 .theme-dark .player-score { -fx-text-fill: #cbd5e1; }
 .theme-dark .player-info-card-inner { -fx-background-color: rgba(5, 8, 15, 0.48); -fx-border-color: rgba(248, 250, 252, 0.10); }
 .theme-dark .player-info-card-active { -fx-background-color: rgba(71, 85, 105, 0.74); -fx-border-color: rgba(226, 232, 240, 0.42); }
+.theme-dark .player-info-card-offline { -fx-background-color: rgba(127, 29, 29, 0.45); -fx-effect: innershadow(gaussian, #fca5a5, 6, 0.35, 0, 0); }
 .theme-dark .table-view, .theme-dark .list-view, .theme-dark .scroll-pane, .theme-dark .scroll-pane .viewport { -fx-background-color: transparent; -fx-border-color: transparent; }
 .theme-dark .table-view .column-header-background { -fx-background-color: rgba(15, 23, 42, 0.82); }
 .theme-dark .table-view .column-header, .theme-dark .table-view .column-header .label { -fx-text-fill: #cbd5e1; }
@@ -1444,7 +1471,7 @@
 .theme-dark .status-dot-offline, .theme-dark .result-badge-draw { -fx-background-color: #64748b; }
 .theme-dark .result-badge-lose { -fx-background-color: #b91c1c; }
 .theme-dark .tag-badge-green { -fx-background-color: rgba(21, 128, 61, 0.20); -fx-text-fill: #bbf7d0; -fx-border-color: rgba(134, 239, 172, 0.42); }
-.theme-dark .tag-badge-grey, .theme-dark .rank-badge, .theme-dark .rank-number-badge { -fx-background-color: rgba(100, 116, 139, 0.22); -fx-text-fill: #e2e8f0; -fx-border-color: rgba(148, 163, 184, 0.42); }
+.theme-dark .tag-badge-grey, .theme-dark .rank-badge, .theme-dark .rank-number-badge { -fx-background-color: rgba(100, 116, 139, 0.55); -fx-text-fill: #f8fafc; -fx-border-color: rgba(148, 163, 184, 0.55); }
 .theme-dark .tag-badge-blue { -fx-background-color: rgba(30, 64, 175, 0.22); -fx-text-fill: #bfdbfe; -fx-border-color: rgba(147, 197, 253, 0.42); }
 .theme-dark .scroll-bar .thumb { -fx-background-color: rgba(148, 163, 184, 0.34); }
 .theme-dark .scroll-bar .thumb:hover { -fx-background-color: rgba(203, 213, 225, 0.52); }

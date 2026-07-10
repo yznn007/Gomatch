@@ -42,7 +42,7 @@
                     <HBox spacing="10" alignment="CENTER_LEFT" maxWidth="320">
                         <CheckBox fx:id="rememberCheckBox" text="%login.remember" styleClass="remember-checkbox"/>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <Button text="%login.forgot" styleClass="btn-link" style="-fx-font-size: 13px; -fx-padding: 0;"/>
+                        <Button text="%login.forgot" onAction="#handleForgotPassword" styleClass="btn-link" style="-fx-font-size: 13px; -fx-padding: 0;"/>
                     </HBox>
 
                     <Button text="%login.enter" onAction="#handleLogin" styleClass="btn-primary"

@@ -12,6 +12,7 @@ import javafx.scene.control.TextField;
 
 public class RegisterController implements NetworkListener {
     @FXML private TextField usernameField;
+    @FXML private TextField emailField;
     @FXML private PasswordField passwordField;
     @FXML private PasswordField confirmField;
     @FXML private Label errorLabel;
@@ -24,15 +25,20 @@ public class RegisterController implements NetworkListener {
     @FXML
     private void handleRegister() {
         String username = usernameField.getText().trim();
+        String email = emailField.getText().trim();
         String password = passwordField.getText().trim();
         String confirm  = confirmField.getText().trim();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            errorLabel.setText("用户名和密码不能为空");
+        if (username.isEmpty() || password.isEmpty() || email.isEmpty()) {
+            errorLabel.setText("用户名、邮箱和密码不能为空");
             return;
         }
         if (username.length() < 4 || username.length() > 16) {
             errorLabel.setText("用户名长度需 4-16 位");
+            return;
+        }
+        if (!email.matches("^[\\w.+-]+@[\\w-]+\\.[\\w.]+$")) {
+            errorLabel.setText("邮箱格式不正确");
             return;
         }
         if (password.length() < 6) {
@@ -48,7 +54,10 @@ public class RegisterController implements NetworkListener {
                 ClientMain.getConnector().connect(AppConfig.SERVER_HOST, AppConfig.SERVER_PORT);
             }
             ClientMain.getConnector().addListener(this);
-            ClientMain.getConnector().send(Message.of(Protocol.REGISTER, "username", username, "password", password));
+            ClientMain.getConnector().send(Message.of(Protocol.REGISTER,
+                    "username", username,
+                    "password", password,
+                    "email", email));
         } catch (Exception e) {
             errorLabel.setText("连接服务器失败: " + e.getMessage());
         }

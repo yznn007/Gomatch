@@ -90,6 +90,16 @@ public class RankingController implements NetworkListener {
                 return;
             }
 
+            // 好友排行：只有自己（无好友）时给出友好提示
+            if ("FRIENDS".equals(currentTab) && rankingData.size() == 1
+                    && currentUser != null && currentUser.getUsername() != null
+                    && currentUser.getUsername().equals(rankingData.get(0).getUsername())) {
+                Label noFriendLabel = new Label("还没有好友，去大厅添加好友吧！");
+                noFriendLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
+                rankingContainer.getChildren().add(noFriendLabel);
+                return;
+            }
+
             for (User user : rankingData) {
                 // Card Root HBox
                 HBox card = new HBox();
@@ -105,20 +115,15 @@ public class RankingController implements NetworkListener {
                     card.getStyleClass().add("list-item-card-highlight");
                 }
 
-                // Rank Badge (Trophies for 1st, 2nd, 3rd)
+                // Rank Badge
                 javafx.scene.layout.StackPane rankBadge = new javafx.scene.layout.StackPane();
                 rankBadge.getStyleClass().add("rank-number-badge");
                 int rankVal = user.getRank();
                 Label rankNum = new Label(String.valueOf(rankVal));
                 rankNum.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 rankNum.getStyleClass().add("rank-number-text");
-                if (rankVal == 1) {
-                    rankNum.setStyle("-fx-text-fill: #b45309; -fx-font-weight: bold; -fx-font-size: 13px;");
-                } else if (rankVal == 2) {
-                    rankNum.setStyle("-fx-text-fill: #cbd5e1; -fx-font-weight: bold; -fx-font-size: 13px;");
-                } else if (rankVal == 3) {
-                    rankNum.setStyle("-fx-text-fill: #78350f; -fx-font-weight: bold; -fx-font-size: 13px;");
-                }
+                // 统一走 CSS 默认文字色，主题切换由 .theme-dark 自动适配；不再按金/银/铜写死
+                rankNum.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
                 rankBadge.getChildren().add(rankNum);
 
                 // Avatar Circle
@@ -129,17 +134,8 @@ public class RankingController implements NetworkListener {
                 avatar.setPrefSize(AVATAR_SIZE, AVATAR_SIZE);
                 avatar.setMinSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
                 avatar.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
-                // 必须给 avatar 一个兜底背景色，否则首字母 Label（白字）显示在透明背景上完全看不见
-                if (rankVal == 1) {
-                    avatar.setStyle("-fx-background-color: #fbbf24;"); // Gold for 1st
-                } else if (rankVal == 2) {
-                    avatar.setStyle("-fx-background-color: #cbd5e1;"); // Silver for 2nd
-                } else if (rankVal == 3) {
-                    avatar.setStyle("-fx-background-color: #d97706;"); // Bronze for 3rd
-                } else {
-                    // rank 4+：按用户名 hash 给一个渐变底色，与 LobbyController 抽屉头像风格一致
-                    avatar.setStyle("-fx-background-color: " + gradientFor(name) + ";");
-                }
+                // 所有排名统一用渐变底色，与 LobbyController 抽屉头像风格一致
+                avatar.setStyle("-fx-background-color: " + gradientFor(name) + ";");
                 String charVal = name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase();
                 Label avatarText = new Label(charVal);
                 avatarText.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
@@ -147,15 +143,19 @@ public class RankingController implements NetworkListener {
 
                 // 加载真实头像（如果有）
                 String avatarUrl = user.getAvatarUrl();
+                // 默认仅显示首字母；图片加载成功后再切到真实头像
+                avatarText.setVisible(true);
+                ImageView avatarImg = new ImageView();
+                avatarImg.setFitWidth(AVATAR_SIZE);
+                avatarImg.setFitHeight(AVATAR_SIZE);
+                avatarImg.setVisible(false);
+                javafx.scene.shape.Circle imgClip = new javafx.scene.shape.Circle(
+                        AVATAR_SIZE / 2.0, AVATAR_SIZE / 2.0, AVATAR_SIZE / 2.0);
+                avatarImg.setClip(imgClip);
+                avatar.getChildren().addAll(avatarText, avatarImg);
                 if (avatarUrl != null && !avatarUrl.isEmpty()) {
                     try {
-                        Image image = new Image(avatarUrl, true);
-                        ImageView avatarImg = new ImageView();
-                        avatarImg.setFitWidth(AVATAR_SIZE);
-                        avatarImg.setFitHeight(AVATAR_SIZE);
-                        javafx.scene.shape.Circle imgClip = new javafx.scene.shape.Circle(
-                                AVATAR_SIZE / 2.0, AVATAR_SIZE / 2.0, AVATAR_SIZE / 2.0);
-                        avatarImg.setClip(imgClip);
+                        final Image image = new Image(avatarUrl, true);
                         image.errorProperty().addListener((obs, oldVal, newVal) -> {
                             if (newVal) {
                                 avatarImg.setVisible(false);
@@ -169,17 +169,20 @@ public class RankingController implements NetworkListener {
                                 avatarText.setVisible(false);
                             }
                         });
+                        // 缓存命中同步路径
+                        if (image.getProgress() >= 1.0 && !image.isError()) {
+                            avatarImg.setImage(image);
+                            avatarImg.setVisible(true);
+                            avatarText.setVisible(false);
+                        }
                         if (!image.isBackgroundLoading() && !image.isError()) {
                             avatarImg.setImage(image);
                             avatarImg.setVisible(true);
                             avatarText.setVisible(false);
                         }
-                        avatar.getChildren().addAll(avatarText, avatarImg);
                     } catch (Exception e) {
-                        avatar.getChildren().add(avatarText);
+                        // 加载失败：保留首字母
                     }
-                } else {
-                    avatar.getChildren().add(avatarText);
                 }
 
                 // 点击头像放大预览
@@ -366,20 +369,21 @@ public class RankingController implements NetworkListener {
 
     /**
      * username -> 渐变底色。JavaFX CSS 不支持 CSS3 语法 `linear-gradient(to bottom right, ...)`，
-     * 必须用 `from x1 y1 to x2 y2`。让 rank 4+ 名用户也有兜底底色，避免首字母白字显示在透明背景上。
+     * 必须用 `from x1 y1 to x2 y2`。所有色板都使用 明亮 → 中等亮度 的双端饱和色，
+     * 避免深色端在小尺寸头像上整体显灰暗。
      */
     private String gradientFor(String username) {
         if (username == null || username.isEmpty()) {
-            return "linear-gradient(from 0% 0% to 100% 100%, #60a5fa, #1e293b)";
+            return "linear-gradient(from 0% 0% to 100% 100%, #60a5fa, #38bdf8)";
         }
         String[] palette = {
-            "linear-gradient(from 0% 0% to 100% 100%, #60a5fa, #1e293b)",
-            "linear-gradient(from 0% 0% to 100% 100%, #fbbf24, #b45309)",
-            "linear-gradient(from 0% 0% to 100% 100%, #34d399, #065f46)",
-            "linear-gradient(from 0% 0% to 100% 100%, #f472b6, #9d174d)",
-            "linear-gradient(from 0% 0% to 100% 100%, #a78bfa, #5b21b6)",
-            "linear-gradient(from 0% 0% to 100% 100%, #22d3ee, #155e75)",
-            "linear-gradient(from 0% 0% to 100% 100%, #f87171, #991b1b)"
+            "linear-gradient(from 0% 0% to 100% 100%, #60a5fa, #38bdf8)",  // 天蓝
+            "linear-gradient(from 0% 0% to 100% 100%, #fbbf24, #f59e0b)",  // 琥珀
+            "linear-gradient(from 0% 0% to 100% 100%, #34d399, #10b981)",  // 翠绿
+            "linear-gradient(from 0% 0% to 100% 100%, #f472b6, #ec4899)",  // 粉红
+            "linear-gradient(from 0% 0% to 100% 100%, #a78bfa, #8b5cf6)",  // 紫罗兰
+            "linear-gradient(from 0% 0% to 100% 100%, #22d3ee, #06b6d4)",  // 青蓝
+            "linear-gradient(from 0% 0% to 100% 100%, #f87171, #ef4444)"   // 珊瑚红
         };
         return palette[Math.abs(username.hashCode()) % palette.length];
     }

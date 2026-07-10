@@ -484,6 +484,58 @@ public class RedisManager {
         }
     }
 
+    // ==================== 通用 Key-Value 操作 ====================
+
+    /**
+     * 设置 key 的值并指定过期时间（秒）。
+     */
+    public void setex(String key, long seconds, String value) {
+        if (!isConnected()) return;
+        try {
+            syncCommands.setex(key, seconds, value);
+        } catch (Exception e) {
+            log.warn("Failed to setex key {}: {}", key, e.getMessage());
+        }
+    }
+
+    /**
+     * 获取 key 的值。
+     */
+    public String get(String key) {
+        if (!isConnected()) return null;
+        try {
+            return syncCommands.get(key);
+        } catch (Exception e) {
+            log.warn("Failed to get key {}: {}", key, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 删除 key。
+     */
+    public void del(String key) {
+        if (!isConnected()) return;
+        try {
+            syncCommands.del(key);
+        } catch (Exception e) {
+            log.warn("Failed to del key {}: {}", key, e.getMessage());
+        }
+    }
+
+    /**
+     * 检查 key 是否存在。
+     */
+    public boolean exists(String key) {
+        if (!isConnected()) return false;
+        try {
+            return syncCommands.exists(key) == 1;
+        } catch (Exception e) {
+            log.warn("Failed to check exists key {}: {}", key, e.getMessage());
+            return false;
+        }
+    }
+
     // ==================== 对战记录缓存 ====================
 
     private static final long RECORD_TTL_SECONDS = 3 * 24 * 3600; // 3天

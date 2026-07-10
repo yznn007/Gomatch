@@ -7,6 +7,7 @@ import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -302,37 +303,56 @@ public class ProfileController implements NetworkListener {
         if (profileAvatarLabel != null && profileAvatarImg != null) {
             String name = user.getUsername();
             String avatarUrl = user.getAvatarUrl();
-            
+
+            // 设置渐变背景，与 Lobby / Ranking 风格统一
+            profileAvatarPane.setStyle("-fx-background-color: " + gradientFor(name) + ";"
+                    + "-fx-background-radius: 50%;"
+                    + "-fx-cursor: hand;");
+            // 默认显示首字母（与全站统一），等图片加载完成后再切到真实头像
+            profileAvatarImg.setVisible(false);
+            profileAvatarLabel.setVisible(true);
+            profileAvatarLabel.setText(name == null || name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase());
+
             if (avatarUrl != null && !avatarUrl.isEmpty()) {
                 try {
                     Image image = new Image(avatarUrl, true);
                     image.errorProperty().addListener((obs, oldVal, newVal) -> {
                         if (newVal) {
-                            profileAvatarImg.setVisible(false);
-                            profileAvatarLabel.setVisible(true);
-                            profileAvatarLabel.setText(name == null || name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase());
+                            Platform.runLater(() -> {
+                                profileAvatarImg.setVisible(false);
+                                profileAvatarLabel.setVisible(true);
+                                profileAvatarLabel.setText(name == null || name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase());
+                            });
                         }
                     });
                     image.progressProperty().addListener((obs, oldVal, newVal) -> {
                         if (newVal.doubleValue() >= 1.0 && !image.isError()) {
-                            profileAvatarImg.setImage(image);
-                            profileAvatarImg.setVisible(true);
-                            profileAvatarLabel.setVisible(false);
+                            Platform.runLater(() -> {
+                                profileAvatarImg.setImage(image);
+                                profileAvatarImg.setVisible(true);
+                                profileAvatarLabel.setVisible(false);
+                            });
                         }
                     });
                     if (image.isBackgroundLoading() && image.getProgress() >= 1.0 && !image.isError()) {
-                        profileAvatarImg.setImage(image);
-                        profileAvatarImg.setVisible(true);
-                        profileAvatarLabel.setVisible(false);
-                    } else if (!image.isBackgroundLoading()) {
-                        if (!image.isError()) {
+                        Platform.runLater(() -> {
                             profileAvatarImg.setImage(image);
                             profileAvatarImg.setVisible(true);
                             profileAvatarLabel.setVisible(false);
+                        });
+                    } else if (!image.isBackgroundLoading()) {
+                        if (!image.isError()) {
+                            Platform.runLater(() -> {
+                                profileAvatarImg.setImage(image);
+                                profileAvatarImg.setVisible(true);
+                                profileAvatarLabel.setVisible(false);
+                            });
                         } else {
-                            profileAvatarImg.setVisible(false);
-                            profileAvatarLabel.setVisible(true);
-                            profileAvatarLabel.setText(name == null || name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase());
+                            Platform.runLater(() -> {
+                                profileAvatarImg.setVisible(false);
+                                profileAvatarLabel.setVisible(true);
+                                profileAvatarLabel.setText(name == null || name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase());
+                            });
                         }
                     }
                 } catch (Exception e) {
@@ -340,10 +360,6 @@ public class ProfileController implements NetworkListener {
                     profileAvatarLabel.setVisible(true);
                     profileAvatarLabel.setText(name == null || name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase());
                 }
-            } else {
-                profileAvatarImg.setVisible(false);
-                profileAvatarLabel.setVisible(true);
-                profileAvatarLabel.setText(name == null || name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase());
             }
         }
         
@@ -570,5 +586,19 @@ public class ProfileController implements NetworkListener {
         );
     }
 
+    /** username -> 渐变色（hash 一致）。与 Lobby / Ranking 风格统一。 */
+    private String gradientFor(String username) {
+        if (username == null || username.isEmpty()) return "linear-gradient(from 0% 0% to 100% 100%, #60a5fa, #1e293b)";
+        String[] palette = {
+            "linear-gradient(from 0% 0% to 100% 100%, #60a5fa, #1e293b)",
+            "linear-gradient(from 0% 0% to 100% 100%, #fbbf24, #b45309)",
+            "linear-gradient(from 0% 0% to 100% 100%, #34d399, #065f46)",
+            "linear-gradient(from 0% 0% to 100% 100%, #f472b6, #9d174d)",
+            "linear-gradient(from 0% 0% to 100% 100%, #a78bfa, #5b21b6)",
+            "linear-gradient(from 0% 0% to 100% 100%, #22d3ee, #155e75)",
+            "linear-gradient(from 0% 0% to 100% 100%, #f87171, #991b1b)"
+        };
+        return palette[Math.abs(username.hashCode()) % palette.length];
+    }
 
 }

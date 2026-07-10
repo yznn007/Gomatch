@@ -141,6 +141,8 @@ public class ClientHandler implements Runnable {
             case Protocol.REPLY_UNDO      -> handleReplyUndo(msg);
             case Protocol.REQUEST_DRAW    -> handleRequestDraw();
             case Protocol.REPLY_DRAW      -> handleReplyDraw(msg);
+            case Protocol.REQUEST_REMATCH -> handleRequestRematch();
+            case Protocol.REPLY_REMATCH   -> handleReplyRematch(msg);
             case Protocol.RECONNECT       -> handleReconnect(msg);
             case Protocol.CHANGE_PWD      -> handleChangePassword(msg);
             case Protocol.ADD_FRIEND      -> handleAddFriend(msg);
@@ -168,6 +170,10 @@ public class ClientHandler implements Runnable {
             case Protocol.USER_LIST        -> handleUserList(msg);
             case Protocol.ADMIN_STATS      -> handleAdminStats();
             case Protocol.UPDATE_USER_ROLE -> handleUpdateUserRole(msg);
+            // Forgot password
+            case Protocol.FORGOT_PASSWORD    -> handleForgotPassword(msg);
+            case Protocol.VERIFY_FORGOT_CODE -> handleVerifyForgotCode(msg);
+            case Protocol.FORGOT_PWD_RESET   -> handleForgotPwdReset(msg);
             default -> send(Message.of(Protocol.ERROR, "msg", "Unknown command: " + cmd));
         }
     }
@@ -194,8 +200,9 @@ public class ClientHandler implements Runnable {
     private void handleRegister(Message msg) {
         String username = msg.getString("username");
         String password = msg.getString("password");
+        String email = msg.has("email") ? msg.getString("email") : "";
 
-        log.info("注册请求: username={}", username);
+        log.info("注册请求: username={}, email={}", username, email);
 
         if (username == null || username.trim().isEmpty()) {
             send(Message.of("REGISTER_FAIL", "msg", "用户名不能为空"));
@@ -209,14 +216,30 @@ public class ClientHandler implements Runnable {
             send(Message.of("REGISTER_FAIL", "msg", "密码至少6位"));
             return;
         }
+        if (email.isEmpty()) {
+            send(Message.of("REGISTER_FAIL", "msg", "邮箱不能为空"));
+            return;
+        }
+        // 简单邮箱格式校验
+        if (!email.matches("^[\\w.+-]+@[\\w-]+\\.[\\w.]+$")) {
+            send(Message.of("REGISTER_FAIL", "msg", "邮箱格式不正确"));
+            return;
+        }
 
-        boolean success = userDAO.register(username, password);
+        boolean success = userDAO.register(username, password, email);
         if (success) {
             send(Message.cmdOnly("REGISTER_OK"));
-            log.info("用户注册成功: {}", username);
+            log.info("用户注册成功: {} (email={})", username, email);
         } else {
-            send(Message.of("REGISTER_FAIL", "msg", "用户名已存在"));
-            log.warn("Register failed (duplicate): {}", username);
+            // 检查是用户名重复还是邮箱重复
+            if (userDAO.existsByUsername(username)) {
+                send(Message.of("REGISTER_FAIL", "msg", "用户名已存在"));
+            } else if (userDAO.emailExists(email)) {
+                send(Message.of("REGISTER_FAIL", "msg", "该邮箱已被注册"));
+            } else {
+                send(Message.of("REGISTER_FAIL", "msg", "注册失败，请重试"));
+            }
+            log.warn("Register failed: username={}, email={}", username, email);
         }
     }
 
@@ -278,9 +301,20 @@ public class ClientHandler implements Runnable {
                     long disconnectedId = activeRoom.isPlayerDisconnected(opponentId) ? opponentId : 0;
 
                     String avatarPath = userDAO.getAvatar(userInfo.getUserId());
-                    String avatarUrl = (avatarPath != null && !avatarPath.isEmpty()) 
-                            ? StorageManager.getInstance().getOssService().generatePresignedUrl(avatarPath, 86400 * 30) 
+                    String avatarUrl = (avatarPath != null && !avatarPath.isEmpty())
+                            ? StorageManager.getInstance().getOssService().generatePresignedUrl(avatarPath, 86400 * 30)
                             : "";
+
+                    // 双方头像 URL（断线重连后客户端不会收到 GAME_START，必须在 LOGIN_OK 携带）
+                    String blackAvatarPath = userDAO.getAvatar(activeRoom.getBlackUserId());
+                    String whiteAvatarPath = userDAO.getAvatar(activeRoom.getWhiteUserId());
+                    String blackAvatarUrl = (blackAvatarPath != null && !blackAvatarPath.isEmpty())
+                            ? StorageManager.getInstance().getOssService().generatePresignedUrl(blackAvatarPath, 86400 * 30)
+                            : "";
+                    String whiteAvatarUrl = (whiteAvatarPath != null && !whiteAvatarPath.isEmpty())
+                            ? StorageManager.getInstance().getOssService().generatePresignedUrl(whiteAvatarPath, 86400 * 30)
+                            : "";
+
                     send(Message.builder(Protocol.LOGIN_OK)
                             .set("userId", String.valueOf(userInfo.getUserId()))
                             .set("username", userInfo.getUsername())
@@ -295,6 +329,8 @@ public class ClientHandler implements Runnable {
                             .set("roomId", activeRoom.getRoomId())
                             .set("blackUserId", String.valueOf(activeRoom.getBlackUserId()))
                             .set("whiteUserId", String.valueOf(activeRoom.getWhiteUserId()))
+                            .set("blackAvatarUrl", blackAvatarUrl)
+                            .set("whiteAvatarUrl", whiteAvatarUrl)
                             .set("currentColor", String.valueOf(currentColor))
                             .set("disconnectedUserId", String.valueOf(disconnectedId))
                             .build());
@@ -366,6 +402,119 @@ public class ClientHandler implements Runnable {
         } else {
             send(Message.of(Protocol.ERROR, "msg", "旧密码错误"));
             log.warn("用户 {} 修改密码失败: 旧密码错误", userId);
+        }
+    }
+
+    // ==================== 忘记密码 ====================
+
+    private void handleForgotPassword(Message msg) {
+        String email = msg.getString("email");
+        if (email == null || email.trim().isEmpty()) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "邮箱不能为空"));
+            return;
+        }
+
+        email = email.trim().toLowerCase();
+
+        if (!email.matches("^[\\w.+-]+@[\\w-]+\\.[\\w.]+$")) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "邮箱格式不正确"));
+            return;
+        }
+
+        long userId = userDAO.findUserIdByEmail(email);
+        if (userId == 0) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "该邮箱未注册或账号异常"));
+            log.warn("Forgot password: email not found - {}", email);
+            return;
+        }
+
+        String code = VerificationCodeManager.getInstance().generateCode(email);
+        send(Message.of(Protocol.FORGOT_PWD_CODE,
+                "code", code,
+                "email", email));
+        log.info("Forgot password code sent to {} (userId={})", email, userId);
+    }
+
+    private void handleVerifyForgotCode(Message msg) {
+        String email = msg.getString("email");
+        String code = msg.getString("code");
+
+        if (email == null || email.trim().isEmpty() || code == null || code.trim().isEmpty()) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "邮箱和验证码不能为空"));
+            return;
+        }
+
+        email = email.trim().toLowerCase();
+
+        if (!email.matches("^[\\w.+-]+@[\\w-]+\\.[\\w.]+$")) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "邮箱格式不正确"));
+            return;
+        }
+
+        // 先确认邮箱存在
+        long userId = userDAO.findUserIdByEmail(email);
+        if (userId == 0) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "该邮箱未注册或账号异常"));
+            return;
+        }
+
+        if (!VerificationCodeManager.getInstance().isCodeValid(email)) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "验证码已过期，请重新获取"));
+            return;
+        }
+
+        boolean verified = VerificationCodeManager.getInstance().verifyCode(email, code);
+        if (verified) {
+            send(Message.builder(Protocol.FORGOT_PWD_VERIFY_OK)
+                    .set("email", email)
+                    .build());
+            log.info("Forgot password code verified for {}", email);
+        } else {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "验证码错误"));
+        }
+    }
+
+    private void handleForgotPwdReset(Message msg) {
+        String email = msg.getString("email");
+        String code = msg.getString("code");
+        String newPassword = msg.getString("newPassword");
+
+        if (email == null || email.trim().isEmpty()
+                || code == null || code.trim().isEmpty()
+                || newPassword == null || newPassword.length() < 6) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "参数无效，新密码至少6位"));
+            return;
+        }
+
+        email = email.trim().toLowerCase();
+
+        if (!email.matches("^[\\w.+-]+@[\\w-]+\\.[\\w.]+$")) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "邮箱格式不正确"));
+            return;
+        }
+
+        // 再次校验验证码（验证码可能已被 consume，所以这里重新检查）
+        // 实际上 verifyCode 成功后已清除，所以改用：先查用户，再重置
+        long userId = userDAO.findUserIdByEmail(email);
+        if (userId == 0) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "该邮箱未注册或账号异常"));
+            return;
+        }
+
+        // 安全校验：必须已通过 verify 步骤（通过则清除标记防止重复重置）
+        VerificationCodeManager vcm = VerificationCodeManager.getInstance();
+        if (!vcm.isVerified(email) && !vcm.verifyCode(email, code)) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "验证码错误或已过期，请重新获取"));
+            return;
+        }
+
+        boolean success = userDAO.resetPassword(userId, newPassword);
+        if (success) {
+            vcm.clearVerified(email);
+            send(Message.cmdOnly(Protocol.FORGOT_PWD_OK));
+            log.info("Password reset for userId={} (email={})", userId, email);
+        } else {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "重置密码失败，请重试"));
         }
     }
 
@@ -1097,6 +1246,68 @@ public class ClientHandler implements Runnable {
             }
         } else {
             send(Message.of(Protocol.ERROR, "msg", "无法回复求和请求"));
+        }
+    }
+
+    // ==================== 再来一局请求 ====================
+
+    private void handleRequestRematch() {
+        if (currentRoom == null || currentRoom.getStatus() != Room.Status.FINISHED) {
+            send(Message.of(Protocol.ERROR, "msg", "当前不在已结束的对局中"));
+            return;
+        }
+
+        if (currentRoom.isObserver(this)) {
+            send(Message.of(Protocol.ERROR, "msg", "观战者不能请求再来一局"));
+            return;
+        }
+
+        boolean success = currentRoom.requestRematch(userId);
+        if (success) {
+            currentRoom.broadcastToPlayersExcept(userId,
+                Message.of(Protocol.REMATCH_REQUESTED,
+                    "requesterId", String.valueOf(userId),
+                    "requesterName", getUsername()));
+            log.info("玩家 {} 请求再来一局", userId);
+        } else {
+            send(Message.of(Protocol.ERROR, "msg", "无法请求再来一局"));
+        }
+    }
+
+    // ==================== 再来一局回复 ====================
+
+    private void handleReplyRematch(Message msg) {
+        if (currentRoom == null || currentRoom.getStatus() != Room.Status.FINISHED) {
+            send(Message.of(Protocol.ERROR, "msg", "当前不在已结束的对局中"));
+            return;
+        }
+
+        if (currentRoom.isObserver(this)) {
+            send(Message.of(Protocol.ERROR, "msg", "观战者不能回复再来一局"));
+            return;
+        }
+
+        boolean accept = msg.getBoolean("accept");
+        long result = currentRoom.replyRematch(userId, accept);
+        if (result < 0) {
+            send(Message.of(Protocol.ERROR, "msg", "无法回复再来一局请求"));
+            log.warn("replyRematch failed: userId={}, accept={}", userId, accept);
+            return;
+        }
+
+        if (accept) {
+            // 同意：resetAndRestartGame 已广播 GAME_START，再补充 REMATCH_ACCEPTED 告知客户端
+            currentRoom.broadcastAll(Message.cmdOnly(Protocol.REMATCH_ACCEPTED));
+            log.info("玩家 {} 同意再来一局", userId);
+        } else {
+            // 拒绝：通知请求方
+            ClientHandler requester = currentRoom.findPlayerById(result);
+            if (requester != null) {
+                requester.send(Message.of(Protocol.REMATCH_REJECTED, "replierName", getUsername()));
+            }
+            // 也通知自己（关闭弹窗并返回大厅）
+            send(Message.of(Protocol.REMATCH_REJECTED, "replierName", getUsername()));
+            log.info("玩家 {} 拒绝再来一局", userId);
         }
     }
 

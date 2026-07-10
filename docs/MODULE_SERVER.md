@@ -152,6 +152,9 @@ private static final SessionManager sessionManager = SessionManager.getInstance(
 | `CHAT_HISTORY` | `handleChatHistory` | 返回房间聊天历史 |
 | `WATCHER_HISTORY` | `handleWatcherHistory` | 返回观战历史 |
 | `LOGOUT` | `handleLogout` | 退出登录，清理会话，离开房间 |
+| `FORGOT_PASSWORD` | `handleForgotPassword` | 忘记密码：校验邮箱 → 生成验证码 → Redis 存储（5min TTL） |
+| `VERIFY_FORGOT_CODE` | `handleVerifyForgotCode` | 忘记密码：校验 Redis 中的验证码 |
+| `FORGOT_PWD_RESET` | `handleForgotPwdReset` | 忘记密码：重置密码 → 清理 Redis |
 
 ---
 
@@ -433,6 +436,7 @@ gomatch:game:{roomId}  ->  游戏事件频道
 | 注册 | t_user | UserDAO.register() |
 | 登录 | t_user | UserDAO.login() |
 | 修改密码 | t_user | UserDAO.changePassword() |
+| 忘记密码 | t_user + Redis | UserDAO.findUserIdByEmail() → UserDAO.resetPassword()；RedisManager.setex/get/del 管理验证码 |
 | 创建房间 | t_room | RoomDAO.saveRoom()（定时） |
 | 加入房间 | t_room | RoomDAO.updateRoom()（定时） |
 | 观战加入 | t_room_watcher | RoomWatcherDAO.startWatching() |

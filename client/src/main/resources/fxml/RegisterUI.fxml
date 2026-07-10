@@ -21,6 +21,10 @@
                 </VBox>
 
                 <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
+                    <TextField fx:id="emailField" styleClass="glass-input" promptText="%register.email"/>
+                </VBox>
+
+                <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
                     <PasswordField fx:id="passwordField" styleClass="glass-input" promptText="%register.password"/>
                 </VBox>
 

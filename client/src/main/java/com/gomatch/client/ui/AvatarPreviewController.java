@@ -37,7 +37,7 @@ public class AvatarPreviewController {
     /**
      * 设置要预览的头像。
      *
-     * @param image    头像图片（已加载）
+     * @param image    头像图片（已加载）。传入 null 时强制使用首字母 fallback。
      * @param username 用户名（用于首字母回退和标题显示）
      */
     public void setAvatar(Image image, String username) {
@@ -51,21 +51,48 @@ public class AvatarPreviewController {
             avatarBg.setFill(Color.TRANSPARENT);
         }
 
-        if (image != null && !image.isError()) {
-            avatarImg.setImage(image);
-            avatarImg.setVisible(true);
-            avatarImg.setManaged(true);
-            avatarLabel.setVisible(false);
-            avatarLabel.setManaged(false);
-        } else {
-            // 无头像时显示首字母
+        // 首字母 fallback：默认先显示，等图片确认加载成功后再让位给图片
+        final String initial = (username != null && !username.isEmpty())
+                ? username.substring(0, 1).toUpperCase() : "U";
+        avatarLabel.setText(initial);
+        avatarLabel.setVisible(true);
+        avatarLabel.setManaged(true);
+
+        if (image == null) {
+            // 没有头像 URL，直接用首字母
+            avatarImg.setImage(null);
             avatarImg.setVisible(false);
             avatarImg.setManaged(false);
-            avatarLabel.setVisible(true);
-            avatarLabel.setManaged(true);
-            String initial = (username != null && !username.isEmpty())
-                    ? username.substring(0, 1).toUpperCase() : "U";
-            avatarLabel.setText(initial);
+        } else {
+            // 有头像：先让首字母占位（避免用户上传失败时一片白板），
+            // 监听加载进度，**真正加载完成**后再切换到图片，失败则保留首字母。
+            avatarImg.setImage(image);
+            avatarImg.setVisible(false);
+            avatarImg.setManaged(false);
+            final Image imgRef = image;
+            imgRef.progressProperty().addListener((obs, o, n) -> {
+                if (n != null && n.doubleValue() >= 1.0 && !imgRef.isError()) {
+                    javafx.application.Platform.runLater(() -> {
+                        if (imgRef.isError()) return; // 二次检查：避免在错误回调后覆盖
+                        avatarImg.setVisible(true);
+                        avatarImg.setManaged(true);
+                        avatarLabel.setVisible(false);
+                        avatarLabel.setManaged(false);
+                    });
+                }
+            });
+            imgRef.errorProperty().addListener((obs, o, n) -> {
+                if (n) {
+                    // 图片加载失败 → 恢复首字母 fallback
+                    javafx.application.Platform.runLater(() -> {
+                        avatarImg.setVisible(false);
+                        avatarImg.setManaged(false);
+                        avatarLabel.setText(initial);
+                        avatarLabel.setVisible(true);
+                        avatarLabel.setManaged(true);
+                    });
+                }
+            });
         }
         if (username != null) {
             usernameLabel.setText(username);

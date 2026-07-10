@@ -5,6 +5,7 @@ import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -203,36 +204,50 @@ public class LobbyController implements NetworkListener {
                 + "-fx-border-color: rgba(255,255,255,0.85);"
                 + "-fx-border-width: 2;"
                 + "-fx-border-radius: 50%;");
+        // 默认显示首字母（与 Ranking 风格保持一致），等图片加载完成后再切到真实头像
+        avatarImageView.setVisible(false);
+        avatarLabel.setVisible(true);
+        avatarLabel.setText(initialOf(name));
         if (avatarUrl != null && !avatarUrl.isEmpty()) {
             try {
-                Image image = new Image(avatarUrl, true);
+                final Image image = new Image(avatarUrl, true);
                 image.errorProperty().addListener((obs, oldVal, newVal) -> {
                     if (newVal) {
-                        avatarImageView.setVisible(false);
-                        avatarLabel.setVisible(true);
-                        avatarLabel.setText(initialOf(name));
+                        Platform.runLater(() -> {
+                            avatarImageView.setVisible(false);
+                            avatarLabel.setVisible(true);
+                            avatarLabel.setText(initialOf(name));
+                        });
                     }
                 });
                 image.progressProperty().addListener((obs, oldVal, newVal) -> {
                     if (newVal.doubleValue() >= 1.0 && !image.isError()) {
-                        avatarImageView.setImage(image);
-                        avatarImageView.setVisible(true);
-                        avatarLabel.setVisible(false);
+                        Platform.runLater(() -> {
+                            avatarImageView.setImage(image);
+                            avatarImageView.setVisible(true);
+                            avatarLabel.setVisible(false);
+                        });
                     }
                 });
                 if (image.isBackgroundLoading() && image.getProgress() >= 1.0 && !image.isError()) {
-                    avatarImageView.setImage(image);
-                    avatarImageView.setVisible(true);
-                    avatarLabel.setVisible(false);
-                } else if (!image.isBackgroundLoading()) {
-                    if (!image.isError()) {
+                    Platform.runLater(() -> {
                         avatarImageView.setImage(image);
                         avatarImageView.setVisible(true);
                         avatarLabel.setVisible(false);
+                    });
+                } else if (!image.isBackgroundLoading()) {
+                    if (!image.isError()) {
+                        Platform.runLater(() -> {
+                            avatarImageView.setImage(image);
+                            avatarImageView.setVisible(true);
+                            avatarLabel.setVisible(false);
+                        });
                     } else {
-                        avatarImageView.setVisible(false);
-                        avatarLabel.setVisible(true);
-                        avatarLabel.setText(initialOf(name));
+                        Platform.runLater(() -> {
+                            avatarImageView.setVisible(false);
+                            avatarLabel.setVisible(true);
+                            avatarLabel.setText(initialOf(name));
+                        });
                     }
                 }
             } catch (Exception e) {
@@ -240,10 +255,6 @@ public class LobbyController implements NetworkListener {
                 avatarLabel.setVisible(true);
                 avatarLabel.setText(initialOf(name));
             }
-        } else {
-            avatarImageView.setVisible(false);
-            avatarLabel.setVisible(true);
-            avatarLabel.setText(initialOf(name));
         }
         if (!"ADMIN".equalsIgnoreCase(user.getRole())) {
             managementBtn.setVisible(false);

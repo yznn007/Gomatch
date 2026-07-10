@@ -106,6 +106,12 @@ public class LoginController implements NetworkListener {
     }
 
     @FXML
+    private void handleForgotPassword() {
+        if (brandCanvas != null) brandCanvas.stop();
+        ScreenManager.switchTo("/fxml/ForgotPasswordUI.fxml");
+    }
+
+    @FXML
     private void handlePreview() {
         if (brandCanvas != null) brandCanvas.stop();
         User fakeUser = new User(0, "游客");
@@ -151,11 +157,14 @@ public class LoginController implements NetworkListener {
                 String whiteUserId   = String.valueOf(msg.getLong("whiteUserId"));
                 int    currentColor  = msg.getInt("currentColor");
                 String disconnectedUserId = String.valueOf(msg.optLong("disconnectedUserId", 0));
+                // 双方头像 URL（断线重连时不会收到 GAME_START，必须从 LOGIN_OK 携带）
+                String blackAvatarUrl = msg.has("blackAvatarUrl") ? msg.getString("blackAvatarUrl") : "";
+                String whiteAvatarUrl = msg.has("whiteAvatarUrl") ? msg.getString("whiteAvatarUrl") : "";
                 String username      = user.getUsername();
 
                 BoardController boardCtrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
                 boardCtrl.resumeFromLogin(blackUserId, whiteUserId, username,
-                        currentColor, disconnectedUserId);
+                        currentColor, disconnectedUserId, blackAvatarUrl, whiteAvatarUrl);
             } else {
                 LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
                 ctrl.setCurrentUser(user);

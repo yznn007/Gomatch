@@ -65,11 +65,11 @@ public class AIPlayer {
     }
 
     /**
-     * 简单难度：40% 概率随机走子，60% 弱攻击评分（攻防权重 3:7）
+     * 简单难度：20% 概率随机走子，80% 评分（攻防权重 4:6，防守略多但仍具威胁）
      */
     private int[] getEasyMove() {
-        // 40% 概率随机走子
-        if (random.nextInt(100) < 40) {
+        // 20% 概率随机走子
+        if (random.nextInt(100) < 20) {
             List<int[]> candidates = new ArrayList<>();
             for (int x = 0; x < SIZE; x++) {
                 for (int y = 0; y < SIZE; y++) {
@@ -103,8 +103,8 @@ public class AIPlayer {
                     int defendScore = evaluatePosition(x, y, playerColor);
                     board[x][y] = EMPTY;
 
-                    // 攻弱防强：攻击权重 30%，防守权重 70%
-                    int score = (int)(attackScore * 0.3) + (int)(defendScore * 0.7);
+                    // 偏防守但更积极：攻击权重 40%，防守权重 60%
+                    int score = (int)(attackScore * 0.4) + (int)(defendScore * 0.6);
 
                     if (score > bestScore) {
                         bestScore = score;
@@ -119,48 +119,17 @@ public class AIPlayer {
     }
 
     /**
-     * 中等难度：攻防均衡评分
+     * 中等难度：1 层 Minimax 前瞻搜索（全盘评估每步走法）
      */
     private int[] getMediumMove() {
-        int bestScore = Integer.MIN_VALUE;
-        int bestX = -1;
-        int bestY = -1;
-
-        for (int x = 0; x < SIZE; x++) {
-            for (int y = 0; y < SIZE; y++) {
-                if (board[x][y] == EMPTY) {
-                    if (!hasNeighbor(x, y)) continue;
-
-                    board[x][y] = aiColor;
-                    int attackScore = evaluatePosition(x, y, aiColor);
-                    board[x][y] = EMPTY;
-
-                    board[x][y] = playerColor;
-                    int defendScore = evaluatePosition(x, y, playerColor);
-                    board[x][y] = EMPTY;
-
-                    int score = attackScore + defendScore;
-
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestX = x;
-                        bestY = y;
-                    } else if (score == bestScore && score > 0 && random.nextBoolean()) {
-                        bestX = x;
-                        bestY = y;
-                    }
-                }
-            }
-        }
-
-        return fallbackMove(bestX, bestY, bestScore);
+        return hardMinimax(1);
     }
 
     /**
-     * 困难难度：二层 MinMax 前瞻搜索 + 强攻击评分
+     * 困难难度：3 层 Minimax 前瞻搜索 + 强势进攻
      */
     private int[] getHardMove() {
-        return hardMinimax(2);
+        return hardMinimax(3);
     }
 
     private int[] hardMinimax(int depth) {
@@ -191,6 +160,25 @@ public class AIPlayer {
             }
             board[move[0]][move[1]] = EMPTY;
         }
+
+        // 启发式排序：优先评估攻防价值高的走法，提升 Alpha-Beta 剪枝效率
+        candidates.sort((a, b) -> {
+            board[a[0]][a[1]] = aiColor;
+            int aAtk = evaluatePosition(a[0], a[1], aiColor);
+            board[a[0]][a[1]] = EMPTY;
+            board[a[0]][a[1]] = playerColor;
+            int aDef = evaluatePosition(a[0], a[1], playerColor);
+            board[a[0]][a[1]] = EMPTY;
+
+            board[b[0]][b[1]] = aiColor;
+            int bAtk = evaluatePosition(b[0], b[1], aiColor);
+            board[b[0]][b[1]] = EMPTY;
+            board[b[0]][b[1]] = playerColor;
+            int bDef = evaluatePosition(b[0], b[1], playerColor);
+            board[b[0]][b[1]] = EMPTY;
+
+            return Integer.compare(bAtk + bDef, aAtk + aDef);
+        });
 
         for (int[] move : candidates) {
             board[move[0]][move[1]] = aiColor;
@@ -243,7 +231,7 @@ public class AIPlayer {
     }
 
     /**
-     * 评估整个棋盘：AI 分数 - 玩家分数（进攻倾向 1.2 倍）
+     * 评估整个棋盘：AI 分数 * 1.2 - 玩家分数（进攻倾向）
      */
     private int evaluateBoard() {
         int aiScore = 0;
@@ -257,7 +245,7 @@ public class AIPlayer {
                 }
             }
         }
-        return (int)(aiScore * 1.1) - playerScore;
+        return (int)(aiScore * 1.2) - playerScore;
     }
 
     /**

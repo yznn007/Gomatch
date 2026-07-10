@@ -77,6 +77,19 @@ public class Protocol {
     public static final String MATCH_TIMEOUT = "MATCH_TIMEOUT";
     public static final String RANKED_MATCH_FOUND = "RANKED_MATCH_FOUND";
     public static final String RANKED_READY = "RANKED_READY";
+    // Forgot password - Client -> Server
+    public static final String FORGOT_PASSWORD     = "FORGOT_PASSWORD";
+    public static final String VERIFY_FORGOT_CODE  = "VERIFY_FORGOT_CODE";
+    public static final String FORGOT_PWD_RESET    = "FORGOT_PWD_RESET";
+    // Rematch - Server -> Client
+    public static final String REMATCH_REQUESTED = "REMATCH_REQUESTED";
+    public static final String REMATCH_ACCEPTED  = "REMATCH_ACCEPTED";
+    public static final String REMATCH_REJECTED  = "REMATCH_REJECTED";
+    // Forgot password - Server -> Client
+    public static final String FORGOT_PWD_CODE     = "FORGOT_PWD_CODE";
+    public static final String FORGOT_PWD_VERIFY_OK = "FORGOT_PWD_VERIFY_OK";
+    public static final String FORGOT_PWD_OK       = "FORGOT_PWD_OK";
+    public static final String FORGOT_PWD_FAIL     = "FORGOT_PWD_FAIL";
     // Settings commands - Client -> Server
     public static final String GET_SETTINGS      = "GET_SETTINGS";
     public static final String SAVE_SETTINGS     = "SAVE_SETTINGS";

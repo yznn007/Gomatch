@@ -48,7 +48,15 @@ public class UserDAO {
         public String getStatus() { return status; }
     }
 
+    /**
+     * @deprecated 使用 {@link #register(String, String, String)} 代替，邮箱为必填项
+     */
+    @Deprecated
     public boolean register(String username, String password) {
+        return register(username, password, "");
+    }
+
+    public boolean register(String username, String password, String email) {
         if (username == null || username.trim().isEmpty()) {
             log.warn("Register failed: empty username");
             return false;
@@ -65,12 +73,24 @@ public class UserDAO {
             log.warn("Register failed: username already exists: {}", username);
             return false;
         }
+        // 邮箱不能为空
+        String emailTrimmed = (email != null) ? email.trim() : "";
+        if (emailTrimmed.isEmpty()) {
+            log.warn("Register failed: empty email");
+            return false;
+        }
+        // 检查邮箱是否已注册
+        if (emailExists(emailTrimmed)) {
+            log.warn("Register failed: email already registered: {}", emailTrimmed);
+            return false;
+        }
 
-        String sql = "INSERT INTO t_user (username, password) VALUES (?, ?)";
+        String sql = "INSERT INTO t_user (username, password, email) VALUES (?, ?, ?)";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, username.trim());
             ps.setString(2, password);
+            ps.setString(3, emailTrimmed);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
@@ -78,11 +98,10 @@ public class UserDAO {
                     rankDAO.upsertRank(userId, 1000, 0, 0, 0);
                 }
             }
-            log.info("User registered: {}", username);
+            log.info("User registered: {} (email={})", username, emailTrimmed);
             return true;
         } catch (java.sql.SQLIntegrityConstraintViolationException e) {
-            // 并发安全：existsByUsername 和 INSERT 之间可能有竞态，捕获唯一约束异常
-            log.warn("Register failed: duplicate username (concurrent): {}", username);
+            log.warn("Register failed: duplicate username or email (concurrent): {}", username);
             return false;
         } catch (SQLException e) {
             log.error("Register SQL error: {}", username, e);
@@ -90,21 +109,22 @@ public class UserDAO {
         }
     }
 
-    public UserInfo login(String username, String password) {
-        if (username == null || password == null) {
+    public UserInfo login(String account, String password) {
+        if (account == null || password == null) {
             return null;
         }
         String sql = "SELECT user_id, username, score, win_count, lose_count, draw_count, " +
-                     "role, status FROM t_user WHERE username = ? AND password = ?";
+                     "role, status FROM t_user WHERE (username = ? OR email = ?) AND password = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, username);
-            ps.setString(2, password);
+            ps.setString(1, account);
+            ps.setString(2, account);
+            ps.setString(3, password);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     String status = rs.getString("status");
                     if ("BANNED".equals(status)) {
-                        log.warn("Banned user attempt to login: {}", username);
+                        log.warn("Banned user attempt to login: {}", account);
                         return null;
                     }
                     return new UserInfo(
@@ -120,7 +140,7 @@ public class UserDAO {
                 }
             }
         } catch (SQLException e) {
-            log.error("Login SQL error: {}", username, e);
+            log.error("Login SQL error: {}", account, e);
         }
         return null;
     }
@@ -208,6 +228,68 @@ public class UserDAO {
     public void updateDrawCount(long userId) {
         String sql = "UPDATE t_user SET draw_count = draw_count + 1, update_time = NOW() WHERE user_id = ?";
         executeUpdate(sql, userId);
+    }
+
+    /**
+     * 查询邮箱是否存在
+     */
+    public boolean emailExists(String email) {
+        String sql = "SELECT 1 FROM t_user WHERE email = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email.trim().toLowerCase());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            log.error("Check email exists error: {}", email, e);
+        }
+        return false;
+    }
+
+    /**
+     * 根据邮箱查询用户信息（用于忘记密码验证）
+     * @return userId，如果不存在返回 0
+     */
+    public long findUserIdByEmail(String email) {
+        String sql = "SELECT user_id FROM t_user WHERE email = ? AND status = 'ACTIVE'";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email.trim().toLowerCase());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("user_id");
+                }
+            }
+        } catch (SQLException e) {
+            log.error("Find user by email error: {}", email, e);
+        }
+        return 0;
+    }
+
+    /**
+     * 忘记密码：直接重置密码（清空旧密码，设置新密码）
+     */
+    public boolean resetPassword(long userId, String newPassword) {
+        if (newPassword == null || newPassword.length() < 6) {
+            log.warn("Reset password failed: new password too short");
+            return false;
+        }
+
+        String sql = "UPDATE t_user SET password = ?, update_time = NOW() WHERE user_id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newPassword);
+            ps.setLong(2, userId);
+            boolean success = ps.executeUpdate() > 0;
+            if (success) {
+                log.info("Password reset successfully: userId={}", userId);
+            }
+            return success;
+        } catch (SQLException e) {
+            log.error("Reset password error: userId={}", userId, e);
+            return false;
+        }
     }
 
     public boolean changePassword(long userId, String oldPassword, String newPassword) {

@@ -18,7 +18,7 @@
         <VBox spacing="0" cache="true" cacheHint="QUALITY" viewOrder="-2.0">
             <HBox alignment="CENTER_LEFT" spacing="18">
                 <HBox fx:id="playerInfoBox" styleClass="player-chip" onMouseClicked="#handleProfile" spacing="12">
-                    <StackPane fx:id="lobbyAvatarPane" prefWidth="44" prefHeight="44" minWidth="44" minHeight="44" styleClass="avatar-badge" style="-fx-background-color: #0ea5e9; -fx-cursor: hand;" onMouseClicked="#handleAvatarClick">
+                    <StackPane fx:id="lobbyAvatarPane" prefWidth="44" prefHeight="44" minWidth="44" minHeight="44" styleClass="avatar-badge" style="-fx-cursor: hand;" onMouseClicked="#handleAvatarClick">
                         <Label fx:id="avatarLabel" text="U" styleClass="avatar-badge-text" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;"/>
                         <ImageView fx:id="avatarImageView" fitWidth="44" fitHeight="44" visible="false">
                             <clip>

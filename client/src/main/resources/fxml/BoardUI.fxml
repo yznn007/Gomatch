@@ -22,7 +22,7 @@
                     prefWidth="6" minWidth="6" maxWidth="6"/>
             
             <!-- 侧边栏内容 VBox -->
-            <VBox fx:id="sidebarContent" spacing="10" prefWidth="220" minWidth="150" maxWidth="400" style="-fx-padding: 0 0 0 10;">
+            <VBox fx:id="sidebarContent" spacing="16" prefWidth="220" minWidth="150" maxWidth="400" style="-fx-padding: 0 0 0 10;">
                 <!-- 玩家信息区：黑白方卡片 + 回合指示 + 计时 -->
                 <VBox fx:id="blackPlayerBox" styleClass="player-info-card" spacing="0"/>
                 <VBox fx:id="whitePlayerBox" styleClass="player-info-card" spacing="0"/>
