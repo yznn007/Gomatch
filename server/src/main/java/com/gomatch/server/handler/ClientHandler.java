@@ -135,6 +135,7 @@ public class ClientHandler implements Runnable {
             case Protocol.CANCEL_MATCH    -> handleCancelMatch();
             case Protocol.RANKED_MATCH    -> handleRankedMatch();
             case Protocol.RANKED_READY    -> handleRankedReady(msg);
+            case Protocol.QUICK_READY    -> handleQuickReady(msg);
             case Protocol.RANKING         -> handleRanking(msg);
             case Protocol.QUERY_RECORD    -> handleQueryRecord(msg);
             case Protocol.REQUEST_UNDO    -> handleRequestUndo();
@@ -727,8 +728,6 @@ public class ClientHandler implements Runnable {
         if (room != null) {
             this.currentRoom = room;
 
-            room.broadcastAll(room.buildGameStartMessage());
-
             log.info("玩家 {} 配对成功，房间: {}", userId, room.getRoomId());
         } else {
             send(Message.of(Protocol.ERROR, "msg", "等待对手... (" + roomManager.getMatchQueueSize() + "/2)"));
@@ -742,6 +741,9 @@ public class ClientHandler implements Runnable {
         if (currentRoom != null && currentRoom.isGameStarted()) {
             send(Message.of(Protocol.ERROR, "msg", "对局已开始，无法取消"));
             return;
+        }
+        if (currentRoom != null) {
+            roomManager.leaveRoom(this);
         }
         roomManager.cancelMatch(userId);
         roomManager.cancelRankedMatch(userId);
@@ -817,6 +819,34 @@ public class ClientHandler implements Runnable {
 
         if (currentRoom.bothReady()) {
             log.info("双方玩家已准备，开始排位赛: room={}", currentRoom.getRoomId());
+            currentRoom.startGame();
+            currentRoom.broadcastAll(currentRoom.buildGameStartMessage());
+        }
+    }
+
+    private void handleQuickReady(Message msg) {
+        if (currentRoom == null) {
+            log.warn("handleQuickReady: not in a room");
+            return;
+        }
+
+        if (currentRoom.isGameStarted()) {
+            send(Message.of(Protocol.ERROR, "msg", "游戏已开始"));
+            return;
+        }
+
+        boolean ready = "true".equals(msg.getString("ready"));
+        currentRoom.setReady(userId, ready);
+
+        boolean blackReady = currentRoom.isBlackReady();
+        boolean whiteReady = currentRoom.isWhiteReady();
+
+        currentRoom.broadcastAll(Message.of(Protocol.QUICK_READY,
+                "blackReady", String.valueOf(blackReady),
+                "whiteReady", String.valueOf(whiteReady)));
+
+        if (currentRoom.bothReady()) {
+            log.info("双方玩家已准备，开始快速匹配对局: room={}", currentRoom.getRoomId());
             currentRoom.startGame();
             currentRoom.broadcastAll(currentRoom.buildGameStartMessage());
         }

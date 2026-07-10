@@ -17,6 +17,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.stream.Collectors;
 
 public class CasualLobbyController implements NetworkListener {
@@ -171,6 +173,7 @@ public class CasualLobbyController implements NetworkListener {
             if (quickMatchBtn != null) {
                 quickMatchBtn.setText("快速匹配");
                 quickMatchBtn.getStyleClass().remove("btn-danger");
+                quickMatchBtn.getStyleClass().remove("btn-success");
             }
         });
     }
@@ -195,7 +198,10 @@ public class CasualLobbyController implements NetworkListener {
 
     @FXML
     private void handleBack() {
-        stopMatching();
+        if (isMatching) {
+            ClientMain.getConnector().send(Protocol.CANCEL_MATCH);
+            stopMatching();
+        }
         LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
         if (currentUser != null) {
             ctrl.setCurrentUser(currentUser);
@@ -290,6 +296,16 @@ public class CasualLobbyController implements NetworkListener {
             String bAvatar = msg.has("blackAvatarUrl") ? msg.getString("blackAvatarUrl") : "";
             String wAvatar = msg.has("whiteAvatarUrl") ? msg.getString("whiteAvatarUrl") : "";
             ctrl.setPlayerAvatars(bAvatar, wAvatar);
+        } else if (Protocol.QUICK_MATCH_FOUND.equals(cmd)) {
+            String opponent = msg.getString("opponentUsername");
+            stopMatching();
+            Platform.runLater(() -> {
+                QuickMatchReadyController ctrl = ScreenManager.switchTo("/fxml/QuickMatchReadyUI.fxml");
+                ctrl.setCurrentUser(currentUser);
+                ctrl.setPreviewMode(previewMode);
+                ctrl.setOpponent(opponent);
+                ClientMain.getConnector().addListener(ctrl);
+            });
         } else if (Protocol.MATCH_TIMEOUT.equals(cmd)) {
             stopMatching();
             setStatus("匹配超时，请重试", true);

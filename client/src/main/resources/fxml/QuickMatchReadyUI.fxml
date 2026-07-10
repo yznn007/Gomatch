@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.QuickMatchReadyController"
+            styleClass="page-root">
+    <top>
+        <VBox spacing="0">
+            <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 0 0 10 0;">
+                <Button text="%settings.back" onAction="#handleBack" styleClass="icon-btn"/>
+                <Label text="对战大厅" styleClass="title"/>
+            </HBox>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+        </VBox>
+    </top>
+    <center>
+        <VBox spacing="20" alignment="CENTER" style="-fx-padding: 40 0 0 0;">
+            <Region VBox.vgrow="ALWAYS"/>
+            <Label fx:id="rankLabel" text="匹配成功" styleClass="title" style="-fx-font-size: 28px;"/>
+            <Label text="匹配模式不会计入积分" styleClass="subtitle"/>
+            <Button fx:id="matchBtn" text="未准备" onAction="#handleReady" styleClass="btn-danger"
+                    maxWidth="480" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-pref-height: 80;"/>
+            <Label fx:id="matchStatus" text="" styleClass="subtitle" style="-fx-padding: 10 0 0 0;"/>
+            <Label fx:id="countdownLabel" text="" styleClass="subtitle" style="-fx-padding: 5 0 0 0; -fx-text-fill: #ef4444; -fx-font-size: 14px;"/>
+            <Region VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </center>
+</BorderPane>
