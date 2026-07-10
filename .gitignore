@@ -41,3 +41,8 @@ Thumbs.db
 
 # OSS credentials
 oss.properties
+
+# AI assistant workspace
+.workbuddy/
+.agent/
+.agents/

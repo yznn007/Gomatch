@@ -232,13 +232,13 @@ public void setPreviewMode(boolean preview) {
 
 ## 五、UI 样式规范
 
-UI 详细规则以 [CLIENT_STYLE_GUIDE.md](CLIENT_STYLE_GUIDE.md) 为准，本文件只保留协作时必须记住的硬约束：
+UI 详细规则以 [UI_GUIDELINE.md](UI_GUIDELINE.md) 为准，本文件只保留协作时必须记住的硬约束：
 
 - 新增或修改 FXML/CSS 时优先复用 `style.css` 中已有样式类，避免在 FXML 写大段内联视觉样式。
 - 暗色主题差异必须限定在 `.theme-dark` 作用域下，禁止新增未加作用域的暗色全局覆盖。
 - Controller 动态生成文字颜色时使用 `ScreenManager.themeColor(light, dark)`，保证主题切换后可读。
 - FXML 命名空间不带版本号：`xmlns="http://javafx.com/javafx"`。
-- 按钮、输入框、卡片、弹窗、列表等组件模板参考 `CLIENT_STYLE_GUIDE.md` 第 7 节。
+- 按钮、输入框、卡片、弹窗、列表等组件模板参考 `UI_GUIDELINE.md` 第 7 节。
 
 ---
 
@@ -247,17 +247,18 @@ UI 详细规则以 [CLIENT_STYLE_GUIDE.md](CLIENT_STYLE_GUIDE.md) 为准，本�
 | 文档 | 触发时机 |
 |------|----------|
 | `docs/DEV_LOG.md` | 每次完成任务后追加日志 |
-| `docs/requirements.md` | 需求范围、功能清单、验收标准变化时同步 |
-| `docs/DEV_STANDARD.md` | Git、分支、代码协作规范变化时 |
+| `docs/PRD.md` | 需求范围、功能清单、验收标准变化时同步 |
+| `docs/DEV_GUIDELINE.md` | Git、分支、代码协作规范变化时 |
 | `AGENTS.md` | 命令/架构/约定变化时 |
 | `README.md` / `docs/README.md` | 项目入口、启动方式、文档索引变化时 |
 
 ### 日志格式
 
 ```
-| YYYY-MM-DD | 工作内容简述 | 问题/备注 |
+| YYYY-MM-DD HH:mm | 作者 | 工作内容简述 | 问题/备注 |
 ```
 
-- 日期精确到天
+- 时间精确到分钟，格式 `YYYY-MM-DD HH:mm`
+- 作者填写本人标识（Git 用户名或姓名缩写）
 - 工作内容简洁描述做了什么
 - 备注记录遇到的问题或注意事项

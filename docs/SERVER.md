@@ -2,7 +2,7 @@
 
 > **模块标识**：`com.gomatch:server`  
 > **职责**：多线程 Socket 服务端，实现用户管理、房间管理、游戏逻辑、数据持久化和 Redis 缓存。  
-> **更新日期**：2026-07-08（合并 SERVER_IMPLEMENTATION_PLAN.md）
+> **更新日期**：2026-07-10
 
 ---
 
@@ -28,14 +28,18 @@ server/src/main/
 │   │   ├── Game.java                   # 五子棋核心逻辑（棋盘、判胜、悔棋）
 │   │   └── AIPlayer.java               # 服务端 AI 对战逻辑
 │   ├── handler/
-│   │   └── ClientHandler.java          # 每连接一个线程，协议解析与命令分发
+│   │   ├── ClientHandler.java          # 每连接一个线程，协议解析与命令分发
+│   │   └── VerificationCodeManager.java # 忘记密码验证码管理（Redis 5min TTL）
 │   ├── redis/
 │   │   └── RedisManager.java           # Redis 连接管理（Lettuce）
 │   ├── room/
 │   │   ├── Room.java                   # 房间实体（玩家/观众/游戏状态）
 │   │   └── RoomManager.java            # 房间单例管理器，提供匹配功能
-│   └── session/
-│       └── SessionManager.java         # 用户会话管理（内存 + Redis 双写）
+│   ├── session/
+│   │   └── SessionManager.java         # 用户会话管理（内存 + Redis 双写）
+│   └── storage/
+│       ├── StorageManager.java         # 存储管理（头像/音乐文件）
+│       └── OssService.java             # 阿里云 OSS 对象存储服务
 └── resources/
     └── logback.xml                     # SLF4J/Logback 日志配置
 ```
@@ -155,6 +159,28 @@ private static final SessionManager sessionManager = SessionManager.getInstance(
 | `FORGOT_PASSWORD` | `handleForgotPassword` | 忘记密码：校验邮箱 → 生成验证码 → Redis 存储（5min TTL） |
 | `VERIFY_FORGOT_CODE` | `handleVerifyForgotCode` | 忘记密码：校验 Redis 中的验证码 |
 | `FORGOT_PWD_RESET` | `handleForgotPwdReset` | 忘记密码：重置密码 → 清理 Redis |
+| `LEAVE_SPECTATE` | `handleLeaveSpectate` | 离开观战 |
+| `CANCEL_MATCH` | `handleCancelMatch` | 取消快速匹配 |
+| `QUICK_READY` | `handleQuickReady` | 快速匹配准备确认 |
+| `RANKED_READY` | `handleRankedReady` | 排位匹配准备确认 |
+| `HEARTBEAT` | `handleHeartbeat` | 心跳，刷新会话活跃时间，回复 `HEARTBEAT_OK` |
+| `AI_MATCH` | `handleAiMatch` | 直接进入 AI 对战 |
+| `UPLOAD_AVATAR` | `handleUploadAvatar` | 上传头像到 OSS |
+| `GET_AVATAR` | `handleGetAvatar` | 获取头像 |
+| `DELETE_AVATAR` | `handleDeleteAvatar` | 删除头像 |
+| `UPLOAD_MUSIC` | `handleUploadMusic` | 上传背景音乐到 OSS |
+| `GET_MUSIC` | `handleGetMusic` | 获取音乐 |
+| `DELETE_MUSIC` | `handleDeleteMusic` | 删除音乐 |
+| `SET_DEFAULT_MUSIC` | `handleSetDefaultMusic` | 设置默认大厅音乐 |
+| `MUSIC_LIST` | `handleMusicList` | 返回音乐列表 |
+| `GET_SETTINGS` | `handleGetSettings` | 读取用户设置 |
+| `SAVE_SETTINGS` | `handleSaveSettings` | 保存用户设置 |
+| `BAN_USER` | `handleBanUser` | 管理员：封禁用户 |
+| `UNBAN_USER` | `handleUnbanUser` | 管理员：解禁用户 |
+| `FORCE_CLOSE_ROOM` | `handleForceCloseRoom` | 管理员：强制结束房间 |
+| `USER_LIST` | `handleUserList` | 管理员：用户列表 |
+| `ADMIN_STATS` | `handleAdminStats` | 管理员：运营统计 |
+| `UPDATE_USER_ROLE` | `handleUpdateUserRole` | 管理员：更新用户角色 |
 
 ---
 
@@ -321,8 +347,8 @@ public static class MoveRecord {
 | 用户会话 | Hash | `session:` | Token → 用户信息 JSON |
 | 在线状态 | String | `online:` | userId → token |
 | 快速匹配队列 | List | `match:queue` | FIFO 匹配队列 |
-| 排位匹配队列 | Sorted Set | `ranked:queue` | 以 ELO 分数为 score |
-| 排行榜缓存 | Sorted Set | `rank:board` | 全服排行 |
+| 排位匹配队列 | Sorted Set | `match:ranked` | 以 ELO 分数为 score |
+| 排行榜缓存 | Sorted Set | `rank:leaderboard` | 全服排行 |
 
 #### 主要方法
 
@@ -409,9 +435,9 @@ gomatch:game:{roomId}  ->  游戏事件频道
 |------|----|
 | 连接 URL | `jdbc:mysql://localhost:3306/gomatch` |
 | 用户名 | `gomatch` |
-| 密码 | `password` |
-| 最大连接数 | `20` |
-| 最小空闲 | `5` |
+| 密码 | `gomatch` |
+| 最大连接数 | `60` |
+| 最小空闲 | `10` |
 | 连接池 | HikariCP |
 
 ### 4.2 DAO 类汇总

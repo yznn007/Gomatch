@@ -356,7 +356,7 @@ ProfileUI（个人中心）
 | 关键特性 | 说明 |
 |----------|------|
 | 动态棋盘 | Canvas 随容器尺寸缩放，`cellSize` 自动计算，并跳过 0 尺寸与重复尺寸重绘 |
-| 落子 | 点击 Canvas → 发送 `MOVE|row|col` |
+| 落子 | 点击 Canvas → 发送 `{"cmd":"MOVE","data":{"x":row,"y":col}}` |
 | 同步 | 收到 `MOVE_SYNC` → 更新 board 数组 → 重绘 |
 | 聊天 | TextArea + TextField，收到 `CHAT` 追加并自动滚底 |
 | 对手信息 | 收到 `GAME_START` → 解析 `blackUsername/whiteUsername/blackScore/whiteScore` 显示对手真实用户名和积分 |

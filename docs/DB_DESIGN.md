@@ -2,6 +2,9 @@
 
 ## 1. 设计概述
 
+> [!IMPORTANT]
+> 表结构与字段以 `sql/init.sql` 为唯一权威来源。本文档为设计说明，若与 `init.sql` 有出入（字段类型、可空性、枚举值、索引、外键等），一律以 `init.sql` 为准。`t_audit_log`、`t_user_settings`、`t_user_music` 等新增表请直接参考 `init.sql`。
+
 本文档详细描述 GoMatch 五子棋项目的数据库设计，包括：
 - 核心业务表设计
 - Socket会话与消息持久化
@@ -613,7 +616,7 @@ erDiagram
 
 | 字段名 | 类型 | 约束 | 说明 |
 |--------|------|------|------|
-| room_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | 房间ID |
+| room_id | VARCHAR(50) | PRIMARY KEY | 房间ID(UUID) |
 | room_name | VARCHAR(100) | NOT NULL | 房间名称 |
 | password | VARCHAR(100) | NULL | 房间密码(可选) |
 | max_players | INT | DEFAULT 2 | 最大人数 |
@@ -1606,7 +1609,7 @@ CREATE TABLE IF NOT EXISTS `t_socket_session` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Socket会话表';
 
 CREATE TABLE IF NOT EXISTS `t_room` (
-    `room_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '房间ID',
+    `room_id` VARCHAR(50) PRIMARY KEY COMMENT '房间ID(UUID)',
     `room_name` VARCHAR(100) NOT NULL COMMENT '房间名称',
     `password` VARCHAR(100) COMMENT '房间密码',
     `max_players` INT DEFAULT 2 COMMENT '最大人数',
@@ -1628,7 +1631,7 @@ CREATE TABLE IF NOT EXISTS `t_room` (
 
 CREATE TABLE IF NOT EXISTS `t_chat_message` (
     `message_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '消息ID',
-    `room_id` BIGINT NOT NULL COMMENT '房间ID',
+    `room_id` VARCHAR(50) NOT NULL COMMENT '房间ID',
     `user_id` BIGINT NOT NULL COMMENT '发送者ID',
     `content` VARCHAR(500) NOT NULL COMMENT '消息内容',
     `message_type` VARCHAR(20) NOT NULL DEFAULT 'text' COMMENT '消息类型',
@@ -1642,7 +1645,7 @@ CREATE TABLE IF NOT EXISTS `t_chat_message` (
 
 CREATE TABLE IF NOT EXISTS `t_room_watcher` (
     `watcher_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '观战记录ID',
-    `room_id` BIGINT NOT NULL COMMENT '房间ID',
+    `room_id` VARCHAR(50) NOT NULL COMMENT '房间ID',
     `user_id` BIGINT NOT NULL COMMENT '观战者ID',
     `join_time` DATETIME NOT NULL COMMENT '加入观战时间',
     `leave_time` DATETIME COMMENT '离开观战时间',
@@ -1749,7 +1752,7 @@ String url = "jdbc:mysql://localhost:3306/gomatch?useUnicode=true&characterEncod
 HikariConfig config = new HikariConfig();
 config.setJdbcUrl(url);
 config.setUsername("gomatch");
-config.setPassword("password");
+config.setPassword("gomatch");
 config.setMaximumPoolSize(60);
 config.setMinimumIdle(10);
 config.setConnectionTimeout(30000);

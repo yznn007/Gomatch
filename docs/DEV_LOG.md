@@ -4,96 +4,7 @@
 
 - **项目名称**：Gomatch
 - **开始日期**：2026-07-04
-- **技术栈**：JavaFX (FXML + CSS) + Socket + JDBC + MySQL
-
----
-
-## 任务清单
-
-| # | 任务 | 状态 |
-|---|------|------|
-| 1 | 项目骨架搭建 | 已完成 |
-| 2 | 数据库建表 | 已完成 |
-| 3 | 通信协议定义 | 已完成 |
-| 4 | 服务端主框架 | 已完成 |
-| 5 | 注册 | 已完成 |
-| 6 | 登录 | 已完成 |
-| 7 | 客户端 UI 框架（JavaFX 迁移 + ScreenManager） | 已完成 |
-| 8 | 登录/注册界面 | 已完成 |
-| 9 | 游戏大厅界面（匹配/排位入口 + 排行榜抽屉） | 已完成 |
-| 10 | 匹配大厅（房间列表 + 观战） | 已完成 |
-| 11 | 排位大厅（段位 + 匹配按钮） | 已完成 |
-| 12 | 创建房间 | 已完成 |
-| 13 | 房间等待界面 | 已完成 |
-| 14 | 棋盘 UI + 聊天 | 已完成 |
-| 15 | 对局结束弹窗 | 已完成 |
-| 16 | 个人中心（含对战记录+改密码） | 已完成 |
-| 17 | 排行榜界面 | 已完成 |
-| 18 | 关于界面 | 已完成 |
-| 19 | 全局 CSS 白色极简主题 | 已完成 |
-| 20 | 预览模式（无服务器浏览全部界面） | 已完成 |
-| 21 | 落子同步 | 已完成 |
-| 22 | 五连判胜 | 已完成 |
-| 23 | 断线判负 + 认输 | 已完成 |
-| 24 | 战绩入库 | 已完成 |
-| 25 | 定时心跳发送，检测半开连接 | 已完成 |
-| 26 | 房间聊天 | 已完成 |
-| 27 | 观战功能 | 已完成 |
-| 28 | 悔棋/求和 | 已完成 |
-| 29 | 断线重连 | 已完成 |
-| 30 | 简单人机对战 | 已完成 |
-| 31 | 密码房间 | 已完成 |
-| 32 | 排位匹配（ELO算法） | 已完成 |
-| 33 | 好友系统 | 已完成 |
-| 34 | 棋局保存 | 已完成 |
-| 35 | 聊天消息持久化 | 已完成 |
-| 36 | Socket会话持久化 | 已完成 |
-| 37 | 观战记录 | 已完成 |
-| 38 | 游戏操作记录 | 已完成 |
-| 39 | 排行榜物化表 | 已完成 |
-| 40 | Redis优化（会话/排行榜/匹配/在线状态） | 已完成 |
-| 41 | 房间定时持久化 | 已完成 |
-| 42 | 退出登录 | 已完成 |
-| 43 | 服务器地址配置化 | 已完成 |
-| 44 | NetworkListener 自动注销 | 已完成 |
-| 45 | 注册/登录/改密码对接 | 已完成 |
-| 46 | 房间创建/列表/观战流程对接 | 已完成 |
-| 47 | 快速/排位匹配流程对接 | 已完成 |
-| 48 | 对战记录页面 + 棋局回放 | 已完成 |
-| 49 | 排行榜页面路由 | 已完成 |
-| 50 | 游戏大厅卡片集成 PixelCard 粒子悬浮效果 | 已完成 |
-| 51 | 客户端/服务端 JSON 协议统一 | 已完成 |
-| 52 | 排行榜分榜逻辑 | 已完成 |
-| 53 | 登录界面 ASCII 动态渐变标题 | 已完成 |
-| 54 | 心跳机制 + 对局断线重连 + 三次失败判负 | 已完成 |
-| 55 | 断线状态可视化 — 玩家卡片"断线中"角标 | 已完成 |
-| 56 | 回合计时与超时判负 | 已完成 |
-| 57 | 悔棋/求和按钮仅当前落子方可操作 | 已完成 |
-| 58 | 管理员功能（踢人/封禁/强制结束） | 已完成 |
-| 59 | Token 重连机制 | 已完成 |
-| 60 | 再来一局（Rematch）功能 | 已完成 |
-| 61 | GAME_START 协议增强（传递用户名/积分） | 已完成 |
-| 62 | 修复快速匹配 GAME_START 数据丢失 + 注册用户名并发重复 | 已完成 |
-| 63 | 设置页面交互功能实现 | 已完成 |
-| 64 | UserSettings 用户偏好持久化 | 已完成 |
-| 65 | 国际化中英文切换 | 已完成 |
-| 66 | 头像显示一致性修复（排行榜透明 + 对战回放缺头像 + 头像预览颜色不一致） | 已完成 |
-| 67 | 忘记密码（邮箱验证码重置） | 已完成 |
-| 68 | 注册强制邮箱 + 邮箱/用户名双模式登录 | 已完成 |
-| 69 | AI 难度分层重构（简单/中等/困难差异化策略） | 已完成 |
-| 70 | AI 对局人类玩家断线立即判 AI 获胜 | 已完成 |
-| 71 | 棋盘抖动根因修复（offlineTag setManaged 反馈循环） | 已完成 |
-| 72 | 玩家卡片重叠修复（VBox min-height:0 + Pane 绝对定位） | 已完成 |
-| 73 | Rematch 服务端返回值优化（boolean → long） | 已完成 |
-| 74 | 断线重连恢复头像显示 | 已完成 |
-
-
-### 状态说明
-
-- 已完成 — 开发完毕且验证通过
-- 正在进行 — 正在开发中
-- 待测试 — 开发完成，待验证
-- 未开工 — 尚未开始
+- **技术栈**：JavaFX (FXML + CSS) + Socket + JDBC + MySQL + Redis
 
 ---
 
@@ -103,226 +14,202 @@
 
 > FXML 布局、CSS 样式、动画特效、视觉组件
 
-| 日期 | 工作内容 | 问题/备注 |
-|------|----------|-----------|
-| 2026-07-05 | Contributor| |
-| 2026-07-05 | Contributor| |
-| 2026-07-05 | Contributor| |
-| 2026-07-05 | Contributor| |
-| 2026-07-05 | Contributor| hover 仅变背景色，无特效 |
-| 2026-07-05 | Contributor| |
-| 2026-07-05 | Contributor| mvn clean compile 通过 |
-| 2026-07-05 | Contributor| mvn clean compile 通过，Git 提交规范代码 |
-| 2026-07-06 | Contributor| 编译验证通过，完美匹配白色磨砂极简风格 |
-| 2026-07-06 | Contributor| 页面顶栏对齐与排版优化通过 |
-| 2026-07-06 | Contributor| 排行榜与好友页面磨砂侧栏化重构完成 |
-| 2026-07-06 | Contributor| 房间大厅磨砂侧栏化重构完成 |
-| 2026-07-06 | Contributor| 房间等待大厅磨砂侧栏化重构完成，排位段位大厅还原成功 |
-| 2026-07-06 | Contributor| 段位大厅完全还原，排位前置房间流对齐完毕 |
-| 2026-07-06 | Contributor| 棋盘侧栏折叠缩放功能开发完成 |
-| 2026-07-06 | Contributor| 侧边栏折叠按钮精炼与拖拽拉伸功能完全落地 |
-| 2026-07-06 | Contributor| 棋盘拉伸与折叠自适应自收缩逻辑修复完成 |
-| 2026-07-06 | Contributor| 侧栏动态数学限制、等比自适应及聊天换行优化完成 |
-| 2026-07-06 | Contributor| 侧栏按钮防裁剪垂直堆叠优化完成 |
-| 2026-07-07 | Contributor| BoardUI.fxml 中 blackLabel 默认使用 section-label 导致黑方永远加粗；改为 subtitle，BoardController.updateTurnLabel() 根据 currentTurn 动态设置黑方/白方 font-weight，实现落子方加粗高亮 |
-| 2026-07-07 | Contributor| 1. 将 React Bits 的 PixelCard 移植为自定义 JavaFX 布局控件；2. 采用 Canvas 与 AnimationTimer 实现 60FPS 像素出现、波动延迟、shimmer 闪烁和自然缩回消失物理算法；3. 修改 LobbyUI.fxml 分别为匹配、AI 对战和排位卡片应用 blue、yellow 和 pink 变体；4. 优化样式，对 canvas 开启 mouse-transparent 使得鼠标事件完全穿透。 |
-| 2026-07-07 | Contributor| 1. 提升粒子扩散速度，将延迟基准降至 30%；2. 增加粒子基础尺寸上限（1.2px - 4.0px），使其在视网膜屏上更加醒目；3. 引入中心距离归一化比率，实时调配像素点最大大小和不透明度，完美重塑"中心淡、四周浓"的渐变呼吸微粒景观。 |
-| 2026-07-07 | Contributor| 1. 修改 LobbyUI.fxml，移除原本固定的 260x160 尺寸限制，采用 HBox.hgrow 与 VBox.vgrow 布局自适应填充整个中心窗口；2. 同步微调 style.css 中的图标、标题和子标题字体大小，使其在卡片扩大展示时保持极佳的高级极简视觉比例。 |
-| 2026-07-07 | Contributor| 1. 蓝色变体减小 gap 至 7 并混入白色 (#ffffff)，改善淡色并增添星光感；2. 黄色变体增大 gap 至 8，解决粒子过于稠密拥挤的问题；3. 全局增大粒子大小 (1.8px - 5.5px) 并提升出现步长，将速度倍率增加至 3.5 倍；4. 提高中心最小比率限制至 0.35，增强整体动效可视度。 |
-| 2026-07-07 | Contributor| 1. 修改 BLUE_CONFIG 颜色序列，额外引入淡褐色/淡棕色 (#d2b48c 和 #b45309) 以及高概率纯白，调配出天蓝、深蓝、淡棕与白光交汇的宇宙星河"星光色"。 |
-| 2026-07-07 | Contributor| 1. 将扩散延迟系数从 0.3 适度放宽至 0.65，使微粒向四周平铺扩散的速度节奏处于舒适、优雅的涟漪波动区，避免过度局促与突兀感。 |
-| 2026-07-07 | Contributor| 1. 将粒子基础尺寸区间由 1.8px - 5.5px 微调至 0.8px - 3.0px，在维持星光配色可见度的同时，恢复精细雅致的超细微"星尘"粒子感，消除像素颗粒偏大显粗糙的观感。 |
-| 2026-07-07 | Contributor| 1. 匹配卡片（蓝色）彻底移除较重的深棕，加入高纯白及少量浅金、粉红与淡紫点缀；2. AI 卡片（黄色）融入少量蜜桔橙、薄荷绿与晴空蓝；3. 排位卡片（粉色）融合了蓝、紫、黄、橙，调配出清新舒适的五彩斑斓悬停特效。 |
-| 2026-07-07 | Contributor| 1. 将粒子尺寸范围由 0.8px - 3.0px 适度放大至 1.2px - 3.8px，提高星尘可见性；2. 将基础流速倍率由 0.0035 减缓至 0.002，并降低 sizeStep 至 0.45 及呼吸闪烁随机速度，营造静谧雅致的流光闪动效果。 |
-| 2026-07-07 | Contributor| 1. 将粒子基础尺寸区间由 1.2px - 3.8px 进一步扩充至 1.6px - 4.8px，使得像素颗粒在拉伸铺开后具有更饱满的外观与出色的显示可见度。 |
-| 2026-07-07 | Contributor| 1. 微调颜色数组，确保各变体微粒完全限制在主色调同色系或邻近色范围内；2. 匹配卡片（蓝色）使用靛蓝与淡紫；3. AI卡片（黄色）使用暖橙与杏色；4. 排位卡片（粉色）使用霓虹粉与香芋紫，从而在保留多彩层次的同时实现极佳的视觉协调性。 |
-| 2026-07-07 | Contributor| 1. 在 ScreenManager.java 中为场景及弹窗配置 PerspectiveCamera(false)，引入不影响 2D 绝对定位的透视投影；2. 在 PixelCard 中注册 Rotate 变换并监听鼠标移动和拖拽，依据鼠标距卡片中心偏移量，在 AnimationTimer 中使用指数衰减算法实现 12 度 3D 偏转和 1.05 倍缩放 Spring 回弹过渡；3. 利用 setViewOrder 属性实现悬停卡片置顶，避免相邻遮挡。 |
-| 2026-07-07 | Contributor| 1. 将 3D 旋转的倾斜角振幅由 12 度调高至 18 度，以提供更加敏感、显著和动感的空间倾斜效果。 |
-| 2026-07-07 | Contributor| 1. 在 LobbyUI.fxml 中为匹配和 AI 卡片标签分别增加样式名 arena-match 和 arena-ai；2. 在 style.css 中为匹配（蓝色）、AI对战（黄金）、排位（粉色）重写独立的 hover 样式，使用 12% 不透明度的专属主色背景和 35% 不透明度的底边框，代替原本统一的板岩灰，达成融洽自然的淡色透明悬浮体验。 |
-| 2026-07-07 | Contributor| 1. 在 PixelCard.java 中加入 Region cardBody，隔离背景与边框渲染，在 layoutChildren 中限制卡片身体和外部子内容仅占用 Y=45px 偏下的卡片本体区；2. 增加 Z 轴旋转及单摆力学公式，根据鼠标滑过/拖拽速度对卡片施加角加速度，驱动 Z 轴偏转摆动；3. 在 Canvas 顶部使用二次贝塞尔曲线和金属扣动态绘制跟随速度摆动弯折的主题色吊带环圈；4. 适配 CSS 完成半透磨砂背景的隔离转移。 |
-| 2026-07-07 | Contributor| 1. 降低 setOnMouseEntered 鼠标滑入随机推力至 0.25；2. 在单摆公式中将重力恢复系数由 4.5 提升至 6.5 增强回正力，将阻尼由 2.0 提升至 3.5 快速吸能结算；3. 将鼠标划过速度对角加速度的推力比重由 0.00008 大幅缩减至 0.000025，并收窄瞬时推力最大值为 0.15，彻底解决原本剧烈摆荡的问题，提供优雅静谧的微小回弹。 |
-| 2026-07-07 | Contributor| 1. 回退还原 PixelCard 粒子流动速率的 widthPlusHeight 绑定参数；2. 在 initPixels 中计算基于 300px 卡片宽度的 scaleFactor，传入 Pixel 构造函数对粒子尺寸 minSize/maxSize、绘制居中偏置 centerOffset、以及出现 sizeStep 与消失收缩速率进行等比缩放，确保粒子在大/小窗口下视觉比例恒定。 |
-| 2026-07-07 | Contributor| 1. 修改 AiLobbyUI.fxml，导入 PixelCard 并移除原来的普通列表按钮，改为与大厅主页一致的自适应横向 HBox 卡片结构；2. 将简单、中等、困难三个难度映射到 blue（🌱）、yellow（⚡）和 pink（🔥）三种主色调变体与专属徽章图标，添加细小的说明介绍文字；3. 在 style.css 中为新增的描述类 .arena-desc 设定排版字号和悬浮文字色。 |
-| 2026-07-07 | Contributor| 1. 在 ScreenManager.java 的 switchTo 中，将主业务 VBox 容器 mainLayout 锁定为 1920x1080 参考尺寸（标准 16:9）；2. 对其直接挂载 Scale 缩放变换，并移除了额外的 centerWrapper 层；3. 监听顶层 wrapper 的实际窗口宽高变化，取最窄边比例平滑更新 Scale 缩放系数，彻底消除了标题栏与内容区缩放不一致而产生的多余黑边。 |
-| 2026-07-07 | Contributor| 1. 将 ScreenManager.java 中的默认 WIDTH 和 HEIGHT 常量修改为 1280 和 720；2. 业务 UI 在此基准尺寸上自适应等比缩放，窗口支持自由拉伸，使得在任何尺寸拉伸时内部都完美按 16:9 相对大小进行矢量对齐，既适合本地测试又实现了标准宽屏。 |
-| 2026-07-07 | Contributor| 1. 在 ScreenManager.java 中引入 MouseEvent 事件过滤器，在捕获阶段优先拦截边框拉伸事件，并通过 e.consume() 阻断事件向下传递至子组件，规避拉伸窗口时引发的子组件物理拖拽冲突；2. 增加 MOUSE_RELEASED 阶段的监听器，在鼠标松开时将 resizeMode 强制重置为 NONE，修复了释放鼠标后依然会异常缩放窗口的遗留缺陷。 |
-| 2026-07-07 | Contributor| 1. 移除 LobbyUI.fxml 中 playerInfoBox 头像芯片的 HBox.hgrow="ALWAYS" 强制横向填充，将其还原为只包裹头像和昵称的紧凑胶囊组件；2. 增设隐藏 Region 填充组件，将点击操作范围完全限制在头像可见的芯片范围内，断绝了在顶部栏空白处误触进入个人中心的操作体验 Bug。 |
-| 2026-07-07 | Contributor| 1. 在 handleMouseMoved 中计算鼠标距离卡片身体边缘的最短像素距离，在 25px 边缘过渡区内计算 0.0~1.0 的阻尼因子，使得鼠标跨越卡片边界时 3D 偏转角平滑衰减至 0；2. 结合 setOnMouseExited 中的静态无偏转包围盒屏幕投影校验，拦截旋转位移产生的假滑出信号，彻底治愈了下边缘在鼠标滑出时的反复触发与抖动。 |
-| 2026-07-07 | Contributor| 1. 在 style.css 中将 .section-divider 的 -fx-padding 设为 0，彻底移除 Modena 默认主题中分割线上下各 10px 的不可见外边距死区；2. 在 LobbyUI.fxml 和 AiLobbyUI.fxml 中为 Separator 加上 mouseTransparent="true" 物理穿透，彻底根治了顶栏按钮下方边缘点击被分割线 hitbox 拦截截断的问题。 |
-| 2026-07-07 | Contributor| 1. 在 ShapeGridBackground.java 中，用 SPEED_X_PER_SEC/SPEED_Y_PER_SEC 代替每帧固定位移，引入基于时间步长 dt 的无缝包裹位移；2. 增加对最大帧时间 dt 的阈值限制 (0.1s)，避免应用挂起恢复或帧率突变时粒子产生位置瞬移，确保在不同刷新率显示器下流动速度一致恒定。 |
-| 2026-07-07 | Contributor| 1. 在 style.css 中为 .pixel-card-body 引入基础极简软投影，提供细腻的纸张悬浮深度感；2. 为匹配（蓝色）、AI对战（黄色）、排位（粉色）三个主题色分别定制专属的 hover 投影（24px gaussian blur, 18% 不透明度），增强 3D 偏转侧倾时的空间光感表现；3. 增设 pressed 状态阴影收紧收敛（12px gaussian blur），建立直观敏捷的按下触觉交互反馈。 |
-| 2026-07-07 | Contributor| 1. 在 Pixel.draw() 中对 size<=0 进行拦截，在 shimmer/disappear 中进行 Clamp 边界夹紧，阻断异常渲染；2. 增加 Canvas 动态可见性管理（在开始 appear 时可见，在 disappear 结束时设为不可见），彻底打断 JavaFX 3D 渲染管线及脏区缓存失效引发的粒子显示残留。 |
-| 2026-07-08 | Contributor| 改造 RankingUI.fxml 左侧导航栏增加"全服排行"与"好友排行"两个选项按钮，为标题分配 fx:id；重构 RankingController.java 实现 Tab 切换逻辑、多类型 Mock 数据展现与网络消息类型过滤，防范并发乱序渲染。 |
-| 2026-07-08 | Contributor| 1. 采用 3D 正向光栅化高精密度采样（将采样量暴增至 480x120，共 5.7 万个点），并在 X, Y, Z 轴上大幅降慢且收窄 3D 几何形变波动以减少扭动；2. 将 ASCII 单字字号收缩为极精密的 5px（asciiFontSize=5），网格分辨率自动扩充至 174x76（共 1.3 万个字符），使字符点阵凝聚感和高密度精细度翻倍；3. 将字身黑色判定阈值门槛压低至 45，使核心黑色字符占比高达 95% 以上，并对红色、蓝色色散通道实施大幅亮度衰减融入暗色系；4. 布局拓宽至 480，销毁 AnimationTimer 防止泄漏。 | 编译与渲染测试成功，完美呈现超高密度且沉稳黑色的高精细偏色特效 |
-| 2026-07-08 | Contributor| BoardController：在玩家卡片右下角添加红色"断线中"角标（默认隐藏）；新增 setPlayerOnline(isBlack, online) 方法切换断线状态：断线时卡片透明度 0.55 + 名字变红 + 显示角标；监听 PLAYER_DISCONNECTED/PLAYER_RECONNECTED/RECONNECT_ATTEMPT/RECONNECT_FAILED 消息并在聊天区打印系统提示；新增 blackId/whiteId 字段用于按 userId 匹配玩家卡片 |
-| 2026-07-08 | Contributor| CSS：新增 .btn-secondary:disabled 样式（灰底 + 低透明 + 光标 default） |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| 匹配大厅界面优化 |
-| 2026-07-08 | Contributor| BoardController 新增 handleRequestRematch/handleReplyRematch 方法及 rematchRequested 状态；对局结束弹窗 GameOverController 新增"再来一局"按钮；BoardController 监听 REMATCH_REQUESTED/REMATCH_ACCEPTED/REMATCH_REJECTED 消息，同意后自动重置棋盘开始新对局 |
-| 2026-07-08 | Contributor| BoardController.onMessage(GAME_START) 解析新增的 blackUsername/blackScore/whiteUsername/whiteScore 字段；新增带分数的 setGameInfo 重载，对手卡片显示真实用户名和积分而非 ID 和问号 |
-| 2026-07-09 | Contributor| 1. 将 .theme-dark .glass-card 背景不透明度从 0.48 提升至 0.60；新增 .theme-dark .auth-pixel-card .pixel-card-body 专属深色磨砂背景（0.55 不透明度）并改用深色投影；保留 .theme-dark .auth-pixel-card 外层白色高光投影。2. 将浅色/暗色模式下的 .custom-title-bar 和 .top-bar 背景统一为透明并去除投影。3. 统一侧栏菜单 active/导航按钮/标题栏按钮 hover/active 背景色。4. 补齐暗色模式下缺失的 pressed 状态。5. AsciiTextCanvas 支持暗色模式：根据 ScreenManager.isDarkTheme() 动态切换采样贴图（白底黑字）和输出色调，核心字符使用 #f8fafc，边缘使用柔和浅色偏色，使登录页 Gomatch 标题在暗色背景下清晰可见且风格统一。 | mvn -f client/pom.xml compile 通过 |
-| 2026-07-10 | Contributor| AvatarPreviewUI.fxml：Circle 填充改为 StackPane 渐变背景 + 150px 圆角，保留 Circle 透明兜底。AvatarPreviewController：pickColor 8 色纯色调色板替换为 gradientFor 7 色渐变调色板（与 LobbyController/RankingController 一致），保证同一用户在小头像、排行榜、大头像预览中颜色完全一致。 |
-| 2026-07-10 | Contributor| 1. 新增 ForgotPasswordUI.fxml 与 ForgotPasswordController，实现三阶段流程：输入邮箱 → 输入验证码 → 设置新密码；2. LoginUI.fxml 中"忘记密码"按钮绑定 handleForgotPassword 跳转；3. i18n 新增 forgot.* 系列 13 个 key（中英双语）；4. 与后端 FORGOT_PASSWORD / VERIFY_FORGOT_CODE / FORGOT_PWD_RESET 协议对接。 | 编译通过 |
+| 时间 | 作者 | 工作内容 | 问题/备注 |
+|------|------|----------|-----------|
+| 2026-07-05 01:24 | Contributor| style: 创建全局 white-minimalist CSS：卡片/按钮/表格/输入框圆角、页面透明背景+Separator 分割 | |
+| 2026-07-05 01:24 | Contributor| refactor: Lobby 重构：上传头像+昵称、匹配/排位入口、排行榜侧边抽屉、好友/设置 | |
+| 2026-07-05 01:24 | Contributor| feat: 新增 CasualLobbyUI（房间列表+观战+创建/加入/快速匹配）和 RankedLobbyUI（段位+匹配按钮） | |
+| 2026-07-05 01:24 | Contributor| feat: 对战记录整合进个人中心 ProfileUI | |
+| 2026-07-05 01:24 | Contributor| style: 匹配/排位按钮改为切角长方形（-fx-shape SVG path）+ -fx-background-insets 伪描边 | hover 仅变背景色，无特效 |
+| 2026-07-05 18:35 | Contributor| feat: 实现本地字体内置及个人中心重构，全面优化白色极简 UI | |
+| 2026-07-05 18:37 | Contributor| style: UI 进一步深度美化：(1) 排行榜抽屉改为 StackPane 浮层，展开时完全不挤压主大厅内容；(2) 原生 Decorated 窗口改为 Undecorated 沉浸式自定义标题栏，支持 Windows Aero Snap 贴边分屏、双击最大化、拖拽还原定位、控制区避让鼠标等；(3) 按钮及卡片改为 8px 圆角，摒弃切角样式；(4) 实现 CodingNepal 风格磨砂玻璃卡片与无 Label 底部下单线下划线输入框，支持鼠标 Hover/Focus 时按钮式 Cover 底色高光反馈，外加 38px 阴影显著显化卡片深度；(5) 客户端内置集成并动态注册 Maple-Mono-NF-CN 字体文件 | mvn clean compile 通过 |
+| 2026-07-05 18:37 | Contributor| style: 白色极简风格深度规范化：回退微灰卡片底色还原纯白磨砂；将登录/注册卡片白度密度（卡片 0.40 透，按钮 0.85 实）；将登录/注册卡片主按钮、主大厅按钮元素及二级界面全部按钮元素统一重构为与输入框相同的"底线描边+悬浮遮罩"极简样式；彻底清理战绩、排行榜、房间列表在点击行时的蓝色残留，修复行选中时文字变白的 JavaFX 渲染缺陷。 | mvn clean compile 通过，Git 提交规范代码 |
+| 2026-07-06 16:43 | Contributor| 重构设置界面为与个人中心一致的左导航右内容大卡片布局（SettingsUI.fxml），将设置细分为"基础设置"、"图像设置"、"声音设置"、"UI风格"等六个子面板；同时将退出游戏二级确认升级为粒子无框风格自定义弹窗（ConfirmExitUI.fxml）；在 style.css 中对 ComboBox 和 CheckBox 重写了磨砂白极简底线风格与动画反馈样式 | 编译验证通过，完美匹配白色磨砂极简风格 |
+| 2026-07-06 16:43 | Contributor| 优化页面顶栏边距：修改 style.css 中 .page-root 的默认 padding，将顶部内边距（top-padding）由原来的 30px 调整为 10px，从而使个人中心、系统设置、匹配大厅、排位大厅等全部二级页面的顶栏向上移动并与大厅首部对齐，消除上方多余空行。 | 页面顶栏对齐与排版优化通过 |
+| 2026-07-06 16:43 | Contributor| 1. 重构排行榜界面（RankingUI.fxml）与控制器（RankingController.java），采用与个人中心完全一致的左侧磨砂微透卡片导航栏 + 右侧列表展示的布局，并修复了跳转时丢失当前用户信息状态的 bug；2. 新建好友大厅界面（FriendsUI.fxml）与控制器（FriendsController.java），实现了"我的好友"（支持删除）、"好友请求"（支持接受/拒绝）以及"添加好友"（发送申请）的选项卡动态切换布局；3. 在 LobbyController.java 中将好友入口由原本的弹出提示升级为跳转至新版好友大厅。 | 排行榜与好友页面磨砂侧栏化重构完成 |
+| 2026-07-06 16:43 | Contributor| 重构对战大厅/房间大厅界面（CasualLobbyUI.fxml）与控制器（CasualLobbyController.java），采用与个人中心完全一致的左侧磨砂微透卡片导航栏（将"房间列表"与"观战对局"分为两个独立的侧栏按钮）+ 右侧切换面板布局，并在房间列表中提供美观的控制按钮，补全了原本缺少的 handleRefresh 刷新控制方法。 | 房间大厅磨砂侧栏化重构完成 |
+| 2026-07-06 23:52 | Contributor| 1. 还原排位大厅段位页面（RankedLobbyUI.fxml）和控制器为经典的居中排位匹配布局，移除不必要的侧栏；2. 重构房间大厅等待界面（RoomWaitingUI.fxml）与控制器（RoomWaitingController.java），采用与个人中心完全一致的左侧磨砂玻璃侧栏布局，将"房间玩家"和"房间聊天"拆分为两个独立的导航选项卡进行右侧面板切换展示。同时把原先底部的"离开房间"大按钮升级为顶部左侧的极简 « 离开房间 统一返回按钮。 | 房间等待大厅磨砂侧栏化重构完成，排位段位大厅还原成功 |
+| 2026-07-06 23:52 | Contributor| 1. 完全还原段位大厅界面（RankedLobbyUI.fxml）为独立的、原汁原味的居中简洁段位匹配页；2. 还原并对齐排位匹配的房间进入规则：在 RankedLobbyController.java 中恢复了 JOIN_OK 消息跳转逻辑，无论是排位匹配还是常规匹配，在匹配成功后都会正常进入侧栏化房间等待大厅（RoomWaitingUI.fxml），确保段位大厅依然是独立的，且排位赛具有与普通匹配完全相同的局前等待流。 | 段位大厅完全还原，排位前置房间流对齐完毕 |
+| 2026-07-06 23:52 | Contributor| 对战棋盘界面（BoardUI.fxml）右侧面板添加伸缩/折叠侧边栏功能。通过引入 HBox 与磨砂材质的折叠控制按钮，点击可一键收起/展开聊天与玩家控制侧栏；当折叠后，棋盘 Canvas 容器将自适应占满整个屏幕并自动平滑缩放重绘。在 BoardController.java 中注入了 toggleSidebar 控制及界面重新计算绑定。 | 棋盘侧栏折叠缩放功能开发完成 |
+| 2026-07-06 23:52 | Contributor| 1. 彻底移除侧边栏顶部新增的"局内工具栏"多余文本与多余的"✕"按钮，使棋盘界面复原至极简结构；2. 采用精炼的单按钮双态控制方案：通过同一个 toggleSidebarBtn 控制折叠与展开，点击 » 隐藏侧栏并切换为 «，点击 « 重新拉回侧栏，确保收起时按钮依然醒目且极简；3. 在折叠按钮右侧同步集成了 dragHandle 隐式拖拽区域，在侧栏展开时允许玩家使用鼠标拖拽手柄左边缘直接双向拉伸调节侧栏宽度（限制在 150px ~ 400px 范围），棋盘区域在拉伸中可自适应完美重绘尺寸。 | 侧边栏折叠按钮精炼与拖拽拉伸功能完全落地 |
+| 2026-07-06 23:52 | Contributor| 修复棋盘缩放时 UI 异常的缺陷：在 BoardController.java 中重写了 Canvas 类的 isResizable() 及 min/pref 测算尺寸方法，从而解耦了 Canvas固定宽高大小对父层容器收缩时造成的死锁限制，并结合每次缩放重绘时的 gc.clearRect() 逻辑，彻底解决了窗口在快速缩放拉伸或折叠侧边栏时，棋盘无法正常等比收缩以及留下旧渲染残影的布局异常。 | 棋盘拉伸与折叠自适应自收缩逻辑修复完成 |
+| 2026-07-06 23:52 | Contributor| 1. 优化侧边栏拖拽边界数学限制：设定侧栏最大拉伸宽度受限于棋盘正方形特性（左侧需留出至少一个棋盘边长高度 boardContainer.getHeight()），防止棋盘被横向挤压变形，最小侧栏宽度设为 150px；2. 引入窗口缩放侧栏宽度等比例自适应变化：引入 sidebarRatio，窗口大小改变时自动按先前比例缩放侧栏并应用边界限制；3. 彻底禁用聊天区域水平滚动条：在 BoardUI.fxml 的 chatArea 中加入 wrapText="true"（自动换行），文本过长时自动换行，免除不必要左右移动条的视觉干扰。 | 侧栏动态数学限制、等比自适应及聊天换行优化完成 |
+| 2026-07-06 23:52 | Contributor| 修复侧边栏缩小时控制按钮文字被挤压显示为"..."的缺陷：在 BoardUI.fxml 中，将原本水平并排在 HBox 中的"悔棋"和"求和"按钮拆出，与"认输"按钮一致改为垂直平铺堆叠布局（各按钮均设为 maxWidth="Infinity" 以充满侧栏横向空间），确保在侧栏拉伸收缩至最小的 150px 状态下，按钮也拥有极佳的水平空间，完全规避字符被挤压并显示为省略号的异常。 | 侧栏按钮防裁剪垂直堆叠优化完成 |
+| 2026-07-07 20:43 | Contributor| fix: 棋盘标签改为当前落子方加粗 | BoardUI.fxml 中 blackLabel 默认使用 section-label 导致黑方永远加粗；改为 subtitle，BoardController.updateTurnLabel() 根据 currentTurn 动态设置黑方/白方 font-weight，实现落子方加粗高亮 |
+| 2026-07-09 23:44 | Contributor| feat: 集成 React Bits 的 PixelCard 粒子像素化悬浮效果 | 1. 将 React Bits 的 PixelCard 移植为自定义 JavaFX 布局控件；2. 采用 Canvas 与 AnimationTimer 实现 60FPS 像素出现、波动延迟、shimmer 闪烁和自然缩回消失物理算法；3. 修改 LobbyUI.fxml 分别为匹配、AI 对战和排位卡片应用 blue、yellow 和 pink 变体；4. 优化样式，对 canvas 开启 mouse-transparent 使得鼠标事件完全穿透。 |
+| 2026-07-09 23:44 | Contributor| feat: 优化 PixelCard 粒子悬浮效果（速度、尺寸与渐变度） | 1. 提升粒子扩散速度，将延迟基准降至 30%；2. 增加粒子基础尺寸上限（1.2px - 4.0px），使其在视网膜屏上更加醒目；3. 引入中心距离归一化比率，实时调配像素点最大大小和不透明度，完美重塑"中心淡、四周浓"的渐变呼吸微粒景观。 |
+| 2026-07-09 23:44 | Contributor| feat: 扩大大厅卡片并支持窗口自适应覆盖 | 1. 修改 LobbyUI.fxml，移除原本固定的 260x160 尺寸限制，采用 HBox.hgrow 与 VBox.vgrow 布局自适应填充整个中心窗口；2. 同步微调 style.css 中的图标、标题和子标题字体大小，使其在卡片扩大展示时保持极佳的高级极简视觉比例。 |
+| 2026-07-09 23:44 | Contributor| refactor: 微调 PixelCard 参数以优化颜色、密度与动效强度 | 1. 蓝色变体减小 gap 至 7 并混入白色 (#ffffff)，改善淡色并增添星光感；2. 黄色变体增大 gap 至 8，解决粒子过于稠密拥挤的问题；3. 全局增大粒子大小 (1.8px - 5.5px) 并提升出现步长，将速度倍率增加至 3.5 倍；4. 提高中心最小比率限制至 0.35，增强整体动效可视度。 |
+| 2026-07-09 23:44 | Contributor| refactor: 匹配卡片配色升级为星光色 | 1. 修改 BLUE_CONFIG 颜色序列，额外引入淡褐色/淡棕色 (#d2b48c 和 #b45309) 以及高概率纯白，调配出天蓝、深蓝、淡棕与白光交汇的宇宙星河"星光色"。 |
+| 2026-07-09 23:44 | Contributor| refactor: 微调 PixelCard 粒子扩散速度 | 1. 将扩散延迟系数从 0.3 适度放宽至 0.65，使微粒向四周平铺扩散的速度节奏处于舒适、优雅的涟漪波动区，避免过度局促与突兀感。 |
+| 2026-07-09 23:44 | Contributor| refactor: 缩减 PixelCard 粒子尺寸大小 | 1. 将粒子基础尺寸区间由 1.8px - 5.5px 微调至 0.8px - 3.0px，在维持星光配色可见度的同时，恢复精细雅致的超细微"星尘"粒子感，消除像素颗粒偏大显粗糙的观感。 |
+| 2026-07-09 23:44 | Contributor| refactor: 重构 PixelCard 颜色表，实现主色调为主的五彩斑斓星光效果 | 1. 匹配卡片（蓝色）彻底移除较重的深棕，加入高纯白及少量浅金、粉红与淡紫点缀；2. AI 卡片（黄色）融入少量蜜桔橙、薄荷绿与晴空蓝；3. 排位卡片（粉色）融合了蓝、紫、黄、橙，调配出清新舒适的五彩斑斓悬停特效。 |
+| 2026-07-09 23:44 | Contributor| refactor: 稍微调大 PixelCard 粒子并减缓动效节奏 | 1. 将粒子尺寸范围由 0.8px - 3.0px 适度放大至 1.2px - 3.8px，提高星尘可见性；2. 将基础流速倍率由 0.0035 减缓至 0.002，并降低 sizeStep 至 0.45 及呼吸闪烁随机速度，营造静谧雅致的流光闪动效果。 |
+| 2026-07-09 23:44 | Contributor| refactor: 再次增大 PixelCard 粒子尺寸上限 | 1. 将粒子基础尺寸区间由 1.2px - 3.8px 进一步扩充至 1.6px - 4.8px，使得像素颗粒在拉伸铺开后具有更饱满的外观与出色的显示可见度。 |
+| 2026-07-09 23:44 | Contributor| refactor: 净化卡片五彩色彩表，消除相悖互补色 | 1. 微调颜色数组，确保各变体微粒完全限制在主色调同色系或邻近色范围内；2. 匹配卡片（蓝色）使用靛蓝与淡紫；3. AI卡片（黄色）使用暖橙与杏色；4. 排位卡片（粉色）使用霓虹粉与香芋紫，从而在保留多彩层次的同时实现极佳的视觉协调性。 |
+| 2026-07-09 23:44 | Contributor| feat: 结合 React Bits 集成 TiltedCard 3D 悬停倾斜效果 | 1. 在 ScreenManager.java 中为场景及弹窗配置 PerspectiveCamera(false)，引入不影响 2D 绝对定位的透视投影；2. 在 PixelCard 中注册 Rotate 变换并监听鼠标移动和拖拽，依据鼠标距卡片中心偏移量，在 AnimationTimer 中使用指数衰减算法实现 12 度 3D 偏转和 1.05 倍缩放 Spring 回弹过渡；3. 利用 setViewOrder 属性实现悬停卡片置顶，避免相邻遮挡。 |
+| 2026-07-09 23:44 | Contributor| refactor: 增大 PixelCard 3D 旋转偏角振幅 | 1. 将 3D 旋转的倾斜角振幅由 12 度调高至 18 度，以提供更加敏感、显著和动感的空间倾斜效果。 |
+| 2026-07-09 23:44 | Contributor| refactor: 悬停底色适配卡片主色调，调和为淡色透明状 | 1. 在 LobbyUI.fxml 中为匹配和 AI 卡片标签分别增加样式名 arena-match 和 arena-ai；2. 在 style.css 中为匹配（蓝色）、AI对战（黄金）、排位（粉色）重写独立的 hover 样式，使用 12% 不透明度的专属主色背景和 35% 不透明度的底边框，代替原本统一的板岩灰，达成融洽自然的淡色透明悬浮体验。 |
+| 2026-07-09 23:44 | Contributor| feat: 集成 Lanyard 原生单摆动力学悬挂吊绳效果 | 1. 在 PixelCard.java 中加入 Region cardBody，隔离背景与边框渲染，在 layoutChildren 中限制卡片身体和外部子内容仅占用 Y=45px 偏下的卡片本体区；2. 增加 Z 轴旋转及单摆力学公式，根据鼠标滑过/拖拽速度对卡片施加角加速度，驱动 Z 轴偏转摆动；3. 在 Canvas 顶部使用二次贝塞尔曲线和金属扣动态绘制跟随速度摆动弯折的主题色吊带环圈；4. 适配 CSS 完成半透磨砂背景的隔离转移。 |
+| 2026-07-09 23:44 | Contributor| refactor: 调小 Lanyard 吊绳晃动幅度并增加阻尼阻力系数 | 1. 降低 setOnMouseEntered 鼠标滑入随机推力至 0.25；2. 在单摆公式中将重力恢复系数由 4.5 提升至 6.5 增强回正力，将阻尼由 2.0 提升至 3.5 快速吸能结算；3. 将鼠标划过速度对角加速度的推力比重由 0.00008 大幅缩减至 0.000025，并收窄瞬时推力最大值为 0.15，彻底解决原本剧烈摆荡的问题，提供优雅静谧的微小回弹。 |
+| 2026-07-09 23:44 | Contributor| refactor: 还原粒子流动波速逻辑，并新增粒子尺寸随卡片大小自适应缩放 | 1. 回退还原 PixelCard 粒子流动速率的 widthPlusHeight 绑定参数；2. 在 initPixels 中计算基于 300px 卡片宽度的 scaleFactor，传入 Pixel 构造函数对粒子尺寸 minSize/maxSize、绘制居中偏置 centerOffset、以及出现 sizeStep 与消失收缩速率进行等比缩放，确保粒子在大/小窗口下视觉比例恒定。 |
+| 2026-07-09 23:44 | Contributor| feat: 重构 AI 对战选择界面为三卡片布局 | 1. 修改 AiLobbyUI.fxml，导入 PixelCard 并移除原来的普通列表按钮，改为与大厅主页一致的自适应横向 HBox 卡片结构；2. 将简单、中等、困难三个难度映射到 blue（🌱）、yellow（⚡）和 pink（🔥）三种主色调变体与专属徽章图标，添加细小的说明介绍文字；3. 在 style.css 中为新增的描述类 .arena-desc 设定排版字号和悬浮文字色。 |
+| 2026-07-07 17:36 | Contributor| feat: 实现业务 UI 随窗口拉伸整体等比自适应缩放 | 1. 在 ScreenManager.java 的 switchTo 中，将主业务 VBox 容器 mainLayout 锁定为 1920x1080 参考尺寸（标准 16:9）；2. 对其直接挂载 Scale 缩放变换，并移除了额外的 centerWrapper 层；3. 监听顶层 wrapper 的实际窗口宽高变化，取最窄边比例平滑更新 Scale 缩放系数，彻底消除了标题栏与内容区缩放不一致而产生的多余黑边。 |
+| 2026-07-07 17:36 | Contributor| refactor: 调整默认窗口尺寸与设计缩放基准为 1280*720 黄金比例 | 1. 将 ScreenManager.java 中的默认 WIDTH 和 HEIGHT 常量修改为 1280 和 720；2. 业务 UI 在此基准尺寸上自适应等比缩放，窗口支持自由拉伸，使得在任何尺寸拉伸时内部都完美按 16:9 相对大小进行矢量对齐，既适合本地测试又实现了标准宽屏。 |
+| 2026-07-07 17:36 | Contributor| fix: 引入事件过滤器拦截边框拖动，解决拉伸交互冲突及状态重置 Bug | 1. 在 ScreenManager.java 中引入 MouseEvent 事件过滤器，在捕获阶段优先拦截边框拉伸事件，并通过 e.consume() 阻断事件向下传递至子组件，规避拉伸窗口时引发的子组件物理拖拽冲突；2. 增加 MOUSE_RELEASED 阶段的监听器，在鼠标松开时将 resizeMode 强制重置为 NONE，修复了释放鼠标后依然会异常缩放窗口的遗留缺陷。 |
+| 2026-07-07 17:36 | Contributor| fix: 优化大厅个人头像信息芯片宽度与点击域 | 1. 移除 LobbyUI.fxml 中 playerInfoBox 头像芯片的 HBox.hgrow="ALWAYS" 强制横向填充，将其还原为只包裹头像和昵称的紧凑胶囊组件；2. 增设隐藏 Region 填充组件，将点击操作范围完全限制在头像可见的芯片范围内，断绝了在顶部栏空白处误触进入个人中心的操作体验 Bug。 |
+| 2026-07-07 17:36 | Contributor| fix: 引入边缘阻尼渐变并结合静态投影检测，彻底根除 3D 卡片四周及下边缘抖动 Bug | 1. 在 handleMouseMoved 中计算鼠标距离卡片身体边缘的最短像素距离，在 25px 边缘过渡区内计算 0.0~1.0 的阻尼因子，使得鼠标跨越卡片边界时 3D 偏转角平滑衰减至 0；2. 结合 setOnMouseExited 中的静态无偏转包围盒屏幕投影校验，拦截旋转位移产生的假滑出信号，彻底治愈了下边缘在鼠标滑出时的反复触发与抖动。 |
+| 2026-07-07 17:36 | Contributor| fix: 清除顶部栏分割线内边距并开启鼠标穿透，解决按钮下边缘点击遮挡 Bug | 1. 在 style.css 中将 .section-divider 的 -fx-padding 设为 0，彻底移除 Modena 默认主题中分割线上下各 10px 的不可见外边距死区；2. 在 LobbyUI.fxml 和 AiLobbyUI.fxml 中为 Separator 加上 mouseTransparent="true" 物理穿透，彻底根治了顶栏按钮下方边缘点击被分割线 hitbox 拦截截断的问题。 |
+| 2026-07-07 21:34 | Contributor| refactor: 将点阵背景动画速度重构为基于 Delta Time 的时间步长计算 | 1. 在 ShapeGridBackground.java 中，用 SPEED_X_PER_SEC/SPEED_Y_PER_SEC 代替每帧固定位移，引入基于时间步长 dt 的无缝包裹位移；2. 增加对最大帧时间 dt 的阈值限制 (0.1s)，避免应用挂起恢复或帧率突变时粒子产生位置瞬移，确保在不同刷新率显示器下流动速度一致恒定。 |
+| 2026-07-07 21:53 | Contributor| style: 为大厅卡片与 AI 对战卡片设计并添加柔和的悬浮及按下状态阴影特效 | 1. 在 style.css 中为 .pixel-card-body 引入基础极简软投影，提供细腻的纸张悬浮深度感；2. 为匹配（蓝色）、AI对战（黄色）、排位（粉色）三个主题色分别定制专属的 hover 投影（24px gaussian blur, 18% 不透明度），增强 3D 偏转侧倾时的空间光感表现；3. 增设 pressed 状态阴影收紧收敛（12px gaussian blur），建立直观敏捷的按下触觉交互反馈。 |
+| 2026-07-07 21:53 | Contributor| fix: 修正 PixelCard 粒子在快速划入/划出及闪烁时可能产生的渲染残留缺陷 | 1. 在 Pixel.draw() 中对 size<=0 进行拦截，在 shimmer/disappear 中进行 Clamp 边界夹紧，阻断异常渲染；2. 增加 Canvas 动态可见性管理（在开始 appear 时可见，在 disappear 结束时设为不可见），彻底打断 JavaFX 3D 渲染管线及脏区缓存失效引发的粒子显示残留。 |
+| 2026-07-08 12:41 | Contributor| feat: 排行榜拆分为全服排行与好友排行分榜（前端部分） | 改造 RankingUI.fxml 左侧导航栏增加"全服排行"与"好友排行"两个选项按钮，为标题分配 fx:id；重构 RankingController.java 实现 Tab 切换逻辑、多类型 Mock 数据展现与网络消息类型过滤，防范并发乱序渲染。 |
+| 2026-07-08 14:22 | Contributor| feat: 登录界面标题整合纯 JavaFX 自定义 ASCIIText 特效 | 1. 采用 3D 正向光栅化高精密度采样（将采样量暴增至 480x120，共 5.7 万个点），并在 X, Y, Z 轴上大幅降慢且收窄 3D 几何形变波动以减少扭动；2. 将 ASCII 单字字号收缩为极精密的 5px（asciiFontSize=5），网格分辨率自动扩充至 174x76（共 1.3 万个字符），使字符点阵凝聚感和高密度精细度翻倍；3. 将字身黑色判定阈值门槛压低至 45，使核心黑色字符占比高达 95% 以上，并对红色、蓝色色散通道实施大幅亮度衰减融入暗色系；4. 布局拓宽至 480，销毁 AnimationTimer 防止泄漏。 | 编译与渲染测试成功 |
+| 2026-07-08 23:00 | Contributor| feat: 断线状态可视化 — 玩家卡片显示"断线中"角标 | BoardController：在玩家卡片右下角添加红色"断线中"角标（默认隐藏）；新增 setPlayerOnline(isBlack, online) 方法切换断线状态：断线时卡片透明度 0.55 + 名字变红 + 显示角标；监听 PLAYER_DISCONNECTED/PLAYER_RECONNECTED/RECONNECT_ATTEMPT/RECONNECT_FAILED 消息并在聊天区打印系统提示；新增 blackId/whiteId 字段用于按 userId 匹配玩家卡片 |
+| 2026-07-08 23:00 | Contributor| feat: 悔棋/求和按钮仅当前落子方可操作（前端部分） | CSS：新增 .btn-secondary:disabled 样式（灰底 + 低透明 + 光标 default） |
+| 2026-07-08 01:19 | Contributor| feat: 对战界面玩家信息卡片重构 + GAME_START 协议增强传递用户名 | |
+| 2026-07-08 00:13 | Contributor| refactor: TableView→卡片式列表UI升级，磨砂玻璃视觉语言统一 | |
+| 2026-07-08 19:03 | Contributor| feat(server,client): 重构排位匹配系统，修复并优化匹配逻辑 | 匹配大厅界面优化 |
+| 2026-07-08 23:00 | Contributor| feat: 实现再来一局（Rematch）功能（客户端部分） | BoardController 新增 handleRequestRematch/handleReplyRematch 方法及 rematchRequested 状态；对局结束弹窗 GameOverController 新增"再来一局"按钮；BoardController 监听 REMATCH_REQUESTED/REMATCH_ACCEPTED/REMATCH_REJECTED 消息，同意后自动重置棋盘开始新对局 |
+| 2026-07-08 23:00 | Contributor| feat: GAME_START 协议增强 — 显示对手用户名和积分（客户端部分） | BoardController.onMessage(GAME_START) 解析新增的 blackUsername/blackScore/whiteUsername/whiteScore 字段；新增带分数的 setGameInfo 重载，对手卡片显示真实用户名和积分而非 ID 和问号 |
+| 2026-07-09 23:44 | Contributor| fix: 修复黑色主题下登录/注册卡片内部泛白问题 + 全盘黑白样式同步 + 登录标题暗色色调适配 | 1. 将 .theme-dark .glass-card 背景不透明度从 0.48 提升至 0.60；新增 .theme-dark .auth-pixel-card .pixel-card-body 专属深色磨砂背景（0.55 不透明度）并改用深色投影；保留 .theme-dark .auth-pixel-card 外层白色高光投影。2. 将浅色/暗色模式下的 .custom-title-bar 和 .top-bar 背景统一为透明并去除投影。3. 统一侧栏菜单 active/导航按钮/标题栏按钮 hover/active 背景色。4. 补齐暗色模式下缺失的 pressed 状态。5. AsciiTextCanvas 支持暗色模式：根据 ScreenManager.isDarkTheme() 动态切换采样贴图（白底黑字）和输出色调，核心字符使用 #f8fafc，边缘使用柔和浅色偏色，使登录页 Gomatch 标题在暗色背景下清晰可见且风格统一。 | mvn -f client/pom.xml compile 通过 |
+| 2026-07-10 12:01 | Contributor| style: 修复头像预览弹窗背景色与顶栏小头像不一致问题 | AvatarPreviewUI.fxml：Circle 填充改为 StackPane 渐变背景 + 150px 圆角，保留 Circle 透明兜底。AvatarPreviewController：pickColor 8 色纯色调色板替换为 gradientFor 7 色渐变调色板（与 LobbyController/RankingController 一致），保证同一用户在小头像、排行榜、大头像预览中颜色完全一致。 |
 
 ### 服务端（Server）
 
 > Socket 多线程、游戏逻辑、匹配算法、ELO 排名
 
-| 日期 | 工作内容 | 问题/备注 |
-|------|----------|-----------|
-| 2026-07-04 | Contributor| 使用 JDK 21 |
-| 2026-07-06 | Contributor| 基于 Socket 多线程架构 |
-| 2026-07-06 | Contributor| 定时任务自动刷新 |
-| 2026-07-06 | Contributor| 编译验证通过 |
-| 2026-07-06 | Contributor| 共覆盖 25+ 个 Java 类 |
-| 2026-07-06 | Contributor| 提升团队协作可读性与文档查找效率 |
-| 2026-07-06 | Contributor| 编译验证通过 |
-| 2026-07-07 | Contributor| |
-| 2026-07-07 | Contributor| RoomManager.quickMatch() 原逻辑先将自己入队再 poll，导致每个请求都先取出自己然后返回等待；改为先尝试从队列取对手，无可用对手再入队，确保第二位玩家点击时能正确配对并通知双方 |
-| 2026-07-07 | Contributor| Room.endGame() 中非排位赛普通匹配取消 winner +10 / loser -5 的积分调整，仅记录胜负场次；排位赛仍按原逻辑更新积分 |
-| 2026-07-07 | Contributor| 服务端 handleSpectate() 原只发送 JOIN_OK 导致客户端进入 RoomWaitingUI 卡死；改为发送 GAME_START 触发 BoardUI 切换，并回放所有已有落子使观战者看到实时棋盘 |
-| 2026-07-07 | Contributor| 服务端 Room.getRoomListInfo() 返回的 status 为大写 PLAYING |
-| 2026-07-07 | Contributor| AIPlayer 新增 Difficulty 枚举并实现差异化策略：EASY 40%随机落子+弱攻击评分（攻3防7）、MEDIUM 沿用原攻防均衡评分、HARD alpha-beta剪枝的深度2 MiniMax前瞻+即时获胜/堵杀检测；Room/RoomManager/ClientHandler 传递 difficulty |
-| 2026-07-08 | Contributor| 服务端 ClientHandler.dispatch() 改为 Message 分发，所有 send() 调用改为 Message.of()/builder()；handleRoomList/handleRanking/handleQueryRecord 改用 Message.builder() + JSONArray 替代手动 StringBuilder 拼 JSON；Room 广播方法全部改为 Message 参数 |
-| 2026-07-08 | Contributor| 1. Room.endGame() 中拆分 MySQL 和 Redis 错误处理，Redis 缓存失败不再掩盖 MySQL 成功保存；2. RecordDAO.saveRecord() 对 startTime 做防御性 null 检查，避免 NPE 导致整条记录保存失败 |
-| 2026-07-08 | Contributor| 在 ClientHandler.java 中支持 Protocol.RANKING 携带 type 参数，并在返回数据包时回传分榜类型 |
-| 2026-07-08 | Contributor| ClientHandler.java: handleRegister/handleLogin/handleChangePassword/handleCreateRoom/handleCreateAiRoom 增加 String 入参 null 检查；handleReconnect: token 日志行 NPE 保护；Room.java: getRankByUserId TOCTOU 重复调用风险修复 |
-| 2026-07-08 | Contributor| SessionManager 中 updateHeartbeat 蜕化为会话查询时的活跃时间维护，保留；清理 MODULE_SERVER.md 中的过时心跳描述 |
-| 2026-07-08 | Contributor| 服务端 ClientHandler：处理 HEARTBEAT 命令 + 后台线程检测 90s 无消息则关闭连接；Room：对局中玩家断线启动 60s 重连计时窗口，最多 3 次重连机会，全部失败则判对方获胜（endGame reason=disconnect），重连成功后自动回放已有落子 |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| Protocol 新增 REQUEST_REMATCH/REPLY_REMATCH/REMATCH_ACCEPTED/REMATCH_REJECTED 常量；ClientHandler 新增 handleRequestRematch/handleReplyRematch 方法；Room 新增 rematchRequesterId 字段 + requestRematch/replyRematch/resetAndRestartGame 方法，支持双方同意后自动重置棋盘开始新对局 |
-| 2026-07-08 | Contributor| Room 新增 blackUsername/whiteUsername/blackScore/whiteScore 字段 + getter；join() 缓存用户名；startGame()/resetAndRestartGame() 查询并刷新双方积分；新增 buildGameStartMessage() 统一构建含用户名/积分的 GAME_START 消息；ClientHandler 全部 7 处 GAME_START 广播改用 buildGameStartMessage() |
-| 2026-07-09 | Contributor| 1. UserDAO.register() 新增捕获 SQLIntegrityConstraintViolationException，防止 existsByUsername 和 INSERT 之间的并发竞态绕过唯一性检查；2. UserDAO.existsByUsername() 在 SQL 异常时改为返回 true（保守拒绝注册），而非 false（放行），确保数据库故障时不被绕过 | 编译通过 |
-| 2026-07-10 | Contributor| 1. Protocol 新增 FORGOT_PASSWORD / VERIFY_FORGOT_CODE / FORGOT_PWD_RESET（客户端→服务端）和 FORGOT_PWD_CODE / FORGOT_PWD_VERIFY_OK / FORGOT_PWD_OK / FORGOT_PWD_FAIL（服务端→客户端）；2. ClientHandler 新增 handleForgotPassword（查询邮箱→生成6位验证码→Redis 存储 5min TTL）、handleVerifyForgotCode（校验验证码→返回 userId）、handleForgotPwdReset（校验 userId→重置密码→清理 Redis）；3. UserDAO 新增 emailExists()、findUserIdByEmail()、resetPassword()；4. RedisManager 新增通用 KV 操作（setex/get/del/exists） | 编译通过 |
-| 2026-07-10 | Contributor| 1. UserDAO.register() 改为三参数（username, password, email），注册时校验邮箱非空 + 唯一性，emailExists() 防重复；2. UserDAO.login() 改为支持 username 或 email 登录（WHERE username=? OR email=?），password 统一校验；3. ClientHandler.handleRegister() 增加邮箱格式校验（正则 ^[\\w.+-]+@[\\w-]+\\.[\\w.]+$） | 编译通过 |
-| 2026-07-10 | Contributor| 1. EASY：随机走子概率 40%→20%，攻防评分权重从 3:7 调整为 4:6（偏防守但仍具威胁）；2. MEDIUM：从原有攻防均衡启发式评分升级为 1 层 Minimax 前瞻搜索（全盘评估每步走法），显著提升中等难度智能性；3. HARD：保持 alpha-beta 剪枝深度 2 Minimax + 即时获胜/堵杀检测不变 | 编译通过 |
-| 2026-07-10 | Contributor| Room.handleDisconnect() 检测 AI 模式时不再走 3 次重连重试逻辑，直接判定 AI 获胜并广播 AI_PLAYER_DISCONNECTED 消息，避免 AI 模式下的无意义等待 | 编译通过 |
-| 2026-07-10 | Contributor| Room.replyRematch() 返回类型从 boolean 改为 long，返回请求方 userId（用于 ClientHandler 定向通知）；ClientHandler 新增 handleRequestRematch/handleReplyRematch 方法 | 编译通过 |
+| 时间 | 作者 | 工作内容 | 问题/备注 |
+|------|------|----------|-----------|
+| 2026-07-04 13:20 | Contributor| 搭建 Maven 多模块项目骨架，创建 pom.xml 及目录结构 | 使用 JDK 21 |
+| 2026-07-06 14:57 | Contributor| 服务端核心功能实现：注册、登录、房间管理、落子同步、五连判胜、认输、断线处理、战绩入库、房间聊天、观战功能、悔棋/求和、断线重连、人机对战 | 基于 Socket 多线程架构 |
+| 2026-07-06 14:57 | Contributor| 服务端进阶功能：密码房间、排位匹配（ELO算法）、好友系统（请求/接受/删除）、棋局保存/加载、聊天消息持久化、Socket会话持久化、观战记录、游戏操作记录 | 定时任务自动刷新 |
+| 2026-07-06 14:57 | Contributor| 实现退出登录功能：在 Protocol.java 中添加 LOGOUT 和 LOGOUT_OK 协议常量，在 ClientHandler.java 中添加 handleLogout() 方法，处理离开房间、清除会话、标记离线等逻辑 | 编译验证通过 |
+| 2026-07-06 16:43 | Contributor| 审查全部模块源码，在 docs/ 下新建三份模块级详细文档：MODULE_COMMON.md（协议常量全览）、MODULE_CLIENT.md（JavaFX 架构/Controller/网络层/AI）、MODULE_SERVER.md（服务器架构/DAO/游戏流程/ELO/Redis/并发设计）；同步更新 README.md 文档索引 | 共覆盖 25+ 个 Java 类 |
+| 2026-07-06 16:43 | Contributor| 整理文档体系，在 docs/ 下新建文档中心索引 docs/README.md 分类整合归纳全部 15 个技术及实训辅助文档，并在根目录 README.md 中进行引用 | 提升团队协作可读性与文档查找效率 |
+| 2026-07-06 23:09 | Contributor| fix: 修复人机对战4个Bug：AI占位用户外键约束、NPE、gameOver阻断、再来一局状态传递 | 编译验证通过 |
+| 2026-07-07 14:11 | Contributor| chore: 分支整理 — server 合并到 dev 并推送到 GitHub，删除 server 和 feature/server-dev 分支，从 dev 切出 fix 分支 | |
+| 2026-07-07 14:47 | Contributor| fix: 修复快速匹配有对手仍卡在匹配页面的问题 | RoomManager.quickMatch() 原逻辑先将自己入队再 poll，导致每个请求都先取出自己然后返回等待；改为先尝试从队列取对手，无可用对手再入队，确保第二位玩家点击时能正确配对并通知双方 |
+| 2026-07-07 14:47 | Contributor| fix: 普通匹配不再增减积分 | Room.endGame() 中非排位赛普通匹配取消 winner +10 / loser -5 的积分调整，仅记录胜负场次；排位赛仍按原逻辑更新积分 |
+| 2026-07-07 20:43 | Contributor| fix: 修复进入观战后无法看到棋盘的问题（服务端部分） | 服务端 handleSpectate() 原只发送 JOIN_OK 导致客户端进入 RoomWaitingUI 卡死；改为发送 GAME_START 触发 BoardUI 切换，并回放所有已有落子使观战者看到实时棋盘 |
+| 2026-07-07 20:43 | Contributor| fix: 修复观战列表为空的问题（服务端部分） | 服务端 Room.getRoomListInfo() 返回的 status 为大写 PLAYING |
+| 2026-07-07 20:43 | Contributor| fix: AI 简单/中等/困难三个难度实际完全一致的问题（服务端部分） | AIPlayer 新增 Difficulty 枚举并实现差异化策略：EASY 40%随机落子+弱攻击评分（攻3防7）、MEDIUM 沿用原攻防均衡评分、HARD alpha-beta剪枝的深度2 MiniMax前瞻+即时获胜/堵杀检测；Room/RoomManager/ClientHandler 传递 difficulty |
+| 2026-07-08 11:51 | Contributor| refactor: 客户端/服务端通信协议统一为 JSON 格式（服务端部分） | 服务端 ClientHandler.dispatch() 改为 Message 分发，所有 send() 调用改为 Message.of()/builder()；handleRoomList/handleRanking/handleQueryRecord 改用 Message.builder() + JSONArray 替代手动 StringBuilder 拼 JSON；Room 广播方法全部改为 Message 参数 |
+| 2026-07-08 19:43 | Contributor| fix: 修复对局结束后对战记录缺失的问题 | 1. Room.endGame() 中拆分 MySQL 和 Redis 错误处理，Redis 缓存失败不再掩盖 MySQL 成功保存；2. RecordDAO.saveRecord() 对 startTime 做防御性 null 检查，避免 NPE 导致整条记录保存失败 |
+| 2026-07-08 12:41 | Contributor| feat: 排行榜拆分为全服排行与好友排行分榜（服务端部分） | 在 ClientHandler.java 中支持 Protocol.RANKING 携带 type 参数，并在返回数据包时回传分榜类型 |
+| 2026-07-08 12:51 | Contributor| chore: 全面排查并修复空指针风险（服务端部分） | ClientHandler.java: handleRegister/handleLogin/handleChangePassword/handleCreateRoom/handleCreateAiRoom 增加 String 入参 null 检查；handleReconnect: token 日志行 NPE 保护；Room.java: getRankByUserId TOCTOU 重复调用风险修复 |
+| 2026-07-08 14:18 | Contributor| chore: 移除心跳机制并清理文档（服务端部分） | SessionManager 中 updateHeartbeat 蜕化为会话查询时的活跃时间维护，保留；清理 MODULE_SERVER.md 中的过时心跳描述 |
+| 2026-07-08 17:36 | Contributor| feat: 实现心跳机制 + 对局断线重连 + 三次失败后判负（服务端部分） | 服务端 ClientHandler：处理 HEARTBEAT 命令 + 后台线程检测 90s 无消息则关闭连接；Room：对局中玩家断线启动 60s 重连计时窗口，最多 3 次重连机会，全部失败则判对方获胜（endGame reason=disconnect），重连成功后自动回放已有落子 |
+| 2026-07-07 19:04 | Contributor| feat: 添加回合计时与超时判负功能 | |
+| 2026-07-07 18:48 | Contributor| fix: 修复重复登录问题并完善对局退出逻辑 | |
+| 2026-07-07 17:12 | Contributor| fix: 修复空指针异常并处理悔棋求和请求 | |
+| 2026-07-07 15:08 | Contributor| fix: 修复对局结果判断和好友请求重复问题 | |
+| 2026-07-08 15:40 | Contributor| feat: 实现Token重连机制（服务端部分） | |
+| 2026-07-08 18:45 | Contributor| feat: 添加管理员功能（踢人/封禁/强制结束） | |
+| 2026-07-08 19:03 | Contributor| feat(server,client): 重构排位匹配系统，修复并优化匹配逻辑 | |
+| 2026-07-08 23:00 | Contributor| feat: 实现再来一局（Rematch）功能（服务端部分） | Protocol 新增 REQUEST_REMATCH/REPLY_REMATCH/REMATCH_ACCEPTED/REMATCH_REJECTED 常量；ClientHandler 新增 handleRequestRematch/handleReplyRematch 方法；Room 新增 rematchRequesterId 字段 + requestRematch/replyRematch/resetAndRestartGame 方法，支持双方同意后自动重置棋盘开始新对局 |
+| 2026-07-08 23:00 | Contributor| feat: GAME_START 协议增强 — 传递用户名和积分（服务端部分） | Room 新增 blackUsername/whiteUsername/blackScore/whiteScore 字段 + getter；join() 缓存用户名；startGame()/resetAndRestartGame() 查询并刷新双方积分；新增 buildGameStartMessage() 统一构建含用户名/积分的 GAME_START 消息；ClientHandler 全部 7 处 GAME_START 广播改用 buildGameStartMessage() |
+| 2026-07-09 14:02 | Contributor| fix: 修复注册时用户名并发重复问题 | 1. UserDAO.register() 新增捕获 SQLIntegrityConstraintViolationException，防止 existsByUsername 和 INSERT 之间的并发竞态绕过唯一性检查；2. UserDAO.existsByUsername() 在 SQL 异常时改为返回 true（保守拒绝注册），而非 false（放行），确保数据库故障时不被绕过 | 编译通过 |
 
 ### 客户端（Client）
 
 > Controller 业务逻辑、网络通信、数据管理、AI 对弈、游戏流程
 
-| 日期 | 工作内容 | 问题/备注 |
-|------|----------|-----------|
-| 2026-07-05 | Contributor| FXML 命名空间不能加版本号 |
-| 2026-07-05 | Contributor| 首次居中，之后保留窗口位置 |
-| 2026-07-05 | Contributor| 预览模式支持无服务器浏览 |
-| 2026-07-05 | Contributor| mvn compile 通过 |
-| 2026-07-06 | Contributor| |
-| 2026-07-06 | Contributor| |
-| 2026-07-06 | Contributor| |
-| 2026-07-06 | Contributor| |
-| 2026-07-06 | Contributor| |
-| 2026-07-06 | Contributor| |
-| 2026-07-06 | Contributor| |
-| 2026-07-06 | Contributor| |
-| 2026-07-06 | Contributor| |
-| 2026-07-06 | Contributor| |
-| 2026-07-06 | Contributor| |
-| 2026-07-06 | Contributor| |
-| 2026-07-06 | Contributor| |
-| 2026-07-06 | Contributor| 采用可编辑的 ComboBox，解耦本地存储路径，并适配项目磨砂极简风格 MessageDialogUI 弹窗 |
-| 2026-07-06 | Contributor| 脚本已加入 Git 追踪供团队成员使用 |
-| 2026-07-06 | Contributor| 预览模式匹配正常启动人机对局 |
-| 2026-07-06 | Contributor|roomId\|roomName\|playerCount），从根本上避免了联机配对时客户端崩溃黑屏的问题。 | 联机协议兼容与对齐逻辑升级通过 |
-| 2026-07-06 | Contributor| 排位至大厅流转流程修正完成 |
-| 2026-07-07 | Contributor| 编译验证通过 |
-| 2026-07-07 | Contributor| 客户端在本地落子时提前写入 moveHistory，导致自己收到的 MOVE_SYNC 又被追加一次；移除本地写入，使悔棋弹出的两步与服务器保持一致，双方棋盘同步 |
-| 2026-07-07 | Contributor| 1. LoginUI.fxml 中 CheckBox 缺 fx:id 导致 Controller 无法绑定；2. LoginController 新增凭据保存/加载逻辑，存入 ~/.gomatch/credentials.json |
-| 2026-07-07 | Contributor| GameOverController.setResult() 只处理数字参数，BoardController 传的是中文文字；default 分支改为直接显示传入的 result 字符串，使胜负结果正确展示 |
-| 2026-07-07 | Contributor| ScreenManager.showDialog 内部使用 showAndWait，原调用在 showAndWait 返回后才 setResult，导致弹窗已关闭才设置文字；新增带 setupCallback 的 showDialog 重载，在 showAndWait 前完成控制器设置，BoardController 所有 GameOver 弹窗改为通过回调提前设置结果文本 |
-| 2026-07-07 | Contributor| 服务端 Room.endGame() 积分更新后新增 USER_SCORE_UPDATE 协议推送最新积分到玩家客户端；BoardController 接收后更新 AppConfig.currentUser 的 score/胜负平场次，使大厅和个人中心实时显示正确积分 |
-| 2026-07-07 | Contributor| CasualLobbyController.onMessage() 缺少 ERROR 协议处理，服务端返回"等待对手…"时被静默丢弃；新增 ERROR/USER_SCORE_UPDATE 协议处理，FXML 增加 statusLabel 状态提示，handleQuickMatch/onMessage 中实时更新匹配状态；LobbyController 同步添加 USER_SCORE_UPDATE 处理确保积分标签即时刷新 |
-| 2026-07-07 | Contributor| CasualLobbyController 中过滤观战房间时使用了小写 "playing"，导致条件永远不成立；改为 "PLAYING".equalsIgnoreCase() 比较 |
-| 2026-07-07 | Contributor| 客户端 BoardController 新增 spectatorMode，观战模式自动禁用落子点击和操作按钮 |
-| 2026-07-07 | Contributor| 消除 14 个文件的 lint 警告：移除 28 个未使用 import、删除 4 个未使用方法、移除 7 个未使用字段/变量；修复 DatabaseBootstrap Scanner 资源泄漏 |
-| 2026-07-07 | Contributor| 1. 在 BoardController.setGameInfo() 中主动启动倒计时，解决从 AiLobby/RoomWaiting 切换后新 BoardController 因 CopyOnWriteArrayList 快照机制收不到同一条 GAME_START 导致倒计时卡死；2. 新增 lastMoveX/Y 记录最后落子，redrawAll 中绘制红色加粗圆环标记，覆盖本地落子、MOVE_SYNC、悔棋、回放等场景；3. 回放模式启动时停止倒计时，避免残留 |
-| 2026-07-07 | Contributor| AIPlayer 新增 Difficulty 枚举并实现差异化策略 |
-| 2026-07-07 | Contributor| 删除 database/src/main/resources/logback.xml（库模块不应包含导致运行时冲突）；RecordController 添加 @SuppressWarnings("unchecked") 消除 JavaFX 泛型 unchecked 警告 |
-| 2026-07-08 | Contributor| 1. 新增 common/Message 类（fromJson/toJson/builder/of/cmdOnly），添加 org.json 依赖；<br>2. NetworkListener 接口改为 onMessage(Message msg)；<br>3. ServerConnector.send() 改为 send(Message) + send(String cmd) 重载；<br>4. 所有 14 个客户端 Controller 的 onMessage 和 send() 全部迁移到 Message 模式，列表类响应（房间/排行榜/好友/对战记录）统一解析 JSONArray 替代竖线分割数组；<br>5. 修复 handleRoomList 错误使用 RANKING_LIST→ROOM_LIST 及 FriendsController.handleRejectRequest 遗漏的旧格式调用 | 全项目零残留旧 pipe 协议代码，编译通过 |
-| 2026-07-08 | Contributor| 1. RankingController 初始化时主动渲染占位，处理 ERROR 消息，使用 optInt/optString 解析数值字段，预览模式加载本地假数据；2. LobbyController 抽屉排行榜同步修复解析方式 |
-| 2026-07-08 | Contributor| BoardController.replayMoves 默认 replayIndex=0（空棋盘），而非从最后一步开始 |
-| 2026-07-08 | Contributor| 1. CasualLobbyController 匹配计数器从 0 开始正向递增（首秒后变1），不限循环次数；2. 匹配中 quickMatchBtn 添加 btn-danger 红色样式，取消匹配时移除 |
-| 2026-07-08 | Contributor| 1. 在 ProfileController.java 增加 extractBoardData 辅助方法，兼容 JSON 数组、双重 JSON 编码字符串、老格式分号/管道分隔等多种 boardData 存储形式；2. 在回放按钮事件中改用 isReplayDataValid 判定，区分空数据 (`[]`) 与有效 JSON 数组，避免误报"暂无棋谱数据"；3. 在 Room.java 的 cacheGameRecordToRedis 中将 boardData 字符串解析为 org.json.JSONArray 再 put 进去，避免 org.json 在嵌套 put(String, String) 时对引号转义造成的双重 JSON 编码，从根上解决 Redis 缓存中棋谱数据被破坏的问题。 | 编译通过，预期修复 AI 对局棋谱回放 |
-| 2026-07-08 | Contributor| ProfileController.java: msg.getData() 为 null 保护 + record.getResult() 空字符串 substring 越界修复 |
-| 2026-07-08 | Contributor| 客户端 ServerConnector.java 不存在心跳定时器（已在前续版本移除）；Protocol.java 无 HEARTBEAT 常量；清理 MODULE_CLIENT.md 中的过时心跳描述 |
-| 2026-07-08 | Contributor| 客户端 ServerConnector：添加定时心跳（30s/次）+ 响应超时检测（90s）+ 自动重连（5s间隔, 3次） |
-| 2026-07-08 | Contributor| BoardController：新增 updateActionButtons() 仅在 myTurn && !gameOver && !spectatorMode && !replayMode 时启用 undoBtn 和 drawBtn，非己方回合时灰色禁用；在 setGameInfo / handleMouseClick / MOVE_SYNC / GAME_OVER / UNDO_ACCEPTED / TURN_TIMEOUT 等所有 myTurn/gameOver 变更点调用 |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| |
-| 2026-07-08 | Contributor| ClientHandler.java: handleRegister/handleLogin/handleChangePassword/handleCreateRoom/handleCreateAiRoom 增加 String 入参 null 检查，handleReconnect token 日志行 NPE 保护；Room.java: getRankByUserId TOCTOU 重复调用风险修复 | 编译通过 |
-| 2026-07-08 | Contributor| Protocol.java 无 HEARTBEAT 常量残留清理；SessionManager 中 updateHeartbeat 蜕化为会话查询时的活跃时间维护，保留；清理 MODULE_SERVER.md / MODULE_COMMON.md / MODULE_CLIENT.md / PRD.md 中的过时心跳描述 | 文档已同步 |
-| 2026-07-08 | Contributor| 服务端 ClientHandler：处理 HEARTBEAT 命令 + 后台线程检测 90s 无消息则关闭连接；Room：对局中玩家断线启动 60s 重连计时窗口，最多 3 次重连机会，全部失败则判对方获胜（endGame reason=disconnect），重连成功后自动回放已有落子 | lint 零告警 |
-| 2026-07-08 | Contributor| BoardController：在玩家卡片右下角添加红色"断线中"角标（默认隐藏）；新增 setPlayerOnline(isBlack, online) 方法切换断线状态：断线时卡片透明度 0.55 + 名字变红 + 显示角标；监听 PLAYER_DISCONNECTED/PLAYER_RECONNECTED/RECONNECT_ATTEMPT/RECONNECT_FAILED 消息并在聊天区打印系统提示；新增 blackId/whiteId 字段用于按 userId 匹配玩家卡片 | lint 零告警 |
-| 2026-07-08 | Contributor| BoardController：新增 updateActionButtons() 仅在 myTurn && !gameOver && !spectatorMode && !replayMode 时启用 undoBtn 和 drawBtn，非己方回合时灰色禁用；在 setGameInfo / handleMouseClick / MOVE_SYNC / GAME_OVER / UNDO_ACCEPTED / TURN_TIMEOUT 等所有 myTurn/gameOver 变更点调用；CSS：新增 .btn-secondary:disabled 样式（灰底 + 低透明 + 光标 default） | lint 零告警 |
-| 2026-07-08 | Contributor| 1. 从 AGENTS.md 移除固定当前分支描述，避免多人协作时误导；2. 将项目说明补充 Redis；3. 更新 README，将 Redis 标记为必需组件，并改正启动脚本示例与目录说明，避免引用不存在的 run-client/run-server 脚本。 | 文档已同步 |
-| 2026-07-08 | Contributor| Maven 编译插件统一 3.13.0 + release 21 + fork；database 测试改为结构测试；心跳改为服务端返回 HEARTBEAT_OK 并刷新 Redis 会话活跃时间；Redis 改为服务端必需组件，匹配候选从 Redis 队列读取，锁失败不再兜底成功；会话 Redis 数据补充 role；新增管理中心页面 + 存档功能；协议常量集中化；清理 cp.txt 与 client-config.properties | 编译验证通过 |
-| 2026-07-09 | Contributor| 1. ScreenManager 移除整页 Scale 缩放，改由 FXML 布局约束自适应；2. 登录/注册页改用静态 PixelCard 外壳，列表页和个人中心释放固定宽度；3. 非 ADMIN 用户隐藏管理入口；4. BoardController 与 ShapeGridBackground 增加 0 尺寸和重复尺寸重绘保护；5. 同步更新 CLIENT_STYLE_GUIDE.md 与 MODULE_CLIENT.md。 |
-| 2026-07-09 | Contributor| 1. 新增 ElasticVolumeSlider 自定义控件，用 JavaFX 属性、鼠标事件和 Timeline 实现 React Bits ElasticSlider 风格的悬浮放大、轨道变粗、越界衰减与松手回弹；2. SettingsUI.fxml 将全局音量原生 Slider 替换为 0-100、步长 5 的弹性滑杆；3. style.css 补充中性板岩灰轨道、图标和数值提示样式；4. 新增 PRODUCT.md 记录产品设计上下文。 | 编译通过 |
-| 2026-07-09 | Contributor| 1. 全局音乐新增独立开关与弹性音量条；2. 背景音乐、音效保留无文字开关并新增 ElasticVolumeSlider；3. 将"大厅音乐"改名为"大厅歌曲"，仅保留歌曲下拉选择（默认主题曲、清晨棋局、静夜对弈、赛场低语）；4. SettingsController 绑定开关与对应音量条的禁用和透明度状态。 | 编译通过 |
-| 2026-07-09 | Contributor| 1. 新增由用户指定 D:\CloudMusic 原曲转码得到的 audio/lobby-theme.mp3；2. 新增 BackgroundMusicManager，通过 JavaFX MediaPlayer 循环播放并在退出时释放；3. ClientMain 启动时播放背景音乐，SettingsController 将全局音乐/背景音乐开关与音量条同步到实际播放状态；4. client/pom.xml 补充 javafx-media 依赖。 | 编译通过 |
-| 2026-07-09 | Contributor| **原因**：CasualLobbyController.onMessage(GAME_START) 只调用了 3 参数版 setGameInfo(bId, wId, username)，丢弃了服务端传来的 blackUsername/blackScore/whiteUsername/whiteScore 全部数据；同时 JOIN_OK 在 GAME_START 后又被发送，导致已切入 BoardUI 的客户端又被切回 RoomWaitingUI。**修复**：1. GAME_START 处理改为解析全部 6 个字段（blackUsername/blackScore/whiteUsername/whiteScore），传递到 BoardController.setGameInfo() 的完整参数重载；2. 新增 joinedGame 标记位，在已进入 GAME_START 对局后忽略后续 JOIN_OK 消息，防止界面回切到等待室 | 编译通过 |
-| 2026-07-10 | Contributor| **根因 1 - 排行榜透明**：RankingController 只对 rank 1/2/3 通过 setStyle 给金/银/铜纯色背景，rank 4+ 匿名用户无兜底背景色；`.avatar-badge` CSS 类也未设背景色，白色首字母 Label 在透明背景上完全看不见。修复：rank 4+ 按用户名 hash 给渐变底色（gradientFor 方法与 LobbyController 抽屉一致）。**根因 2 - 对战回放缺头像**：ProfileController 只调用了 6 参数 setReplayMode（无 avatar URL），且 GameRecord 模型根本没有 player1Avatar/player2Avatar 字段。修复：GameRecord 新增 player1Avatar/player2Avatar 字段及 getter/setter；ProfileController 解析 record 时保存 avatar 字段，改用 8 参数 setReplayMode 传入头像 URL。**根因 3 - 头像预览颜色不一致**：AvatarPreviewController 使用独立的 8 色纯色调色板 (pickColor)，与 LobbyController/RankingController 的 7 色渐变调色板 (gradientFor) 不同；同一用户在弹窗中显示的颜色与顶栏小头像不一致。修复：AvatarPreviewController 改用与 LobbyController 完全一致的 7 色渐变调色板；AvatarPreviewUI.fxml 的 Circle 背景改为 StackPane 渐变 + 150px 圆角，Circle 节点保留透明兜底。 | 编译通过 |
-| 2026-07-09 | Contributor| 1. 定位大厅音乐未播放原因为 JavaFX Media 对 FLAC 运行时支持不稳定且原逻辑静默降级；2. 使用 ShareX ffmpeg 将原曲转为纯音频 lobby-theme.mp3；3. BackgroundMusicManager 改为加载 MP3，移除未使用 FLAC 资源；4. MODULE_CLIENT.md 同步资源路径。 | 媒体探针 READY；编译通过 |
-| 2026-07-09 | Contributor| 将 BackgroundMusicManager 的默认全局音乐音量从 80 调整为 45、背景音乐音量从 70 调整为 35，初始实际播放音量由 56% 降至约 16%；SettingsUI.fxml 同步默认滑杆显示值。 | 编译通过 |
-| 2026-07-09 | Contributor| RoomManager.quickMatch() 中 createRoom() 已将 player 加入房间，但后续又调用 room.join(player) 被重复检查拒绝；删除重复调用 | 编译通过 |
-| 2026-07-09 | Contributor| RoomManager.rankedMatch() 中 createRankedRoom() 已将 player 加入房间，但后续又调用 room.join(player) 被重复检查拒绝；删除重复调用 | 编译通过 |
-| 2026-07-09 | Contributor| Room.makeAiMove() 无论谁获胜都使用 whiteUserId(-1) 作为 winnerId；改为根据 winnerColor 正确判断获胜者 | 编译通过 |
-| 2026-07-09 | Contributor| RecordDAO.getHistory() 中使用 rs.wasNull() 检查平局时的 NULL 值，确保正确处理 | 编译通过 |
-| 2026-07-09 | Contributor| ClientHandler.handleFriendRequests() 改用 JSONObject/JSONArray 构建安全的 JSON 响应，避免特殊字符导致解析错误 | 编译通过 |
-| 2026-07-09 | Contributor| 1. 全屏模式：stage.setFullScreen() 即时生效；2. 分辨率切换：动态调整 stage 宽高并居中；3. 动态背景：ShapeGridBackground.setEnabled() 控制粒子网格显隐；4. 帧率限制：ShapeGridBackground 跳帧逻辑实现 60/120/无限制；5. 字体切换：修改 scene root 的 -fx-font-family 属性；6. 开机自启：VBS 脚本写入 Windows %APPDATA%\Startup；7. 记住密码：LoginController 读取 UserSettings 控制默认勾选；8. 后台静音：窗口失焦暂停音乐、获焦恢复；9. 音频控制：ElasticVolumeSlider 双向绑定 BackgroundMusicManager | 编译通过 |
-| 2026-07-09 | Contributor| 新增 UserSettings 类，将全屏/分辨率/帧率/音量/背景/字体/主题/语言/开机自启/记住密码等 15 项偏好保存到 ~/.gomatch/user-settings.json，启动时自动加载 | 编译通过 |
-| 2026-07-09 | Contributor| 1. 新增 I18N 工具类，支持 ResourceBundle 动态切换；2. 新增 messages_zh.properties 和 messages_en.properties 资源文件（240+ key）；3. 所有 21 个 FXML 中文文本替换为 %key 占位符；4. ScreenManager 加载 FXML 时传入 ResourceBundle；5. ClientMain 启动时初始化语言；6. SettingsController 语言切换后重载场景 | 编译通过 |
-| 2026-07-09 | Contributor| root.setStyle() 会覆盖所有内联样式导致 -fx-background-color 丢失；改为 appendFontFamily() 追加/替换 -fx-font-family 属性，保留其他样式 | 编译通过 |
-| 2026-07-09 | Contributor| updateTurnLabel() 中 if-else 块后多了一个 }，导致 updatePlayerCardHighlight() 脱离方法体 | 编译通过 |
-| 2026-07-09 | Contributor| 1. GameOverController.setResult() 支持中文描述（黑方胜、白方胜、平局、对手胜）；2. BoardController GAME_OVER 处理增加 AI 模式特殊判断（winnerId="-1"时判定为对手胜） | 编译通过 |
-| 2026-07-09 | Contributor| 1. FriendDAO.sendFriendRequest() 发送新请求前先删除双方所有旧请求记录（PENDING/ACCEPTED/REJECTED）；2. FriendDAO.deleteFriend() 删除好友关系时同时清理双方的请求记录，解决唯一索引冲突 | 编译通过 |
-| 2026-07-09 | Contributor| 1. RecordDAO.getHistory() 添加返回 board_data 字段；2. ClientHandler.handleQueryRecord() 在 RECORD_LIST 响应中添加 boardData，转义 `\|` 防止协议解析错误 | 编译通过 |
-| 2026-07-09 | Contributor| 1. RecordController.onMessage() 更新解析步长从10改为11，添加 boardData 处理和解转义；2. BoardController.replayMoves() 新增 JSON 格式棋谱支持（检测 `[` 开头自动切换解析方式），兼容旧格式分号分隔 | 编译通过 |
-| 2026-07-09 | Contributor| BoardUI.fxml 将回放按钮容器从 HBox（水平排列）改为 VBox（垂直排列），按钮 maxWidth="Infinity" 充分利用侧边栏宽度 | 编译通过 |
-| 2026-07-09 | Contributor| FriendsUI.fxml 将操作列宽度从 100px 增加到 140px，确保"接受"和"拒绝"按钮完整显示 | 编译通过 |
-| 2026-07-09 | Contributor| client-config.properties 中 server.host 从错误值改为 127.0.0.1 | 编译通过 |
-| 2026-07-09 | Contributor| 1. 发送悔棋/求和请求后显示等待弹窗（带加载动画），禁止落子和重复请求；2. 收到回复后关闭弹窗，恢复正常游戏；3. 游戏结束时自动关闭等待弹窗 |
-| 2026-07-09 | Contributor| 1. 发送请求时停止倒计时；2. 收到请求时停止倒计时；3. 收到回复后恢复倒计时；4. 悔棋同意时重置为60秒，拒绝时继续当前剩余时间；5. 求和拒绝时继续当前剩余时间 |
-| 2026-07-09 | Contributor| 观战者在对局结束时弹出游戏结束对话框，显示获胜者信息（黑方/白方 + 用户名）和"返回大厅"按钮 |
-| 2026-07-09 | Contributor| 1. style.css 追加暗夜磨砂主题覆盖层，将全局背景、卡片、输入框、按钮、表格、列表、弹窗、滚动条和音量滑杆统一为近黑玻璃与冷灰描边；2. 清理多处 FXML 浅色内联背景，避免覆盖全局主题；3. 设置页暗夜主题选项从"开发中"改为可用并持久化；4. 同步 CLIENT_STYLE_GUIDE.md、requirements.md 与 AGENTS.md 的 UI 约定。 | mvn -f client/pom.xml compile -e 通过 |
-| 2026-07-09 | Contributor| 1. ScreenManager 新增 theme-light/theme-dark 根类切换与 themeColor(light,dark) 动态色辅助；2. 设置页恢复"清透白磨砂 (经典)"与"暗夜黑磨砂"两个选项，切换后即时应用当前 Scene；3. 暗色 CSS 统一限定在 `.theme-dark`，动态列表/棋盘玩家卡/个人资料头部跟随主题；4. FXML 清理残留暗色内联样式并同步设计规范。 | 编译通过，FXML XML 解析通过 |
-| 2026-07-09 | Contributor| 根因是最外层 StackPane 背景链路在浅色/暗色间没有统一归口：固定透明会让暗色露出 Scene 白底，删除透明又会露出 `.root` 浅色蓝白渐变；改为由 ScreenManager.applyUserTheme() 按主题写入 wrapper 背景，浅色透明、暗色近黑渐变，并补齐暗色 editable ComboBox 的 text-field/arrow-button 子节点样式。 | 编译通过 |
-| 2026-07-09 | Contributor| 将 style.css 的 `.root` 背景从蓝白渐变改为中性雾白渐变，避免浅色或背景链路兜底时出现泛蓝底色。 | CSS 调整 |
-| 2026-07-09 | Contributor| 1. 暗色根背景、顶栏、玻璃卡片、列表卡、PixelCard 统一压深到黑曜石色阶；2. 登录/注册页移除 `.glass-card` 的白色内联背景，交由主题 CSS 接管；3. 暗色头像/头像徽章补稳定圆角与透明子标签，避免白色方框露底。 | 编译通过，FXML XML 解析通过 |
-| 2026-07-09 | Contributor| **真正根因**：`PixelCard.layoutChildren()` 把内部 `cardBody`（Region，默认 maxWidth=MAX_VALUE）和 FXML 内层 `glass-card`（VBox，默认 maxWidth=USE_COMPUTED_SIZE=preferred）都放在同一卡片身体区域内，虽都传 `fillWidth=true/fillHeight=true`，但 VBox 的 max 限制使其只按内容 preferred size 居中、不被拉满，导致内层比外层小、形成 2-3px 间隙的双线。次要原因：两层圆角/线宽参数原本也不一致（pixel-card-body 8/1.2 vs glass-card 12/1.5，且 FXML 内联 `-fx-background-radius:16` 又把背景圆角顶成 16）。**修复**：1. `PixelCard.java` layoutChildren 遍历 FXML 子节点时，对 Region 先 setMaxWidth/Height(Double.POSITIVE_INFINITY) 再 layoutInArea，使内层被拉到与 cardBody 完全一致的尺寸；2. `.glass-card` 的 background-radius/border-radius 统一为 8、border-width 改 1.2，同步外层规格；3. 移除 LoginUI.fxml、RegisterUI.fxml 内联 `-fx-background-radius:16`，并加 maxWidth/maxHeight=Infinity 兜底。 | mvn compile 通过；PrintWindow 截图经多模态确认已由双线变为单条干净描边 |
-| 2026-07-10 | Contributor| 在 CLIENT_STYLE_GUIDE.md 新增按钮、卡片、布局、输入、表格列表、弹窗、暗色覆盖和禁止写法模板，提供可照抄的 FXML/CSS/Controller 片段，重点约束结构与样式而非另起颜色体系。 |
-| 2026-07-10 | Contributor| 1. 重写 docs/README.md 为按场景阅读的文档中心，补充需求/架构/模块/UI/实训资料/启动联调/维护规则；2. 将 MODULE_COMMON.md 从旧竖线协议说明更新为当前 Message JSON 协议模型；3. 同步根 README 的文档索引、common 文件结构和项目持续迭代说明。 | 文档整理完成 |
-| 2026-07-10 | Contributor| 1. requirements.md 收敛为需求与验收权威来源；2. PRD.md 收敛为产品汇报说明；3. TECHNICAL_ARCHITECTURE.md 保留跨模块架构并引用协议/数据库专题文档；4. MODULE_CLIENT.md、MODULE_SERVER.md 启动段改为引用文档中心；5. DEV_STANDARD.md 的 UI 细节改为引用 CLIENT_STYLE_GUIDE.md。 | 文档结构检查通过 |
-| 2026-07-10 | Contributor| 新建 docs/school_materials/，移动学校讲义、实操手册、动员会、项目详解和报告模板，并更新 docs/README.md 中的资料链接。 | 文档归档完成 |
-| 2026-07-10 | Contributor| **Bug 1（AvatarPreview 无首字母）**：`AvatarPreviewController.setAvatar` 在 `image != null && !isError()` 分支中直接 `setImage + setVisible(true) + 隐藏 avatarLabel`，但 image 还在异步加载时 `isError()` 仍是 false，会立刻把 fallback 字母隐藏；如果图片 URL 实际 404 或加载失败，因为没有 `errorProperty` 监听器，永远不会恢复 fallback，弹窗就只剩空白渐变圆。**修复**：默认先显示首字母，再监听 `progressProperty`（>=1.0 且 !error 才让位）和 `errorProperty`（失败时恢复首字母）。**Bug 2（玩家卡片重叠）**：上次的 `self+active` 1px 四边蓝让上方卡片的右/下边与下方紧邻卡片的边框视觉粘连；`selfTag` 的 layoutY=-8 又把"你"徽章推到 cardWrapper 之外、侵入下方 cardWrapper 的间距区，进一步加重重叠。**修复**：(1) `style.css` 把 `self+active` 改回"只保留 4px 蓝色左边框 + 浅蓝背景 + 蓝色阴影"，右/上/下三边透明；(2) `BoardController.buildOnePlayerCard` 把 `selfTag.layoutX = -4 / layoutY = -4`，让"你"徽章仅向左外伸 4px 与蓝色左边框贴合、向上只微伸 4px 不侵入下方 cardWrapper 间距区。 | mvn compile 通过（gomatch-common / gomatch-database / gomatch-server / gomatch-client 全 SUCCESS） |
-| 2026-07-10 | Contributor| **根因（上轮修复未到位）**：`selfTag.layoutX = -4 / layoutY = -4` 仍把\"你\"徽章向 cardWrapper 左上各外伸 4px，叠加 self 状态 4px 蓝色左边框后视觉范围更宽；加上 `.player-info-card-self.player-info-card-active` 之前的 dropshadow 偏移 y=5 把蓝色阴影向下延伸到紧邻下方 test 卡片的顶部区域，整体造成\"你\"徽章右/下边缘 + 蓝色阴影 与下方 test 卡片顶边框**严重视觉粘连**。**修复**：(1) `BoardController.buildOnePlayerCard` 把 `selfTag.layoutX/Y` 改为 `0/0`，让\"你\"徽章**完全在 cardWrapper 之内**（位于 card 左上角 padding 区，与 4px 蓝色左边框形成\"半压角\"），`offlineTag` 也由\"右下外伸 8px\"改为\"右下内贴齐\"，杜绝任何外伸侵入下方区；(2) `style.css` 把 self+active 的 `dropshadow` 偏移从 `y=5` 收为 `y=1`、半径 14→12、扩散 0.18→0.16，蓝色光晕收得很小不侵入下方卡片顶部；(3) `BoardUI.fxml` 的 `sidebarContent` spacing 由 10 加大到 16，给 self+active 的蓝色阴影 + 4px 蓝边 + \"你\"徽章 留出充分缓冲。 | mvn compile 通过（gomatch-common / gomatch-database / gomatch-server / gomatch-client 全 SUCCESS） |
-| 2026-07-10 | Contributor| 第二次尝试（移除 heightProperty→adjustSidebarSize）仍然抖动，因为问题不在 sidebar 而在 **resizeBoard 自身**。**根因**：(1) boardContainer 的 widthProperty/heightProperty 监听器在 JavaFX **布局脉冲中**同步调用 resizeBoard → canvas.setWidth/setHeight → 触发新一轮 layout → listener 再次进入 resizeBoard，形成帧内连锁反应；(2) .player-info-card-offline 的 border 改变 Pane layoutBounds → 即使 2px 也能驱动 VBox→HBox→BorderPane 的连锁布局变化。**修复**：(1) resizeBoard 改为 Platform.runLater 延迟执行，同帧多次触发合并为一次；(2) CSS .player-info-card-offline 去掉 border-color/border-width/border-style，改用 -fx-effect: innershadow（纯视觉效果，零 layout 影响），dark 主题同步更新。 | 待用户验证 |
-| 2026-07-10 | Contributor| 上一版 adjustingSidebar guard 无效：heightProperty 监听器在 JavaFX **下一帧布局脉冲**中触发，非同步重入，guard 防不住。**真正根因**：adjustSidebarSize→设sidebar宽度→BorderPane重布局→boardContainer宽高变→heightProperty回调→再次adjustSidebarSize，跨帧形成反馈死循环。**修复**：删除 boardContainer.heightProperty().addListener(adjustSidebarSize)，只保留 rootPane.widthProperty 监听。sidebar 仅在窗口拉伸时按比例调整，不再随 board 高度联动（board 高度本就是 sidebar 宽度的副作用）。 | 待用户验证 |
-| 2026-07-10 | Contributor| 用户反馈：一方断线后另一方棋盘放大、不停抖动。**根因**：adjustSidebarSize() 设置 sidebar 宽度 → BorderPane 重新布局 → boardContainer 高度变化（棋盘是正方形）→ boardContainer.heightProperty 监听器回调 adjustSidebarSize() 形成反馈死循环。触发条件：之前修复断线卡片不可见时加的 .player-info-card-offline CSS class 改变了卡片渲染高度，驱动了此循环。**修复**：添加 adjustingSidebar boolean guard，adjustSidebarSize() 执行期间忽略重入调用，阻断循环。 | 编译通过 |
-| 2026-07-10 | Contributor| 用户反馈：'对方断线后就这样了'，截图中黑方卡片整张看上去'完全空白'。**根因**：BoardController.setPlayerOnline(false, false) 在断线时用 card.setOpacity(0.55) 把整张 Pane cardPane 半透明化；.player-info-card-inner 的 background-color rgba(255,255,255,0.28) 半透明白 + opacity 0.55 与浅色页面背景 linear-gradient(#f8fafc, #eef0f3) 几乎完全融合；avatar 背景 #1e293b 深色 opacity 0.55 后变成淡灰，白字 opacity 0.55 后接近隐形；nameLabel 文字 #dc2626 红色 opacity 0.55 后变淡粉；'断线中'徽章 background-color #fef2f2 浅红 + #dc2626 文字 opacity 0.55 后也几乎融于白色背景 → 整张卡片看上去'完全空白'。**修复**：(1) style.css 新增 .player-info-card-offline 浅红背景 + 红色 1px 虚线边框，整张卡片保持 100% 不透明，dark 主题下用深红半透明 + 浅红边框；(2) BoardController.setPlayerOnline 移除 setOpacity(0.55)，改用 card.getStyleClass().add/remove('player-info-card-offline')，nameLabel 保持主题深色（红色边框 + 红底白字徽章已承担'醒目提示'职责，再叠加红字反而降低可读性）；(3) BoardController.buildOnePlayerCard 中 offlineTag 样式从 #fef2f2 浅红 + #dc2626 文字 改为 #dc2626 红底 + 白色文字，确保任何主题下都清晰可见。 | mvn compile 通过（gomatch-common / gomatch-database / gomatch-server / gomatch-client 全 SUCCESS） |
-| 2026-07-10 | Contributor| **真正的根因（前两轮修复都没解决）**：(1) `cardWrapper.prefHeightProperty().bind(card.heightProperty())` 是**反向绑定**——card.heightProperty 是 post-layout 派生值，JavaFX 不会用它来给 VBox 算 pre-layout 空间，导致两个 cardWrapper prefHeight 都为 0，VBox 把它们叠在一起。(2) `selfTag` 宽 ~30px 但 card 原本只有 -fx-padding: 8 12（左 12px），selfTag 完全内嵌时 (0,0) 位置会**直接覆盖 avatar 左半部**（avatar 在 12-40px 区域，被 selfTag 0-30px 覆盖 12-30px = 18px）。**根治方案**：(1) `BoardController.buildOnePlayerCard` 改用 `StackPane` 装 card（不用 Pane），`card.prefWidthProperty().bind(container.widthProperty())` 让 VBox 直接撑高 cardWrapper，selfTag/offlineTag 通过 `setManaged(false)` 不参与 StackPane max 高度计算，**绝不会**因徽章撑高 wrapper。(2) `style.css` 把 `.player-info-card-inner` 的 `-fx-padding` 从 `8 12` 改为 `8 12 8 36`（左 padding 36px），专门给 selfTag 留出内嵌空间，selfTag 落在 `card padding 4-34px` 区，avatar 落在 `36-64px` 区，**完全不相交**。(3) `selfTag` margin = `Insets(4,0,0,4)` 完全在 card 内部（4,4 位置），`offlineTag` margin = `Insets(0,4,4,0)` 紧贴 card 右下角。 | mvn compile 通过（gomatch-common / gomatch-database / gomatch-server / gomatch-client 全 SUCCESS） |
-| 2026-07-10 | Contributor| **真正的真正根因（前 3 轮修复都没找到）**：(1) `.player-info-card { -fx-min-height: 0 }` 把 VBox blackPlayerBox/whitePlayerBox 的 minHeight 锁死到 0，**导致 VBox 整体高度被锁到 0**，无论 child (HBox/Pane/StackPane) 多高，VBox 永远给 child 分配 0 高度——这就是截图 5 中 kim1 与 AI 两张卡片**完全叠在一起**的根本原因。(2) 之前所有"反向绑定"修复方向是错的——真正的元凶是 VBox 的 min-height 限制。**终极根治方案**：(1) `style.css` 把 `.player-info-card` 改为空样式（删除 `-fx-min-height: 0`），让 VBox 默认 minHeight=USE_COMPUTED_SIZE 跟着 child 撑高。(2) `BoardController.buildOnePlayerCard` 把 HBox card **彻底替换为 Pane cardPane**，**移除所有中转层**（之前 Pane/StackPane wrapper 都不需要了），用 layoutX/Y 绝对定位 avatar(40, 居中) + infoBox(40+28+10, 居中) + selfTag(4,4) + offlineTag(右下，绑 cardPane.width/height)。Pane 直接装进 VBox container——VBox → Pane 一对一，问题彻底消失。(3) `.player-info-card-inner` padding-left 加大到 40px 给 selfTag 留 40px 内嵌空间，selfTag 落在 4-34px 区、avatar 落在 40-68px 区**完全不相交**。 | mvn compile 通过（gomatch-common / gomatch-database / gomatch-server / gomatch-client 全 SUCCESS） |
-| 2026-07-10 | Contributor| 之前所有抖动修复（resizeBoard runLater、innershadow 替换 border、移除 adjustSidebarSize 循环依赖、addingSidebar guard）都没能根治。**真正的根因**：`setPlayerOnline(false)` 中调用 `tag.setManaged(true)`，而 `offlineTag.layoutY` 绑定到 `cardPane.heightProperty()`（公式 = cardPane.height - tagHeight - 4）。当 tag 变成 managed 后，Pane 的 `computePrefHeight` 会纳入它 → cardPane 高度增加 → layoutY 变大 → prefHeight 继续变大 → ∞，形成跨帧无限布局反馈循环，链条为 Pane → VBox → sidebar → BorderPane → boardContainer → resizeBoard → 棋盘不停抖动。**修复**：`setPlayerOnline()` 中彻底移除 `tag.setManaged(true/false)` 调用，offlineTag 永远 `setManaged(false)`（在 `buildOnePlayerCard` 中已设为 false），仅通过 `setVisible` 控制显隐。因为它在 Pane 中绝对定位，不参与布局不会影响父容器尺寸，但 layoutY 绑定仍能保证窗口拉伸时徽章跟随移动到右下角。 | mvn compile 通过 |
-| 2026-07-10 | Contributor| 新增 ForgotPasswordController 实现三阶段密码重置流程：步骤 1 输入邮箱发送验证码（FORGOT_PASSWORD）、步骤 2 输入 6 位验证码校验（VERIFY_FORGOT_CODE）、步骤 3 设置新密码（FORGOT_PWD_RESET），每步有独立 UI 面板和状态转换；后端返回 FORGOT_PWD_FAIL 时统一弹出错误提示 | 编译通过 |
-| 2026-07-10 | Contributor| RegisterUI.fxml 新增 emailField 输入框；RegisterController 注册请求携带 email 字段；i18n 新增 register.email key（中英双语） | 编译通过 |
-| 2026-07-10 | Contributor| LOGIN_OK 消息新增 blackAvatarUrl/whiteAvatarUrl 字段；LoginController 重连逻辑解析头像 URL 并传递给 BoardController.resumeFromLogin()，确保断线重连后双方头像正确加载 | 编译通过 |
-| 2026-07-10 | Contributor| RoomManager.leaveRoom() 将房间删除条件从 `status == FINISHED && playerCount == 0` 改为 `playerCount == 0`，当房间内没有玩家时自动删除房间，无论房间状态是 WAITING、PLAYING 还是 FINISHED。断线路径（Room.disconnect()）不受影响，保留60秒重连窗口。 | 编译通过 |
-| 2026-07-10 | Contributor| 1. CreateRoomController 新增 previewMode 字段和 setPreviewMode() 方法；2. handleCancel() 方法修改为跳转到 LobbyUI 后调用 setCurrentUser() 和 setPreviewMode() 传递用户信息；3. CasualLobbyController.handleCreateRoom() 在打开创建房间弹窗时传递 previewMode。 | 编译通过 |
-| 2026-07-10 | Contributor| **严重隐藏 bug**：上一轮把 cardPane 从 CSS 类改为 `setStyle(...)` 行内样式后，JavaFX 行内样式优先级高于 CSS 类，导致 `.player-info-card-offline`（断线红底）、`.player-info-card-self`（蓝色自己标记）、`.player-info-card-active`（当前回合高亮）及所有 `.theme-dark` 暗色变体**全部失效**。**根因**：行内样式中的 `-fx-background-color`、`-fx-border-color`、`-fx-effect` 锁死了全部 CSS 类可覆盖的属性。**修复**：（1）`style.css` 从 `.player-info-card-inner` 删除 `-fx-padding: 8px 12px 8px 40px` 和 `-fx-alignment`（这才是 Pane 高度从 36px 撑到 54px 的根因），保留纯视觉样式；（2）`BoardController.java` 恢复 `cardPane.getStyleClass().add("player-info-card-inner")` 替代 setStyle。Pane 高度回归 36px，padding 视觉完全由 layoutX/Y 绝对定位实现，所有动态状态类恢复正常叠加。 | mvn compile 通过 |
-| 2026-07-10 | Contributor| `uploadMusic` 中 `String extension = getFileExtension(originalFileName)` 计算的扩展名从未被使用，且文件名直接使用用户提供的 `originalFileName`（未消毒），与 `uploadAvatar` 只取扩展名的做法不一致。**修复**：`fileName` 格式改为 `music/%d/%d.%s`（仅用扩展名，丢弃原始文件名）。 | mvn compile 通过 |
-| 2026-07-10 | Contributor| **根因**：服务端 `Room.broadcastToPlayersExcept` 在悔棋/求和时同时广播给观战者（`broadcastToObservers(msg)`），客户端 `BoardController` 收到 `UNDO_REQUESTED` / `DRAW_REQUESTED` 时无条件弹"是否同意"确认框，导致观战者也弹出确认窗。**修复**：(1) `Room.broadcastToPlayersExcept` 移除对观战者的广播（悔棋/求和是玩家私事，观战者不需要这条确认消息；系统消息由 chatArea appendText 单独显示）。(2) `BoardController` 在弹窗前增加 `if (spectatorMode \|\| previewMode) return;` 防御性判断（即使服务端误发也不会弹）。 | mvn compile 通过 |
-| 2026-07-10 | Contributor| **严重隐藏 bug**：客户端 `BoardController` 处理 `GAME_OVER` 时把服务端广播的 `winnerId`（用户 ID 数字字符串）跟 `blackName` / `whiteName`（玩家显示名，如 "test1"）比较，两者**永远不可能相等**，导致**所有对局结束**（超时、五连、投降、断线、认输）双方都走到 `result = "游戏结束"`，弹窗标题文案完全一样，只能从 reason 文案（如"回合超时，对方获胜"）反推谁赢。截图典型表现：超时场景下双方都显示"游戏结束 + 回合超时，对方获胜 + +0 积分"。**修复**：把 1400-1407 行的 `blackName.equals(winnerId)` / `whiteName.equals(winnerId)` 改为 `blackId.equals(winnerId)` / `whiteId.equals(winnerId)`（blackId/whiteId 才是用户 ID 字符串，与服务端 `endGame(long winnerId, ...)` 一致）。修复后：黑方胜则黑方看到"黑方胜"，白方看到"对手胜"；白方胜则反之。 | mvn compile 通过 |
-| 2026-07-10 | Contributor| `endGame(winnerId, "timeout", "回合超时，对方获胜")` 对胜利方不合理：弹窗标题显示"白方胜"但 reason 写"对方获胜"，语义矛盾。**修复**：服务端 reason 从 `"回合超时，对方获胜"` 改为中性 `"回合超时"`（胜负信息已在弹窗标题中表达）。 | mvn compile 通过 |
-| 2026-07-10 | Contributor| 1. `sql/init.sql` 中 `t_user` 表新增 `phone VARCHAR(20) COMMENT '手机号'`（可空）；2. `database/entity/User.java` 新增 phone 字段及 getter/setter；3. `server/dao/UserDAO.java` 中 `UserInfo` 类新增 phone，`register()` 新增 phone 参数（可选），`login()` SQL 添加 phone 列查询；4. `server/handler/ClientHandler.java` 中 `handleRegister()` 从消息中读取 phone 字段传入 DAO，两处 `LOGIN_OK` 响应中携带 phone；5. `client/model/User.java` 新增 phone 字段及 getter/setter。 | mvn compile 全部通过 |
+| 时间 | 作者 | 工作内容 | 问题/备注 |
+|------|------|----------|-----------|
+| 2026-07-05 01:24 | Contributor| refactor: Swing → JavaFX 迁移：添加 javafx 依赖和 maven plugin，重写 ClientMain 为 Application | FXML 命名空间不能加版本号 |
+| 2026-07-05 01:24 | Contributor| feat: 实现 ScreenManager（场景导航/弹窗）、ServerConnector（接收线程+消息分发）、NetworkListener | 首次居中，之后保留窗口位置 |
+| 2026-07-05 01:24 | Contributor| feat: 完成 11 个 FXML + 对应 Controller：Login/Register/Lobby/CreateRoom/RoomWaiting/Board/GameOver/Profile/Ranking/Record/About | 预览模式支持无服务器浏览 |
+| 2026-07-05 01:24 | Contributor| 客户端代码全面优化：修复 NetworkListener 内存泄漏（ScreenManager.switchTo 前清空监听器）；修复所有 handleBack 丢失 currentUser；修复 ProfileController TableView 改用 GameRecord 并绑定列；修复 BoardController 棋盘随窗口缩放（动态 cellSize）；修复预览模式 NPE（myColor 默认值）；聊天区自动滚底；新增 AppConfig（服务器地址集中配置+Gson 单例）；新增 GameRecord model；Protocol 补充 QUICK_MATCH/RANKED_MATCH/SPECTATE/REGISTER_OK 常量，消除魔法字符串；RegisterController 区分 REGISTER_OK 和 LOGIN_OK；RoomWaitingController 修复 setPreviewMode 时序依赖 | mvn compile 通过 |
+| 2026-07-06 13:04 | Contributor| feat: 补全 Protocol 协议常量：HEARTBEAT、SPECTATE_OK/FAIL、RANKED_MATCH 等 | |
+| 2026-07-06 13:04 | Contributor| chore: 服务器地址配置化：ClientConfig + client-config.properties | |
+| 2026-07-06 13:04 | Contributor| feat: NetworkListener 自动注销：AutoCleanupController 基类 | |
+| 2026-07-06 13:04 | Contributor| feat: 注册/登录/改密码/退出响应对接 | |
+| 2026-07-06 13:04 | Contributor| feat: 房间创建/列表/匹配流程对接 | |
+| 2026-07-06 13:04 | Contributor| feat: 聊天消息时间戳 [HH:mm] | |
+| 2026-07-06 13:04 | Contributor| feat: 对战记录+回放：RecordController + BoardController.replayMoves | |
+| 2026-07-06 13:04 | Contributor| feat: 观战模式：spectateMode 禁用落子 | |
+| 2026-07-06 13:04 | Contributor| feat: 断线检测+全局弹窗 | |
+| 2026-07-06 13:04 | Contributor| feat: 心跳机制：30s 发送 / 90s 超时 | |
+| 2026-07-06 13:04 | Contributor| feat: 断线重连：3次重试 / 5s 间隔 | |
+| 2026-07-06 13:04 | Contributor| feat: AI 对弈：GomokuAI 启发式评分 | |
+| 2026-07-06 13:21 | Contributor| fix: 补回 Protocol 遗漏常量，补全 replayMoves 方法 | |
+| 2026-07-07 00:18 | Contributor| feat: 设置页面支持用户选择与输入自定义服务器 IP，本地持久化为 config.json 并优化为即时网络连通刷新 | 采用可编辑的 ComboBox，解耦本地存储路径，并适配项目磨砂极简风格 MessageDialogUI 弹窗 |
+| 2026-07-06 16:42 | Contributor| 创建 UI 开发分支 `feat/client-business`，并在新建的 scripts/ 目录下放置通用启动脚本 ssc_client.ps1 和 ssc_server.ps1，配置好基于 $HOME 的通用 JDK 21 和 Maven 路径，使用 $PSScriptRoot 进行相对定位 | 脚本已加入 Git 追踪供团队成员使用 |
+| 2026-07-06 23:52 | Contributor| 修复预览模式下的匹配卡死缺陷：修改 RoomWaitingController.java 中的 setRoomInfo()，在预览模式下强制使 startBtn（开始游戏按钮）可见，确保玩家能够顺利启动人机对战，打通浏览模式闭环。 | 预览模式匹配正常启动人机对局 |
+| 2026-07-06 23:52 | Contributor| 1. 保持排位对局的房间等待交互逻辑与普通匹配完全相同，继续通过 RoomWaitingUI.fxml 统一管理等待与准备流程，维持联机体验一致性；2. 修复 JOIN_OK 协议解析容灾：在 CasualLobbyController.java 和 RankedLobbyController.java 中重写了 JOIN_OK 的命令解析器，自动识别并兼容 JSON 格式以及原生以竖线分隔的文本格式（JOIN_OK\|roomId\|roomName\|playerCount），从根本上避免了联机配对时客户端崩溃黑屏的问题。 | 联机协议兼容与对齐逻辑升级通过 |
+| 2026-07-06 23:52 | Contributor| 修正排位段位大厅匹配按钮的流转方向：修改了 RankedLobbyController.java 中的 handleMatch() 方法，当玩家在独立的段位匹配页面中点击"开始排位匹配"按钮时，它会首先切换进入对战大厅（CasualLobbyUI.fxml，即房间大厅），而不是跨越匹配阶段直接生成房间。 | 排位至大厅流转流程修正完成 |
+| 2026-07-07 14:01 | Contributor| refactor: 优化登录及设置页IP配置交互，修复假死与连接数泄漏缺陷：1. 登录页新增服务器配置独立二级弹窗(ServerConfigDialogUI)；2. 将连接逻辑迁移至后台守护线程，去除嵌套弹窗，彻底解决 JavaFX 主线程卡死；3. 修复服务端断开连接后 connectionCount 不递减导致达 100 限制后拒绝服务的 Bug | 编译验证通过 |
+| 2026-07-07 01:06 | Contributor| fix: 修复悔棋后双方棋盘不一致的 bug | 客户端在本地落子时提前写入 moveHistory，导致自己收到的 MOVE_SYNC 又被追加一次；移除本地写入，使悔棋弹出的两步与服务器保持一致，双方棋盘同步 |
+| 2026-07-07 14:01 | Contributor| fix: 修复记住密码不生效的 bug | 1. LoginUI.fxml 中 CheckBox 缺 fx:id 导致 Controller 无法绑定；2. LoginController 新增凭据保存/加载逻辑，存入 ~/.gomatch/credentials.json |
+| 2026-07-07 20:43 | Contributor| fix: 修复对局结束不显示黑胜/白胜/平局的问题 | GameOverController.setResult() 只处理数字参数，BoardController 传的是中文文字；default 分支改为直接显示传入的 result 字符串，使胜负结果正确展示 |
+| 2026-07-07 20:43 | Contributor| fix: 修复游戏结束结算弹窗内容空白的问题 | ScreenManager.showDialog 内部使用 showAndWait，原调用在 showAndWait 返回后才 setResult，导致弹窗已关闭才设置文字；新增带 setupCallback 的 showDialog 重载，在 showAndWait 前完成控制器设置，BoardController 所有 GameOver 弹窗改为通过回调提前设置结果文本 |
+| 2026-07-07 20:43 | Contributor| fix: 修复匹配胜负不更新客户端积分的问题 | 服务端 Room.endGame() 积分更新后新增 USER_SCORE_UPDATE 协议推送最新积分到玩家客户端；BoardController 接收后更新 AppConfig.currentUser 的 score/胜负平场次，使大厅和个人中心实时显示正确积分 |
+| 2026-07-07 20:43 | Contributor| fix: 修复快速匹配点击无反应的问题 | CasualLobbyController.onMessage() 缺少 ERROR 协议处理，服务端返回"等待对手…"时被静默丢弃；新增 ERROR/USER_SCORE_UPDATE 协议处理，FXML 增加 statusLabel 状态提示，handleQuickMatch/onMessage 中实时更新匹配状态；LobbyController 同步添加 USER_SCORE_UPDATE 处理确保积分标签即时刷新 |
+| 2026-07-07 20:43 | Contributor| fix: 修复观战列表为空的问题（客户端部分） | CasualLobbyController 中过滤观战房间时使用了小写 "playing"，导致条件永远不成立；改为 "PLAYING".equalsIgnoreCase() 比较 |
+| 2026-07-07 20:43 | Contributor| fix: 修复进入观战后无法看到棋盘的问题（客户端部分） | 客户端 BoardController 新增 spectatorMode，观战模式自动禁用落子点击和操作按钮 |
+| 2026-07-07 23:38 | Contributor| refactor: 清理未使用的类/方法/变量/导入 | 消除 14 个文件的 lint 警告：移除 28 个未使用 import、删除 4 个未使用方法、移除 7 个未使用字段/变量；修复 DatabaseBootstrap Scanner 资源泄漏 |
+| 2026-07-07 20:43 | Contributor| fix: 修复棋盘开局倒计时不动与 AI 落子无标记的问题 | 1. 在 BoardController.setGameInfo() 中主动启动倒计时，解决从 AiLobby/RoomWaiting 切换后新 BoardController 因 CopyOnWriteArrayList 快照机制收不到同一条 GAME_START 导致倒计时卡死；2. 新增 lastMoveX/Y 记录最后落子，redrawAll 中绘制红色加粗圆环标记，覆盖本地落子、MOVE_SYNC、悔棋、回放等场景；3. 回放模式启动时停止倒计时，避免残留 |
+| 2026-07-07 23:38 | Contributor| fix: AI 简单/中等/困难三个难度实际完全一致的问题（客户端部分） | AIPlayer 新增 Difficulty 枚举并实现差异化策略 |
+| 2026-07-07 23:38 | Contributor| fix: 消除编译警告 | 删除 database/src/main/resources/logback.xml（库模块不应包含导致运行时冲突）；RecordController 添加 @SuppressWarnings("unchecked") 消除 JavaFX 泛型 unchecked 警告 |
+| 2026-07-08 11:51 | Contributor| refactor: 客户端/服务端通信协议统一为 JSON 格式（客户端部分） | 1. 新增 common/Message 类（fromJson/toJson/builder/of/cmdOnly），添加 org.json 依赖；2. NetworkListener 接口改为 onMessage(Message msg)；3. ServerConnector.send() 改为 send(Message) + send(String cmd) 重载；4. 所有 14 个客户端 Controller 的 onMessage 和 send() 全部迁移到 Message 模式，列表类响应（房间/排行榜/好友/对战记录）统一解析 JSONArray 替代竖线分割数组；5. 修复 handleRoomList 错误使用 RANKING_LIST→ROOM_LIST 及 FriendsController.handleRejectRequest 遗漏的旧格式调用 | 全项目零残留旧 pipe 协议代码，编译通过 |
+| 2026-07-08 12:51 | Contributor| fix: 修复排行榜页面空白的问题 | 1. RankingController 初始化时主动渲染占位，处理 ERROR 消息，使用 optInt/optString 解析数值字段，预览模式加载本地假数据；2. LobbyController 抽屉排行榜同步修复解析方式 |
+| 2026-07-08 19:38 | Contributor| fix: 回放从头开始 | BoardController.replayMoves 默认 replayIndex=0（空棋盘），而非从最后一步开始 |
+| 2026-07-08 19:38 | Contributor| fix: 快速匹配计时从1开始 + 取消匹配按钮变红 | 1. CasualLobbyController 匹配计数器从 0 开始正向递增（首秒后变1），不限循环次数；2. 匹配中 quickMatchBtn 添加 btn-danger 红色样式，取消匹配时移除 |
+| 2026-07-08 19:43 | Contributor| fix: 修复个人中心点击回放错误提示"暂无棋谱数据"的 Bug | 1. 在 ProfileController.java 增加 extractBoardData 辅助方法，兼容 JSON 数组、双重 JSON 编码字符串、老格式分号/管道分隔等多种 boardData 存储形式；2. 在回放按钮事件中改用 isReplayDataValid 判定，区分空数据 (`[]`) 与有效 JSON 数组，避免误报"暂无棋谱数据"；3. 在 Room.java 的 cacheGameRecordToRedis 中将 boardData 字符串解析为 org.json.JSONArray 再 put 进去，避免 org.json 在嵌套 put(String, String) 时对引号转义造成的双重 JSON 编码，从根上解决 Redis 缓存中棋谱数据被破坏的问题。 | 编译通过，预期修复 AI 对局棋谱回放 |
+| 2026-07-08 12:51 | Contributor| chore: 全面排查并修复空指针风险（客户端部分） | ProfileController.java: msg.getData() 为 null 保护 + record.getResult() 空字符串 substring 越界修复 |
+| 2026-07-08 14:18 | Contributor| chore: 移除心跳机制并清理文档（客户端部分） | 客户端 ServerConnector.java 不存在心跳定时器（已在前续版本移除）；Protocol.java 无 HEARTBEAT 常量；清理 MODULE_CLIENT.md 中的过时心跳描述 |
+| 2026-07-08 17:36 | Contributor| feat: 实现心跳机制 + 对局断线重连 + 三次失败后判负（客户端部分） | 客户端 ServerConnector：添加定时心跳（30s/次）+ 响应超时检测（90s）+ 自动重连（5s间隔, 3次） |
+| 2026-07-08 23:00 | Contributor| feat: 悔棋/求和按钮仅当前落子方可操作（客户端部分） | BoardController：新增 updateActionButtons() 仅在 myTurn && !gameOver && !spectatorMode && !replayMode 时启用 undoBtn 和 drawBtn，非己方回合时灰色禁用；在 setGameInfo / handleMouseClick / MOVE_SYNC / GAME_OVER / UNDO_ACCEPTED / TURN_TIMEOUT 等所有 myTurn/gameOver 变更点调用 |
+| 2026-07-08 15:40 | Contributor| feat: 实现Token重连机制（客户端部分） | |
+| 2026-07-07 16:20 | Contributor| feat(client): 添加棋谱回放与房间密码验证功能 | |
+| 2026-07-07 01:06 | Contributor| fix(network): 修复更换IP后旧接收线程触发级联重连导致界面卡死 | |
+| 2026-07-07 14:02 | Contributor| fix: 修复客户端断线后服务端连接数不释放 | |
+| 2026-07-07 00:40 | Contributor| feat(client): 本地配置重命名为 config.json 并优化资源读取路径路由 | |
+| 2026-07-08 12:51 | Contributor| chore: 全面排查并修复空指针风险（服务端部分） | ClientHandler.java: handleRegister/handleLogin/handleChangePassword/handleCreateRoom/handleCreateAiRoom 增加 String 入参 null 检查，handleReconnect token 日志行 NPE 保护；Room.java: getRankByUserId TOCTOU 重复调用风险修复 | 编译通过 |
+| 2026-07-08 14:18 | Contributor| chore: 移除心跳机制并清理文档（服务端部分） | Protocol.java 无 HEARTBEAT 常量残留清理；SessionManager 中 updateHeartbeat 蜕化为会话查询时的活跃时间维护，保留；清理 MODULE_SERVER.md / MODULE_COMMON.md / MODULE_CLIENT.md / PRD.md 中的过时心跳描述 | 文档已同步 |
+| 2026-07-08 17:36 | Contributor| feat: 实现心跳机制 + 对局断线重连 + 三次失败后判负（服务端部分） | 服务端 ClientHandler：处理 HEARTBEAT 命令 + 后台线程检测 90s 无消息则关闭连接；Room：对局中玩家断线启动 60s 重连计时窗口，最多 3 次重连机会，全部失败则判对方获胜（endGame reason=disconnect），重连成功后自动回放已有落子 | lint 零告警 |
+| 2026-07-08 23:00 | Contributor| feat: 断线状态可视化 — 玩家卡片显示"断线中"角标 | BoardController：在玩家卡片右下角添加红色"断线中"角标（默认隐藏）；新增 setPlayerOnline(isBlack, online) 方法切换断线状态：断线时卡片透明度 0.55 + 名字变红 + 显示角标；监听 PLAYER_DISCONNECTED/PLAYER_RECONNECTED/RECONNECT_ATTEMPT/RECONNECT_FAILED 消息并在聊天区打印系统提示；新增 blackId/whiteId 字段用于按 userId 匹配玩家卡片 | lint 零告警 |
+| 2026-07-08 23:00 | Contributor| feat: 悔棋/求和按钮仅当前落子方可操作 | BoardController：新增 updateActionButtons() 仅在 myTurn && !gameOver && !spectatorMode && !replayMode 时启用 undoBtn 和 drawBtn，非己方回合时灰色禁用；在 setGameInfo / handleMouseClick / MOVE_SYNC / GAME_OVER / UNDO_ACCEPTED / TURN_TIMEOUT 等所有 myTurn/gameOver 变更点调用；CSS：新增 .btn-secondary:disabled 样式（灰底 + 低透明 + 光标 default） | lint 零告警 |
+| 2026-07-08 20:25 | Contributor| docs: 同步协作文档中的分支与 Redis 说明 | 1. 从 AGENTS.md 移除固定当前分支描述，避免多人协作时误导；2. 将项目说明补充 Redis；3. 更新 README，将 Redis 标记为必需组件，并改正启动脚本示例与目录说明，避免引用不存在的 run-client/run-server 脚本。 | 文档已同步 |
+| 2026-07-08 20:24 | Contributor| fix: 全项目审查问题修复 | Maven 编译插件统一 3.13.0 + release 21 + fork；database 测试改为结构测试；心跳改为服务端返回 HEARTBEAT_OK 并刷新 Redis 会话活跃时间；Redis 改为服务端必需组件，匹配候选从 Redis 队列读取，锁失败不再兜底成功；会话 Redis 数据补充 role；新增管理中心页面 + 存档功能；协议常量集中化；清理 cp.txt 与 client-config.properties | 编译验证通过 |
+| 2026-07-09 01:16 | Contributor| refactor(client-ui): 响应式布局与表单卡片体验整理 | 1. ScreenManager 移除整页 Scale 缩放，改由 FXML 布局约束自适应；2. 登录/注册页改用静态 PixelCard 外壳，列表页和个人中心释放固定宽度；3. 非 ADMIN 用户隐藏管理入口；4. BoardController 与 ShapeGridBackground 增加 0 尺寸和重复尺寸重绘保护；5. 同步更新 UI_GUIDELINE.md 与 CLIENT.md。 |
+| 2026-07-09 11:52 | Contributor| feat(client-ui): 设置页音量滑杆改为弹性 JavaFX 控件 | 1. 新增 ElasticVolumeSlider 自定义控件，用 JavaFX 属性、鼠标事件和 Timeline 实现 React Bits ElasticSlider 风格的悬浮放大、轨道变粗、越界衰减与松手回弹；2. SettingsUI.fxml 将全局音量原生 Slider 替换为 0-100、步长 5 的弹性滑杆；3. style.css 补充中性板岩灰轨道、图标和数值提示样式；4. 新增 PRODUCT.md 记录产品设计上下文。 | 编译通过 |
+| 2026-07-09 11:52 | Contributor| feat(client-ui): 扩展声音设置为多通道音量控制 | 1. 全局音乐新增独立开关与弹性音量条；2. 背景音乐、音效保留无文字开关并新增 ElasticVolumeSlider；3. 将"大厅音乐"改名为"大厅歌曲"，仅保留歌曲下拉选择（默认主题曲、清晨棋局、静夜对弈、赛场低语）；4. SettingsController 绑定开关与对应音量条的禁用和透明度状态。 | 编译通过 |
+| 2026-07-09 13:58 | Contributor| feat(client): 添加客户端循环背景音乐 | 1. 新增由用户指定 D:\CloudMusic 原曲转码得到的 audio/lobby-theme.mp3；2. 新增 BackgroundMusicManager，通过 JavaFX MediaPlayer 循环播放并在退出时释放；3. ClientMain 启动时播放背景音乐，SettingsController 将全局音乐/背景音乐开关与音量条同步到实际播放状态；4. client/pom.xml 补充 javafx-media 依赖。 | 编译通过 |
+| 2026-07-09 14:02 | Contributor| fix: 修复快速匹配 GAME_START 后双方看不到姓名和积分的 Bug | **原因**：CasualLobbyController.onMessage(GAME_START) 只调用了 3 参数版 setGameInfo(bId, wId, username)，丢弃了服务端传来的 blackUsername/blackScore/whiteUsername/whiteScore 全部数据；同时 JOIN_OK 在 GAME_START 后又被发送，导致已切入 BoardUI 的客户端又被切回 RoomWaitingUI。**修复**：1. GAME_START 处理改为解析全部 6 个字段（blackUsername/blackScore/whiteUsername/whiteScore），传递到 BoardController.setGameInfo() 的完整参数重载；2. 新增 joinedGame 标记位，在已进入 GAME_START 对局后忽略后续 JOIN_OK 消息，防止界面回切到等待室 | 编译通过 |
+| 2026-07-10 12:01 | Contributor| fix: 修复头像显示三个一致性问题：排行榜透明、对战回放缺头像、头像预览颜色不一致 | **根因 1 - 排行榜透明**：RankingController 只对 rank 1/2/3 通过 setStyle 给金/银/铜纯色背景，rank 4+ 匿名用户无兜底背景色；修复：rank 4+ 按用户名 hash 给渐变底色。**根因 2 - 对战回放缺头像**：GameRecord 模型缺头像字段；修复：新增 player1Avatar/player2Avatar 字段。**根因 3 - 头像预览颜色不一致**：改用与 LobbyController 一致的 7 色渐变调色板。 | 编译通过 |
+| 2026-07-09 14:53 | Contributor| fix(client): 背景音乐改用 MP3 资源播放 | 1. 定位大厅音乐未播放原因为 JavaFX Media 对 FLAC 运行时支持不稳定且原逻辑静默降级；2. 使用 ShareX ffmpeg 将原曲转为纯音频 lobby-theme.mp3；3. BackgroundMusicManager 改为加载 MP3，移除未使用 FLAC 资源；4. CLIENT.md 同步资源路径。 | 媒体探针 READY；编译通过 |
+| 2026-07-09 15:17 | Contributor| fix(client): 降低背景音乐默认音量 | 将 BackgroundMusicManager 的默认全局音乐音量从 80 调整为 45、背景音乐音量从 70 调整为 35，初始实际播放音量由 56% 降至约 16%；SettingsUI.fxml 同步默认滑杆显示值。 | 编译通过 |
+| 2026-07-09 19:02 | Contributor| fix(server): 修复快速匹配重复加入房间导致匹配失败 | RoomManager.quickMatch() 中 createRoom() 已将 player 加入房间，但后续又调用 room.join(player) 被重复检查拒绝；删除重复调用 | 编译通过 |
+| 2026-07-09 19:02 | Contributor| fix(server): 修复排位匹配重复加入房间导致匹配失败 | RoomManager.rankedMatch() 中 createRankedRoom() 已将 player 加入房间，但后续又调用 room.join(player) 被重复检查拒绝；删除重复调用 | 编译通过 |
+| 2026-07-09 19:02 | Contributor| fix(server): 修复AI模式下人类玩家获胜时winnerId错误 | Room.makeAiMove() 无论谁获胜都使用 whiteUserId(-1) 作为 winnerId；改为根据 winnerColor 正确判断获胜者 | 编译通过 |
+| 2026-07-09 19:02 | Contributor| fix(server): 修复对战记录查询winner_id NULL值处理 | RecordDAO.getHistory() 中使用 rs.wasNull() 检查平局时的 NULL 值，确保正确处理 | 编译通过 |
+| 2026-07-09 19:02 | Contributor| fix(server): 修复好友请求列表手动拼接JSON安全隐患 | ClientHandler.handleFriendRequests() 改用 JSONObject/JSONArray 构建安全的 JSON 响应，避免特殊字符导致解析错误 | 编译通过 |
+| 2026-07-09 14:31 | Contributor| feat(client): 实现设置页面全部交互功能 | 1. 全屏模式：stage.setFullScreen() 即时生效；2. 分辨率切换：动态调整 stage 宽高并居中；3. 动态背景：ShapeGridBackground.setEnabled() 控制粒子网格显隐；4. 帧率限制：ShapeGridBackground 跳帧逻辑实现 60/120/无限制；5. 字体切换：修改 scene root 的 -fx-font-family 属性；6. 开机自启：VBS 脚本写入 Windows %APPDATA%\Startup；7. 记住密码：LoginController 读取 UserSettings 控制默认勾选；8. 后台静音：窗口失焦暂停音乐、获焦恢复；9. 音频控制：ElasticVolumeSlider 双向绑定 BackgroundMusicManager | 编译通过 |
+| 2026-07-09 14:31 | Contributor| feat(client): 新增UserSettings用户偏好持久化 | 新增 UserSettings 类，将全屏/分辨率/帧率/音量/背景/字体/主题/语言/开机自启/记住密码等 15 项偏好保存到 ~/.gomatch/user-settings.json，启动时自动加载 | 编译通过 |
+| 2026-07-09 16:09 | Contributor| feat(client): 实现国际化中英文切换 | 1. 新增 I18N 工具类，支持 ResourceBundle 动态切换；2. 新增 messages_zh.properties 和 messages_en.properties 资源文件（240+ key）；3. 所有 21 个 FXML 中文文本替换为 %key 占位符；4. ScreenManager 加载 FXML 时传入 ResourceBundle；5. ClientMain 启动时初始化语言；6. SettingsController 语言切换后重载场景 | 编译通过 |
+| 2026-07-09 16:09 | Contributor| fix(client): 修复字体切换时背景变蓝 | root.setStyle() 会覆盖所有内联样式导致 -fx-background-color 丢失；改为 appendFontFamily() 追加/替换 -fx-font-family 属性，保留其他样式 | 编译通过 |
+| 2026-07-09 16:35 | Contributor| fix(client): 修复BoardController多余花括号 | updateTurnLabel() 中 if-else 块后多了一个 }，导致 updatePlayerCardHighlight() 脱离方法体 | 编译通过 |
+| 2026-07-09 19:02 | Contributor| fix(client): 修复AI对战结果不显示黑胜/白胜/平局 | 1. GameOverController.setResult() 支持中文描述（黑方胜、白方胜、平局、对手胜）；2. BoardController GAME_OVER 处理增加 AI 模式特殊判断（winnerId="-1"时判定为对手胜） | 编译通过 |
+| 2026-07-09 19:02 | Contributor| fix(server): 修复删除好友后无法重新添加的问题 | 1. FriendDAO.sendFriendRequest() 发送新请求前先删除双方所有旧请求记录（PENDING/ACCEPTED/REJECTED）；2. FriendDAO.deleteFriend() 删除好友关系时同时清理双方的请求记录，解决唯一索引冲突 | 编译通过 |
+| 2026-07-09 19:02 | Contributor| fix(server): 修复对局记录缺失boardData导致无法回放 | 1. RecordDAO.getHistory() 添加返回 board_data 字段；2. ClientHandler.handleQueryRecord() 在 RECORD_LIST 响应中添加 boardData，转义 `\|` 防止协议解析错误 | 编译通过 |
+| 2026-07-09 19:23 | Contributor| fix(client): 修复对战记录回放功能 | 1. RecordController.onMessage() 更新解析步长从10改为11，添加 boardData 处理和解转义；2. BoardController.replayMoves() 新增 JSON 格式棋谱支持（检测 `[` 开头自动切换解析方式），兼容旧格式分号分隔 | 编译通过 |
+| 2026-07-09 19:02 | Contributor| fix(client): 修复棋谱回放按钮文字显示为省略号 | BoardUI.fxml 将回放按钮容器从 HBox（水平排列）改为 VBox（垂直排列），按钮 maxWidth="Infinity" 充分利用侧边栏宽度 | 编译通过 |
+| 2026-07-09 19:02 | Contributor| fix(client): 修复好友请求操作按钮文字显示为省略号 | FriendsUI.fxml 将操作列宽度从 100px 增加到 140px，确保"接受"和"拒绝"按钮完整显示 | 编译通过 |
+| 2026-07-09 14:31 | Contributor| fix(client): 修复客户端配置文件服务器地址错误 | client-config.properties 中 server.host 从错误值改为 127.0.0.1 | 编译通过 |
+| 2026-07-10 00:00 | Contributor| feat(client): 完善悔棋/求和请求等待机制 | 1. 发送悔棋/求和请求后显示等待弹窗（带加载动画），禁止落子和重复请求；2. 收到回复后关闭弹窗，恢复正常游戏；3. 游戏结束时自动关闭等待弹窗 |
+| 2026-07-10 00:00 | Contributor| feat(client): 悔棋/求和时双方倒计时暂停与恢复 | 1. 发送请求时停止倒计时；2. 收到请求时停止倒计时；3. 收到回复后恢复倒计时；4. 悔棋同意时重置为60秒，拒绝时继续当前剩余时间；5. 求和拒绝时继续当前剩余时间 |
+| 2026-07-10 00:00 | Contributor| feat(client): 观战模式游戏结束弹窗 | 观战者在对局结束时弹出游戏结束对话框，显示获胜者信息（黑方/白方 + 用户名）和"返回大厅"按钮 |
+| 2026-07-09 23:44 | Contributor| feat(client-ui): 开发暗夜黑磨砂 UI 风格 | 1. style.css 追加暗夜磨砂主题覆盖层，将全局背景、卡片、输入框、按钮、表格、列表、弹窗、滚动条和音量滑杆统一为近黑玻璃与冷灰描边；2. 清理多处 FXML 浅色内联背景，避免覆盖全局主题；3. 设置页暗夜主题选项从"开发中"改为可用并持久化；4. 同步 UI_GUIDELINE.md 与 AGENTS.md 的 UI 约定。 | mvn -f client/pom.xml compile -e 通过 |
+| 2026-07-09 23:44 | Contributor| feat(client-ui): 暗夜黑磨砂改为可切换双主题 | 1. ScreenManager 新增 theme-light/theme-dark 根类切换与 themeColor(light,dark) 动态色辅助；2. 设置页恢复"清透白磨砂 (经典)"与"暗夜黑磨砂"两个选项，切换后即时应用当前 Scene；3. 暗色 CSS 统一限定在 `.theme-dark`，动态列表/棋盘玩家卡/个人资料头部跟随主题；4. FXML 清理残留暗色内联样式并同步设计规范。 | 编译通过，FXML XML 解析通过 |
+| 2026-07-09 23:44 | Contributor| fix(client-ui): 修复暗夜主题背景仍显示白色 | 根因是最外层 StackPane 背景链路在浅色/暗色间没有统一归口；改为由 ScreenManager.applyUserTheme() 按主题写入 wrapper 背景，浅色透明、暗色近黑渐变，并补齐暗色 editable ComboBox 的 text-field/arrow-button 子节点样式。 | 编译通过 |
+| 2026-07-09 23:44 | Contributor| fix(client-ui): 移除基础 root 蓝白渐变 | 将 style.css 的 `.root` 背景从蓝白渐变改为中性雾白渐变，避免浅色或背景链路兜底时出现泛蓝底色。 | CSS 调整 |
+| 2026-07-09 23:44 | Contributor| polish(client-ui): 加深暗夜主题并补齐漏白控件 | 1. 暗色根背景、顶栏、玻璃卡片、列表卡、PixelCard 统一压深到黑曜石色阶；2. 登录/注册页移除 `.glass-card` 的白色内联背景，交由主题 CSS 接管；3. 暗色头像/头像徽章补稳定圆角与透明子标签，避免白色方框露底。 | 编译通过，FXML XML 解析通过 |
+| 2026-07-09 23:44 | Contributor| fix(client-ui): 修复登录/注册卡片双层边框不重合 | **真正根因**：PixelCard.layoutChildren() 把内部 cardBody 和 FXML 内层 glass-card 都放在同一卡片身体区域内，VBox 的 max 限制使其只按内容 preferred size 居中、不被拉满，导致内层比外层小、形成双线。**修复**：1. PixelCard.java layoutChildren 对 Region 先 setMaxWidth/Height(Double.POSITIVE_INFINITY) 再 layoutInArea；2. .glass-card 的 background-radius/border-radius 统一为 8、border-width 改 1.2；3. 移除 LoginUI.fxml、RegisterUI.fxml 内联 -fx-background-radius:16。 | mvn compile 通过 |
+| 2026-07-10 01:16 | Contributor| docs(client-ui): 补充可复用前端组件模板 | 在 UI_GUIDELINE.md 新增按钮、卡片、布局、输入、表格列表、弹窗、暗色覆盖和禁止写法模板，提供可照抄的 FXML/CSS/Controller 片段，重点约束结构与样式而非另起颜色体系。 |
+| 2026-07-10 11:19 | Contributor| docs: 整理文档中心与 common 协议说明 | 1. 重写 docs/README.md 为按场景阅读的文档中心，补充需求/架构/模块/UI/实训资料/启动联调/维护规则；2. 将 COMMON.md 从旧竖线协议说明更新为当前 Message JSON 协议模型；3. 同步根 README 的文档索引、common 文件结构和项目持续迭代说明。 | 文档整理完成 |
+| 2026-07-10 11:19 | Contributor| docs: 去重整理 docs 文档职责边界 | 1. PRD.md 收敛为产品需求唯一权威文档；2. TSD.md 保留跨模块架构并引用协议/数据库专题文档；3. CLIENT.md、SERVER.md 启动段改为引用文档中心；4. DEV_GUIDELINE.md 的 UI 细节改为引用 UI_GUIDELINE.md。 | 文档结构检查通过 |
+| 2026-07-10 11:19 | Contributor| docs: 归档学校原始资料 | 新建 docs/school_materials/，移动学校讲义、实操手册、动员会、项目详解和报告模板，并更新 docs/README.md 中的资料链接。 | 文档归档完成 |
+| 2026-07-09 20:06 | Contributor| feat: 添加OSS存储、用户设置/音乐/审计日志数据库设计及文档更新 | 新增 t_user_settings、t_user_music、t_audit_log 表；更新 DB_DESIGN.md 文档 |
+| 2026-07-10 21:35 | Contributor| docs: 全文档审查与更新 | 对照 init.sql/Protocol.java/DEV_LOG 全面更新：README 修死链补资料；PRD 补 FR-021~025 与 UI-016~019；TSD 架构图补 storage/OSS；COMMON 补 QUICK_READY/QUICK_MATCH_FOUND/RANKING 与重连字面量说明；SERVER 补命令分发表与 storage 包、修 Redis Key 矛盾与 DBUtil 密码；DB_DESIGN 加权威来源说明、修 t_room/t_chat_message/t_room_watcher 的 room_id 类型与密码；CLIENT 落子协议改 JSON；DEV_GUIDELINE 日志加作者列；TEST 修越权文案并补 S21~S26；AGENTS 补服务端命令与页面路由 | 文档更新完成 |

@@ -141,12 +141,13 @@ String username = parsed.getString("username");
 | `REQUEST_REMATCH` / `REPLY_REMATCH` | 同名值 | 再来一局申请与回应 |
 | `CHANGE_PWD` | `CHANGE_PASSWORD` | 修改密码 |
 | `ROOM_LIST` | `ROOM_LIST` | 请求房间列表 |
-| `QUICK_MATCH` / `CANCEL_MATCH` | 同名值 | 快速匹配与取消匹配 |
+| `QUICK_MATCH` / `QUICK_READY` / `CANCEL_MATCH` | 同名值 | 快速匹配、快速匹配准备、取消匹配 |
 | `RANKED_MATCH` / `RANKED_READY` | 同名值 | 排位匹配与排位准备 |
 | `SPECTATE` / `LEAVE_SPECTATE` | 同名值 | 观战与离开观战 |
 | `ADD_FRIEND` / `ACCEPT_FRIEND` / `REJECT_FRIEND` / `DELETE_FRIEND` | 同名值 | 好友操作 |
 | `FRIEND_LIST` / `FRIEND_REQUESTS` | 同名值 | 好友列表与好友请求 |
 | `QUERY_RECORD` | `QUERY_RECORD` | 查询对战记录 |
+| `RANKING` | `RANKING` | 请求排行榜（可携带 type 区分全服/好友分榜） |
 | `SAVE_GAME` / `LOAD_GAME` / `DELETE_SAVE` / `SAVE_LIST` | 同名值 | 棋局存档操作 |
 | `CHAT_HISTORY` / `WATCHER_HISTORY` | 同名值 | 聊天历史与观战历史 |
 | `CREATE_AI_ROOM` / `AI_MATCH` | 同名值 | 人机对战 |
@@ -177,7 +178,7 @@ String username = parsed.getString("username");
 | `ROOM_CREATED` | `ROOM_CREATED` | 房间创建成功 |
 | `USER_SCORE_UPDATE` | `USER_SCORE_UPDATE` | 用户积分更新 |
 | `TURN_TIMEOUT` | `TURN_TIMEOUT` | 回合超时 |
-| `MATCH_TIMEOUT` / `RANKED_MATCH_FOUND` | 同名值 | 匹配状态 |
+| `MATCH_TIMEOUT` / `QUICK_MATCH_FOUND` / `RANKED_MATCH_FOUND` | 同名值 | 匹配状态：匹配超时 / 快速匹配成功 / 排位匹配成功 |
 | `HEARTBEAT_OK` | `HEARTBEAT_OK` | 心跳响应 |
 | `SETTINGS_DATA` | `SETTINGS_DATA` | 用户设置数据 |
 | `AVATAR_DATA` / `AVATAR_UPLOADED` / `AVATAR_DELETED` | 同名值 | 头像响应 |
@@ -242,6 +243,9 @@ server  --依赖--> common
 
 > [!NOTE]
 > `MOVE_SYNC` 与 `CHAT_MSG` 的常量值分别复用 `MOVE` 与 `CHAT`。客户端和服务端通过接收上下文区分“请求”和“广播”语义。
+
+> [!NOTE]
+> 断线重连相关通知 `PLAYER_DISCONNECTED`、`PLAYER_RECONNECTED`、`RECONNECT_ATTEMPT`、`RECONNECT_FAILED` 及重连结果 `RECONNECT_OK`、`RECONNECT_FAIL` 目前以字面量形式在 `Room`/`ClientHandler` 中使用，尚未收入 `Protocol` 常量类。
 
 > [!TIP]
 > common 变更后要先执行 `mvn install -pl common -am`，再编译 `client` 或 `server`。

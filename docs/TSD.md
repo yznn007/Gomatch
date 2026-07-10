@@ -1,6 +1,6 @@
 # Gomatch 技术架构文档
 
-本文档维护跨模块架构、关键运行链路和工程边界。详细协议字段见 [MODULE_COMMON.md](MODULE_COMMON.md)，客户端实现见 [MODULE_CLIENT.md](MODULE_CLIENT.md)，服务端实现见 [MODULE_SERVER.md](MODULE_SERVER.md)，数据库/Redis/OSS 设计见 [DATABASE_DESIGN.md](DATABASE_DESIGN.md)。
+本文档维护跨模块架构、关键运行链路和工程边界。详细协议字段见 [COMMON.md](COMMON.md)，客户端实现见 [CLIENT.md](CLIENT.md)，服务端实现见 [SERVER.md](SERVER.md)，数据库/Redis/OSS 设计见 [DB_DESIGN.md](DB_DESIGN.md)。
 
 ## 1. 总体架构
 
@@ -26,11 +26,13 @@ flowchart TD
         K[SessionManager]
         L[RedisManager]
         M[server/dao]
+        N2[StorageManager / OssService]
     end
 
     subgraph Data[数据层]
         N[MySQL]
         O[Redis]
+        P[阿里云 OSS]
     end
 
     A --> B --> C
@@ -48,6 +50,8 @@ flowchart TD
     H --> M
     I --> M
     M --> N
+    H --> N2
+    N2 --> P
 ```
 
 ## 2. 技术栈
@@ -61,16 +65,17 @@ flowchart TD
 | 服务端 | Java 多线程 + synchronized/并发集合 | 房间隔离、对局状态、匹配和广播。 |
 | 数据持久化 | JDBC + HikariCP + MySQL 8 | 用户、战绩、房间、好友、设置等数据。 |
 | 缓存 | Redis 7 + Lettuce | 会话、在线状态、排行榜、匹配队列。 |
+| 对象存储 | 阿里云 OSS | 用户头像与背景音乐文件存储。 |
 | 构建 | Maven 多模块 | `client`、`server`、`common`、`database` 分离。 |
 
 ## 3. 模块边界
 
 | 模块 | 职责 | 详细文档 |
 |------|------|----------|
-| `client/` | JavaFX UI、窗口/场景管理、网络连接、浏览模式、本地 AI。 | [MODULE_CLIENT.md](MODULE_CLIENT.md) |
-| `common/` | 两端共享协议常量和 JSON 消息模型。 | [MODULE_COMMON.md](MODULE_COMMON.md) |
-| `server/` | Socket 接入、消息分发、房间/棋局/匹配/会话/DAO。 | [MODULE_SERVER.md](MODULE_SERVER.md) |
-| `database/` | 数据库实体/仓储参考代码；当前服务端业务 DAO 以 `server/dao` 为准。 | [DATABASE_DESIGN.md](DATABASE_DESIGN.md) |
+| `client/` | JavaFX UI、窗口/场景管理、网络连接、浏览模式、本地 AI。 | [CLIENT.md](CLIENT.md) |
+| `common/` | 两端共享协议常量和 JSON 消息模型。 | [COMMON.md](COMMON.md) |
+| `server/` | Socket 接入、消息分发、房间/棋局/匹配/会话/DAO。 | [SERVER.md](SERVER.md) |
+| `database/` | 数据库实体/仓储参考代码；当前服务端业务 DAO 以 `server/dao` 为准。 | [DB_DESIGN.md](DB_DESIGN.md) |
 | `sql/` | 初始化 DDL 和种子数据。 | `sql/init.sql` |
 
 约束：客户端只能依赖 `common`，不能直接依赖服务端 DAO；服务端协议命令必须使用 `common.Protocol` 常量；数据库结构变更必须同步 SQL 和数据库文档。
@@ -89,7 +94,7 @@ flowchart TD
 - `ClientHandler` 根据 `cmd` 调用用户、房间、匹配、战绩、好友、设置等处理逻辑。
 - 房间内事件通过 `Room.broadcast` 同步给玩家和观战者。
 
-命令清单和示例以 [MODULE_COMMON.md](MODULE_COMMON.md) 为准，避免在架构文档里维护第二份协议表。
+命令清单和示例以 [COMMON.md](COMMON.md) 为准，避免在架构文档里维护第二份协议表。
 
 ## 5. 核心流程
 
@@ -161,7 +166,7 @@ sequenceDiagram
 | 会话、在线状态、排行榜缓存、匹配队列 | Redis |
 | 头像/音乐等大文件方案 | 见数据库设计中的 OSS/文件代理章节 |
 
-详细表字段、索引、Redis Key、事务策略见 [DATABASE_DESIGN.md](DATABASE_DESIGN.md)。
+详细表字段、索引、Redis Key、事务策略见 [DB_DESIGN.md](DB_DESIGN.md)。
 
 ## 8. 运行入口
 
@@ -173,8 +178,8 @@ sequenceDiagram
 
 | 变更 | 应同步 |
 |------|--------|
-| 协议命令或消息字段 | [MODULE_COMMON.md](MODULE_COMMON.md)、相关模块文档。 |
-| 页面、路由、Controller、主题行为 | [MODULE_CLIENT.md](MODULE_CLIENT.md)、必要时 [CLIENT_STYLE_GUIDE.md](CLIENT_STYLE_GUIDE.md)。 |
-| 服务端流程、匹配、房间、DAO 行为 | [MODULE_SERVER.md](MODULE_SERVER.md)。 |
-| 表结构、Redis Key、索引、事务 | [DATABASE_DESIGN.md](DATABASE_DESIGN.md)、`sql/init.sql`。 |
-| 需求范围或验收标准 | [requirements.md](requirements.md)、必要时 [PRD.md](PRD.md)。 |
+| 协议命令或消息字段 | [COMMON.md](COMMON.md)、相关模块文档。 |
+| 页面、路由、Controller、主题行为 | [CLIENT.md](CLIENT.md)、必要时 [UI_GUIDELINE.md](UI_GUIDELINE.md)。 |
+| 服务端流程、匹配、房间、DAO 行为 | [SERVER.md](SERVER.md)。 |
+| 表结构、Redis Key、索引、事务 | [DB_DESIGN.md](DB_DESIGN.md)、`sql/init.sql`。 |
+| 需求范围或验收标准 | [PRD.md](PRD.md)。 |

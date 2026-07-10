@@ -4,46 +4,54 @@
 
 ## 技术栈
 
-| 层级 | 技术 | 版本 |
-|------|------|------|
-| 语言 | Java | 21 LTS |
-| 客户端 UI | JavaFX (FXML + CSS) | 21 |
-| 网络通信 | Java Socket（TCP） | JDK 内置 |
-| 并发模型 | Java 原生多线程 | JDK 内置 |
-| 数据持久化 | JDBC + MySQL | MySQL 8.x |
-| 缓存 | Redis | 7.x |
-| 连接池 | HikariCP | 5.x |
-| JSON 序列化 | org.json / Gson | - |
-| 日志 | SLF4J + Logback | SLF4J 2.x / Logback 1.4+ |
-| 密码存储 | 明文 | - |
-| Redis 客户端 | Lettuce | - |
+| 层级         | 技术                | 版本                     |
+| ------------ | ------------------- | ------------------------ |
+| 语言         | Java                | 21 LTS                   |
+| 客户端 UI    | JavaFX (FXML + CSS) | 21                       |
+| 网络通信     | Java Socket（TCP）  | JDK 内置                 |
+| 并发模型     | Java 原生多线程     | JDK 内置                 |
+| 数据持久化   | JDBC + MySQL        | MySQL 8.x                |
+| 缓存         | Redis               | 7.x                      |
+| 连接池       | HikariCP            | 5.x                      |
+| JSON 序列化  | org.json / Gson     | -                        |
+| 日志         | SLF4J + Logback     | SLF4J 2.x / Logback 1.4+ |
+| 密码存储     | 明文                | -                        |
+| Redis 客户端 | Lettuce             | -                        |
 
 ## 快速启动
 
 ### 环境要求
 
-| 软件 | 版本要求 | 说明 |
-|------|----------|------|
-| JDK | 21 LTS（必须） | JavaFX 21 依赖，需配置 `JAVA_HOME` |
-| Maven | 3.9+ | 项目构建工具，需配置 `PATH` |
-| MySQL | 8.x | 数据库，账号：`gomatch`，密码：`gomatch` |
-| Redis | 7.x（必须） | 会话持久化、排行榜缓存、匹配队列 |
+| 软件  | 版本要求       | 说明                                     |
+| ----- | -------------- | ---------------------------------------- |
+| JDK   | 21 LTS（必须） | JavaFX 21 依赖，需配置`JAVA_HOME`        |
+| Maven | 3.9+           | 项目构建工具，需配置`PATH`               |
+| MySQL | 8.x            | 数据库，账号：`gomatch`，密码：`gomatch` |
+| Redis | 7.x（必须）    | 会话持久化、排行榜缓存、匹配队列         |
 
 ### 启动步骤
 
 ```powershell
-# 1. 安装 common 到本地 Maven 仓库（首次或 common 变更后必须执行）
+# 1. 启动 MySQL 和 Redis
+# 终端 A - 启动 MySQL
+net start MySQL80
+
+# 终端 B - 启动 Redis
+redis-server
+
+# 2. 初始化数据库（首次运行或数据库结构变更后执行）
+# 账号：gomatch  密码：gomatch
+mysql -u root -p < sql/init.sql
+
+# 3. 安装 common 到本地 Maven 仓库（首次或 common 变更后必须执行）
 mvn install -pl common -am
 
-# 2. 确保 MySQL 和 Redis 已启动
-
-# 3. 启动服务端（先启动，可按成员选择对应脚本）
+# 4. 启动服务端（先启动，可按成员选择对应脚本）
 .\scripts\ssc_server.ps1
 
-# 4. 启动客户端（后启动，可按成员选择对应脚本）
+# 5. 启动客户端（后启动，可按成员选择对应脚本）
 .\scripts\ssc_client.ps1
 ```
-
 
 ## 项目结构
 
@@ -81,17 +89,14 @@ Gomatch/
 
 ## 文档索引
 
-项目所有设计、架构、数据库、规范以及模块开发文档均已整合在文档中心：
-
-*   **[项目文档中心索引](docs/README.md)**：按阅读场景组织需求、架构、模块、UI、启动联调和实训资料。
-*   **[客户端 UI 规范](docs/CLIENT_STYLE_GUIDE.md)**：双主题磨砂风格与可复用按钮、卡片、布局 CSS 模板。
-*   **[common 协议文档](docs/MODULE_COMMON.md)**：JSON 消息协议、`Message` 模型与 `Protocol` 常量。
+- **[INDEX](docs/README.md)**：项目文档入口
 
 ## 开发命令
 
-### 编译
-
 ```powershell
+# 全量编译
+mvn compile
+
 # 编译服务端
 mvn clean compile -pl server -am
 
@@ -103,22 +108,19 @@ mvn install -pl common -am
 
 # 运行测试
 mvn test -pl server -am
-```
 
-### 手动启动
-
-```powershell
 # 启动服务端
 mvn -f server/pom.xml exec:java -Dexec.mainClass="com.gomatch.server.ServerMain"
 
-# 启动客户端（另一个终端）
+# 启动客户端
 mvn -f client/pom.xml javafx:run
 ```
 
 ## 注意事项
 
-1. **JDK 版本**：JavaFX 21 依赖 JDK 17+，必须使用 JDK 21
-2. **数据库配置**：修改 `database/src/main/resources/database.properties` 配置数据库连接
-3. **Redis 配置**：Redis 为必需组件，用于会话持久化、排行榜缓存和匹配队列
-4. **端口配置**：服务端默认监听 8888 端口
+1. **JDK 21**：JavaFX 21 依赖 JDK 17+，项目强制使用 JDK 21，启动脚本已内置 `JAVA_HOME` 检测。
+2. **首次运行**：必须先执行 `mvn install -pl common -am` 和 `mysql -u root -p < sql/init.sql`。
+3. **启动顺序**：MySQL → Redis → 初始化数据库 → 服务端 → 客户端，缺一不可。
+4. **数据库**：账号 `gomatch` / 密码 `gomatch`，配置位于 `database/src/main/resources/database.properties`。
+5. **端口**：服务端 TCP 8888、MySQL 3306、Redis 6379，确保未被占用。
 

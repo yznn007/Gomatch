@@ -16,7 +16,12 @@
 # 1. 安装 common 到本地 Maven 仓库（首次或 common 变更后）
 mvn install -pl common -am
 
-# 2. 启动客户端
+# 2. 初始化数据库（首次）：执行 sql/init.sql 建表与种子数据
+
+# 3. 启动服务端（需先启动 MySQL 与 Redis）
+.\scripts\ssc_server.ps1
+
+# 4. 启动客户端
 .\scripts\ssc_client.ps1
 
 # 或手动：
@@ -70,11 +75,17 @@ ClientMain (extends Application)
 
 ```
 LoginUI → 登录成功/浏览模式 → LobbyUI
+LoginUI → 忘记密码 → ForgotPasswordUI（邮箱→验证码→重置）
 LobbyUI → 对战 → CasualLobbyUI（房间列表+观战）
 LobbyUI → 排位 → RankedLobbyUI（匹配按钮）
+LobbyUI → AI 对战 → AiLobbyUI（难度选择）
 LobbyUI → 个人中心 → ProfileUI（含对战记录）
 LobbyUI → 左上角头像 → ProfileUI
+LobbyUI → 好友 → FriendsUI（好友列表/请求/添加）
+LobbyUI → 设置 → SettingsUI（主题/语言/音量等）
 LobbyUI → 排行榜按钮 → 左侧抽屉展开
+LobbyUI → 关于 → AboutUI
+LobbyUI → 管理 → ManagementUI（仅 ADMIN）
 所有子页面 → 返回 → LobbyUI
 ```
 
@@ -84,7 +95,7 @@ LobbyUI → 排行榜按钮 → 左侧抽屉展开
 | 文档 | 触发时机 |
 |------|----------|
 | `docs/DEV_LOG.md` | 每次完成任务后追加日志 |
-| `docs/requirements.md` | 需求/设计变更时同步 |
+| `docs/PRD.md` | 需求/设计变更时同步 |
 | `AGENTS.md` | 命令/架构/约定变化时 |
 | `README.md` | 项目信息变化时 |
 
