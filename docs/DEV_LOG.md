@@ -16,6 +16,7 @@
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
 |------|------|----------|-----------|
+| 2026-07-11 03:54 | Contributor| style(client): 将登录和注册界面的手机号码前缀与输入框合并到同一行，只留前缀代码并实现登录切换栏 | 1. **LoginUI/RegisterUI.fxml**：合并国家区号 ComboBox 和输入框至同一行，并缩窄宽度至 65px；2. **Login/RegisterController**：区号项移除中文仅留 +86 等代码；3. **LoginUI.fxml / LoginController**：在登录标题下加入“账号登录/手机号登录”的极简 HBox 切换栏，切至手机号时展开区号下拉框并改变占位符为“手机号”，切至账号时隐藏区号，并支持在记住密码时根据账号类型自动切换 Tab 加载；4. **style.css**：为登录切换栏定制极简双主题底划线样式；5. **RegisterUI.fxml**：手机号默认文字简化为“手机号”，并移动行位置。 |
 | 2026-07-11 03:20 | Contributor| fix: 修复大厅音乐选择与播放顺序在下次登录时无法同步的 bug | 1. **UserSettings**：新增 `selectedSongPath` 和 `playOrder` 字段，通过 GSON 自动持久化；2. **BackgroundMusicManager**：将 `currentPlayOrder` 升级为 `ObjectProperty<PlayOrder>` 以支持响应式 UI，增加 `selectAndPlaySong` 以区分用户主动选歌与自动切歌，并实现 `applySettings` 用于应用/同步本地及云端偏好；3. **SettingsController**：将选歌下拉框改为调用新 API，并对播放顺序属性添加 Listener，在云端同步播放顺序时自动刷新按钮文本；4. **ClientMain / ConfigManager**：分别在本地加载和云端配置同步完后自动触发 `applySettings` 平滑过渡应用。 |
 | 2026-07-11 00:57 | Contributor| physics: 减小 3D 移动卡片 (PixelCard) 的 Z 轴摆动幅度 | 进一步抑制摆动的响应振幅：1. 鼠标滑入瞬间的脉冲推力因子从 0.25 降至 0.06，防止晃动起点过大；2. 鼠标平移速度带来的摆动角加速度传导系数从 0.000025 降低至 0.000006；3. 单帧最大推力限制从 0.15 限制到 0.04，使得晃动幅度和摆角被严格约束在极小且微弱的精致感官范围内。 |
 | 2026-07-11 00:49 | Contributor| physics: 优化 3D 移动卡片 (PixelCard) 挂绳悬挂动力学，引入偏移越远阻力越大机制 | 优化卡片物理 Z 轴摆动（挂绳特性）的重力恢复力与摆动阻尼公式。通过引入基于摆动角度 angle 绝对值和平方的非线性刚度调节与大摆角阻尼增强算法，使卡片在大角度晃动时承受成倍的阻力和回弹恢复力，从而在小角度下保持轻盈飘逸，大角度下能迅速平抑和阻尼，使动态吊挂交互更加质感与沉稳。 |
@@ -231,3 +232,13 @@
 
 - 将主窗口业务布局固定为外层容器的全尺寸左上角子节点。
 - 确保窗口缩放、最大化/还原和页面切换后，右上角控制按钮保持贴边对齐。
+
+### 2026-07-11 — 重构区号不透明下拉框与登录 Tab 对称及脚本缓存清理
+
+- 废弃 FXML 的 `countryCodeBox` (ComboBox)，改用 `btnCountryCode` (Button) 和 `inlineCodeMenu` (VBox) 内联 3D 悬浮菜单。
+- 修复 FXML 里多类名空格连写错误，改在 `initialize()` 中动态为“账号登录” Tab 按钮绑定 `login-tab-btn-active` 样式，解决 Tab 切换按钮退化原生灰框的 Bug。
+- 在切换登录方式（账号/手机号 Tab）的方法中增加 `hideInlineMenu()` 调用，彻底修复打开下拉框时切换模式导致的悬浮框残留 Bug。
+- 统一登录 Tab 切换按钮宽度为 `120px` 且文字水平居中，使下划线和鼠标热区在视觉上绝对对称对齐。
+- 在 `style.css` 结尾处提升类选择器特异性为 `.glass-card .inline-popup-menu`，强制实色（清透白/暗夜深色）不透明背景，彻底压制父卡片的透明度影响。
+- 解决 visible/managed 为 false 时 JavaFX 首次渲染跳过 CSS apply 的怪癖 Bug，在 `toggleInlineMenu()` 展开时强制调用 `inlineCodeMenu.applyCss()` 重新刷入 CSS。
+- 修改 `scripts/` 下全部 4 个成员的客户端启动脚本（`hln/jzx/ssc/zpw-client.ps1`），在运行命令中补充 `clean` 编译阶段，彻底根治 Maven 增量构建跳过 CSS 资源文件拷贝的旧缓存问题。
