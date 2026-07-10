@@ -10,6 +10,7 @@ public class User {
     private int rank;
     private String winRate;
     private String role = "PLAYER";
+    private String phone;
     private String avatarUrl;
 
     public User() {}
@@ -39,5 +40,7 @@ public class User {
     public void setRole(String role) { this.role = role; }
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 }
 

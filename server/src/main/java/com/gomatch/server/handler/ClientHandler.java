@@ -201,8 +201,9 @@ public class ClientHandler implements Runnable {
         String username = msg.getString("username");
         String password = msg.getString("password");
         String email = msg.has("email") ? msg.getString("email") : "";
+        String phone = msg.has("phone") ? msg.getString("phone") : "";
 
-        log.info("注册请求: username={}, email={}", username, email);
+        log.info("注册请求: username={}, email={}, phone={}", username, email, phone);
 
         if (username == null || username.trim().isEmpty()) {
             send(Message.of("REGISTER_FAIL", "msg", "用户名不能为空"));
@@ -226,7 +227,7 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        boolean success = userDAO.register(username, password, email);
+        boolean success = userDAO.register(username, password, email, phone);
         if (success) {
             send(Message.cmdOnly("REGISTER_OK"));
             log.info("用户注册成功: {} (email={})", username, email);
@@ -325,6 +326,7 @@ public class ClientHandler implements Runnable {
                             .set("rank", String.valueOf(rank))
                             .set("role", userInfo.getRole())
                             .set("avatar", avatarUrl)
+                            .set("phone", userInfo.getPhone() != null ? userInfo.getPhone() : "")
                             .set("token", session.token)
                             .set("roomId", activeRoom.getRoomId())
                             .set("blackUserId", String.valueOf(activeRoom.getBlackUserId()))
@@ -363,6 +365,7 @@ public class ClientHandler implements Runnable {
                     .set("rank", String.valueOf(rank))
                     .set("role", userInfo.getRole())
                     .set("avatar", avatarUrl)
+                    .set("phone", userInfo.getPhone() != null ? userInfo.getPhone() : "")
                     .set("token", session.token)
                     .build());
             

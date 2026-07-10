@@ -19,15 +19,22 @@ public class UserDAO {
         private final int drawCount;
         private final String role;
         private final String status;
+        private final String phone;
 
         public UserInfo(long userId, String username, int score,
                         int winCount, int loseCount, int drawCount) {
-            this(userId, username, score, winCount, loseCount, drawCount, "PLAYER", "ACTIVE");
+            this(userId, username, score, winCount, loseCount, drawCount, "PLAYER", "ACTIVE", null);
         }
 
         public UserInfo(long userId, String username, int score,
                         int winCount, int loseCount, int drawCount,
                         String role, String status) {
+            this(userId, username, score, winCount, loseCount, drawCount, role, status, null);
+        }
+
+        public UserInfo(long userId, String username, int score,
+                        int winCount, int loseCount, int drawCount,
+                        String role, String status, String phone) {
             this.userId = userId;
             this.username = username;
             this.score = score;
@@ -36,6 +43,7 @@ public class UserDAO {
             this.drawCount = drawCount;
             this.role = role;
             this.status = status;
+            this.phone = phone;
         }
 
         public long getUserId() { return userId; }
@@ -46,6 +54,7 @@ public class UserDAO {
         public int getDrawCount() { return drawCount; }
         public String getRole() { return role; }
         public String getStatus() { return status; }
+        public String getPhone() { return phone; }
     }
 
     /**
@@ -53,10 +62,14 @@ public class UserDAO {
      */
     @Deprecated
     public boolean register(String username, String password) {
-        return register(username, password, "");
+        return register(username, password, "", "");
     }
 
     public boolean register(String username, String password, String email) {
+        return register(username, password, email, "");
+    }
+
+    public boolean register(String username, String password, String email, String phone) {
         if (username == null || username.trim().isEmpty()) {
             log.warn("Register failed: empty username");
             return false;
@@ -84,13 +97,15 @@ public class UserDAO {
             log.warn("Register failed: email already registered: {}", emailTrimmed);
             return false;
         }
+        String phoneTrimmed = (phone != null) ? phone.trim() : "";
 
-        String sql = "INSERT INTO t_user (username, password, email) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO t_user (username, password, email, phone) VALUES (?, ?, ?, ?)";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, username.trim());
             ps.setString(2, password);
             ps.setString(3, emailTrimmed);
+            ps.setString(4, phoneTrimmed.isEmpty() ? null : phoneTrimmed);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
@@ -98,7 +113,7 @@ public class UserDAO {
                     rankDAO.upsertRank(userId, 1000, 0, 0, 0);
                 }
             }
-            log.info("User registered: {} (email={})", username, emailTrimmed);
+            log.info("User registered: {} (email={}, phone={})", username, emailTrimmed, phoneTrimmed);
             return true;
         } catch (java.sql.SQLIntegrityConstraintViolationException e) {
             log.warn("Register failed: duplicate username or email (concurrent): {}", username);
@@ -114,7 +129,7 @@ public class UserDAO {
             return null;
         }
         String sql = "SELECT user_id, username, score, win_count, lose_count, draw_count, " +
-                     "role, status FROM t_user WHERE (username = ? OR email = ?) AND password = ?";
+                     "role, status, phone FROM t_user WHERE (username = ? OR email = ?) AND password = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, account);
@@ -135,7 +150,8 @@ public class UserDAO {
                             rs.getInt("lose_count"),
                             rs.getInt("draw_count"),
                             rs.getString("role"),
-                            rs.getString("status")
+                            rs.getString("status"),
+                            rs.getString("phone")
                     );
                 }
             }

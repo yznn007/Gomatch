@@ -830,7 +830,7 @@ public class Room {
                 long timedOutPlayerId = (game.getCurrentPlayer() == Game.BLACK) ? blackUserId : whiteUserId;
                 long winnerId = (timedOutPlayerId == blackUserId) ? whiteUserId : blackUserId;
                 log.info("Turn timeout in room {}: player {} ran out of time, winner={}", roomId, timedOutPlayerId, winnerId);
-                endGame(winnerId, "timeout", "回合超时，对方获胜");
+                endGame(winnerId, "timeout", "回合超时");
                 // GAME_OVER 已在 endGame() 中广播，不再重复发送 TURN_TIMEOUT 避免客户端弹两次框
             }
         }, TURN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -1328,6 +1328,11 @@ public class Room {
 
     /**
      * 向除指定玩家外的所有人广播（用于悔棋/求和请求等场景，避免请求者自己也收到弹窗）
+     *
+     * <p><b>注意：悔棋/求和请求不应该广播给观战者</b>。原因：客户端收到 {@code UNDO_REQUESTED} /
+     * {@code DRAW_REQUESTED} 时默认弹"是否同意"的确认框——这个弹窗是给"被请求方玩家"看的，
+     * 观战者无权决定，请求看到系统消息即可（系统消息由 chatArea appendText 处理，不需要这条消息）。
+     * 之前实现同时广播给 observers，导致观战者也被弹出确认框。</p>
      */
     public synchronized void broadcastToPlayersExcept(long excludeUserId, Message msg) {
         log.debug("broadcastToPlayersExcept room {}: exclude={}, cmd={}", roomId, excludeUserId, msg.getCmd());
@@ -1337,8 +1342,7 @@ public class Room {
                 player.send(msg);
             }
         }
-        // 观战者也应该看到请求通知
-        broadcastToObservers(msg);
+        // 观战者不广播悔棋/求和请求（请求是玩家私事）
     }
 
     public synchronized void sendToPlayer(ClientHandler handler, Message msg) {

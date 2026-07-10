@@ -1223,11 +1223,14 @@
     -fx-border-radius: 8px;
     -fx-border-color: transparent;
     -fx-border-width: 1px;
-    /* padding-left 加大到 40px，专门为"你"徽章留出内嵌空间，
-       避免 selfTag 覆盖 avatar（avatar 在 padding=40px 之后 28px 处，
-       selfTag 宽 ~30px 内嵌在 0-40px 区域，与 avatar 0-28px 完全不重叠）。 */
-    -fx-padding: 8px 12px 8px 40px;
-    -fx-alignment: CENTER_LEFT;
+    /* **关键修复：去掉 -fx-padding 和 -fx-alignment**。
+       原因：当 Pane 应用了 .player-info-card-inner 的 padding (8+8=16px+2px border)，
+       Pane 的 prefHeight = max(child prefHeight ≈ 36px) + 18px = 54px，
+       两个 Pane 共多 36px，把 chatArea 挤到几乎不可见。
+       修复：padding 视觉完全由 Java 代码中的 setLayoutX(40) + setLayoutY(4) 绝对定位实现，
+       Pane 高度恢复为 36px，所有剩余空间归还给 chatArea。
+       同时保留 CSS 类方式（而非 setStyle 行内样式），确保
+       .player-info-card-offline / -self / -active 等状态类可以正常叠加覆盖。 */
     -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.03), 8, 0.06, 0, 3);
 }
 .player-info-card-active {

@@ -59,7 +59,7 @@ public class OssService {
         validateMusicSize(data.length);
         
         String extension = getFileExtension(originalFileName);
-        String fileName = String.format("music/%d/%d_%s", userId, System.currentTimeMillis(), originalFileName);
+        String fileName = String.format("music/%d/%d.%s", userId, System.currentTimeMillis(), extension);
         
         OSS ossClient = null;
         try {

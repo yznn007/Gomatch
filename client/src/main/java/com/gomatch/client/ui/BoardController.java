@@ -946,6 +946,14 @@ public class BoardController implements NetworkListener {
         // 关键修复：之前所有方案都失败的根本原因是 `.player-info-card { -fx-min-height: 0 }`
         // 把 VBox 高度锁死到 0，导致两个 cardWrapper 叠在一起。本轮 CSS 已删掉 min-height:0。
         // 但中转层（StackPane/Pane wrapper）也有 prefHeight 抖动问题，所以这一轮连中转层也不要了。
+        //
+        // **关键：CSS 中 .player-info-card-inner 已去掉 padding (8 12 8 40) 和 alignment**。
+        // 原因：Pane 的 prefHeight = max(child prefHeight) + top+bottom padding，
+        // padding 会让 Pane 高度从 36px 撑到 54px，压扁 chatArea。
+        // 去掉 CSS padding 后，Pane 高度回归 36px，padding 视觉完全由 Java 代码中的
+        // avatar.setLayoutX(40) + selfTag.setLayoutX(4) + offlineTag 绝对定位实现。
+        // 同时保留 CSS 类方式（非 setStyle 行内样式），确保 .player-info-card-offline
+        // / -self / -active 等动态状态类可以正常叠加覆盖，不受行内样式优先级压制。
         javafx.scene.layout.Pane cardPane = new javafx.scene.layout.Pane();
         cardPane.getStyleClass().add("player-info-card-inner");
         cardPane.setMinSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
@@ -1389,13 +1397,13 @@ public class BoardController implements NetworkListener {
                 result = "平局";
             } else if (aiMode && "-1".equals(winnerId)) {
                 result = "白方胜";
-            } else if ("black".equals(myColor) && blackName.equals(winnerId)) {
+            } else if ("black".equals(myColor) && blackId.equals(winnerId)) {
                 result = "黑方胜";
-            } else if ("white".equals(myColor) && whiteName.equals(winnerId)) {
+            } else if ("white".equals(myColor) && whiteId.equals(winnerId)) {
                 result = "白方胜";
-            } else if ("black".equals(myColor) && (whiteName.equals(winnerId) || ("-1".equals(winnerId) && aiMode))) {
+            } else if ("black".equals(myColor) && (whiteId.equals(winnerId) || ("-1".equals(winnerId) && aiMode))) {
                 result = "对手胜";
-            } else if ("white".equals(myColor) && blackName.equals(winnerId)) {
+            } else if ("white".equals(myColor) && blackId.equals(winnerId)) {
                 result = "对手胜";
             } else {
                 result = "游戏结束";
@@ -1465,6 +1473,10 @@ public class BoardController implements NetworkListener {
             String requesterName = msg.getString("requesterName");
             chatArea.appendText("[系统] 玩家 " + requesterName + " 请求悔棋\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
+            // 观战者只显示系统消息，不弹确认框（悔棋是玩家私事，观战者无权决定）
+            if (spectatorMode || previewMode) {
+                return;
+            }
             stopCountdown();
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("悔棋请求");
@@ -1513,6 +1525,10 @@ public class BoardController implements NetworkListener {
             String requesterName = msg.getString("requesterName");
             chatArea.appendText("[系统] 玩家 " + requesterName + " 请求求和\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
+            // 观战者只显示系统消息，不弹确认框
+            if (spectatorMode || previewMode) {
+                return;
+            }
             stopCountdown();
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("求和请求");
