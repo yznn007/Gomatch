@@ -85,7 +85,7 @@ public class RankingController implements NetworkListener {
             rankingContainer.getChildren().clear();
             if (rankingData.isEmpty()) {
                 Label noRankLabel = new Label("暂无排行数据。");
-                noRankLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
+                noRankLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
                 rankingContainer.getChildren().add(noRankLabel);
                 return;
             }
@@ -203,10 +203,11 @@ public class RankingController implements NetworkListener {
                 nameRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 Label nameLabel = new Label(user.getUsername());
                 nameLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
                 if (isMe) {
                     nameLabel.setText(nameLabel.getText() + " (我)");
-                    nameLabel.setStyle(nameLabel.getStyle() + " -fx-text-fill: #0ea5e9;");
+                    nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#0f766e", "#2dd4bf") + ";");
+                } else {
+                    nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
                 }
                 nameRow.getChildren().addAll(nameLabel);
 

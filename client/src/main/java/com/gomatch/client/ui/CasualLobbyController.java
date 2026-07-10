@@ -335,7 +335,7 @@ public class CasualLobbyController implements NetworkListener {
             roomsContainer.getChildren().clear();
             if (roomData.isEmpty()) {
                 Label noRoomLabel = new Label("暂无活动房间，您可以创建一个！");
-                noRoomLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
+                noRoomLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
                 roomsContainer.getChildren().add(noRoomLabel);
                 return;
             }
@@ -428,7 +428,7 @@ public class CasualLobbyController implements NetworkListener {
             spectateContainer.getChildren().clear();
             if (spectateData.isEmpty()) {
                 Label noSpectateLabel = new Label("当前暂无进行中的精彩对局。");
-                noSpectateLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
+                noSpectateLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
                 spectateContainer.getChildren().add(noSpectateLabel);
                 return;
             }
@@ -465,7 +465,7 @@ public class CasualLobbyController implements NetworkListener {
                 avatar.setPrefSize(48, 48);
                 avatar.setMinSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
                 avatar.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
-                avatar.setStyle("-fx-background-color: #a78bfa;"); // Purple for spectating
+                avatar.setStyle("-fx-background-color: " + ScreenManager.themeColor("rgba(148,163,184,0.45)", "rgba(71,85,105,0.65)") + ";"); // 观战头像用板岩灰系
                 Label avatarText = new Label("观");
                 avatarText.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 avatarText.getStyleClass().add("avatar-badge-text");

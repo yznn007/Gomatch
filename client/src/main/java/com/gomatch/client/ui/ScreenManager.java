@@ -380,6 +380,11 @@ public class ScreenManager {
         }
     }
 
+    /** 供外部类（如 BoardController）动态创建弹窗时注入全局 CSS，效果等同于内部 applyStylesheet。 */
+    public static void applyStylesheetPublic(Scene scene) {
+        applyStylesheet(scene);
+    }
+
 
     /** 当前是否使用暗夜黑磨砂主题。 */
     public static boolean isDarkTheme() {

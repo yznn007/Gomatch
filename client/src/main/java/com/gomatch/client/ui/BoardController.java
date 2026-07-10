@@ -632,19 +632,19 @@ public class BoardController implements NetworkListener {
             if (blackPlayerScoreLabel != null) {
                 if (blackScore >= 0) {
                     blackPlayerScoreLabel.setText(blackScore + "分");
-                    blackPlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
+                    blackPlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + "; -fx-font-weight: bold;");
                 } else {
                     blackPlayerScoreLabel.setText("?");
-                    blackPlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
+                    blackPlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + ";");
                 }
             }
             if (whitePlayerScoreLabel != null) {
                 if (whiteScore >= 0) {
                     whitePlayerScoreLabel.setText(whiteScore + "分");
-                    whitePlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
+                    whitePlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + "; -fx-font-weight: bold;");
                 } else {
                     whitePlayerScoreLabel.setText("?");
-                    whitePlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
+                    whitePlayerScoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + ";");
                 }
             }
             // 回放模式无倒计时：清空 timerLabel 并停止任何 timeline
@@ -900,7 +900,7 @@ public class BoardController implements NetworkListener {
 
         javafx.scene.control.Label roleLabel = new javafx.scene.control.Label(colorLabel);
         roleLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-        roleLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ("黑方".equals(colorLabel) ? ScreenManager.themeColor("#1e293b", "#f8fafc") : "#94a3b8") + ";");
+        roleLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ("黑方".equals(colorLabel) ? ScreenManager.themeColor("#1e293b", "#f8fafc") : ScreenManager.themeColor("#94a3b8", "#64748b")) + ";");
 
         detailRow.getChildren().addAll(idLabel, scoreLabel, roleLabel);
         infoBox.getChildren().addAll(nameLabel, detailRow);
@@ -928,13 +928,13 @@ public class BoardController implements NetworkListener {
         Label selfTag = new Label("你");
         selfTag.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
         selfTag.setStyle(
-                "-fx-background-color: #2563eb;"
-                + "-fx-text-fill: #ffffff;"
+                "-fx-background-color: " + ScreenManager.themeColor("rgba(100,116,139,0.25)", "rgba(148,163,184,0.35)") + ";"
+                + "-fx-text-fill: " + ScreenManager.themeColor("#475569", "#f8fafc") + ";"
                 + "-fx-font-size: 10px;"
                 + "-fx-font-weight: bold;"
                 + "-fx-padding: 2 7 2 7;"
                 + "-fx-background-radius: 8;"
-                + "-fx-border-color: #1d4ed8;"
+                + "-fx-border-color: " + ScreenManager.themeColor("rgba(100,116,139,0.40)", "rgba(203,213,225,0.50)") + ";"
                 + "-fx-border-radius: 8;"
                 + "-fx-border-width: 1;"
         );
@@ -1084,7 +1084,7 @@ public class BoardController implements NetworkListener {
         if (timerLabel == null) return;
         timerLabel.setText("剩余: " + remainingSeconds + "s");
         if (remainingSeconds <= 10) {
-            timerLabel.setStyle("-fx-text-fill: #dc2626; -fx-font-size: 18px; -fx-font-weight: bold;");
+            timerLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + "; -fx-font-size: 18px; -fx-font-weight: bold;");
         } else {
             timerLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#334155", "#e2e8f0") + "; -fx-font-size: 18px; -fx-font-weight: bold;");
         }
@@ -1176,10 +1176,9 @@ public class BoardController implements NetworkListener {
             layout.getChildren().add(root);
 
             javafx.scene.Scene scene = new javafx.scene.Scene(layout);
-            String css = getClass().getResource("/css/style.css").toExternalForm();
-            if (!scene.getStylesheets().contains(css)) {
-                scene.getStylesheets().add(css);
-            }
+            ScreenManager.applyStylesheetPublic(scene);
+            ScreenManager.applyUserTheme(scene);
+            ScreenManager.applyUserFont(scene);
             dialog.setScene(scene);
             dialog.setResizable(false);
             dialog.show();
@@ -1196,16 +1195,16 @@ public class BoardController implements NetworkListener {
         javafx.scene.layout.VBox layout = new javafx.scene.layout.VBox(15);
         layout.setAlignment(javafx.geometry.Pos.CENTER);
         layout.setPadding(new javafx.geometry.Insets(30));
-        layout.setStyle("-fx-background-color: white; -fx-border-radius: 12px; -fx-background-radius: 12px;");
+        layout.setStyle("-fx-background-color: " + ScreenManager.themeColor("rgba(255,255,255,0.96)", "rgba(10,15,28,0.96)") + "; -fx-border-radius: 12px; -fx-background-radius: 12px;");
 
         javafx.scene.control.Label titleLabel = new javafx.scene.control.Label(title);
-        titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #1e293b;");
+        titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
 
         javafx.scene.control.Label messageLabel = new javafx.scene.control.Label(message);
-        messageLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #64748b;");
+        messageLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
 
         javafx.scene.control.ProgressIndicator spinner = new javafx.scene.control.ProgressIndicator();
-        spinner.setStyle("-fx-progress-color: #3b82f6;");
+        spinner.setStyle("-fx-progress-color: " + ScreenManager.themeColor("#64748b", "#cbd5e1") + ";");
         spinner.setPrefSize(30, 30);
 
         layout.getChildren().addAll(titleLabel, spinner, messageLabel);
@@ -1217,10 +1216,9 @@ public class BoardController implements NetworkListener {
         pendingRequestStage.initStyle(javafx.stage.StageStyle.UNDECORATED);
 
         javafx.scene.Scene scene = new javafx.scene.Scene(layout);
-        String css = getClass().getResource("/css/style.css").toExternalForm();
-        if (!scene.getStylesheets().contains(css)) {
-            scene.getStylesheets().add(css);
-        }
+        ScreenManager.applyStylesheetPublic(scene);
+        ScreenManager.applyUserTheme(scene);
+        ScreenManager.applyUserFont(scene);
         pendingRequestStage.setScene(scene);
         pendingRequestStage.setResizable(false);
         pendingRequestStage.show();

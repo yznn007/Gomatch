@@ -29,13 +29,13 @@ public class GameOverController {
         if (scoreChangeLabel != null) {
             if (scoreChange > 0) {
                 scoreChangeLabel.setText("+" + scoreChange + " 积分");
-                scoreChangeLabel.setStyle("-fx-text-fill: #22c55e; -fx-font-weight: bold; -fx-font-size: 16px;");
+                scoreChangeLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#15803d", "#86efac") + "; -fx-font-weight: bold; -fx-font-size: 16px;");
             } else if (scoreChange < 0) {
                 scoreChangeLabel.setText(scoreChange + " 积分");
-                scoreChangeLabel.setStyle("-fx-text-fill: #ef4444; -fx-font-weight: bold; -fx-font-size: 16px;");
+                scoreChangeLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + "; -fx-font-weight: bold; -fx-font-size: 16px;");
             } else {
                 scoreChangeLabel.setText("+0 积分");
-                scoreChangeLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-weight: bold; -fx-font-size: 16px;");
+                scoreChangeLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-weight: bold; -fx-font-size: 16px;");
             }
         }
         if (!reason.isEmpty() && reasonLabel != null) {

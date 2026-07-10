@@ -40,18 +40,18 @@ public class QuickMatchReadyController implements NetworkListener {
         isReady = !isReady;
         if (isReady) {
             matchBtn.setText("已准备");
-            matchBtn.getStyleClass().remove("btn-danger");
+            matchBtn.getStyleClass().remove("btn-primary");
             matchBtn.getStyleClass().add("btn-success");
             matchBtn.setDisable(false);
             matchStatus.setText("对手: " + opponentUsername + "\n我方已准备，等待对方准备...");
-            matchStatus.setStyle("-fx-text-fill: #10b981; -fx-font-size: 16px; -fx-text-alignment: center;");
+            matchStatus.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#15803d", "#86efac") + "; -fx-font-size: 16px; -fx-text-alignment: center;");
         } else {
             matchBtn.setText("未准备");
             matchBtn.getStyleClass().remove("btn-success");
-            matchBtn.getStyleClass().add("btn-danger");
+            matchBtn.getStyleClass().add("btn-primary");
             matchBtn.setDisable(false);
             matchStatus.setText("对手: " + opponentUsername + "\n点击按钮准备");
-            matchStatus.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 16px; -fx-text-alignment: center;");
+            matchStatus.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + "; -fx-font-size: 16px; -fx-text-alignment: center;");
         }
         ClientMain.getConnector().send(Message.of(Protocol.QUICK_READY, "ready", isReady ? "true" : "false"));
     }
@@ -79,7 +79,7 @@ public class QuickMatchReadyController implements NetworkListener {
                         stopCountdown();
                         countdownLabel.setText("");
                         matchStatus.setText("准备时间超时，已取消匹配");
-                        matchStatus.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 16px; -fx-text-alignment: center;");
+                        matchStatus.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + "; -fx-font-size: 16px; -fx-text-alignment: center;");
                         ClientMain.getConnector().send(Protocol.CANCEL_MATCH);
                         stopMatching();
                         backToLobby();
@@ -120,10 +120,9 @@ public class QuickMatchReadyController implements NetworkListener {
         isFound = true;
         startCountdown();
         matchStatus.setText("对手: " + opponentUsername + "\n点击按钮准备");
-        matchStatus.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 16px; -fx-text-alignment: center;");
+        matchStatus.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + "; -fx-font-size: 16px; -fx-text-alignment: center;");
         matchBtn.setText("未准备");
-        matchBtn.getStyleClass().remove("btn-primary");
-        matchBtn.getStyleClass().add("btn-danger");
+        matchBtn.getStyleClass().add("btn-primary");
     }
 
     @Override
@@ -135,10 +134,9 @@ public class QuickMatchReadyController implements NetworkListener {
             startCountdown();
             Platform.runLater(() -> {
                 matchStatus.setText("找到对手: " + opponentUsername + "\n点击按钮准备");
-                matchStatus.setStyle("-fx-text-fill: #10b981; -fx-font-size: 16px; -fx-text-alignment: center;");
+                matchStatus.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#15803d", "#86efac") + "; -fx-font-size: 16px; -fx-text-alignment: center;");
                 matchBtn.setText("未准备");
-                matchBtn.getStyleClass().remove("btn-primary");
-                matchBtn.getStyleClass().add("btn-danger");
+                matchBtn.getStyleClass().add("btn-primary");
             });
         } else if (Protocol.QUICK_READY.equals(cmd)) {
             boolean blackReady = "true".equals(msg.getString("blackReady"));
@@ -148,19 +146,19 @@ public class QuickMatchReadyController implements NetworkListener {
                     boolean opponentReady = blackReady && whiteReady;
                     if (opponentReady) {
                         matchStatus.setText("对手: " + opponentUsername + "\n双方已准备，即将开始...");
-                        matchStatus.setStyle("-fx-text-fill: #10b981; -fx-font-size: 16px; -fx-text-alignment: center;");
+                        matchStatus.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#15803d", "#86efac") + "; -fx-font-size: 16px; -fx-text-alignment: center;");
                     } else {
                         matchStatus.setText("对手: " + opponentUsername + "\n对战即将开始，等待对方玩家准备");
-                        matchStatus.setStyle("-fx-text-fill: #f59e0b; -fx-font-size: 16px; -fx-text-alignment: center;");
+                        matchStatus.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#b45309", "#fcd34d") + "; -fx-font-size: 16px; -fx-text-alignment: center;");
                     }
                 } else {
                     boolean opponentReady = blackReady || whiteReady;
                     if (opponentReady) {
                         matchStatus.setText("对手: " + opponentUsername + "\n对方已准备，等待我方准备...");
-                        matchStatus.setStyle("-fx-text-fill: #f59e0b; -fx-font-size: 16px; -fx-text-alignment: center;");
+                        matchStatus.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#b45309", "#fcd34d") + "; -fx-font-size: 16px; -fx-text-alignment: center;");
                     } else {
                         matchStatus.setText("对手: " + opponentUsername + "\n点击按钮准备");
-                        matchStatus.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 16px; -fx-text-alignment: center;");
+                        matchStatus.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + "; -fx-font-size: 16px; -fx-text-alignment: center;");
                     }
                 }
             });
@@ -183,21 +181,21 @@ public class QuickMatchReadyController implements NetworkListener {
         } else if (Protocol.CANCEL_MATCH.equals(cmd)) {
             Platform.runLater(() -> {
                 matchStatus.setText("已取消匹配");
-                matchStatus.setStyle("-fx-text-fill: #3b82f6; -fx-font-size: 16px;");
+                matchStatus.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + "; -fx-font-size: 16px;");
             });
             stopMatching();
             backToLobby();
         } else if (Protocol.MATCH_TIMEOUT.equals(cmd)) {
             Platform.runLater(() -> {
                 matchStatus.setText("匹配超时，请重试");
-                matchStatus.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 16px;");
+                matchStatus.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + "; -fx-font-size: 16px;");
             });
             stopMatching();
             backToLobby();
         } else if (Protocol.ERROR.equals(cmd)) {
             Platform.runLater(() -> {
                 matchStatus.setText("匹配失败: " + msg.getString("msg"));
-                matchStatus.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 16px;");
+                matchStatus.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + "; -fx-font-size: 16px;");
             });
             stopMatching();
             backToLobby();

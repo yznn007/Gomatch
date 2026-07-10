@@ -123,7 +123,7 @@ public class FriendsController implements NetworkListener {
         if (ClientMain.getConnector().isConnected()) {
             ClientMain.getConnector().send(Message.of(Protocol.ADD_FRIEND, "friendUserId", Long.parseLong(targetIdStr), "message", msg));
         } else {
-            errorLabel.setStyle("-fx-text-fill: green;");
+            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
             errorLabel.setText("预览模式：已模拟向用户 " + targetIdStr + " 发送好友申请");
         }
     }
@@ -208,12 +208,12 @@ public class FriendsController implements NetworkListener {
                 }
             }
         } else if ("ADD_FRIEND_OK".equals(cmd)) {
-            errorLabel.setStyle("-fx-text-fill: green;");
+            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
             errorLabel.setText("好友申请发送成功！");
             friendIdField.clear();
             addMsgField.clear();
         } else if ("ADD_FRIEND_FAIL".equals(cmd)) {
-            errorLabel.setStyle("-fx-text-fill: red;");
+            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
             errorLabel.setText(msg.getString("msg"));
         } else if ("ACCEPT_FRIEND_OK".equals(cmd)) {
             showAlert("已成功添加好友！");
@@ -291,7 +291,7 @@ public class FriendsController implements NetworkListener {
             friendsContainer.getChildren().clear();
             if (friendsData.isEmpty()) {
                 Label noFriendLabel = new Label("暂无好友，快去添加吧！");
-                noFriendLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
+                noFriendLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
                 friendsContainer.getChildren().add(noFriendLabel);
                 return;
             }
@@ -401,7 +401,7 @@ public class FriendsController implements NetworkListener {
                 
                 Label activeLabel = new Label(isOnline ? "在线" : "离线");
                 activeLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                activeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + (isOnline ? ScreenManager.themeColor("#16a34a;", "#86efac;") : ScreenManager.themeColor("#64748b;", "#a7b0c2;")));
+                activeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + (isOnline ? ScreenManager.themeColor("#16a34a", "#86efac") : ScreenManager.themeColor("#64748b", "#a7b0c2")) + ";");
                 
                 detailRow.getChildren().addAll(scoreLabel, activeLabel);
                 infoBox.getChildren().addAll(nameRow, detailRow);
@@ -411,14 +411,14 @@ public class FriendsController implements NetworkListener {
                 actionBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
                 Button deleteBtn = new Button("删除");
-                deleteBtn.getStyleClass().add("btn-secondary");
+                deleteBtn.getStyleClass().add("btn-danger");
                 deleteBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                deleteBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px; -fx-text-fill: #ef4444;");
+                deleteBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
  
                 // Create ContextMenu for double confirmation (secondary menu)
                 ContextMenu confirmMenu = new ContextMenu();
                 MenuItem confirmItem = new MenuItem("确认删除");
-                confirmItem.setStyle("-fx-text-fill: #ef4444; -fx-font-weight: bold;");
+                confirmItem.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + "; -fx-font-weight: bold;");
                 confirmItem.setOnAction(evt -> handleDeleteFriend(friend.getFriendUserId()));
                 confirmMenu.getItems().add(confirmItem);
  
@@ -440,7 +440,7 @@ public class FriendsController implements NetworkListener {
             requestsContainer.getChildren().clear();
             if (requestsData.isEmpty()) {
                 Label noReqLabel = new Label("暂无待处理的好友申请。");
-                noReqLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
+                noReqLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
                 requestsContainer.getChildren().add(noReqLabel);
                 return;
             }
@@ -457,7 +457,7 @@ public class FriendsController implements NetworkListener {
                 final double REQ_AVATAR_SIZE = 44;
                 javafx.scene.layout.StackPane avatar = new javafx.scene.layout.StackPane();
                 avatar.getStyleClass().add("avatar-badge");
-                avatar.setStyle("-fx-background-color: #f59e0b;"); // Orange for requests
+                avatar.setStyle("-fx-background-color: " + ScreenManager.themeColor("rgba(245,158,11,0.45)", "rgba(245,158,11,0.65)") + ";"); // Orange for requests
                 avatar.setPrefSize(REQ_AVATAR_SIZE, REQ_AVATAR_SIZE);
                 avatar.setMinSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
                 avatar.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
@@ -501,9 +501,9 @@ public class FriendsController implements NetworkListener {
                 acceptBtn.setOnAction(e -> handleAcceptRequest(req.getRequestId()));
 
                 Button rejectBtn = new Button("拒绝");
-                rejectBtn.getStyleClass().add("btn-secondary");
+                rejectBtn.getStyleClass().add("btn-danger");
                 rejectBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                rejectBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px; -fx-text-fill: #ef4444;");
+                rejectBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
                 rejectBtn.setOnAction(e -> handleRejectRequest(req.getRequestId()));
 
                 actionBox.getChildren().addAll(acceptBtn, rejectBtn);
