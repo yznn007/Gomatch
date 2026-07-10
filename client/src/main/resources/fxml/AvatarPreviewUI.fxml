@@ -10,7 +10,7 @@
            fx:controller="com.gomatch.client.ui.AvatarPreviewController"
            onMouseClicked="#handleClose"
            prefWidth="400" prefHeight="480"
-           style="-fx-background-color: rgba(0,0,0,0.85);">
+           styleClass="avatar-preview-dialog">
 
     <VBox spacing="20" alignment="CENTER">
         <!-- 大头像：StackPane 由 controller 设置渐变背景（与小头像风格一致） -->
@@ -28,7 +28,7 @@
             </ImageView>
         </StackPane>
 
-        <Label fx:id="usernameLabel" text=""
-               style="-fx-font-size: 18px; -fx-text-fill: #e2e8f0; -fx-font-weight: bold;"/>
+        <Label fx:id="usernameLabel" text="" styleClass="avatar-preview-name"
+               style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
     </VBox>
 </StackPane>

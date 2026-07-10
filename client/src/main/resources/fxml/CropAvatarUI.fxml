@@ -12,15 +12,16 @@
 -->
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.gomatch.client.ui.CropAvatarController"
+      styleClass="crop-avatar-dialog"
       spacing="0" alignment="CENTER"
       prefWidth="540" prefHeight="640"
-      minWidth="540" minHeight="640"
-      style="-fx-background-color: rgba(10,15,25,0.96);"><!-- 深色半透磨砂背景，与暗夜主题一致 -->
+      minWidth="540" minHeight="640">
 
     <!-- 顶部标题 -->
-    <HBox alignment="CENTER_LEFT" prefHeight="36" style="-fx-padding: 0 16 0 16;">
-        <Label text="拖动方框调整裁剪区域"
-               style="-fx-font-size: 13px; -fx-text-fill: #e2e8f0;"/>
+    <HBox alignment="CENTER_LEFT" prefHeight="36" styleClass="crop-avatar-title"
+          style="-fx-padding: 0 16 0 16;">
+        <Label text="拖动方框调整裁剪区域" styleClass="crop-avatar-title-text"
+               style="-fx-font-size: 13px;"/>
     </HBox>
 
     <!-- 主画布 -->
@@ -59,8 +60,8 @@
     </StackPane>
 
     <!-- 底部按钮栏 -->
-    <HBox spacing="30" alignment="CENTER" prefHeight="64"
-          style="-fx-padding: 0 20 0 20; -fx-background-color: rgba(10,15,25,0.96);">
+    <HBox spacing="30" alignment="CENTER" prefHeight="64" styleClass="crop-avatar-actions"
+          style="-fx-padding: 0 20 0 20;">
 
         <Button text="取消" onAction="#handleCancel"
                 prefWidth="90" prefHeight="36"

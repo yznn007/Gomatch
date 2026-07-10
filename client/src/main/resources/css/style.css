@@ -1342,6 +1342,15 @@
     -fx-background-color: rgba(255, 255, 255, 0.95);
     -fx-border-color: transparent transparent #475569 transparent;
 }
+.avatar-preview-dialog {
+    -fx-background-color: rgba(226, 232, 240, 0.94);
+}
+.avatar-preview-name, .crop-avatar-title-text {
+    -fx-text-fill: #1e293b;
+}
+.crop-avatar-dialog, .crop-avatar-actions {
+    -fx-background-color: rgba(248, 250, 252, 0.96);
+}
 
 /* ============================================================
    Night Frosted Theme Override
@@ -1354,6 +1363,15 @@
 .theme-dark .subtitle, .theme-dark .muted { -fx-text-fill: #a7b0c2; }
 .theme-dark .section-label, .theme-dark .timer-label, .theme-dark .turn-indicator { -fx-text-fill: #e2e8f0; }
 .theme-dark .error-text { -fx-text-fill: #fca5a5; }
+.theme-dark .avatar-preview-dialog {
+    -fx-background-color: rgba(0, 0, 0, 0.85);
+}
+.theme-dark .avatar-preview-name, .theme-dark .crop-avatar-title-text {
+    -fx-text-fill: #e2e8f0;
+}
+.theme-dark .crop-avatar-dialog, .theme-dark .crop-avatar-actions {
+    -fx-background-color: rgba(10, 15, 25, 0.96);
+}
 .theme-dark .card, .theme-dark .card-padded, .theme-dark .glass-card, .theme-dark .table-card, .theme-dark .list-card,
 .theme-dark .chat-area, .theme-dark .feature-card, .theme-dark .side-drawer, .theme-dark .dialog-pane {
     -fx-background-color: rgba(6, 9, 17, 0.42);
