@@ -707,7 +707,7 @@ public class Room {
         }
 
         if (observers.contains(handler)) {
-            log.warn("makeMove rejected: observer {} cannot make moves in room {}",
+               log.warn("makeMove rejected: observer {} cannot make moves in room {}",
                     handler.getUserId(), roomId);
             return false;
         }
