@@ -20,10 +20,10 @@
             <Region VBox.vgrow="ALWAYS"/>
             <Label fx:id="rankLabel" text="匹配成功" styleClass="title" style="-fx-font-size: 28px;"/>
             <Label text="匹配模式不会计入积分" styleClass="subtitle"/>
-            <Button fx:id="matchBtn" text="未准备" onAction="#handleReady" styleClass="btn-danger"
-                    maxWidth="480" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-pref-height: 80;"/>
+            <Button fx:id="matchBtn" text="未准备" onAction="#handleReady" styleClass="btn-primary"
+                    maxWidth="480" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-pref-height: 60;"/>
             <Label fx:id="matchStatus" text="" styleClass="subtitle" style="-fx-padding: 10 0 0 0;"/>
-            <Label fx:id="countdownLabel" text="" styleClass="subtitle" style="-fx-padding: 5 0 0 0; -fx-text-fill: #ef4444; -fx-font-size: 14px;"/>
+            <Label fx:id="countdownLabel" text="" styleClass="error-text" style="-fx-padding: 5 0 0 0; -fx-font-size: 14px;"/>
             <Region VBox.vgrow="ALWAYS"/>
         </VBox>
     </center>

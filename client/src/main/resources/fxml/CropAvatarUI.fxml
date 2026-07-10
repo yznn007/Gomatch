@@ -15,7 +15,7 @@
       spacing="0" alignment="CENTER"
       prefWidth="540" prefHeight="640"
       minWidth="540" minHeight="640"
-      style="-fx-background-color: #111827;">
+      style="-fx-background-color: rgba(10,15,25,0.96);"><!-- 深色半透磨砂背景，与暗夜主题一致 -->
 
     <!-- 顶部标题 -->
     <HBox alignment="CENTER_LEFT" prefHeight="36" style="-fx-padding: 0 16 0 16;">
@@ -60,23 +60,17 @@
 
     <!-- 底部按钮栏 -->
     <HBox spacing="30" alignment="CENTER" prefHeight="64"
-          style="-fx-padding: 0 20 0 20; -fx-background-color: #111827;">
+          style="-fx-padding: 0 20 0 20; -fx-background-color: rgba(10,15,25,0.96);">
 
         <Button text="取消" onAction="#handleCancel"
                 prefWidth="90" prefHeight="36"
-                style="-fx-font-size: 13px;
-                       -fx-background-color: transparent;
-                       -fx-text-fill: #cbd5e1;
-                       -fx-border-color: #475569;
-                       -fx-border-radius: 4;
-                       -fx-background-radius: 4;"/>
+                styleClass="btn-secondary"
+                style="-fx-font-size: 13px;"/>
 
         <Button text="确定" onAction="#handleConfirm"
                 prefWidth="90" prefHeight="36"
-                style="-fx-font-size: 13px;
-                       -fx-font-weight: bold;
-                       -fx-background-color: #22c55e;
-                       -fx-text-fill: white;
-                       -fx-background-radius: 4;"/>
+                styleClass="btn-success"
+                style="-fx-font-size: 13px; -fx-font-weight: bold;"/>
+
     </HBox>
 </VBox>

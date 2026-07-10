@@ -16,7 +16,7 @@
         <!-- 大头像：StackPane 由 controller 设置渐变背景（与小头像风格一致） -->
         <StackPane fx:id="avatarPane" prefWidth="300" prefHeight="300" minWidth="300" minHeight="300"
                     maxWidth="300" maxHeight="300"
-                    style="-fx-background-color: #0ea5e9; -fx-background-radius: 150;">
+                    style="-fx-background-color: rgba(148,163,184,0.35); -fx-background-radius: 150;">
             <Circle fx:id="avatarBg" radius="150" fill="transparent"/>
             <Label fx:id="avatarLabel" text="U" StackPane.alignment="CENTER"
                    style="-fx-font-size: 120px; -fx-font-weight: bold; -fx-text-fill: white;"
