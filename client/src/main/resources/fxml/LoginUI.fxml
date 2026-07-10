@@ -29,9 +29,27 @@
                       style="-fx-padding: 28 32;">
                     <Label text="%login.title" styleClass="title" style="-fx-font-size: 26px; -fx-padding: 0 0 10 0;"/>
 
-                    <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
-                        <TextField fx:id="usernameField" styleClass="glass-input" promptText="%login.username"/>
-                    </VBox>
+                    <HBox styleClass="login-tab-container" alignment="CENTER" maxWidth="320">
+                        <Button fx:id="btnAccountTab" text="账号登录" onAction="#handleAccountTab" styleClass="login-tab-btn" focusTraversable="false"/>
+                        <Button fx:id="btnPhoneTab" text="手机号登录" onAction="#handlePhoneTab" styleClass="login-tab-btn" focusTraversable="false"/>
+                    </HBox>
+
+                    <StackPane alignment="TOP_LEFT" maxWidth="320" viewOrder="-1.0">
+                        <HBox alignment="CENTER_LEFT" spacing="10" maxWidth="320">
+                            <VBox fx:id="countryCodeCard" styleClass="input-field-group" prefWidth="70" minWidth="70" maxWidth="70" style="-fx-padding: 6 0 4 0;" visible="false" managed="false">
+                                <Button fx:id="btnCountryCode" text="+86 ▼" onAction="#toggleInlineMenu" styleClass="glass-input" style="-fx-background-color: transparent; -fx-padding: 0 4; -fx-cursor: hand;" maxWidth="70" focusTraversable="false"/>
+                            </VBox>
+                            <VBox styleClass="input-field-group" HBox.hgrow="ALWAYS" maxWidth="320" style="-fx-padding: 6 0 4 0;">
+                                <TextField fx:id="accountField" styleClass="glass-input" promptText="用户名 / 邮箱 / ID"/>
+                            </VBox>
+                        </HBox>
+                        <VBox fx:id="inlineCodeMenu" visible="false" managed="false" styleClass="inline-popup-menu" translateY="32" prefWidth="70" maxWidth="70">
+                            <Button text="+86" onAction="#selectInlineCode" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                            <Button text="+1" onAction="#selectInlineCode" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                            <Button text="+81" onAction="#selectInlineCode" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                            <Button text="+44" onAction="#selectInlineCode" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                        </VBox>
+                    </StackPane>
 
                     <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
                         <PasswordField fx:id="passwordField" styleClass="glass-input" promptText="%login.password"/>

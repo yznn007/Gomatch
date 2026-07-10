@@ -14,20 +14,47 @@ public class RegisterController implements NetworkListener {
     @FXML private TextField usernameField;
     @FXML private TextField emailField;
     @FXML private TextField phoneField;
+    @FXML private javafx.scene.control.Button btnCountryCode;
+    @FXML private javafx.scene.layout.VBox inlineCodeMenu;
     @FXML private PasswordField passwordField;
     @FXML private PasswordField confirmField;
     @FXML private Label errorLabel;
 
     @FXML
     private void initialize() {
-        // 不在 initialize() 注册监听，避免未连接时注册以及重复进入页面时堆叠
+        hideInlineMenu();
+        usernameField.focusedProperty().addListener((obs, old, nv) -> { if (nv) hideInlineMenu(); });
+        emailField.focusedProperty().addListener((obs, old, nv) -> { if (nv) hideInlineMenu(); });
+        phoneField.focusedProperty().addListener((obs, old, nv) -> { if (nv) hideInlineMenu(); });
+        passwordField.focusedProperty().addListener((obs, old, nv) -> { if (nv) hideInlineMenu(); });
+        confirmField.focusedProperty().addListener((obs, old, nv) -> { if (nv) hideInlineMenu(); });
+    }
+
+    @FXML
+    private void toggleInlineMenu() {
+        boolean show = !inlineCodeMenu.isVisible();
+        inlineCodeMenu.setVisible(show);
+        if (show) {
+            inlineCodeMenu.applyCss();
+        }
+    }
+
+    private void hideInlineMenu() {
+        inlineCodeMenu.setVisible(false);
+    }
+
+    @FXML
+    private void selectInlineCode(javafx.event.ActionEvent e) {
+        javafx.scene.control.Button btn = (javafx.scene.control.Button) e.getSource();
+        btnCountryCode.setText(btn.getText() + " ▼");
+        hideInlineMenu();
     }
 
     @FXML
     private void handleRegister() {
         String username = usernameField.getText().trim();
         String email = emailField.getText().trim();
-        String phone = phoneField.getText().trim();
+        String phone = PhoneInputValidator.toE164(selectedCode(), phoneField.getText());
         String password = passwordField.getText().trim();
         String confirm  = confirmField.getText().trim();
 
@@ -43,8 +70,8 @@ public class RegisterController implements NetworkListener {
             errorLabel.setText("邮箱格式不正确");
             return;
         }
-        if (!PhoneInputValidator.isValid(phone)) {
-            errorLabel.setText("手机号必须是有效的国际号码（含国家区号）");
+        if (phone == null) {
+            errorLabel.setText("请选择国家区号后填写有效手机号");
             return;
         }
         if (password.length() < 6) {
@@ -68,6 +95,12 @@ public class RegisterController implements NetworkListener {
         } catch (Exception e) {
             errorLabel.setText("连接服务器失败: " + e.getMessage());
         }
+    }
+
+    private String selectedCode() {
+        if (btnCountryCode == null) return "+86";
+        String value = btnCountryCode.getText();
+        return value.replace("▼", "").trim();
     }
 
     @FXML
