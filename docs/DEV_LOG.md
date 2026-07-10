@@ -220,3 +220,8 @@
 | 2026-07-10 11:19 | Contributor| docs: 归档学校原始资料 | 新建 docs/school_materials/，移动学校讲义、实操手册、动员会、项目详解和报告模板，并更新 docs/README.md 中的资料链接。 | 文档归档完成 |
 | 2026-07-09 20:06 | Contributor| feat: 添加OSS存储、用户设置/音乐/审计日志数据库设计及文档更新 | 新增 t_user_settings、t_user_music、t_audit_log 表；更新 DB_DESIGN.md 文档 |
 | 2026-07-10 21:35 | Contributor| docs: 全文档审查与更新 | 对照 init.sql/Protocol.java/DEV_LOG 全面更新：README 修死链补资料；PRD 补 FR-021~025 与 UI-016~019；TSD 架构图补 storage/OSS；COMMON 补 QUICK_READY/QUICK_MATCH_FOUND/RANKING 与重连字面量说明；SERVER 补命令分发表与 storage 包、修 Redis Key 矛盾与 DBUtil 密码；DB_DESIGN 加权威来源说明、修 t_room/t_chat_message/t_room_watcher 的 room_id 类型与密码；CLIENT 落子协议改 JSON；DEV_GUIDELINE 日志加作者列；TEST 修越权文案并补 S21~S26；AGENTS 补服务端命令与页面路由 | 文档更新完成 |
+
+### 2026-07-11 — 标题栏窗口控制按钮右对齐
+
+- 将主窗口业务布局固定为外层容器的全尺寸左上角子节点。
+- 确保窗口缩放、最大化/还原和页面切换后，右上角控制按钮保持贴边对齐。

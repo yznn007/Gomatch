@@ -103,6 +103,11 @@ public class ScreenManager {
             currentBackground = bg;
             wrapper.getChildren().addAll(bg, mainLayout);
 
+            // 主布局占满外层容器并从左上角布局，保证标题栏右侧按钮始终贴合窗口右边缘。
+            StackPane.setAlignment(mainLayout, javafx.geometry.Pos.TOP_LEFT);
+            mainLayout.maxWidthProperty().bind(wrapper.widthProperty());
+            mainLayout.maxHeightProperty().bind(wrapper.heightProperty());
+
             // 4. 监听鼠标移动，将其坐标转发给底层的 ShapeGridBackground
             wrapper.setOnMouseMoved(e -> {
                 bg.setMousePosition(e.getX(), e.getY());
