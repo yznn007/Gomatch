@@ -123,6 +123,8 @@
 
 | 时间 | 作者 | 工作内容 | 问题/备注 |
 |------|------|----------|-----------|
+| 2026-07-11 02:18 | Contributor| feat(ui): 全局启用无边框毛玻璃/磨砂质感自定义弹窗/警示框样式 | 重构 ScreenManager 的 showStyledAlert 并在其基础上封装通用的 showStyledDialog。将全系统 Alert 与 TextInputDialog 全部升级为无边框模式（StageStyle.TRANSPARENT）并配置鼠标拖拽移动逻辑，同时实现圆角外框背景完全透明化。 | 验证通过 |
+| 2026-07-11 02:09 | Contributor| fix(ui): 统一排位与快速匹配成功后的“未准备”按钮样式为 btn-primary | 解决排位匹配成功后“未准备”按钮错误被渲染为红色（btn-danger）的体验冲突，使其与快速匹配一致呈现为蓝色主按钮样式（btn-primary）。并避免清除默认 button class。 | 验证通过 |
 | 2026-07-11 01:44 | Contributor| docs: 补充安全加固测试用例并根据 Git 提交历史归档历史缺陷记录 | 1. 在 TEST.md 中补全 IP速率限制、超大包保护、恶意重连校验等 8 项安全边界与越权用例；2. 根据 Git 历史整理并补全了 D01~D06 历史缺陷的日志。 | 验证通过 |
 | 2026-07-11 01:15 | Contributor| docs: 将 init.sql 的测试账号与排行榜样例数据补充至 README.md | 提升快速启动时的本地调试便利度，方便开发者获取默认的管理员与玩家测试凭据。 | 验证通过 |
 | 2026-07-05 01:24 | Contributor| refactor: Swing → JavaFX 迁移：添加 javafx 依赖和 maven plugin，重写 ClientMain 为 Application | FXML 命名空间不能加版本号 |
