@@ -123,6 +123,7 @@
 
 | 时间 | 作者 | 工作内容 | 问题/备注 |
 |------|------|----------|-----------|
+| 2026-07-11 01:44 | Contributor| docs: 补充安全加固测试用例并根据 Git 提交历史归档历史缺陷记录 | 1. 在 TEST.md 中补全 IP速率限制、超大包保护、恶意重连校验等 8 项安全边界与越权用例；2. 根据 Git 历史整理并补全了 D01~D06 历史缺陷的日志。 | 验证通过 |
 | 2026-07-11 01:15 | Contributor| docs: 将 init.sql 的测试账号与排行榜样例数据补充至 README.md | 提升快速启动时的本地调试便利度，方便开发者获取默认的管理员与玩家测试凭据。 | 验证通过 |
 | 2026-07-05 01:24 | Contributor| refactor: Swing → JavaFX 迁移：添加 javafx 依赖和 maven plugin，重写 ClientMain 为 Application | FXML 命名空间不能加版本号 |
 | 2026-07-05 01:24 | Contributor| feat: 实现 ScreenManager（场景导航/弹窗）、ServerConnector（接收线程+消息分发）、NetworkListener | 首次居中，之后保留窗口位置 |
