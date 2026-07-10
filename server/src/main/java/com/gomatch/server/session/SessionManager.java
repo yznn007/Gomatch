@@ -1,6 +1,7 @@
 package com.gomatch.server.session;
 
 import com.gomatch.server.dao.SocketSessionDAO;
+import com.gomatch.server.dao.UserAuthStateDAO;
 import com.gomatch.server.handler.ClientHandler;
 import com.gomatch.server.redis.RedisManager;
 import org.slf4j.Logger;
@@ -15,7 +16,7 @@ public class SessionManager {
     private static final Logger log = LoggerFactory.getLogger(SessionManager.class);
     private static final SessionManager instance = new SessionManager();
     private static final SocketSessionDAO socketSessionDAO = new SocketSessionDAO();
-
+    private static final UserAuthStateDAO userAuthStateDAO = new UserAuthStateDAO();
     private static final long SESSION_TIMEOUT = 300;
 
     public static class Session {
@@ -27,9 +28,9 @@ public class SessionManager {
         public final int loseCount;
         public final int drawCount;
         public String role;
-        public ClientHandler handler;
-        public Instant lastActiveTime;
-        public String roomId;
+        public volatile ClientHandler handler;
+        public volatile Instant lastActiveTime;
+        public volatile String roomId;
 
         public Session(String token, long userId, String username, int score,
                        int winCount, int loseCount, int drawCount) {
@@ -46,9 +47,7 @@ public class SessionManager {
             this.loseCount = loseCount;
             this.drawCount = drawCount;
             this.role = role;
-            this.handler = null;
             this.lastActiveTime = Instant.now();
-            this.roomId = null;
         }
 
         public boolean isExpired() {
@@ -56,7 +55,7 @@ public class SessionManager {
         }
 
         public void updateLastActive() {
-            this.lastActiveTime = Instant.now();
+            lastActiveTime = Instant.now();
         }
     }
 
@@ -73,13 +72,12 @@ public class SessionManager {
 
     private void startCleanupTask() {
         Thread cleanupThread = new Thread(() -> {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    Thread.sleep(60000);
+                    Thread.sleep(60_000);
                     cleanupExpiredSessions();
-                } catch (InterruptedException e) {
+                } catch (InterruptedException interrupted) {
                     Thread.currentThread().interrupt();
-                    break;
                 }
             }
         }, "session-cleanup");
@@ -91,116 +89,151 @@ public class SessionManager {
     private void cleanupExpiredSessions() {
         int removedCount = 0;
         for (Map.Entry<String, Session> entry : sessionsByToken.entrySet()) {
-            if (entry.getValue().isExpired()) {
-                Session session = sessionsByToken.remove(entry.getKey());
-                sessionsByUserId.remove(session.userId);
-                socketSessionDAO.disconnect(session.token, "timeout");
+            Session candidate = entry.getValue();
+            if (candidate.isExpired() && sessionsByToken.remove(entry.getKey(), candidate)) {
+                sessionsByUserId.remove(candidate.userId, candidate);
+                socketSessionDAO.disconnect(candidate.token, "timeout");
+                RedisManager.getInstance().removeSession(candidate.token);
                 removedCount++;
-                log.debug("Cleaned up expired session: userId={}", session.userId);
             }
         }
         if (removedCount > 0) {
             log.info("Cleaned up {} expired sessions", removedCount);
         }
-
         socketSessionDAO.cleanupExpiredSessions(60);
     }
 
-    public Session createSession(long userId, String username, int score,
-                                  int winCount, int loseCount, int drawCount, String role) {
+    public synchronized Session createSession(long userId, String username, int score,
+                                               int winCount, int loseCount, int drawCount, String role) {
+        revokeAllSessionsByUserId(userId, "replaced");
         String token = UUID.randomUUID().toString();
         Session session = new Session(token, userId, username, score,
                 winCount, loseCount, drawCount, role);
         sessionsByToken.put(token, session);
         sessionsByUserId.put(userId, session);
-
         socketSessionDAO.saveSession(userId, token, null, null, null);
-
         RedisManager.SessionData sessionData = new RedisManager.SessionData(
                 userId, username, score, winCount, loseCount, drawCount,
                 null, role, System.currentTimeMillis());
         RedisManager.getInstance().saveSession(token, sessionData);
         RedisManager.getInstance().setOnline(userId, token);
-
         log.info("Session created: userId={}, role={}, token={}", userId, role, token.substring(0, 8));
         return session;
     }
 
-    public Session getSessionByToken(String token) {
-        Session session = sessionsByToken.get(token);
-        if (session != null) {
-            session.updateLastActive();
-            socketSessionDAO.updateHeartbeat(token);
-            RedisManager.getInstance().updateSessionActivity(token);
-        } else {
-            RedisManager.SessionData redisSession = RedisManager.getInstance().getSession(token);
-            if (redisSession != null) {
-                session = new Session(token, redisSession.userId, redisSession.username,
-                        redisSession.score, redisSession.winCount, redisSession.loseCount,
-                        redisSession.drawCount, redisSession.role != null ? redisSession.role : "PLAYER");
-                session.roomId = redisSession.roomId;
-                session.lastActiveTime = Instant.ofEpochMilli(redisSession.lastActiveTime);
-                sessionsByToken.put(token, session);
-                sessionsByUserId.put(redisSession.userId, session);
-                socketSessionDAO.saveSession(redisSession.userId, token, null, null, null);
-                log.info("Session recovered from Redis: userId={}", redisSession.userId);
-            }
+    public synchronized Session getSessionByToken(String token) {
+        if (token == null || token.isBlank()) {
+            return null;
         }
+        Session session = sessionsByToken.get(token);
+        if (session == null) {
+            session = recoverFromRedis(token);
+        }
+        if (session == null) {
+            return null;
+        }
+
+        UserAuthStateDAO.AuthState authState = userAuthStateDAO.find(session.userId);
+        boolean active = authState != null && authState.isActive();
+        SessionAuthorizationPolicy.Decision decision = SessionAuthorizationPolicy.decide(
+                session.lastActiveTime, Instant.now(), session.handler != null, active);
+        if (decision != SessionAuthorizationPolicy.Decision.ALLOW) {
+            if (decision != SessionAuthorizationPolicy.Decision.ALREADY_CONNECTED) {
+                removeSession(token, decision.name().toLowerCase());
+            }
+            log.warn("Reconnect rejected: userId={}, reason={}", session.userId, decision);
+            return null;
+        }
+
+        session.role = authState.role();
+        refreshActivity(session);
         return session;
+    }
+
+    private Session recoverFromRedis(String token) {
+        RedisManager.SessionData redisSession = RedisManager.getInstance().getSession(token);
+        if (redisSession == null) {
+            return null;
+        }
+        Session session = new Session(token, redisSession.userId, redisSession.username,
+                redisSession.score, redisSession.winCount, redisSession.loseCount,
+                redisSession.drawCount, redisSession.role == null ? "PLAYER" : redisSession.role);
+        session.roomId = redisSession.roomId;
+        session.lastActiveTime = Instant.ofEpochMilli(redisSession.lastActiveTime);
+        sessionsByToken.put(token, session);
+        sessionsByUserId.put(redisSession.userId, session);
+        socketSessionDAO.saveSession(redisSession.userId, token, null, null, null);
+        return session;
+    }
+
+    private void refreshActivity(Session session) {
+        session.updateLastActive();
+        socketSessionDAO.updateHeartbeat(session.token);
+        RedisManager.getInstance().updateSessionActivity(session.token);
     }
 
     public Session getSessionByUserId(long userId) {
         Session session = sessionsByUserId.get(userId);
         if (session != null) {
-            session.updateLastActive();
-            socketSessionDAO.updateHeartbeat(session.token);
+            refreshActivity(session);
         }
         return session;
     }
 
     public void removeSession(String token) {
+        removeSession(token, "manual");
+    }
+
+    private void removeSession(String token, String reason) {
         Session session = sessionsByToken.remove(token);
-        if (session != null) {
-            sessionsByUserId.remove(session.userId);
-            socketSessionDAO.disconnect(token, "manual");
+        if (session == null) {
             RedisManager.getInstance().removeSession(token);
-            RedisManager.getInstance().setOffline(session.userId);
-            log.info("Session removed: userId={}", session.userId);
+            return;
         }
+        sessionsByUserId.remove(session.userId, session);
+        socketSessionDAO.disconnect(token, reason);
+        RedisManager.getInstance().removeSession(token);
+        RedisManager.getInstance().setOffline(session.userId);
+    }
+
+    public synchronized void revokeAllSessionsByUserId(long userId, String reason) {
+        for (Map.Entry<String, Session> entry : sessionsByToken.entrySet()) {
+            Session session = entry.getValue();
+            if (session.userId == userId && sessionsByToken.remove(entry.getKey(), session)) {
+                sessionsByUserId.remove(userId, session);
+                socketSessionDAO.disconnect(session.token, reason);
+                RedisManager.getInstance().removeSession(session.token);
+            }
+        }
+        sessionsByUserId.remove(userId);
+        RedisManager.getInstance().setOffline(userId);
     }
 
     public void removeSessionByUserId(long userId) {
-        Session session = sessionsByUserId.remove(userId);
-        if (session != null) {
-            sessionsByToken.remove(session.token);
-            socketSessionDAO.disconnect(session.token, "manual");
-            RedisManager.getInstance().removeSession(session.token);
-            RedisManager.getInstance().setOffline(userId);
-            log.info("Session removed by userId: {}", userId);
-        }
+        revokeAllSessionsByUserId(userId, "manual");
     }
 
     public void updateSessionRoom(long userId, String roomId) {
         Session session = sessionsByUserId.get(userId);
         if (session != null) {
             session.roomId = roomId;
-            session.updateLastActive();
+            refreshActivity(session);
             socketSessionDAO.updateRoom(session.token, roomId);
             RedisManager.getInstance().updateSessionRoom(session.token, roomId);
-            log.debug("Session room updated: userId={}, roomId={}", userId, roomId);
         }
     }
 
     public void updateSessionHandler(long userId, ClientHandler handler) {
         Session session = sessionsByUserId.get(userId);
-        if (session != null) {
-            session.handler = handler;
-            session.updateLastActive();
-            if (handler != null) {
-                socketSessionDAO.updateStatus(session.token, "connected");
-            } else {
-                socketSessionDAO.disconnect(session.token, "disconnected");
-            }
+        if (session == null) {
+            return;
+        }
+        session.handler = handler;
+        refreshActivity(session);
+        if (handler != null) {
+            socketSessionDAO.updateStatus(session.token, "connected");
+        } else {
+            socketSessionDAO.disconnect(session.token, "disconnected");
         }
     }
 
@@ -208,6 +241,3 @@ public class SessionManager {
         return sessionsByUserId.size();
     }
 }
-
-
-
