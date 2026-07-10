@@ -186,8 +186,8 @@ public class ScreenManager {
             dialog.initOwner(stage);
             dialog.initModality(Modality.WINDOW_MODAL);
             
-            // 弹窗使用无系统边框，使对局结算页面更有质感
-            dialog.initStyle(StageStyle.UNDECORATED);
+            // 弹窗使用透明窗口，使圆角内容边缘不受原生背景干扰
+            dialog.initStyle(StageStyle.TRANSPARENT);
 
             // 给弹窗也包上动态点阵背景和自定义小标题栏
             HBox dialogTitleBar = createDialogTitleBar(dialog);
@@ -205,13 +205,14 @@ public class ScreenManager {
             dialogWrapper.setOnMouseExited(e -> bg.setMousePosition(-1000, -1000));
 
             Scene scene = new Scene(dialogWrapper);
+            scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
             scene.setCamera(new javafx.scene.PerspectiveCamera(false));
             
             // 绑定弹窗标题栏宽度
             dialogTitleBar.prefWidthProperty().bind(scene.widthProperty());
             
             applyStylesheet(scene);
-            applyUserTheme(scene);
+            applyDialogTheme(scene);
             dialog.setScene(scene);
             dialog.setResizable(false);
             dialog.showAndWait();
@@ -410,6 +411,15 @@ public class ScreenManager {
         scene.getRoot().setStyle(appendBackgroundColor(scene.getRoot().getStyle(), background));
     }
 
+    /** 给透明弹窗挂载主题类，避免写入主窗口的深色渐变背景。 */
+    public static void applyDialogTheme(Scene scene) {
+        if (scene == null || scene.getRoot() == null) return;
+        scene.getRoot().getStyleClass().removeAll(THEME_LIGHT, THEME_DARK);
+        scene.getRoot().getStyleClass().add(isDarkTheme() ? THEME_DARK : THEME_LIGHT);
+        scene.getRoot().setStyle(appendBackgroundColor(scene.getRoot().getStyle(), "transparent"));
+        applyUserFont(scene);
+    }
+
     /** 动态生成控件使用的主题色。 */
     public static String themeColor(String lightColor, String darkColor) {
         return isDarkTheme() ? darkColor : lightColor;
@@ -585,6 +595,7 @@ public class ScreenManager {
                 dialogPane.sceneProperty().addListener((obs, oldScene, newScene) -> {
                     if (newScene != null) {
                         newScene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+                        applyDialogTheme(newScene);
                         newScene.fillProperty().addListener((o, oldFill, newFill) -> {
                             if (newFill != javafx.scene.paint.Color.TRANSPARENT) {
                                 newScene.setFill(javafx.scene.paint.Color.TRANSPARENT);
@@ -595,6 +606,7 @@ public class ScreenManager {
                 Scene scene = dialogPane.getScene();
                 if (scene != null) {
                     scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+                    applyDialogTheme(scene);
                     scene.fillProperty().addListener((o, oldFill, newFill) -> {
                         if (newFill != javafx.scene.paint.Color.TRANSPARENT) {
                             scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
