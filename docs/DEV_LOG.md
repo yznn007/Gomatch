@@ -14,8 +14,13 @@
 
 > FXML 布局、CSS 样式、动画特效、视觉组件
 
-| 时间 | 作者 | 工作内容 | 问题/备注 |
+| 时间 | 作者 | 工作内容 | Problem/备注 |
 |------|------|----------|-----------|
+| 2026-07-11 00:57 | Contributor| physics: 减小 3D 移动卡片 (PixelCard) 的 Z 轴摆动幅度 | 进一步抑制摆动的响应振幅：1. 鼠标滑入瞬间的脉冲推力因子从 0.25 降至 0.06，防止晃动起点过大；2. 鼠标平移速度带来的摆动角加速度传导系数从 0.000025 降低至 0.000006；3. 单帧最大推力限制从 0.15 限制到 0.04，使得晃动幅度和摆角被严格约束在极小且微弱的精致感官范围内。 |
+| 2026-07-11 00:49 | Contributor| physics: 优化 3D 移动卡片 (PixelCard) 挂绳悬挂动力学，引入偏移越远阻力越大机制 | 优化卡片物理 Z 轴摆动（挂绳特性）的重力恢复力与摆动阻尼公式。通过引入基于摆动角度 angle 绝对值和平方的非线性刚度调节与大摆角阻尼增强算法，使卡片在大角度晃动时承受成倍的阻力和回弹恢复力，从而在小角度下保持轻盈飘逸，大角度下能迅速平抑和阻尼，使动态吊挂交互更加质感与沉稳。 |
+| 2026-07-11 00:27 | Contributor| fix: 第二轮前端 UI 合规性审查与全面修复 | 1. **style.css**：定义 .success-text, .rank-text, .win-rate-text, .expiry-text 样式类及其暗色 theme-dark 覆盖。2. **ProfileUI.fxml / ForgotPasswordUI.fxml**：移除 rankLabel, winRateLabel, codeExpiryLabel 的硬编码内联样式，改用相应的主题类。3. **BoardController**：剩余时间少于10s时的倒计时警告色换用 themeColor()。4. **RankingController**：无数据标签设为 themeColor；当前用户 "(我)" 高亮从违禁天蓝色 #0ea5e9 改为雅致青色 (Teal) 主题色。5. **FriendsController**：修复在线状态 activeLabel 多余分号的语法错误；删除/拒绝按钮移除内联红色直接改用 btn-danger 样式类；空提示标签换用 themeColor；申请头像从硬编码橘色改为 themeColor 橘色；errorLabel 移除原生颜色 red/green。6. **ProfileController**：密码错误/成功提示与对战记录分值全部改用 themeColor；showUploadStatus 将硬编码颜色名称转换为主题自适应 Hex。7. **ForgotPasswordController**：所有动态状态消息 setStyle 色值全部替换为 themeColor。 |
+| 2026-07-11 00:16 | Contributor| fix: 弹窗 UI 合规性修复 — 主题注入缺失、硬编码颜色、语义错误 | 1. **GameOverController**：积分变化标签 +/- 颜色换用 themeColor()（浅色/暗色分别使用深绿深红/浅绿浅红）。2. **QuickMatchReadyUI.fxml + QuickMatchReadyController**：准备按钮从 btn-danger（红色）改为 btn-primary（语义正确）；所有 matchStatus/countdownLabel 的硬编码颜色全部换用 themeColor()，并将 cancelMatch 状态从鲜蓝 #3b82f6 改为中性板岩灰。3. **BoardController.showGameOverDialog**：从手动注入 CSS 改为调用 applyStylesheetPublic + applyUserTheme + applyUserFont，修复暗色主题下结算弹窗背景和颜色异常。4. **BoardController.showPendingRequestDialog**：同上，补充完整主题注入。5. **ScreenManager**：新增 applyStylesheetPublic() 公共方法，供外部类使用。 |
+| 2026-07-11 00:08 | Contributor| fix: UI 合规性全面修复 — 17 处违反设计约定的样式问题 | CSS: btn-danger/success 改极简底线风格+8px圆角，player-info-card-self 鲜蓝→板岩灰，arena-match hover 天蓝→中性，nav-btn/mode-btn-primary 圆角统一8px。FXML: AvatarPreviewUI 默认头像背景去天蓝；CropAvatarUI 整体背景改为半透磨砂、按钮改用CSS类；ForgotPasswordUI 验证码Label去鲜蓝。Java: BoardController 回放分数/roleLabel白方/弹窗background/ProgressIndicator全部换themeColor；selfTag去鲜蓝；CasualLobbyController 空状态提示+观战头像换themeColor/板岩灰。 |
 | 2026-07-05 01:24 | Contributor| style: 创建全局 white-minimalist CSS：卡片/按钮/表格/输入框圆角、页面透明背景+Separator 分割 | |
 | 2026-07-05 01:24 | Contributor| refactor: Lobby 重构：上传头像+昵称、匹配/排位入口、排行榜侧边抽屉、好友/设置 | |
 | 2026-07-05 01:24 | Contributor| feat: 新增 CasualLobbyUI（房间列表+观战+创建/加入/快速匹配）和 RankedLobbyUI（段位+匹配按钮） | |
@@ -81,6 +86,7 @@
 
 | 时间 | 作者 | 工作内容 | 问题/备注 |
 |------|------|----------|-----------|
+| 2026-07-11 01:00 | Contributor| fix: 修复 Redis 背景保存失败导致写入命令被禁用的问题 | 1. 通过 redis-cli 将 stop-writes-on-bgsave-error 设置为 no 恢复本地运行；2. 在 RedisManager.init() 中添加了程序内配置，确保在其他环境初始化时同样禁用此选项以提高健壮性。 | 验证通过 |
 | 2026-07-04 13:20 | Contributor| 搭建 Maven 多模块项目骨架，创建 pom.xml 及目录结构 | 使用 JDK 21 |
 | 2026-07-06 14:57 | Contributor| 服务端核心功能实现：注册、登录、房间管理、落子同步、五连判胜、认输、断线处理、战绩入库、房间聊天、观战功能、悔棋/求和、断线重连、人机对战 | 基于 Socket 多线程架构 |
 | 2026-07-06 14:57 | Contributor| 服务端进阶功能：密码房间、排位匹配（ELO算法）、好友系统（请求/接受/删除）、棋局保存/加载、聊天消息持久化、Socket会话持久化、观战记录、游戏操作记录 | 定时任务自动刷新 |

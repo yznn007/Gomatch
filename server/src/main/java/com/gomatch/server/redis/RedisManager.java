@@ -1,6 +1,7 @@
 package com.gomatch.server.redis;
 
 import com.google.gson.Gson;
+import com.gomatch.server.config.EnvironmentConfig;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.api.sync.RedisCommands;
@@ -33,19 +34,20 @@ public class RedisManager {
             int database = 0;
             int timeout = 3000;
 
+            Properties props = new Properties();
             try (InputStream is = getClass().getClassLoader().getResourceAsStream("database.properties")) {
                 if (is != null) {
-                    Properties props = new Properties();
                     props.load(is);
-                    host = props.getProperty("redis.host", host);
-                    port = Integer.parseInt(props.getProperty("redis.port", String.valueOf(port)));
-                    password = props.getProperty("redis.password", "");
-                    database = Integer.parseInt(props.getProperty("redis.database", "0"));
-                    timeout = Integer.parseInt(props.getProperty("redis.timeout", "3000"));
                 }
             } catch (Exception e) {
                 log.warn("Failed to read database.properties, using defaults");
             }
+            props = EnvironmentConfig.resolve(props);
+            host = props.getProperty("redis.host", host);
+            port = Integer.parseInt(props.getProperty("redis.port", String.valueOf(port)));
+            password = props.getProperty("redis.password", "");
+            database = Integer.parseInt(props.getProperty("redis.database", "0"));
+            timeout = Integer.parseInt(props.getProperty("redis.timeout", "3000"));
 
             RedisURI uri = RedisURI.builder()
                     .withHost(host)
@@ -71,6 +73,12 @@ public class RedisManager {
             String ping = syncCommands.ping();
             if ("PONG".equals(ping)) {
                 log.info("Redis connected: {}:{}", host, port);
+                try {
+                    syncCommands.configSet("stop-writes-on-bgsave-error", "no");
+                    log.info("Set Redis stop-writes-on-bgsave-error to no successfully");
+                } catch (Exception e) {
+                    log.warn("Failed to set Redis stop-writes-on-bgsave-error to no: {}", e.getMessage());
+                }
             } else {
                 log.warn("Redis ping returned unexpected: {}", ping);
             }
@@ -577,4 +585,6 @@ public class RedisManager {
         }
     }
 }
+
+
 

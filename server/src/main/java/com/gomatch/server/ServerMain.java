@@ -1,16 +1,20 @@
 package com.gomatch.server;
 
-import com.gomatch.server.handler.ClientHandler;
-import com.gomatch.server.room.RoomManager;
 import com.gomatch.server.dao.DBUtil;
 import com.gomatch.server.dao.RankDAO;
 import com.gomatch.server.dao.RoomDAO;
+import com.gomatch.server.handler.ClientHandler;
 import com.gomatch.server.redis.RedisManager;
+import com.gomatch.server.room.RoomManager;
+import com.gomatch.server.security.ConnectionGuard;
+import com.gomatch.server.security.GuardedSocket;
+import com.gomatch.server.security.ProtocolRequestGuard;
 import com.gomatch.server.storage.StorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Executors;
@@ -18,16 +22,17 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Gomatch 游戏服务器主类
- * 监听 8888 端口，接收 TCP 连接并为每个连接创建 ClientHandler 处理
- */
+/** Gomatch game server entry point. */
 public class ServerMain {
     private static final Logger log = LoggerFactory.getLogger(ServerMain.class);
     private static final int PORT = 8888;
     private static final int MAX_CONNECTIONS = 100;
+    private static final int MAX_CONNECTIONS_PER_ADDRESS = 10;
 
     private static final AtomicInteger connectionCount = new AtomicInteger(0);
+    private static final ConnectionGuard connectionGuard =
+            new ConnectionGuard(MAX_CONNECTIONS, MAX_CONNECTIONS_PER_ADDRESS);
+    private static final ProtocolRequestGuard requestGuard = new ProtocolRequestGuard();
     private static volatile boolean running = true;
     private static final RankDAO rankDAO = new RankDAO();
     private static final RoomDAO roomDAO = new RoomDAO();
@@ -36,42 +41,24 @@ public class ServerMain {
 
     public static void main(String[] args) {
         log.info("=== Gomatch Server Starting ===");
-
-        // 初始化数据库连接
         DBUtil.init();
-
-        // 初始化房间管理器
         RoomManager.getInstance();
-
-        // 初始化 Redis
         RedisManager.getInstance().init();
-
-        // 初始化 OSS 存储
         StorageManager.getInstance().initialize(DBUtil.getConfig());
-
-        // 初始化排行榜物化表
         initRankMaterializedView();
-
-        // 初始化房间持久化定时任务
         initRoomPersistence();
-
-        // 添加 JVM 关闭钩子
         Runtime.getRuntime().addShutdownHook(new Thread(ServerMain::shutdown, "shutdown-hook"));
-
-        // 启动 TCP 监听
         startListening();
     }
 
     private static void initRankMaterializedView() {
         rankDAO.refreshAllRanks();
         rankDAO.recalculateRankOrder();
-
         rankRefreshScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "rank-refresh");
             t.setDaemon(true);
             return t;
         });
-
         rankRefreshScheduler.scheduleAtFixedRate(() -> {
             try {
                 rankDAO.refreshAllRanks();
@@ -81,32 +68,26 @@ public class ServerMain {
                 log.error("Rank refresh error", e);
             }
         }, 5, 5, TimeUnit.MINUTES);
-
         log.info("Rank materialized view initialized with auto-refresh every 5 minutes");
     }
 
     private static void initRoomPersistence() {
-        // 初始化时同步一次
         roomDAO.syncAllRooms(RoomManager.getInstance().getAllRooms());
-
         roomPersistenceScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "room-persistence");
             t.setDaemon(true);
             return t;
         });
-
-        // 每1分钟同步房间状态到数据库
         roomPersistenceScheduler.scheduleAtFixedRate(() -> {
             try {
                 roomDAO.syncAllRooms(RoomManager.getInstance().getAllRooms());
-                roomDAO.cleanupFinishedRooms(30); // 清理30分钟前结束的房间
+                roomDAO.cleanupFinishedRooms(30);
                 log.info("Room persistence task completed: active rooms={}",
                         RoomManager.getInstance().getActiveRoomCount());
             } catch (Exception e) {
                 log.error("Room persistence error", e);
             }
         }, 1, 1, TimeUnit.MINUTES);
-
         log.info("Room persistence initialized with auto-sync every 1 minute");
     }
 
@@ -115,28 +96,38 @@ public class ServerMain {
         try {
             serverSocket = new ServerSocket(PORT);
             log.info("Server listening on port {}", PORT);
-            log.info("Max connections: {}", MAX_CONNECTIONS);
+            log.info("Connection limits: total={}, perAddress={}",
+                    MAX_CONNECTIONS, MAX_CONNECTIONS_PER_ADDRESS);
 
             while (running) {
                 try {
-                    Socket clientSocket = serverSocket.accept();
-
-                    if (connectionCount.get() >= MAX_CONNECTIONS) {
-                        log.warn("Connection limit reached ({}/{})", MAX_CONNECTIONS, connectionCount.get());
-                        clientSocket.close();
+                    Socket rawSocket = serverSocket.accept();
+                    InetAddress address = rawSocket.getInetAddress();
+                    if (!connectionGuard.tryAcquire(address)) {
+                        log.warn("Connection rejected by limit: {}", address);
+                        rawSocket.close();
                         continue;
                     }
 
-                    connectionCount.incrementAndGet();
-                    log.info("New client connected: {} (active: {}/{})",
-                            clientSocket.getInetAddress(),
-                            connectionCount.get(), MAX_CONNECTIONS);
-
-                    ClientHandler handler = new ClientHandler(clientSocket);
-                    Thread thread = new Thread(handler, "client-" + clientSocket.getPort());
-                    thread.setDaemon(false);
-                    thread.start();
-
+                    try {
+                        GuardedSocket clientSocket = new GuardedSocket(rawSocket, requestGuard,
+                                () -> connectionGuard.release(address));
+                        connectionCount.incrementAndGet();
+                        log.info("New client connected: {} (active: {}/{})",
+                                address, connectionCount.get(), MAX_CONNECTIONS);
+                        ClientHandler handler = new ClientHandler(clientSocket);
+                        Thread thread = new Thread(handler, "client-" + clientSocket.getPort());
+                        thread.setDaemon(false);
+                        thread.start();
+                    } catch (IOException | RuntimeException setupError) {
+                        connectionGuard.release(address);
+                        try {
+                            rawSocket.close();
+                        } catch (IOException closeError) {
+                            setupError.addSuppressed(closeError);
+                        }
+                        throw setupError;
+                    }
                 } catch (IOException e) {
                     if (running) {
                         log.error("Error accepting connection", e);
@@ -151,10 +142,10 @@ public class ServerMain {
         }
     }
 
-    private static void closeServerSocket(ServerSocket ss) {
-        if (ss != null && !ss.isClosed()) {
+    private static void closeServerSocket(ServerSocket serverSocket) {
+        if (serverSocket != null && !serverSocket.isClosed()) {
             try {
-                ss.close();
+                serverSocket.close();
                 log.info("Server socket closed");
             } catch (IOException e) {
                 log.error("Error closing server socket", e);
@@ -165,46 +156,32 @@ public class ServerMain {
     public static void shutdown() {
         log.info("Shutting down server...");
         running = false;
-
-        // 关闭房间持久化调度器
-        if (roomPersistenceScheduler != null) {
-            roomPersistenceScheduler.shutdown();
-            try {
-                if (!roomPersistenceScheduler.awaitTermination(1, TimeUnit.SECONDS)) {
-                    roomPersistenceScheduler.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                roomPersistenceScheduler.shutdownNow();
-            }
-            log.info("Room persistence scheduler stopped");
-        }
-
-        // 关闭排行榜刷新调度器
-        if (rankRefreshScheduler != null) {
-            rankRefreshScheduler.shutdown();
-            try {
-                if (!rankRefreshScheduler.awaitTermination(1, TimeUnit.SECONDS)) {
-                    rankRefreshScheduler.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                rankRefreshScheduler.shutdownNow();
-            }
-            log.info("Rank refresh scheduler stopped");
-        }
-
+        shutdownScheduler(roomPersistenceScheduler, "Room persistence");
+        shutdownScheduler(rankRefreshScheduler, "Rank refresh");
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-
-        // 关闭 Redis 连接
         RedisManager.getInstance().close();
-
-        // 关闭数据库连接
         DBUtil.close();
-
         log.info("Server stopped. Final connections: {}", connectionCount.get());
+    }
+
+    private static void shutdownScheduler(ScheduledExecutorService scheduler, String name) {
+        if (scheduler == null) {
+            return;
+        }
+        scheduler.shutdown();
+        try {
+            if (!scheduler.awaitTermination(1, TimeUnit.SECONDS)) {
+                scheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            scheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+        log.info("{} scheduler stopped", name);
     }
 
     public static int getActiveConnections() {
