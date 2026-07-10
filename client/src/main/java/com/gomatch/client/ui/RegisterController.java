@@ -13,6 +13,7 @@ import javafx.scene.control.TextField;
 public class RegisterController implements NetworkListener {
     @FXML private TextField usernameField;
     @FXML private TextField emailField;
+    @FXML private TextField phoneField;
     @FXML private PasswordField passwordField;
     @FXML private PasswordField confirmField;
     @FXML private Label errorLabel;
@@ -26,11 +27,12 @@ public class RegisterController implements NetworkListener {
     private void handleRegister() {
         String username = usernameField.getText().trim();
         String email = emailField.getText().trim();
+        String phone = phoneField.getText().trim();
         String password = passwordField.getText().trim();
         String confirm  = confirmField.getText().trim();
 
-        if (username.isEmpty() || password.isEmpty() || email.isEmpty()) {
-            errorLabel.setText("用户名、邮箱和密码不能为空");
+        if (username.isEmpty() || password.isEmpty() || email.isEmpty() || phone.isEmpty()) {
+            errorLabel.setText("用户名、邮箱、手机号和密码不能为空");
             return;
         }
         if (username.length() < 4 || username.length() > 16) {
@@ -39,6 +41,10 @@ public class RegisterController implements NetworkListener {
         }
         if (!email.matches("^[\\w.+-]+@[\\w-]+\\.[\\w.]+$")) {
             errorLabel.setText("邮箱格式不正确");
+            return;
+        }
+        if (!PhoneInputValidator.isValid(phone)) {
+            errorLabel.setText("手机号必须是有效的国际号码（含国家区号）");
             return;
         }
         if (password.length() < 6) {
@@ -57,7 +63,8 @@ public class RegisterController implements NetworkListener {
             ClientMain.getConnector().send(Message.of(Protocol.REGISTER,
                     "username", username,
                     "password", password,
-                    "email", email));
+                    "email", email,
+                    "phone", phone));
         } catch (Exception e) {
             errorLabel.setText("连接服务器失败: " + e.getMessage());
         }

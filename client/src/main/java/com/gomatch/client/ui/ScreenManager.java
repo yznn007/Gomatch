@@ -582,9 +582,24 @@ public class ScreenManager {
                 });
 
                 // Clear native dialog window background to display beautiful rounded corners properly
+                dialogPane.sceneProperty().addListener((obs, oldScene, newScene) -> {
+                    if (newScene != null) {
+                        newScene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+                        newScene.fillProperty().addListener((o, oldFill, newFill) -> {
+                            if (newFill != javafx.scene.paint.Color.TRANSPARENT) {
+                                newScene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+                            }
+                        });
+                    }
+                });
                 Scene scene = dialogPane.getScene();
                 if (scene != null) {
                     scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+                    scene.fillProperty().addListener((o, oldFill, newFill) -> {
+                        if (newFill != javafx.scene.paint.Color.TRANSPARENT) {
+                            scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+                        }
+                    });
                 }
             }
             if (stage != null) {
