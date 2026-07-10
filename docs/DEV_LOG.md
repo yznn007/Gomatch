@@ -123,6 +123,7 @@
 
 | 时间 | 作者 | 工作内容 | 问题/备注 |
 |------|------|----------|-----------|
+| 2026-07-11 01:15 | Contributor| docs: 将 init.sql 的测试账号与排行榜样例数据补充至 README.md | 提升快速启动时的本地调试便利度，方便开发者获取默认的管理员与玩家测试凭据。 | 验证通过 |
 | 2026-07-05 01:24 | Contributor| refactor: Swing → JavaFX 迁移：添加 javafx 依赖和 maven plugin，重写 ClientMain 为 Application | FXML 命名空间不能加版本号 |
 | 2026-07-05 01:24 | Contributor| feat: 实现 ScreenManager（场景导航/弹窗）、ServerConnector（接收线程+消息分发）、NetworkListener | 首次居中，之后保留窗口位置 |
 | 2026-07-05 01:24 | Contributor| feat: 完成 11 个 FXML + 对应 Controller：Login/Register/Lobby/CreateRoom/RoomWaiting/Board/GameOver/Profile/Ranking/Record/About | 预览模式支持无服务器浏览 |

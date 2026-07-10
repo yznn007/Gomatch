@@ -53,6 +53,10 @@ mvn install -pl common -am
 .\scripts\ssc_client.ps1
 ```
 
+## 默认测试数据
+
+`sql/init.sql` 's seed password is injected from local `.env`; the repository does not expose seed-account email addresses or passwords.
+
 ## 项目结构
 
 ```
