@@ -123,6 +123,7 @@
 
 | 时间 | 作者 | 工作内容 | 问题/备注 |
 |------|------|----------|-----------|
+| 2026-07-11 02:42 | Contributor| fix(ui): 解决弹窗出现方形直角边底色（假圆角）的渲染缺陷 | 1. 在 style.css 的 .dialog-pane 中重写 -fx-background-insets: 0 并配合 -fx-background-radius 消除多层内底色直角；2. 为 Dialog 的 Scene fill 添加 fillProperty 变更监听，防止 JavaFX 在运行时重置透明度，彻底实现完美圆角与毛玻璃边框融合。同时修复 RegisterController 的语法错误。 | 验证通过 |
 | 2026-07-11 02:18 | Contributor| feat(ui): 全局启用无边框毛玻璃/磨砂质感自定义弹窗/警示框样式 | 重构 ScreenManager 的 showStyledAlert 并在其基础上封装通用的 showStyledDialog。将全系统 Alert 与 TextInputDialog 全部升级为无边框模式（StageStyle.TRANSPARENT）并配置鼠标拖拽移动逻辑，同时实现圆角外框背景完全透明化。 | 验证通过 |
 | 2026-07-11 02:09 | Contributor| fix(ui): 统一排位与快速匹配成功后的“未准备”按钮样式为 btn-primary | 解决排位匹配成功后“未准备”按钮错误被渲染为红色（btn-danger）的体验冲突，使其与快速匹配一致呈现为蓝色主按钮样式（btn-primary）。并避免清除默认 button class。 | 验证通过 |
 | 2026-07-11 01:44 | Contributor| docs: 补充安全加固测试用例并根据 Git 提交历史归档历史缺陷记录 | 1. 在 TEST.md 中补全 IP速率限制、超大包保护、恶意重连校验等 8 项安全边界与越权用例；2. 根据 Git 历史整理并补全了 D01~D06 历史缺陷的日志。 | 验证通过 |
