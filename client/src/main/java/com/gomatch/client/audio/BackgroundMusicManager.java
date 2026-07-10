@@ -2,8 +2,10 @@ package com.gomatch.client.audio;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.scene.media.Media;
@@ -35,7 +37,7 @@ public final class BackgroundMusicManager {
     }
 
     private static String currentSongPath = "/audio/main_1.mp3";
-    private static PlayOrder currentPlayOrder = PlayOrder.SINGLE_LOOP;
+    private static final ObjectProperty<PlayOrder> currentPlayOrder = new SimpleObjectProperty<>(PlayOrder.SINGLE_LOOP);
     private static final Random random = new Random();
 
     private static final StringProperty currentSongName = new SimpleStringProperty(AVAILABLE_SONGS.getOrDefault(currentSongPath, ""));
@@ -69,16 +71,69 @@ public final class BackgroundMusicManager {
     }
 
     public static PlayOrder getCurrentPlayOrder() {
+        return currentPlayOrder.get();
+    }
+
+    public static ObjectProperty<PlayOrder> currentPlayOrderProperty() {
         return currentPlayOrder;
     }
 
     public static void setPlayOrder(PlayOrder order) {
-        if (order == null || order == currentPlayOrder) {
+        if (order == null || order == currentPlayOrder.get()) {
             return;
         }
-        currentPlayOrder = order;
+        currentPlayOrder.set(order);
         if (player != null) {
             applyPlayOrderToPlayer(player);
+        }
+        com.gomatch.client.UserSettings.get().playOrder = order.name();
+        com.gomatch.client.UserSettings.save();
+    }
+
+    public static void selectAndPlaySong(String resourcePath) {
+        if (!AVAILABLE_SONGS.containsKey(resourcePath)) {
+            return;
+        }
+        com.gomatch.client.UserSettings.get().selectedSongPath = resourcePath;
+        com.gomatch.client.UserSettings.save();
+        switchSong(resourcePath);
+    }
+
+    public static void applySettings() {
+        if (javafx.application.Platform.isFxApplicationThread()) {
+            doApplySettings();
+        } else {
+            javafx.application.Platform.runLater(BackgroundMusicManager::doApplySettings);
+        }
+    }
+
+    private static void doApplySettings() {
+        com.gomatch.client.UserSettings settings = com.gomatch.client.UserSettings.get();
+        if (settings.playOrder != null) {
+            try {
+                PlayOrder order = PlayOrder.valueOf(settings.playOrder);
+                if (order != currentPlayOrder.get()) {
+                    currentPlayOrder.set(order);
+                    if (player != null) {
+                        applyPlayOrderToPlayer(player);
+                    }
+                }
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        String songPath = settings.selectedSongPath;
+        if (songPath != null && AVAILABLE_SONGS.containsKey(songPath)) {
+            if (!songPath.equals(currentSongPath) || player == null) {
+                currentSongPath = songPath;
+                currentSongName.set(AVAILABLE_SONGS.getOrDefault(songPath, ""));
+                unavailable = false;
+                disposePlayer();
+                playLobbyTheme();
+            } else {
+                if (player != null) {
+                    applyPlayOrderToPlayer(player);
+                }
+            }
         }
     }
 
@@ -161,7 +216,7 @@ public final class BackgroundMusicManager {
     }
 
     private static void applyPlayOrderToPlayer(MediaPlayer p) {
-        switch (currentPlayOrder) {
+        switch (currentPlayOrder.get()) {
             case SINGLE_LOOP:
                 p.setCycleCount(MediaPlayer.INDEFINITE);
                 p.setOnEndOfMedia(() -> p.seek(javafx.util.Duration.ZERO));

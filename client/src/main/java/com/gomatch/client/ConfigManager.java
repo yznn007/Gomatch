@@ -61,6 +61,7 @@ public final class ConfigManager {
             JsonObject object = JsonParser.parseString(configJson).getAsJsonObject();
             UserSettings.replace(GSON.fromJson(object, UserSettings.class));
             saveLocal();
+            com.gomatch.client.audio.BackgroundMusicManager.applySettings();
         } catch (Exception ignored) {
             // Invalid cloud data must never destroy a usable local configuration.
         }

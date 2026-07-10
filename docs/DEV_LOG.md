@@ -16,6 +16,7 @@
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
 |------|------|----------|-----------|
+| 2026-07-11 03:20 | Contributor| fix: 修复大厅音乐选择与播放顺序在下次登录时无法同步的 bug | 1. **UserSettings**：新增 `selectedSongPath` 和 `playOrder` 字段，通过 GSON 自动持久化；2. **BackgroundMusicManager**：将 `currentPlayOrder` 升级为 `ObjectProperty<PlayOrder>` 以支持响应式 UI，增加 `selectAndPlaySong` 以区分用户主动选歌与自动切歌，并实现 `applySettings` 用于应用/同步本地及云端偏好；3. **SettingsController**：将选歌下拉框改为调用新 API，并对播放顺序属性添加 Listener，在云端同步播放顺序时自动刷新按钮文本；4. **ClientMain / ConfigManager**：分别在本地加载和云端配置同步完后自动触发 `applySettings` 平滑过渡应用。 |
 | 2026-07-11 00:57 | Contributor| physics: 减小 3D 移动卡片 (PixelCard) 的 Z 轴摆动幅度 | 进一步抑制摆动的响应振幅：1. 鼠标滑入瞬间的脉冲推力因子从 0.25 降至 0.06，防止晃动起点过大；2. 鼠标平移速度带来的摆动角加速度传导系数从 0.000025 降低至 0.000006；3. 单帧最大推力限制从 0.15 限制到 0.04，使得晃动幅度和摆角被严格约束在极小且微弱的精致感官范围内。 |
 | 2026-07-11 00:49 | Contributor| physics: 优化 3D 移动卡片 (PixelCard) 挂绳悬挂动力学，引入偏移越远阻力越大机制 | 优化卡片物理 Z 轴摆动（挂绳特性）的重力恢复力与摆动阻尼公式。通过引入基于摆动角度 angle 绝对值和平方的非线性刚度调节与大摆角阻尼增强算法，使卡片在大角度晃动时承受成倍的阻力和回弹恢复力，从而在小角度下保持轻盈飘逸，大角度下能迅速平抑和阻尼，使动态吊挂交互更加质感与沉稳。 |
 | 2026-07-11 00:27 | Contributor| fix: 第二轮前端 UI 合规性审查与全面修复 | 1. **style.css**：定义 .success-text, .rank-text, .win-rate-text, .expiry-text 样式类及其暗色 theme-dark 覆盖。2. **ProfileUI.fxml / ForgotPasswordUI.fxml**：移除 rankLabel, winRateLabel, codeExpiryLabel 的硬编码内联样式，改用相应的主题类。3. **BoardController**：剩余时间少于10s时的倒计时警告色换用 themeColor()。4. **RankingController**：无数据标签设为 themeColor；当前用户 "(我)" 高亮从违禁天蓝色 #0ea5e9 改为雅致青色 (Teal) 主题色。5. **FriendsController**：修复在线状态 activeLabel 多余分号的语法错误；删除/拒绝按钮移除内联红色直接改用 btn-danger 样式类；空提示标签换用 themeColor；申请头像从硬编码橘色改为 themeColor 橘色；errorLabel 移除原生颜色 red/green。6. **ProfileController**：密码错误/成功提示与对战记录分值全部改用 themeColor；showUploadStatus 将硬编码颜色名称转换为主题自适应 Hex。7. **ForgotPasswordController**：所有动态状态消息 setStyle 色值全部替换为 themeColor。 |
@@ -87,6 +88,7 @@
 | 时间 | 作者 | 工作内容 | 问题/备注 |
 |------|------|----------|-----------|
 | 2026-07-11 01:00 | Contributor| fix: 修复 Redis 背景保存失败导致写入命令被禁用的问题 | 1. 通过 redis-cli 将 stop-writes-on-bgsave-error 设置为 no 恢复本地运行；2. 在 RedisManager.init() 中添加了程序内配置，确保在其他环境初始化时同样禁用此选项以提高健壮性。 | 验证通过 |
+| 2026-07-11 03:05 | Contributor| docs: 编写服务端部署指南 docs/DEPLOY_GUIDE.md | 整理并编写了服务端的部署文档，包含本地 shaded Maven 打包、JDK 21 与 MySQL/Redis 环境准备、基于环境变量的配置覆盖机制，以及终端直接启动、Systemd 服务化、Docker/Docker Compose 容器化部署这三种运行与守护形式。 | 验证通过 |
 | 2026-07-04 13:20 | Contributor| 搭建 Maven 多模块项目骨架，创建 pom.xml 及目录结构 | 使用 JDK 21 |
 | 2026-07-06 14:57 | Contributor| 服务端核心功能实现：注册、登录、房间管理、落子同步、五连判胜、认输、断线处理、战绩入库、房间聊天、观战功能、悔棋/求和、断线重连、人机对战 | 基于 Socket 多线程架构 |
 | 2026-07-06 14:57 | Contributor| 服务端进阶功能：密码房间、排位匹配（ELO算法）、好友系统（请求/接受/删除）、棋局保存/加载、聊天消息持久化、Socket会话持久化、观战记录、游戏操作记录 | 定时任务自动刷新 |

@@ -24,6 +24,8 @@ public final class UserSettings {
     public boolean soundEffect = true;
     public boolean lobbyMusic = true;
     public boolean muteOnBackground = false;
+    public String selectedSongPath = "/audio/main_1.mp3";
+    public String playOrder = "SINGLE_LOOP";
 
     // ---- UI 风格 ----
     public String theme = "清透白磨砂 (经典)";

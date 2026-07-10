@@ -24,6 +24,7 @@ public class ClientMain extends Application {
 
         connector = new ServerConnector();
         ConfigManager.getInstance().loadLocal();
+        BackgroundMusicManager.applySettings();
         // 初始化国际化语言
         I18N.init(UserSettings.get().language);
         // 全局断线监听器

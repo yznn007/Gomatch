@@ -296,7 +296,7 @@ public class SettingsController {
                     .findFirst()
                     .orElse(null);
             if (path != null) {
-                BackgroundMusicManager.switchSong(path);
+                BackgroundMusicManager.selectAndPlaySong(path);
             }
         });
 
@@ -312,6 +312,11 @@ public class SettingsController {
 
     private void setupPlayOrderButton() {
         updatePlayOrderButtonText();
+        BackgroundMusicManager.currentPlayOrderProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                updatePlayOrderButtonText();
+            }
+        });
     }
 
     private void updatePlayOrderButtonText() {
