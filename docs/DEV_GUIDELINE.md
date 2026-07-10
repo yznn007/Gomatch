@@ -2,39 +2,36 @@
 
 ## 一、Commit 提交规范
 
-采用 Conventional Commits 格式：
+项目提倡采用**细粒度提交**，并结合 Conventional Commits 规范。
 
+### 格式约定
+提交的 Header 前缀使用标准的英文类型与范围，而**提交消息的主题（Subject）和主体（Body）必须使用中文描述**。
+
+基本格式：
 ```
-<type>: <subject>
+<type>(<scope>): <中文简短描述>
+
+<中文详细描述（可选，描述具体修改背景或原因）>
 ```
 
 ### type 类型
 
-| type | 说明 |
-|------|------|
-| feat | 新功能 |
-| fix | 修复 Bug |
-| refactor | 重构代码 |
-| docs | 文档变更 |
-| chore | 杂项（构建、配置等） |
-| style | 代码格式调整 |
-| test | 测试相关 |
-| perf | 性能优化 |
+| type | 说明 | 示例 |
+|------|------|------|
+| feat | 新增功能 | `feat(security): 实现客户端和服务端加密与安全工具类` |
+| fix | 修复 Bug | `fix(redis): 在启动时程序化配置禁用 stop-writes-on-bgsave-error` |
+| refactor | 重构代码 | `refactor(client): 解耦提取客户端消息解析器` |
+| docs | 文档变更 | `docs: 新增 Git 提交规范说明` |
+| style | 代码格式与样式调整 | `style(ui): 统一全局 CSS 控件按钮、文本框和主题类` |
+| build | 构建工具或外部依赖修改 | `build(client): 新增 JUnit 测试依赖与 surefire 插件` |
+| chore | 其他辅助/日常杂项 | `chore: 清理冗余配置与旧运行脚本` |
+| test | 测试用例编写/重构 | `test(session): 编写 SessionPolicy 规则判定测试` |
 
-### 示例
+### 提交粒度与规则
 
-```
-feat: 实现五连判定算法
-fix: 修复房间解散后玩家未正确退出
-docs: 更新需求文档技术栈章节
-chore: 配置 Maven Shade 插件
-```
-
-### 规则
-
-- subject 用中文描述做了什么
-- 不写句号
-- 不超过 50 字
+- **细粒度原则**：逻辑独立的修改必须单独提交。禁止将不相关的多个模块修改（如安全逻辑、UI 样式、持久化配置等）打包进一个庞大粗糙的 Commit，以便于回滚、审查和追溯历史。
+- **描述清晰**：subject（中文简短描述）说明具体“做了什么”，不写句号，字数不超过 50 字。
+- **详述背景**：对于复杂的逻辑变更，应在 Body（中文详细描述）中说明修改背景、原因及核心影响范围。
 
 ---
 
