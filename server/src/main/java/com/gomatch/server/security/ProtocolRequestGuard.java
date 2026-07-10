@@ -7,7 +7,6 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.Locale;
 import java.util.Objects;
 
 /** Validates and rate-limits raw protocol requests before ClientHandler dispatch. */
@@ -68,15 +67,16 @@ public final class ProtocolRequestGuard {
         }
 
         if (Protocol.LOGIN.equals(cmd)) {
-            String username = data.optString("username", "").trim().toLowerCase(Locale.ROOT);
-            requireLength(username, 1, 16, "username");
+            String account = data.optString("account", "").trim();
+            requireLength(account, 1, 100, "account");
             requireLength(data.optString("password", ""), 1, SecurityLimits.MAX_PASSWORD_CHARS, "password");
-            if (!loginLimiter.tryAcquire(ip + '|' + username)) {
+            if (!loginLimiter.tryAcquire(ip + '|' + account)) {
                 throw rejected("login rate exceeded");
             }
         } else if (Protocol.REGISTER.equals(cmd)) {
             requireLength(data.optString("username", "").trim(), 1, 16, "username");
             requireLength(data.optString("password", ""), 1, SecurityLimits.MAX_PASSWORD_CHARS, "password");
+            requireLength(data.optString("phone", "").trim(), 8, 32, "phone");
             if (!registerLimiter.tryAcquire(ip)) {
                 throw rejected("registration rate exceeded");
             }

@@ -8,6 +8,7 @@ import com.gomatch.server.redis.RedisManager;
 import com.gomatch.server.room.Room;
 import com.gomatch.server.room.RoomManager;
 import com.gomatch.server.session.SessionManager;
+import com.gomatch.server.security.PhoneNumberNormalizer;
 import com.gomatch.server.service.ConfigService;
 import com.gomatch.server.storage.StorageManager;
 import org.slf4j.Logger;
@@ -232,7 +233,13 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        boolean success = userDAO.register(username, password, email, phone);
+        String normalizedPhone = PhoneNumberNormalizer.normalize(phone);
+        if (normalizedPhone == null) {
+            send(Message.of("REGISTER_FAIL", "msg", "手机号必须是有效的国际号码（E.164，含国家区号）"));
+            return;
+        }
+
+        boolean success = userDAO.register(username, password, email, normalizedPhone);
         if (success) {
             send(Message.cmdOnly("REGISTER_OK"));
             log.info("用户注册成功: {} (email={})", username, email);
@@ -242,6 +249,8 @@ public class ClientHandler implements Runnable {
                 send(Message.of("REGISTER_FAIL", "msg", "用户名已存在"));
             } else if (userDAO.emailExists(email)) {
                 send(Message.of("REGISTER_FAIL", "msg", "该邮箱已被注册"));
+            } else if (userDAO.phoneExists(normalizedPhone)) {
+                send(Message.of("REGISTER_FAIL", "msg", "手机号已被注册"));
             } else {
                 send(Message.of("REGISTER_FAIL", "msg", "注册失败，请重试"));
             }
@@ -252,22 +261,23 @@ public class ClientHandler implements Runnable {
     // ==================== 登录 ====================
 
     private void handleLogin(Message msg) {
-        String username = msg.getString("username");
+        String account = msg.getString("account");
         String password = msg.getString("password");
+        String phone = msg.has("phone") ? msg.getString("phone") : null;
 
-        if (username == null || username.trim().isEmpty() || password == null) {
-            send(Message.of(Protocol.LOGIN_FAIL, "msg", "用户名或密码不能为空"));
+        if (account == null || account.trim().isEmpty() || password == null) {
+            send(Message.of(Protocol.LOGIN_FAIL, "msg", "账号或密码不能为空"));
             return;
         }
 
-        log.info("登录请求: username={}", username);
+        log.info("登录请求: account={}", account);
 
-        UserDAO.UserInfo userInfo = userDAO.login(username, password);
+        UserDAO.UserInfo userInfo = userDAO.login(account, password, phone);
         if (userInfo != null) {
             SessionManager.Session existingSession = sessionManager.getSessionByUserId(userInfo.getUserId());
             if (existingSession != null && existingSession.handler != null) {
                 send(Message.of(Protocol.LOGIN_FAIL, "msg", "该账号已在其他设备登录"));
-                log.warn("登录失败: 用户 {} 已在线", username);
+                log.warn("登录失败: 用户 {} 已在线", account);
                 return;
             }
 
@@ -381,8 +391,8 @@ public class ClientHandler implements Runnable {
                     userInfo.getUsername(), userInfo.getUserId(), userInfo.getScore(),
                     session.token.substring(0, 8));
         } else {
-            send(Message.of(Protocol.LOGIN_FAIL, "msg", "用户名或密码错误"));
-            log.warn("登录失败: {}", username);
+            send(Message.of(Protocol.LOGIN_FAIL, "msg", "账号或密码错误"));
+            log.warn("登录失败: {}", account);
         }
     }
 

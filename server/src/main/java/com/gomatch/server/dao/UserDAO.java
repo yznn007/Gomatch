@@ -1,14 +1,20 @@
 package com.gomatch.server.dao;
 
+import com.gomatch.server.security.PhoneNumberNormalizer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class UserDAO {
     private static final Logger log = LoggerFactory.getLogger(UserDAO.class);
     private final RankDAO rankDAO = new RankDAO();
+
+    static final String LOGIN_BY_ACCOUNT_SQL = "SELECT user_id, username, score, win_count, lose_count, draw_count, " +
+            "role, status, phone FROM t_user WHERE (user_id = ? OR username = ? OR email = ? OR phone = ?) AND password = ?";
 
     public static class UserInfo {
         private final long userId;
@@ -97,7 +103,15 @@ public class UserDAO {
             log.warn("Register failed: email already registered: {}", emailTrimmed);
             return false;
         }
-        String phoneTrimmed = (phone != null) ? phone.trim() : "";
+        String normalizedPhone = PhoneNumberNormalizer.normalize(phone);
+        if (normalizedPhone == null) {
+            log.warn("Register failed: invalid phone number");
+            return false;
+        }
+        if (phoneExists(normalizedPhone)) {
+            log.warn("Register failed: phone already registered: {}", normalizedPhone);
+            return false;
+        }
 
         String sql = "INSERT INTO t_user (username, password, email, phone) VALUES (?, ?, ?, ?)";
         try (Connection conn = DBUtil.getConnection();
@@ -105,7 +119,7 @@ public class UserDAO {
             ps.setString(1, username.trim());
             ps.setString(2, password);
             ps.setString(3, emailTrimmed);
-            ps.setString(4, phoneTrimmed.isEmpty() ? null : phoneTrimmed);
+            ps.setString(4, normalizedPhone);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
@@ -113,10 +127,10 @@ public class UserDAO {
                     rankDAO.upsertRank(userId, 1000, 0, 0, 0);
                 }
             }
-            log.info("User registered: {} (email={}, phone={})", username, emailTrimmed, phoneTrimmed);
+            log.info("User registered: {} (email={}, phone={})", username, emailTrimmed, normalizedPhone);
             return true;
         } catch (java.sql.SQLIntegrityConstraintViolationException e) {
-            log.warn("Register failed: duplicate username or email (concurrent): {}", username);
+            log.warn("Register failed: duplicate username, email, or phone (concurrent): {}", username);
             return false;
         } catch (SQLException e) {
             log.error("Register SQL error: {}", username, e);
@@ -125,16 +139,27 @@ public class UserDAO {
     }
 
     public UserInfo login(String account, String password) {
+        return login(account, password, null);
+    }
+
+    public UserInfo login(String account, String password, String phone) {
         if (account == null || password == null) {
             return null;
         }
-        String sql = "SELECT user_id, username, score, win_count, lose_count, draw_count, " +
-                     "role, status, phone FROM t_user WHERE (username = ? OR email = ?) AND password = ?";
+        String accountValue = account.trim();
+        long accountId = parseAccountId(accountValue);
+        String normalizedEmail = accountValue.toLowerCase(Locale.ROOT);
+        String normalizedPhone = PhoneNumberNormalizer.normalize(phone);
+        if (normalizedPhone == null) {
+            normalizedPhone = PhoneNumberNormalizer.normalize(accountValue);
+        }
         try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, account);
-            ps.setString(2, account);
-            ps.setString(3, password);
+             PreparedStatement ps = conn.prepareStatement(LOGIN_BY_ACCOUNT_SQL)) {
+            ps.setLong(1, accountId);
+            ps.setString(2, accountValue);
+            ps.setString(3, normalizedEmail);
+            ps.setString(4, normalizedPhone);
+            ps.setString(5, password);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     String status = rs.getString("status");
@@ -161,6 +186,34 @@ public class UserDAO {
         return null;
     }
 
+    private long parseAccountId(String account) {
+        if (!account.matches("[1-9]\\d{0,18}")) {
+            return -1;
+        }
+        try {
+            return Long.parseLong(account);
+        } catch (NumberFormatException tooLarge) {
+            return -1;
+        }
+    }
+
+    public boolean phoneExists(String phone) {
+        String normalizedPhone = PhoneNumberNormalizer.normalize(phone);
+        if (normalizedPhone == null) {
+            return false;
+        }
+        String sql = "SELECT 1 FROM t_user WHERE phone = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, normalizedPhone);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            log.error("Check phone exists error: {}", normalizedPhone, e);
+        }
+        return false;
+    }
     public boolean existsByUsername(String username) {
         String sql = "SELECT 1 FROM t_user WHERE username = ?";
         try (Connection conn = DBUtil.getConnection();

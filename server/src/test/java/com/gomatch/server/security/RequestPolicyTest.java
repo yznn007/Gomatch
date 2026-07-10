@@ -38,10 +38,10 @@ class RequestPolicyTest {
     }
 
     @Test
-    void rateLimitsLoginByAddressAndUsername() throws Exception {
+    void acceptsAndRateLimitsLoginByAddressAndAccount() throws Exception {
         ProtocolRequestGuard guard = ProtocolRequestGuard.forTesting(100, 2, 100);
         InetAddress address = InetAddress.getLoopbackAddress();
-        String login = "{\"cmd\":\"LOGIN\",\"data\":{\"username\":\"Alice\",\"password\":\"secret\"}}";
+        String login = "{\"cmd\":\"LOGIN\",\"data\":{\"account\":\"+8613800138000\",\"password\":\"secret\"}}";
 
         assertDoesNotThrow(() -> guard.validateAndNormalize(login, address));
         assertDoesNotThrow(() -> guard.validateAndNormalize(login, address));
