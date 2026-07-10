@@ -1584,7 +1584,7 @@ public class BoardController implements NetworkListener {
             info.setTitle("再来一局");
             info.setHeaderText(displayName + " 拒绝了再来一局");
             info.setContentText("将返回大厅");
-            info.showAndWait();
+            ScreenManager.showStyledAlert(info);
             LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
             ctrl.setCurrentUser(AppConfig.getCurrentUser());
             ctrl.setPreviewMode(AppConfig.isPreviewMode());

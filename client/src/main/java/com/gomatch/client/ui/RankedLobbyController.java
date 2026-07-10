@@ -67,7 +67,7 @@ public class RankedLobbyController implements NetworkListener {
         isReady = !isReady;
         if (isReady) {
             matchBtn.setText("已准备");
-            matchBtn.getStyleClass().remove("btn-danger");
+            matchBtn.getStyleClass().remove("btn-primary");
             matchBtn.getStyleClass().add("btn-success");
             matchBtn.setDisable(false);
             matchStatus.setText("对手: " + opponentUsername + "\n我方已准备，等待对方准备...");
@@ -75,7 +75,7 @@ public class RankedLobbyController implements NetworkListener {
         } else {
             matchBtn.setText("未准备");
             matchBtn.getStyleClass().remove("btn-success");
-            matchBtn.getStyleClass().add("btn-danger");
+            matchBtn.getStyleClass().add("btn-primary");
             matchBtn.setDisable(false);
             matchStatus.setText("对手: " + opponentUsername + "\n点击按钮准备");
             matchStatus.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 16px; -fx-text-alignment: center;");
@@ -95,7 +95,7 @@ public class RankedLobbyController implements NetworkListener {
         opponentUsername = "";
         stopCountdown();
         matchBtn.setText("开 始 排 位 匹 配");
-        matchBtn.getStyleClass().clear();
+        matchBtn.getStyleClass().removeAll("btn-danger", "btn-success", "btn-primary");
         matchBtn.getStyleClass().add("btn-primary");
         matchBtn.setDisable(false);
         matchStatus.setText("");
@@ -172,8 +172,8 @@ public class RankedLobbyController implements NetworkListener {
                 matchStatus.setText("找到对手: " + opponentUsername + "\n点击按钮准备");
                 matchStatus.setStyle("-fx-text-fill: #10b981; -fx-font-size: 16px; -fx-text-alignment: center;");
                 matchBtn.setText("未准备");
-                matchBtn.getStyleClass().remove("btn-primary");
-                matchBtn.getStyleClass().add("btn-danger");
+                matchBtn.getStyleClass().remove("btn-danger");
+                matchBtn.getStyleClass().add("btn-primary");
             });
         } else if (Protocol.RANKED_READY.equals(cmd)) {
             boolean blackReady = "true".equals(msg.getString("blackReady"));

@@ -120,7 +120,7 @@ public class CasualLobbyController implements NetworkListener {
             dialog.setTitle("密码验证");
             dialog.setHeaderText("该房间需要密码");
             dialog.setContentText("请输入房间密码:");
-            dialog.showAndWait().ifPresent(password ->
+            ScreenManager.showStyledDialog(dialog).ifPresent(password ->
                 ClientMain.getConnector().send(Message.of(Protocol.JOIN_ROOM, "roomId", room.getRoomId(), "password", password.trim()))
             );
         } else {

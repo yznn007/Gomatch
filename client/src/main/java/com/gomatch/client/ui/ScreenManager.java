@@ -552,17 +552,50 @@ public class ScreenManager {
         return stage;
     }
 
-    public static java.util.Optional<javafx.scene.control.ButtonType> showStyledAlert(javafx.scene.control.Alert alert) {
-        if (alert != null) {
-            javafx.scene.control.DialogPane dialogPane = alert.getDialogPane();
+    public static <R> java.util.Optional<R> showStyledDialog(javafx.scene.control.Dialog<R> dialog) {
+        if (dialog != null) {
+            try {
+                dialog.initStyle(StageStyle.TRANSPARENT);
+            } catch (IllegalStateException e) {
+                // Ignore if dialog is already showing or initialized
+            }
+            javafx.scene.control.DialogPane dialogPane = dialog.getDialogPane();
             if (dialogPane != null) {
-                dialogPane.getStylesheets().add(ScreenManager.class.getResource("/css/style.css").toExternalForm());
+                String css = ScreenManager.class.getResource(STYLE_PATH).toExternalForm();
+                if (!dialogPane.getStylesheets().contains(css)) {
+                    dialogPane.getStylesheets().add(css);
+                }
+
+                // Enable dragging for undecorated dialogs
+                final double[] xOffset = new double[1];
+                final double[] yOffset = new double[1];
+                dialogPane.setOnMousePressed(event -> {
+                    xOffset[0] = event.getSceneX();
+                    yOffset[0] = event.getSceneY();
+                });
+                dialogPane.setOnMouseDragged(event -> {
+                    javafx.stage.Window window = dialogPane.getScene().getWindow();
+                    if (window != null) {
+                        window.setX(event.getScreenX() - xOffset[0]);
+                        window.setY(event.getScreenY() - yOffset[0]);
+                    }
+                });
+
+                // Clear native dialog window background to display beautiful rounded corners properly
+                Scene scene = dialogPane.getScene();
+                if (scene != null) {
+                    scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+                }
             }
             if (stage != null) {
-                alert.initOwner(stage);
+                dialog.initOwner(stage);
             }
-            return alert.showAndWait();
+            return dialog.showAndWait();
         }
         return java.util.Optional.empty();
+    }
+
+    public static java.util.Optional<javafx.scene.control.ButtonType> showStyledAlert(javafx.scene.control.Alert alert) {
+        return showStyledDialog(alert);
     }
 }
