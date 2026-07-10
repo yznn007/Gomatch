@@ -509,12 +509,10 @@ ProfileUI（个人中心）
 
 ---
 
-## 10. 启动命令
+## 10. 启动与联调
 
-```powershell
-# 方式一：使用本机脚本（推荐）
-.\scripts\ssc_client.ps1
+客户端启动命令统一维护在 [docs/README.md](README.md) 第 6 节。客户端模块额外注意：
 
-# 方式二：Maven 直接运行（需确保 JDK 21 已配置）
-mvn -f client/pom.xml javafx:run
-```
+- 推荐使用 `scripts/ssc_client.ps1`，脚本内处理本机 JDK 检测。
+- 直接运行 Maven 时需确保 JDK 21 已配置。
+- 无服务端时可从登录页进入浏览模式验证页面和路由。

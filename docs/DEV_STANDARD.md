@@ -232,24 +232,13 @@ public void setPreviewMode(boolean preview) {
 
 ## 五、UI 样式规范
 
-### 5.1 全局风格
+UI 详细规则以 [CLIENT_STYLE_GUIDE.md](CLIENT_STYLE_GUIDE.md) 为准，本文件只保留协作时必须记住的硬约束：
 
-- **双主题磨砂风格**：清透白磨砂为基础原色，暗夜黑磨砂限定在 `.theme-dark` 覆盖层
-- **极简底划线控件**：文本框和按钮仅保留底部 1.5px 下划线描边，去除四面外边框与卡片阴影
-- **8px 圆角**：按钮统一使用 8px 圆角结构
-
-### 5.2 交互反馈
-
-| 状态 | 效果 |
-|------|------|
-| hover | 背景填充板岩灰 Cover 遮罩 `rgba(148, 163, 184, 0.35)` |
-| pressed (armed) | 高亮聚焦实白 `rgba(255, 255, 255, 0.95)` |
-| focused | 无天蓝色，统一归化为中性无色系 |
-
-### 5.3 颜色约束
-
-- **禁止**使用鲜活的蓝色系（如 `#3B82F6`、`#60A5FA`）
-- 统一使用板岩灰（slate）、木炭黑（charcoal）等中性无色系
+- 新增或修改 FXML/CSS 时优先复用 `style.css` 中已有样式类，避免在 FXML 写大段内联视觉样式。
+- 暗色主题差异必须限定在 `.theme-dark` 作用域下，禁止新增未加作用域的暗色全局覆盖。
+- Controller 动态生成文字颜色时使用 `ScreenManager.themeColor(light, dark)`，保证主题切换后可读。
+- FXML 命名空间不带版本号：`xmlns="http://javafx.com/javafx"`。
+- 按钮、输入框、卡片、弹窗、列表等组件模板参考 `CLIENT_STYLE_GUIDE.md` 第 7 节。
 
 ---
 
@@ -258,10 +247,10 @@ public void setPreviewMode(boolean preview) {
 | 文档 | 触发时机 |
 |------|----------|
 | `docs/DEV_LOG.md` | 每次完成任务后追加日志 |
-| `docs/requirements.md` | 需求/设计变更时同步 |
-| `docs/DEV_STANDARD.md` | 规范/约定变化时 |
+| `docs/requirements.md` | 需求范围、功能清单、验收标准变化时同步 |
+| `docs/DEV_STANDARD.md` | Git、分支、代码协作规范变化时 |
 | `AGENTS.md` | 命令/架构/约定变化时 |
-| `README.md` | 项目信息变化时 |
+| `README.md` / `docs/README.md` | 项目入口、启动方式、文档索引变化时 |
 
 ### 日志格式
 

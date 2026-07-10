@@ -2,6 +2,24 @@
 
 本文档是 Gomatch 的文档入口。新成员优先从这里进入，不需要在 `docs/` 目录里逐个猜文件用途。
 
+## 0. 文档职责边界
+
+为减少重复维护，后续按下面的“唯一权威来源”更新：
+
+| 信息类型 | 唯一权威来源 |
+|----------|--------------|
+| 需求范围、功能编号、验收标准 | `requirements.md` |
+| 汇报/答辩用产品叙述、核心流程 | `PRD.md` |
+| 跨模块架构、运行链路、模块边界 | `TECHNICAL_ARCHITECTURE.md` |
+| JSON 协议模型、命令常量、消息示例 | `MODULE_COMMON.md` |
+| 客户端路由、Controller、网络层、预览模式 | `MODULE_CLIENT.md` |
+| 服务端 Handler、Room、匹配、Session、DAO | `MODULE_SERVER.md` |
+| MySQL 表、Redis Key、索引、事务、存储方案 | `DATABASE_DESIGN.md` |
+| JavaFX 视觉、主题、组件模板 | `CLIENT_STYLE_GUIDE.md` |
+| 启动命令、阅读顺序、资料入口 | 本文档 |
+
+其他文档需要引用这些来源，不再复制完整表结构、协议清单或启动命令。
+
 ## 1. 推荐阅读顺序
 
 | 场景 | 推荐阅读 |
@@ -17,9 +35,9 @@
 
 | 文档 | 用途 | 维护重点 |
 |------|------|----------|
-| [requirements.md](requirements.md) | 需求范围、功能清单、验收标准 | 需求或设计变更时同步 |
-| [PRD.md](PRD.md) | 产品目标、业务流程、功能说明 | 面向报告和答辩的产品叙述 |
-| [TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md) | 总体架构、通信协议、核心流程、模块划分 | 跨模块设计变化时同步 |
+| [requirements.md](requirements.md) | 需求范围、功能清单、验收标准 | 需求范围或验收标准变化时同步 |
+| [PRD.md](PRD.md) | 产品目标、用户价值、核心流程 | 面向报告和答辩的产品叙述，不重复技术细节 |
+| [TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md) | 总体架构、核心链路、模块边界 | 跨模块设计变化时同步，不重复协议/数据库明细 |
 | [DATABASE_DESIGN.md](DATABASE_DESIGN.md) | MySQL 表结构、Redis Key、持久化和缓存设计 | 表结构、索引、Redis 策略变化时同步 |
 
 ## 3. 模块文档
@@ -43,11 +61,11 @@
 
 | 文件 | 用途 |
 |------|------|
-| [基于CS模式应用软件开发实训动员会-软件24.ppt](基于CS模式应用软件开发实训动员会-软件24.ppt) | 学校实训说明与进度安排 |
-| [A1-学生实操手册.pdf](A1-学生实操手册.pdf) | 官方实操步骤参考 |
-| [A1-学生版讲义.pdf](A1-学生版讲义.pdf) | Java 图形界面和 C/S 项目基础讲义 |
-| [CS实训_Java图形界面开发_十四款可选项目详解_v1.pdf](CS实训_Java图形界面开发_十四款可选项目详解_v1.pdf) | 可选项目与技术点参考 |
-| [基于CS模式应用软件开发实训报告模板.doc](基于CS模式应用软件开发实训报告模板.doc) | 结课报告模板 |
+| [基于CS模式应用软件开发实训动员会-软件24.ppt](school_materials/基于CS模式应用软件开发实训动员会-软件24.ppt) | 学校实训说明与进度安排 |
+| [A1-学生实操手册.pdf](school_materials/A1-学生实操手册.pdf) | 官方实操步骤参考 |
+| [A1-学生版讲义.pdf](school_materials/A1-学生版讲义.pdf) | Java 图形界面和 C/S 项目基础讲义 |
+| [CS实训_Java图形界面开发_十四款可选项目详解_v1.pdf](school_materials/CS实训_Java图形界面开发_十四款可选项目详解_v1.pdf) | 可选项目与技术点参考 |
+| [基于CS模式应用软件开发实训报告模板.doc](school_materials/基于CS模式应用软件开发实训报告模板.doc) | 结课报告模板 |
 | [PRD.docx](PRD.docx) / [PRD.pdf](PRD.pdf) | PRD 的 Word/PDF 版本，适合提交或展示 |
 
 ## 6. 启动与联调
@@ -105,4 +123,4 @@ source sql/init.sql
 *   当前主协议是 JSON 行消息：`{"cmd":"COMMAND","data":{"key":"value"}}`。
 *   `common/` 目前包含 `Protocol.java` 与 `Message.java`，不再使用旧的竖线分隔协议作为主路径。
 *   服务端业务 DAO 以 `server/dao` 为准，`database/` 模块保留数据库实体/仓储参考代码。
-*   `docs/` 内 PDF、PPT、DOC 等官方资料保持原文件名，避免影响团队成员引用。
+*   `docs/school_materials/` 存放学校官方 PDF、PPT、DOC 原始资料，文件保持原名；`docs/` 根层保留项目协作文档和交付导出件。

@@ -755,19 +755,11 @@ gomatch:game:{roomId}  ->  游戏事件频道
 
 ---
 
-## 13. 启动命令
+## 13. 启动与联调
 
-```powershell
-# 方式一：使用本机脚本（推荐）
-.\scripts\ssc_server.ps1
+服务端启动命令统一维护在 [docs/README.md](README.md) 第 6 节。服务端模块额外前置条件：
 
-# 方式二：Maven 直接运行
-mvn -f server/pom.xml exec:java -Dexec.mainClass="com.gomatch.server.ServerMain"
-```
-
-**前置条件**：
-1. MySQL 已启动，数据库 `gomatch` 已初始化（执行 `sql/init.sql`）
-2. Redis 已启动
-3. JDK 21 已配置
-4. 已执行 `mvn install -pl common -am` 安装 common 模块
-
+1. MySQL 已启动，数据库 `gomatch` 已初始化（执行 `sql/init.sql`）。
+2. Redis 已启动。
+3. JDK 21 已配置。
+4. 已执行 `mvn install -pl common -am` 安装 common 模块。
