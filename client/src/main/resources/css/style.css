@@ -48,6 +48,17 @@
 .error-text {
     -fx-text-fill: #dc2626;
 }
+.success-text {
+    -fx-text-fill: #16a34a;
+}
+
+.theme-dark .error-text {
+    -fx-text-fill: #fca5a5;
+}
+.theme-dark .success-text {
+    -fx-text-fill: #86efac;
+}
+
 
 /* ---------- 磨砂玻璃卡片（核心设计语言）---------- */
 .card {
@@ -225,37 +236,47 @@
 }
 
 .btn-danger {
-    -fx-background-color: linear-gradient(to bottom, #f87171, #ef4444);
-    -fx-text-fill: white;
+    -fx-background-color: rgba(254, 226, 226, 0.55); /* 浅红微透底色 */
+    -fx-text-fill: #991b1b; /* 深红文字 */
     -fx-font-weight: bold;
-    -fx-background-radius: 10;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: transparent transparent rgba(239, 68, 68, 0.35) transparent; /* 仅底线，红色调 */
+    -fx-border-width: 0 0 1.5 0;
     -fx-padding: 9 24;
     -fx-cursor: hand;
-    -fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.35), 10, 0, 0, 4);
+    -fx-effect: none;
 }
 .btn-danger:hover {
-    -fx-background-color: linear-gradient(to bottom, #fca5a5, #f87171);
-    -fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.55), 14, 0, 0, 5);
+    -fx-background-color: rgba(254, 202, 202, 0.65); /* 悬浮加深浅红 */
+    -fx-border-color: transparent transparent rgba(239, 68, 68, 0.55) transparent;
+    -fx-text-fill: #7f1d1d;
 }
 .btn-danger:armed {
-    -fx-background-color: linear-gradient(to bottom, #ef4444, #dc2626);
+    -fx-background-color: rgba(255, 255, 255, 0.95);
+    -fx-border-color: transparent transparent #dc2626 transparent;
 }
 
 .btn-success {
-    -fx-background-color: linear-gradient(to bottom, #34d399, #10b981);
-    -fx-text-fill: white;
+    -fx-background-color: rgba(220, 252, 231, 0.55); /* 浅绿微透底色 */
+    -fx-text-fill: #166534; /* 深绿文字 */
     -fx-font-weight: bold;
-    -fx-background-radius: 10;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: transparent transparent rgba(34, 197, 94, 0.35) transparent; /* 仅底线，绿色调 */
+    -fx-border-width: 0 0 1.5 0;
     -fx-padding: 9 24;
     -fx-cursor: hand;
-    -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.35), 10, 0, 0, 4);
+    -fx-effect: none;
 }
 .btn-success:hover {
-    -fx-background-color: linear-gradient(to bottom, #6ee7b7, #34d399);
-    -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.55), 14, 0, 0, 5);
+    -fx-background-color: rgba(187, 247, 208, 0.65); /* 悬浮加深浅绿 */
+    -fx-border-color: transparent transparent rgba(34, 197, 94, 0.55) transparent;
+    -fx-text-fill: #14532d;
 }
 .btn-success:armed {
-    -fx-background-color: linear-gradient(to bottom, #10b981, #059669);
+    -fx-background-color: rgba(255, 255, 255, 0.95);
+    -fx-border-color: transparent transparent #16a34a transparent;
 }
 
 .btn-link {
@@ -509,7 +530,7 @@
 .nav-btn {
     -fx-background-color: transparent;
     -fx-text-fill: #64748b;
-    -fx-background-radius: 10;
+    -fx-background-radius: 8;
     -fx-padding: 10 22;
     -fx-cursor: hand;
     -fx-font-size: 13px;
@@ -665,9 +686,9 @@
     -fx-border-color: transparent;
 }
 .arena-match:hover .pixel-card-body {
-    -fx-background-color: rgba(14, 165, 233, 0.12); /* 匹配卡片：淡蓝色透明 hover */
-    -fx-border-color: transparent transparent rgba(14, 165, 233, 0.35) transparent;
-    -fx-effect: dropshadow(gaussian, rgba(14, 165, 233, 0.18), 24, 0, 0, 8); /* 匹配专属淡蓝色投影 */
+    -fx-background-color: rgba(148, 163, 184, 0.20); /* 匹配卡片：统一板岩灰 hover，去除天蓝色 */
+    -fx-border-color: transparent transparent rgba(100, 116, 139, 0.40) transparent;
+    -fx-effect: dropshadow(gaussian, rgba(100, 116, 139, 0.18), 24, 0, 0, 8);
 }
 .arena-ai:hover .pixel-card-body {
     -fx-background-color: rgba(234, 179, 8, 0.12); /* AI卡片：淡黄色透明 hover */
@@ -811,8 +832,8 @@
     -fx-background-color: rgba(255, 255, 255, 0.50); /* 统一为底线半透白，与输入框一致 */
     -fx-text-fill: #334155; /* 暗灰文字 */
     -fx-font-weight: bold;
-    -fx-background-radius: 14;
-    -fx-border-radius: 14;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
     -fx-border-color: transparent transparent rgba(100, 116, 139, 0.20) transparent; /* 仅底线 */
     -fx-border-width: 0 0 1.5 0;
     -fx-padding: 0;
@@ -1239,20 +1260,20 @@
     -fx-border-width: 1px;
     -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 14, 0.08, 0, 5);
 }
-/* 当前玩家自己的卡片：左侧高亮条 + 蓝色描边。 */
+/* 当前玩家自己的卡片：左侧高亮条，使用板岩灰系（去除鲜蓝色）。 */
 .player-info-card-self {
-    -fx-border-color: #2563eb;
+    -fx-border-color: transparent transparent transparent #475569; /* 板岩灰左侧竖条 */
     -fx-border-width: 0 0 0 4px;
-    -fx-background-color: rgba(219, 234, 254, 0.45);
+    -fx-background-color: rgba(148, 163, 184, 0.22); /* 板岩灰微透背景 */
 }
-/* self + active 组合：仅加深背景与阴影，依然只保留 4px 蓝色左边框。
-   注意：(1) 绝对不能再叠 1px 四边蓝色，否则上方卡片的右/下边会与下方
+/* self + active 组合：加深背景与阴影，依然只保留 4px 板岩灰左边框。
+   注意：(1) 绝对不能再叠 1px 四边框，否则上方卡片的右/下边会与下方
    紧邻卡片的边框形成"重叠"视觉。(2) dropshadow 偏移必须收得很小（y<=2），
-   否则蓝色阴影会向下侵入紧邻下方卡片的顶部区域，让两卡片"视觉粘连"。 */
+   否则阴影会向下侵入紧邻下方卡片的顶部区域，让两卡片"视觉粘连"。 */
 .player-info-card-self.player-info-card-active {
-    -fx-background-color: rgba(219, 234, 254, 0.7);
-    -fx-effect: dropshadow(gaussian, rgba(37, 99, 235, 0.16), 12, 0.16, 0, 1);
-    -fx-border-color: transparent transparent transparent #2563eb;
+    -fx-background-color: rgba(100, 116, 139, 0.35);
+    -fx-effect: dropshadow(gaussian, rgba(71, 85, 105, 0.20), 12, 0.16, 0, 1);
+    -fx-border-color: transparent transparent transparent #334155;
     -fx-border-width: 0 0 0 4px;
 }
 
@@ -1409,8 +1430,11 @@
 .theme-dark .btn-link { -fx-background-color: transparent; -fx-text-fill: #cbd5e1; }
 .theme-dark .btn-link:hover { -fx-text-fill: #f8fafc; }
 .theme-dark .btn-danger { -fx-background-color: rgba(127, 29, 29, 0.72); -fx-text-fill: #fee2e2; -fx-border-color: transparent transparent rgba(252, 165, 165, 0.58) transparent; -fx-effect: none; }
-.theme-dark .btn-danger:hover { -fx-background-color: rgba(153, 27, 27, 0.86); }
+.theme-dark .btn-danger:hover { -fx-background-color: rgba(153, 27, 27, 0.86); -fx-border-color: transparent transparent rgba(252, 165, 165, 0.75) transparent; -fx-text-fill: #fecaca; }
+.theme-dark .btn-danger:armed { -fx-background-color: rgba(226, 232, 240, 0.18); -fx-border-color: transparent transparent #fca5a5 transparent; }
 .theme-dark .btn-success { -fx-background-color: rgba(20, 83, 45, 0.72); -fx-text-fill: #dcfce7; -fx-border-color: transparent transparent rgba(134, 239, 172, 0.54) transparent; -fx-effect: none; }
+.theme-dark .btn-success:hover { -fx-background-color: rgba(21, 128, 61, 0.86); -fx-border-color: transparent transparent rgba(134, 239, 172, 0.75) transparent; -fx-text-fill: #bbf7d0; }
+.theme-dark .btn-success:armed { -fx-background-color: rgba(226, 232, 240, 0.18); -fx-border-color: transparent transparent #86efac transparent; }
 .theme-dark .custom-title-bar, .theme-dark .top-bar {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
@@ -1441,7 +1465,7 @@
 .theme-dark .arena-casual .arena-title, .theme-dark .arena-ranked .arena-title { -fx-text-fill: #f8fafc; }
 .theme-dark .arena-casual .arena-sub, .theme-dark .arena-ranked .arena-sub, .theme-dark .arena-casual .arena-desc, .theme-dark .arena-ranked .arena-desc { -fx-text-fill: #94a3b8; }
 .theme-dark .arena-casual:pressed .pixel-card-body, .theme-dark .arena-ranked:pressed .pixel-card-body { -fx-background-color: rgba(226, 232, 240, 0.18); -fx-border-color: transparent transparent #f8fafc transparent; -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.22), 12, 0, 0, 3); }
-.theme-dark .arena-match:hover .pixel-card-body { -fx-background-color: rgba(30, 58, 138, 0.42); -fx-border-color: transparent transparent rgba(147, 197, 253, 0.48) transparent; -fx-effect: dropshadow(gaussian, rgba(248, 250, 252, 0.10), 24, 0, 0, 8); }
+.theme-dark .arena-match:hover .pixel-card-body { -fx-background-color: rgba(51, 65, 85, 0.62); -fx-border-color: transparent transparent rgba(148, 163, 184, 0.48) transparent; -fx-effect: dropshadow(gaussian, rgba(248, 250, 252, 0.10), 24, 0, 0, 8); }
 .theme-dark .arena-ai:hover .pixel-card-body { -fx-background-color: rgba(113, 63, 18, 0.42); -fx-border-color: transparent transparent rgba(253, 230, 138, 0.48) transparent; -fx-effect: dropshadow(gaussian, rgba(248, 250, 252, 0.10), 24, 0, 0, 8); }
 .theme-dark .arena-ranked:hover .pixel-card-body { -fx-background-color: rgba(136, 19, 55, 0.42); -fx-border-color: transparent transparent rgba(251, 207, 232, 0.48) transparent; -fx-effect: dropshadow(gaussian, rgba(248, 250, 252, 0.10), 24, 0, 0, 8); }
 .theme-dark .avatar, .theme-dark .avatar-badge { -fx-background-color: linear-gradient(to bottom right, #1f2937, #030712); -fx-background-radius: 999; -fx-border-radius: 999; -fx-border-color: rgba(248, 250, 252, 0.22); -fx-text-fill: #f8fafc; }
@@ -1451,6 +1475,8 @@
 .theme-dark .player-info-card-inner { -fx-background-color: rgba(5, 8, 15, 0.48); -fx-border-color: rgba(248, 250, 252, 0.10); }
 .theme-dark .player-info-card-active { -fx-background-color: rgba(71, 85, 105, 0.74); -fx-border-color: rgba(226, 232, 240, 0.42); }
 .theme-dark .player-info-card-offline { -fx-background-color: rgba(127, 29, 29, 0.45); -fx-effect: innershadow(gaussian, #fca5a5, 6, 0.35, 0, 0); }
+.theme-dark .player-info-card-self { -fx-border-color: transparent transparent transparent #94a3b8; -fx-background-color: rgba(71, 85, 105, 0.38); }
+.theme-dark .player-info-card-self.player-info-card-active { -fx-background-color: rgba(100, 116, 139, 0.60); -fx-border-color: transparent transparent transparent #cbd5e1; }
 .theme-dark .table-view, .theme-dark .list-view, .theme-dark .scroll-pane, .theme-dark .scroll-pane .viewport { -fx-background-color: transparent; -fx-border-color: transparent; }
 .theme-dark .table-view .column-header-background { -fx-background-color: rgba(15, 23, 42, 0.82); }
 .theme-dark .table-view .column-header, .theme-dark .table-view .column-header .label { -fx-text-fill: #cbd5e1; }
@@ -1493,4 +1519,27 @@
 
 .theme-dark .auth-pixel-card {
     -fx-effect: dropshadow(gaussian, rgba(248, 250, 252, 0.12), 24, 0, 0, 9);
+}
+
+.rank-text {
+    -fx-text-fill: #b45309;
+    -fx-font-weight: bold;
+}
+.theme-dark .rank-text {
+    -fx-text-fill: #fcd34d;
+}
+
+.win-rate-text {
+    -fx-text-fill: #16a34a;
+    -fx-font-weight: bold;
+}
+.theme-dark .win-rate-text {
+    -fx-text-fill: #86efac;
+}
+
+.expiry-text {
+    -fx-text-fill: #f59e0b;
+}
+.theme-dark .expiry-text {
+    -fx-text-fill: #fcd34d;
 }
