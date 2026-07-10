@@ -318,3 +318,5 @@
 | 2026-07-10 | Contributor| 新增 ForgotPasswordController 实现三阶段密码重置流程：步骤 1 输入邮箱发送验证码（FORGOT_PASSWORD）、步骤 2 输入 6 位验证码校验（VERIFY_FORGOT_CODE）、步骤 3 设置新密码（FORGOT_PWD_RESET），每步有独立 UI 面板和状态转换；后端返回 FORGOT_PWD_FAIL 时统一弹出错误提示 | 编译通过 |
 | 2026-07-10 | Contributor| RegisterUI.fxml 新增 emailField 输入框；RegisterController 注册请求携带 email 字段；i18n 新增 register.email key（中英双语） | 编译通过 |
 | 2026-07-10 | Contributor| LOGIN_OK 消息新增 blackAvatarUrl/whiteAvatarUrl 字段；LoginController 重连逻辑解析头像 URL 并传递给 BoardController.resumeFromLogin()，确保断线重连后双方头像正确加载 | 编译通过 |
+| 2026-07-10 | Contributor| RoomManager.leaveRoom() 将房间删除条件从 `status == FINISHED && playerCount == 0` 改为 `playerCount == 0`，当房间内没有玩家时自动删除房间，无论房间状态是 WAITING、PLAYING 还是 FINISHED。断线路径（Room.disconnect()）不受影响，保留60秒重连窗口。 | 编译通过 |
+| 2026-07-10 | Contributor| 1. CreateRoomController 新增 previewMode 字段和 setPreviewMode() 方法；2. handleCancel() 方法修改为跳转到 LobbyUI 后调用 setCurrentUser() 和 setPreviewMode() 传递用户信息；3. CasualLobbyController.handleCreateRoom() 在打开创建房间弹窗时传递 previewMode。 | 编译通过 |

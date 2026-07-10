@@ -16,9 +16,14 @@ public class CreateRoomController implements NetworkListener {
     @FXML private Label errorLabel;
 
     private User currentUser;
+    private boolean previewMode;
 
     public void setCurrentUser(User user) {
         this.currentUser = user;
+    }
+
+    public void setPreviewMode(boolean previewMode) {
+        this.previewMode = previewMode;
     }
 
     @FXML
@@ -39,7 +44,11 @@ public class CreateRoomController implements NetworkListener {
 
     @FXML
     private void handleCancel() {
-        ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        LobbyController ctrl = ScreenManager.switchTo("/fxml/LobbyUI.fxml");
+        if (currentUser != null) {
+            ctrl.setCurrentUser(currentUser);
+        }
+        ctrl.setPreviewMode(previewMode);
     }
 
     @Override

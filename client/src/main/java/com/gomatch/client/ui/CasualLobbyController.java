@@ -101,6 +101,7 @@ public class CasualLobbyController implements NetworkListener {
         }
         CreateRoomController ctrl = ScreenManager.switchTo("/fxml/CreateRoomUI.fxml");
         ctrl.setCurrentUser(currentUser);
+        ctrl.setPreviewMode(previewMode);
     }
 
     // handleJoinRoom 已被内嵌卡片按钮取代
