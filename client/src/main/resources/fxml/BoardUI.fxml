@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.BoardController"
+            styleClass="page-root">
+    <center>
+        <StackPane fx:id="boardContainer" style="-fx-background-color: transparent;">
+            <!-- Canvas added programmatically -->
+        </StackPane>
+    </center>
+    <right>
+        <HBox alignment="CENTER_LEFT" spacing="0">
+            <!-- 折叠/展开控制按钮 (双态切换) -->
+            <Button fx:id="toggleSidebarBtn" text="»" onAction="#toggleSidebar" styleClass="drawer-toggle"
+                    style="-fx-padding: 12 4; -fx-min-width: 24; -fx-pref-width: 24; -fx-max-width: 24; -fx-background-color: rgba(148, 163, 184, 0.25); -fx-background-radius: 6 0 0 6; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+            
+            <!-- 拖拽拉伸拉手 Region -->
+            <Region fx:id="dragHandle" style="-fx-cursor: h-resize; -fx-background-color: rgba(148, 163, 184, 0.15);"
+                    prefWidth="6" minWidth="6" maxWidth="6"/>
+            
+            <!-- 侧边栏内容 VBox -->
+            <VBox fx:id="sidebarContent" spacing="16" prefWidth="220" minWidth="150" maxWidth="400" style="-fx-padding: 0 0 0 10;">
+                <!-- 玩家信息区：黑白方卡片 + 回合指示 + 计时 -->
+                <VBox fx:id="blackPlayerBox" styleClass="player-info-card" spacing="0"/>
+                <VBox fx:id="whitePlayerBox" styleClass="player-info-card" spacing="0"/>
+                <Label fx:id="turnLabel" text="%board.turnBlack" styleClass="turn-indicator"/>
+                <Label fx:id="timerLabel" text="%board.timer" styleClass="timer-label"/>
+                <Separator styleClass="section-divider" prefWidth="Infinity"/>
+                <Label text="%board.chat" styleClass="section-label" style="-fx-padding: 8 0;"/>
+                
+                <!-- 聊天窗口：启用自动换行，禁止出现左右滚动条 -->
+                <TextArea fx:id="chatArea" editable="false" wrapText="true" VBox.vgrow="ALWAYS" styleClass="chat-area"/>
+                
+                <!-- 对局操作区 -->
+                <VBox fx:id="gameControls" spacing="12" maxWidth="Infinity">
+                    <TextField fx:id="chatInput" promptText="%board.chatInput" onAction="#handleSendChat" styleClass="field"/>
+                    <Button text="%board.undo" fx:id="undoBtn" onAction="#handleUndo" styleClass="btn-secondary" maxWidth="Infinity"/>
+                    <Button text="%board.draw" fx:id="drawBtn" onAction="#handleDraw" styleClass="btn-secondary" maxWidth="Infinity"/>
+                    <Button text="%board.save" fx:id="saveBtn" onAction="#handleSaveGame" styleClass="btn-secondary" maxWidth="Infinity"/>
+                    <Button text="%board.surrender" fx:id="surrenderBtn" onAction="#handleSurrender" styleClass="btn-danger" maxWidth="Infinity"/>
+                </VBox>
+
+                <!-- 回放控制区 -->
+                <VBox fx:id="replayControls" spacing="12" maxWidth="Infinity" visible="false" managed="false">
+                    <Button text="%board.prev" fx:id="prevBtn" onAction="#handleReplayPrev" styleClass="btn-secondary" maxWidth="Infinity"/>
+                    <Button text="%board.next" fx:id="nextBtn" onAction="#handleReplayNext" styleClass="btn-secondary" maxWidth="Infinity"/>
+                    <Button text="%board.exitReplay" fx:id="exitBtn" onAction="#handleReplayExit" styleClass="btn-danger" maxWidth="Infinity"/>
+                </VBox>
+
+                <!-- 观战控制区 -->
+                <VBox fx:id="spectatorControls" spacing="12" maxWidth="Infinity" visible="false" managed="false">
+                    <Button text="退出观战" fx:id="leaveSpectateBtn" onAction="#handleLeaveSpectate" styleClass="btn-danger" maxWidth="Infinity"/>
+                </VBox>
+            </VBox>
+        </HBox>
+    </right>
+</BorderPane>

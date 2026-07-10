@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.shape.Circle?>
+
+<!-- 大头像预览弹窗：点击空白处关闭 -->
+<StackPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.gomatch.client.ui.AvatarPreviewController"
+           onMouseClicked="#handleClose"
+           prefWidth="400" prefHeight="480"
+           styleClass="avatar-preview-dialog">
+
+    <VBox spacing="20" alignment="CENTER">
+        <!-- 大头像：StackPane 由 controller 设置渐变背景（与小头像风格一致） -->
+        <StackPane fx:id="avatarPane" prefWidth="300" prefHeight="300" minWidth="300" minHeight="300"
+                    maxWidth="300" maxHeight="300"
+                    style="-fx-background-color: rgba(148,163,184,0.35); -fx-background-radius: 150;">
+            <Circle fx:id="avatarBg" radius="150" fill="transparent"/>
+            <Label fx:id="avatarLabel" text="U" StackPane.alignment="CENTER"
+                   style="-fx-font-size: 120px; -fx-font-weight: bold; -fx-text-fill: white;"
+                   alignment="CENTER"/>
+            <ImageView fx:id="avatarImg" fitWidth="300" fitHeight="300" visible="false" managed="false">
+                <clip>
+                    <Circle centerX="150" centerY="150" radius="150"/>
+                </clip>
+            </ImageView>
+        </StackPane>
+
+        <Label fx:id="usernameLabel" text="" styleClass="avatar-preview-name"
+               style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+    </VBox>
+</StackPane>

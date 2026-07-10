@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.AboutController"
+            styleClass="page-root">
+    <center>
+        <VBox styleClass="card-padded" alignment="CENTER" spacing="14" maxWidth="420">
+            <Label text="Gomatch" styleClass="title"/>
+            <Label text="%about.subtitle" styleClass="subtitle"/>
+            <Region prefHeight="10"/>
+            <Label text="%about.versionText" styleClass="muted"/>
+            <Label text="%about.techStack" styleClass="muted"/>
+            <Region VBox.vgrow="ALWAYS"/>
+            <Button text="%about.close" onAction="#handleClose" styleClass="btn-secondary"/>
+        </VBox>
+    </center>
+</BorderPane>

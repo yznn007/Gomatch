@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import com.gomatch.client.ui.PixelCard?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.RegisterController"
+            styleClass="page-root">
+    <center>
+        <PixelCard variant="blue" showParticles="false"
+                   maxWidth="480" minWidth="320" prefHeight="590"
+                   styleClass="auth-pixel-card">
+            <VBox alignment="CENTER" spacing="22" styleClass="glass-card"
+                  maxWidth="Infinity" maxHeight="Infinity"
+                  style="-fx-padding: 28 32;">
+                <Label text="%register.title" styleClass="title" style="-fx-font-size: 26px; -fx-padding: 0 0 10 0;"/>
+
+                <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
+                    <TextField fx:id="usernameField" styleClass="glass-input" promptText="%register.username"/>
+                </VBox>
+
+                <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
+                    <TextField fx:id="emailField" styleClass="glass-input" promptText="%register.email"/>
+                </VBox>
+
+                <StackPane alignment="TOP_LEFT" maxWidth="320" viewOrder="-1.0">
+                    <HBox alignment="CENTER_LEFT" spacing="10" maxWidth="320">
+                        <VBox styleClass="input-field-group" prefWidth="70" minWidth="70" maxWidth="70" style="-fx-padding: 6 0 4 0;">
+                            <Button fx:id="btnCountryCode" text="+86 ▼" onAction="#toggleInlineMenu" styleClass="glass-input" style="-fx-background-color: transparent; -fx-padding: 0 4; -fx-cursor: hand;" maxWidth="70" focusTraversable="false"/>
+                        </VBox>
+                        <VBox styleClass="input-field-group" HBox.hgrow="ALWAYS" maxWidth="320" style="-fx-padding: 6 0 4 0;">
+                            <TextField fx:id="phoneField" styleClass="glass-input" promptText="手机号"/>
+                        </VBox>
+                    </HBox>
+                    <VBox fx:id="inlineCodeMenu" visible="false" managed="false" styleClass="inline-popup-menu" translateY="32" prefWidth="70" maxWidth="70">
+                        <Button text="+86" onAction="#selectInlineCode" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                        <Button text="+1" onAction="#selectInlineCode" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                        <Button text="+81" onAction="#selectInlineCode" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                        <Button text="+44" onAction="#selectInlineCode" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                    </VBox>
+                </StackPane>
+
+                <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
+                    <PasswordField fx:id="passwordField" styleClass="glass-input" promptText="%register.password"/>
+                </VBox>
+
+                <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
+                    <PasswordField fx:id="confirmField" styleClass="glass-input" promptText="%register.confirm"/>
+                </VBox>
+
+                <Label fx:id="errorLabel" text="" styleClass="error-text" maxWidth="320"/>
+
+                <Button text="%register.submit" onAction="#handleRegister" styleClass="btn-primary"
+                        maxWidth="320" style="-fx-font-size: 15px; -fx-margin: 10 0 0 0;"/>
+
+                <HBox alignment="CENTER" spacing="4" maxWidth="320">
+                    <Label text="%register.hasAccount" styleClass="subtitle"/>
+                    <Button text="%register.back" onAction="#handleBack" styleClass="btn-link" style="-fx-padding: 0; -fx-font-size: 13px;"/>
+                </HBox>
+            </VBox>
+        </PixelCard>
+    </center>
+</BorderPane>

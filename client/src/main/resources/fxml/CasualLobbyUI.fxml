@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.CasualLobbyController"
+            styleClass="page-root">
+    <top>
+        <VBox spacing="0">
+            <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 0 0 10 0;">
+                <Button text="%settings.back" onAction="#handleBack" styleClass="icon-btn"/>
+                <Label text="%casual.title" styleClass="title"/>
+            </HBox>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+        </VBox>
+    </top>
+    <center>
+        <HBox spacing="24" alignment="TOP_CENTER" style="-fx-padding: 18 0 0 0;">
+            
+            <!-- 左侧导航栏 VBox -->
+            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10;">
+                <Button fx:id="menuRoomsBtn" text="%casual.rooms" onAction="#showRoomsTab" styleClass="sidebar-menu-btn"/>
+                <Button fx:id="menuSpectateBtn" text="%casual.spectate" onAction="#showSpectateTab" styleClass="sidebar-menu-btn"/>
+            </VBox>
+
+            <!-- 右侧内容区域 -->
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" HBox.hgrow="ALWAYS">
+                <StackPane alignment="CENTER" style="-fx-background-color: transparent;">
+                    
+                    <!-- 面板 1: 房间列表 -->
+                    <VBox fx:id="roomsPane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Button text="%casual.create" onAction="#handleCreateRoom" styleClass="btn-primary"/>
+                            <Button text="%casual.quick" fx:id="quickMatchBtn" onAction="#handleQuickMatch" styleClass="btn-secondary"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button text="%casual.refresh" onAction="#handleRefresh" styleClass="btn-secondary"/>
+                        </HBox>
+                        <Label fx:id="statusLabel" text="" visible="false" managed="false"
+                               styleClass="muted" style="-fx-font-size: 13px; -fx-padding: 4 0 0 0;"/>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" VBox.vgrow="ALWAYS" minHeight="240" prefHeight="320">
+                            <VBox fx:id="roomsContainer" spacing="10" style="-fx-padding: 8; -fx-background-color: transparent;"/>
+                        </ScrollPane>
+                    </VBox>
+ 
+                    <!-- 面板 2: 观战列表 -->
+                    <VBox fx:id="spectatePane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                        <Label text="%casual.spectatingGames" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" VBox.vgrow="ALWAYS" minHeight="200" prefHeight="260">
+                            <VBox fx:id="spectateContainer" spacing="10" style="-fx-padding: 8; -fx-background-color: transparent;"/>
+                        </ScrollPane>
+                    </VBox>
+                    
+                </StackPane>
+            </ScrollPane>
+        </HBox>
+    </center>
+</BorderPane>

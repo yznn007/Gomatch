@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.ManagementController"
+            styleClass="page-root">
+    <top>
+        <VBox spacing="10">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <Button text="%settings.back" onAction="#handleBack" styleClass="icon-btn"/>
+                <VBox spacing="2">
+                    <Label text="%management.title" styleClass="title"/>
+                    <Label fx:id="statusLabel" text="" styleClass="subtitle"/>
+                </VBox>
+            </HBox>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+        </VBox>
+    </top>
+
+    <left>
+        <VBox spacing="10" prefWidth="210" minWidth="190" style="-fx-padding: 20 18 0 0;">
+            <Button fx:id="menuSavesBtn" text="%management.saves" onAction="#showSavesTab" styleClass="sidebar-menu-btn" maxWidth="Infinity"/>
+            <Button fx:id="menuChatBtn" text="%management.chatHistory" onAction="#showChatTab" styleClass="sidebar-menu-btn" maxWidth="Infinity"/>
+            <Button fx:id="menuWatchBtn" text="%management.watchHistory" onAction="#showWatchTab" styleClass="sidebar-menu-btn" maxWidth="Infinity"/>
+            <Button fx:id="menuAdminBtn" text="%management.admin" onAction="#showAdminTab" styleClass="sidebar-menu-btn" maxWidth="Infinity"/>
+        </VBox>
+    </left>
+
+    <center>
+        <StackPane style="-fx-padding: 20 0 0 0;">
+            <VBox fx:id="savesPane" spacing="14" styleClass="card-padded">
+                <Label text="%management.savesTitle" styleClass="section-label"/>
+                <HBox spacing="10">
+                    <TextField fx:id="saveNameField" promptText="%management.saveName" styleClass="field" HBox.hgrow="ALWAYS"/>
+                    <Button text="%management.saveCurrent" onAction="#handleSaveCurrentGame" styleClass="btn-primary"/>
+                    <Button text="%management.refresh" onAction="#requestSaves" styleClass="btn-secondary"/>
+                </HBox>
+                <ListView fx:id="savesList" VBox.vgrow="ALWAYS" minHeight="320"/>
+                <HBox spacing="10" alignment="CENTER_RIGHT">
+                    <Button text="%management.load" onAction="#handleLoadSave" styleClass="btn-secondary"/>
+                    <Button text="%management.delete" onAction="#handleDeleteSave" styleClass="btn-danger"/>
+                </HBox>
+            </VBox>
+
+            <VBox fx:id="chatPane" spacing="14" styleClass="card-padded" visible="false" managed="false">
+                <Label text="%management.chatTitle" styleClass="section-label"/>
+                <HBox spacing="10">
+                    <TextField fx:id="chatRoomIdField" promptText="%management.roomId" styleClass="field" HBox.hgrow="ALWAYS"/>
+                    <Button text="%management.query" onAction="#requestChatHistory" styleClass="btn-primary"/>
+                </HBox>
+                <ListView fx:id="chatHistoryList" VBox.vgrow="ALWAYS" minHeight="380"/>
+            </VBox>
+
+            <VBox fx:id="watchPane" spacing="14" styleClass="card-padded" visible="false" managed="false">
+                <Label text="%management.watchTitle" styleClass="section-label"/>
+                <HBox spacing="10" alignment="CENTER_RIGHT">
+                    <Button text="%management.refresh" onAction="#requestWatcherHistory" styleClass="btn-secondary"/>
+                </HBox>
+                <ListView fx:id="watchHistoryList" VBox.vgrow="ALWAYS" minHeight="400"/>
+            </VBox>
+
+            <VBox fx:id="adminPane" spacing="14" styleClass="card-padded" visible="false" managed="false">
+                <Label text="%management.adminTitle" styleClass="section-label"/>
+                <Label fx:id="adminStatsLabel" text="" styleClass="subtitle"/>
+                <HBox spacing="10">
+                    <TextField fx:id="adminKeywordField" promptText="%management.usernameKeyword" styleClass="field" HBox.hgrow="ALWAYS"/>
+                    <Button text="%management.userList" onAction="#requestUserList" styleClass="btn-primary"/>
+                    <Button text="%management.stats" onAction="#requestAdminStats" styleClass="btn-secondary"/>
+                </HBox>
+                <ListView fx:id="adminUsersList" VBox.vgrow="ALWAYS" minHeight="240"/>
+                <HBox spacing="10">
+                    <TextField fx:id="adminUserIdField" promptText="%management.userId" styleClass="field" HBox.hgrow="ALWAYS"/>
+                    <TextField fx:id="adminRoleField" promptText="%management.role" styleClass="field" HBox.hgrow="ALWAYS"/>
+                    <Button text="%management.ban" onAction="#handleBanUser" styleClass="btn-danger"/>
+                    <Button text="%management.unban" onAction="#handleUnbanUser" styleClass="btn-secondary"/>
+                    <Button text="%management.changeRole" onAction="#handleUpdateRole" styleClass="btn-primary"/>
+                </HBox>
+                <HBox spacing="10">
+                    <TextField fx:id="adminRoomIdField" promptText="%management.roomId" styleClass="field" HBox.hgrow="ALWAYS"/>
+                    <Button text="%management.forceClose" onAction="#handleForceCloseRoom" styleClass="btn-danger"/>
+                </HBox>
+            </VBox>
+        </StackPane>
+    </center>
+</BorderPane>

@@ -7,6 +7,11 @@ public class User {
     private int winCount;
     private int loseCount;
     private int drawCount;
+    private int rank;
+    private String winRate;
+    private String role = "PLAYER";
+    private String phone;
+    private String avatarUrl;
 
     public User() {}
 
@@ -27,4 +32,15 @@ public class User {
     public void setLoseCount(int loseCount) { this.loseCount = loseCount; }
     public int getDrawCount() { return drawCount; }
     public void setDrawCount(int drawCount) { this.drawCount = drawCount; }
+    public int getRank() { return rank; }
+    public void setRank(int rank) { this.rank = rank; }
+    public String getWinRate() { return winRate; }
+    public void setWinRate(String winRate) { this.winRate = winRate; }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 }
+

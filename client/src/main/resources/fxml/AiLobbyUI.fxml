@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import com.gomatch.client.ui.PixelCard?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.AiLobbyController"
+            styleClass="page-root"
+            style="-fx-padding: 10 32 24 32;">
+    <top>
+        <VBox spacing="0" cache="true" cacheHint="QUALITY" viewOrder="-2.0">
+            <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 0 0 4 0;">
+                <Button text="%settings.back" onMouseClicked="#handleBack" styleClass="icon-btn"/>
+                <Label text="%ai.title" styleClass="title"/>
+            </HBox>
+            <Separator styleClass="section-divider" prefWidth="Infinity" mouseTransparent="true"/>
+        </VBox>
+    </top>
+    <center>
+        <VBox styleClass="page-root" spacing="0" alignment="CENTER" style="-fx-padding: 16 0 16 0;">
+            <HBox styleClass="lobby-center" spacing="36" alignment="CENTER" VBox.vgrow="ALWAYS">
+                <!-- 简单 -->
+                <PixelCard variant="blue" styleClass="arena-btn, arena-casual, arena-match" onMouseClicked="#handleEasy"
+                           HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
+                    <VBox alignment="CENTER" spacing="12">
+                        <Label text="🌱" styleClass="arena-icon"/>
+                        <Label text="%ai.easy" styleClass="arena-title"/>
+                        <Label text="EASY" styleClass="arena-sub"/>
+                        <Label text="%ai.easy.desc" styleClass="arena-desc" wrapText="true" textAlignment="CENTER"/>
+                    </VBox>
+                </PixelCard>
+                
+                <!-- 中等 -->
+                <PixelCard variant="yellow" styleClass="arena-btn, arena-casual, arena-ai" onMouseClicked="#handleMedium"
+                           HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
+                    <VBox alignment="CENTER" spacing="12">
+                        <Label text="⚡" styleClass="arena-icon"/>
+                        <Label text="%ai.medium" styleClass="arena-title"/>
+                        <Label text="MEDIUM" styleClass="arena-sub"/>
+                        <Label text="%ai.medium.desc" styleClass="arena-desc" wrapText="true" textAlignment="CENTER"/>
+                    </VBox>
+                </PixelCard>
+                
+                <!-- 困难 -->
+                <PixelCard variant="pink" styleClass="arena-btn, arena-ranked" onMouseClicked="#handleHard"
+                           HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
+                    <VBox alignment="CENTER" spacing="12">
+                        <Label text="🔥" styleClass="arena-icon"/>
+                        <Label text="%ai.hard" styleClass="arena-title"/>
+                        <Label text="HARD" styleClass="arena-sub"/>
+                        <Label text="%ai.hard.desc" styleClass="arena-desc" wrapText="true" textAlignment="CENTER"/>
+                    </VBox>
+                </PixelCard>
+            </HBox>
+            
+            <Label fx:id="matchStatus" text="" styleClass="subtitle" style="-fx-padding: 16 0 0 0;"/>
+        </VBox>
+    </center>
+</BorderPane>

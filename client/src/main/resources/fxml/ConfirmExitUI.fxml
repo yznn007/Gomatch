@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.gomatch.client.ui.ConfirmExitController"
+      styleClass="card-padded" alignment="CENTER" spacing="20" prefWidth="320" maxWidth="320">
+    
+    <Label text="%exit.title" styleClass="title" style="-fx-font-size: 18px;"/>
+    <Label text="%exit.confirm" styleClass="subtitle"/>
+    
+    <Separator styleClass="section-divider" prefWidth="Infinity"/>
+    
+    <HBox spacing="16" alignment="CENTER">
+        <Button fx:id="yesBtn" text="%exit.confirmBtn" onAction="#handleYes" styleClass="btn-primary" prefWidth="90"/>
+        <Button fx:id="noBtn" text="%exit.cancelBtn" onAction="#handleNo" styleClass="btn-secondary" prefWidth="90"/>
+    </HBox>
+</VBox>

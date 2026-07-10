@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.shape.Circle?>
+<?import com.gomatch.client.ui.PixelCard?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.ProfileController"
+            styleClass="page-root">
+    <top>
+        <VBox spacing="0">
+            <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 0 0 10 0;">
+                <Button text="%settings.back" onAction="#handleBack" styleClass="icon-btn"/>
+                <Label text="%profile.title" styleClass="title"/>
+            </HBox>
+            <Separator styleClass="section-divider" prefWidth="Infinity"/>
+        </VBox>
+    </top>
+    <center>
+        <!-- 主布局：水平分布左侧导航栏与右侧动态内容区 -->
+        <HBox spacing="24" alignment="TOP_CENTER" style="-fx-padding: 18 0 0 0;">
+            
+            <!-- 左侧导航栏 VBox (使用微透磨砂底卡片，统一图标字符范围以保障尺寸完全一致) -->
+            <VBox spacing="8" alignment="TOP_CENTER" styleClass="card" prefWidth="180" minWidth="180" style="-fx-padding: 20 10;">
+                <Button fx:id="menuInfoBtn" text="%profile.info" onAction="#showInfoTab" styleClass="sidebar-menu-btn"/>
+                <Button fx:id="menuRecordBtn" text="%profile.records" onAction="#showRecordTab" styleClass="sidebar-menu-btn"/>
+                <Button fx:id="menuPwdBtn" text="%profile.changepwd" onAction="#showPwdTab" styleClass="sidebar-menu-btn"/>
+            </VBox>
+
+            <!-- 右侧内容区域，带纵向 ScrollPane 适应较小窗口 -->
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" HBox.hgrow="ALWAYS">
+                <StackPane alignment="CENTER" style="-fx-background-color: transparent;">
+                    
+                    <!-- 面板 1: 个人信息 (PixelCard) -->
+                    <VBox fx:id="infoPane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                        <Label text="%profile.basicInfo" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
+                        <PixelCard variant="blue" showParticles="false" minWidth="380" maxWidth="800" minHeight="450">
+                            <VBox spacing="16" alignment="TOP_CENTER" style="-fx-padding: 20 18 10 18;">
+                                <!-- 个人头像与昵称ID头部区域 -->
+                                <HBox spacing="16" alignment="CENTER_LEFT" styleClass="profile-header-card" style="-fx-padding: 10 16;">
+                                    <!-- 头像圆形 -->
+                                    <StackPane fx:id="profileAvatarPane" prefWidth="56" prefHeight="56" minWidth="56" minHeight="56" styleClass="avatar-badge" style="-fx-cursor: hand;" onMouseClicked="#handleAvatarClick">
+                                        <Label fx:id="profileAvatarLabel" text="U" styleClass="avatar-badge-text" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                                        <ImageView fx:id="profileAvatarImg" fitWidth="56" fitHeight="56" visible="false">
+                                            <clip>
+                                                <Circle centerX="28" centerY="28" radius="28"/>
+                                            </clip>
+                                        </ImageView>
+                                    </StackPane>
+                                    <VBox spacing="4" alignment="CENTER_LEFT">
+                                        <Label fx:id="usernameLabel" text="%profile.username" styleClass="section-label" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+                                        <Label fx:id="userIdLabel" text="#ID" styleClass="muted" style="-fx-font-size: 11px;"/>
+                                    </VBox>
+                                    <Button fx:id="uploadAvatarBtn" text="上传头像" onAction="#handleUploadAvatar" styleClass="btn-primary" prefHeight="30" style="-fx-font-size: 12px; -fx-padding: 0 12;"/>
+                                </HBox>
+                                
+                                <Label fx:id="uploadStatusLabel" text="" styleClass="error-text" wrapText="true" alignment="CENTER" style="-fx-min-height: 20px;"/>
+
+                                <GridPane hgap="16" vgap="8" alignment="CENTER" style="-fx-padding: 6 0;">
+                                    <columnConstraints>
+                                        <ColumnConstraints minWidth="100" prefWidth="100" halignment="RIGHT"/>
+                                        <ColumnConstraints minWidth="150" prefWidth="150" halignment="LEFT"/>
+                                    </columnConstraints>
+                                    
+                                    <Label text="%profile.score" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
+                                    <Label fx:id="scoreLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" styleClass="section-label"/>
+                                    
+                                    <Label text="%profile.rank" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
+                                    <Label fx:id="rankLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="section-label, rank-text"/>
+                                    
+                                    <Label text="%profile.totalGames" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="muted"/>
+                                    <Label fx:id="totalGamesLabel" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="section-label"/>
+                                    
+                                    <Label text="%profile.winRate" GridPane.rowIndex="3" GridPane.columnIndex="0" styleClass="muted"/>
+                                    <Label fx:id="winRateLabel" GridPane.rowIndex="3" GridPane.columnIndex="1" styleClass="section-label, win-rate-text"/>
+                                    
+                                    <Label text="%profile.wins" GridPane.rowIndex="4" GridPane.columnIndex="0" styleClass="muted"/>
+                                    <Label fx:id="winLabel" GridPane.rowIndex="4" GridPane.columnIndex="1" styleClass="section-label"/>
+                                    
+                                    <Label text="%profile.losses" GridPane.rowIndex="5" GridPane.columnIndex="0" styleClass="muted"/>
+                                    <Label fx:id="loseLabel" GridPane.rowIndex="5" GridPane.columnIndex="1" styleClass="section-label"/>
+                                    
+                                    <Label text="%profile.draws" GridPane.rowIndex="6" GridPane.columnIndex="0" styleClass="muted"/>
+                                    <Label fx:id="drawLabel" GridPane.rowIndex="6" GridPane.columnIndex="1" styleClass="section-label"/>
+                                </GridPane>
+                            </VBox>
+                        </PixelCard>
+                    </VBox>
+
+                    <!-- 面板 2: 对战记录 (Table) -->
+                    <VBox fx:id="recordPane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
+                        <Label text="%profile.recordList" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane" prefHeight="320" minHeight="240" VBox.vgrow="ALWAYS">
+                            <VBox fx:id="recordsContainer" spacing="10" style="-fx-padding: 8; -fx-background-color: transparent;"/>
+                        </ScrollPane>
+                    </VBox>
+
+                    <!-- 面板 3: 修改密码 (Form) -->
+                    <VBox fx:id="pwdPane" spacing="16" alignment="TOP_CENTER" style="-fx-background-color: transparent; -fx-padding: 20 16 20 0;">
+                        <PasswordField fx:id="oldPwdField" promptText="%profile.oldPwd" styleClass="field" prefWidth="380"/>
+                        <PasswordField fx:id="newPwdField" promptText="%profile.newPwd" styleClass="field" prefWidth="380"/>
+                        <Label fx:id="errorLabel" text="" styleClass="error-text" wrapText="true" alignment="CENTER"/>
+                        <Button text="%profile.changePwdBtn" onAction="#handleChangePwd" styleClass="btn-primary" prefWidth="160" prefHeight="36"/>
+                    </VBox>
+                    
+                </StackPane>
+            </ScrollPane>
+        </HBox>
+    </center>
+</BorderPane>

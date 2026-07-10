@@ -1,0 +1,66 @@
+# Review package: 339684a8e5f4474ff479e7568dec300e4de020f0..c5d1692898aed866030e6fa4fdedca4d8bb19dc0
+
+## Commits
+c5d1692 feat(auth): 增加国际手机号规范化
+
+## Files changed
+ .../server/security/PhoneNumberNormalizer.java     | 22 ++++++++++++++++++++++
+ .../server/security/PhoneNumberNormalizerTest.java | 21 +++++++++++++++++++++
+ 2 files changed, 43 insertions(+)
+
+## Diff
+diff --git a/server/src/main/java/com/gomatch/server/security/PhoneNumberNormalizer.java b/server/src/main/java/com/gomatch/server/security/PhoneNumberNormalizer.java
+new file mode 100644
+index 0000000..953407e
+--- /dev/null
++++ b/server/src/main/java/com/gomatch/server/security/PhoneNumberNormalizer.java
+@@ -0,0 +1,22 @@
++package com.gomatch.server.security;
++
++import java.util.regex.Pattern;
++
++/** Normalizes user-provided international phone numbers to E.164 format. */
++public final class PhoneNumberNormalizer {
++    private static final Pattern E164 = Pattern.compile("\\+?[1-9]\\d{7,14}");
++
++    private PhoneNumberNormalizer() {
++    }
++
++    public static String normalize(String value) {
++        if (value == null) {
++            return null;
++        }
++        String compact = value.trim().replaceAll("[\\s()\\-]", "");
++        if (!E164.matcher(compact).matches()) {
++            return null;
++        }
++        return compact.startsWith("+") ? compact : "+" + compact;
++    }
++}
+diff --git a/server/src/test/java/com/gomatch/server/security/PhoneNumberNormalizerTest.java b/server/src/test/java/com/gomatch/server/security/PhoneNumberNormalizerTest.java
+new file mode 100644
+index 0000000..d2d2466
+--- /dev/null
++++ b/server/src/test/java/com/gomatch/server/security/PhoneNumberNormalizerTest.java
+@@ -0,0 +1,21 @@
++package com.gomatch.server.security;
++
++import org.junit.jupiter.api.Test;
++
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertNull;
++
++class PhoneNumberNormalizerTest {
++
++    @Test
++    void normalizesValidInternationalNumbers() {
++        assertEquals("+8613800138000", PhoneNumberNormalizer.normalize("+86 138-0013-8000"));
++        assertEquals("+14155552671", PhoneNumberNormalizer.normalize("14155552671"));
++    }
++
++    @Test
++    void rejectsInvalidInternationalNumbers() {
++        assertNull(PhoneNumberNormalizer.normalize("+01234567890"));
++        assertNull(PhoneNumberNormalizer.normalize("1234567"));
++    }
++}

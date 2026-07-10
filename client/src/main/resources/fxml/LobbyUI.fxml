@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.Circle?>
+<?import com.gomatch.client.ui.PixelCard?>
+
+<!--
+    排行榜抽屉改为 StackPane 浮层覆盖，不再占据 BorderPane left 槽位，
+    展开时主界面（匹配/排位按钮）不受任何挤压。
+-->
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.LobbyController"
+            styleClass="page-root"
+            style="-fx-padding: 10 32 24 32;">
+    <top>
+        <VBox spacing="0" cache="true" cacheHint="QUALITY" viewOrder="-2.0">
+            <HBox alignment="CENTER_LEFT" spacing="18">
+                <HBox fx:id="playerInfoBox" styleClass="player-chip" onMouseClicked="#handleProfile" spacing="12">
+                    <StackPane fx:id="lobbyAvatarPane" prefWidth="44" prefHeight="44" minWidth="44" minHeight="44" styleClass="avatar-badge" style="-fx-cursor: hand;" onMouseClicked="#handleAvatarClick">
+                        <Label fx:id="avatarLabel" text="U" styleClass="avatar-badge-text" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                        <ImageView fx:id="avatarImageView" fitWidth="44" fitHeight="44" visible="false">
+                            <clip>
+                                <Circle centerX="22" centerY="22" radius="22"/>
+                            </clip>
+                        </ImageView>
+                    </StackPane>
+                    <VBox spacing="2" alignment="CENTER_LEFT">
+                        <Label fx:id="userInfoLabel" text="" styleClass="player-name"/>
+                        <Label fx:id="userScoreLabel" text="" styleClass="player-score"/>
+                    </VBox>
+                </HBox>
+                <Region HBox.hgrow="ALWAYS"/>
+                <HBox spacing="6" alignment="CENTER_RIGHT">
+                    <Button text="%lobby.ranking" onAction="#handleRankingPage" styleClass="icon-btn"/>
+                    <Button text="%lobby.friends" onAction="#handleFriends" styleClass="icon-btn"/>
+                    <Button text="%lobby.management" fx:id="managementBtn" onAction="#handleManagement" styleClass="icon-btn"/>
+                    <Button text="%lobby.settings" onAction="#handleSettings" styleClass="icon-btn"/>
+                </HBox>
+            </HBox>
+            <Separator styleClass="section-divider" prefWidth="Infinity" mouseTransparent="true"/>
+        </VBox>
+    </top>
+    <center>
+        <!--
+            StackPane 作为浮层容器：
+            第一层（bottom）= 主内容，始终占满全部空间
+            第二层（top）   = 排行榜抽屉，absolute 定位在左侧，不占布局空间
+        -->
+        <StackPane>
+            <!-- 主内容层：匹配 / 排位入口 -->
+            <VBox styleClass="page-root" spacing="0" alignment="CENTER" style="-fx-padding: 16 0 16 0;">
+                <HBox styleClass="lobby-center" spacing="36" alignment="CENTER" VBox.vgrow="ALWAYS">
+                    <!-- 匹配 -->
+                    <PixelCard variant="blue" styleClass="arena-btn, arena-casual, arena-match" onMouseClicked="#handleCasual"
+                               HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
+                        <VBox alignment="CENTER" spacing="12">
+                            <Label text="⚔" styleClass="arena-icon"/>
+                            <Label text="%lobby.match" styleClass="arena-title"/>
+                            <Label text="MATCH" styleClass="arena-sub"/>
+                        </VBox>
+                    </PixelCard>
+                    <!-- AI 对战 -->
+                    <PixelCard variant="yellow" styleClass="arena-btn, arena-casual, arena-ai" onMouseClicked="#handleAiMatch"
+                               HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
+                        <VBox alignment="CENTER" spacing="12">
+                            <Label text="🤖" styleClass="arena-icon"/>
+                            <Label text="%lobby.ai" styleClass="arena-title"/>
+                            <Label text="VS AI" styleClass="arena-sub"/>
+                        </VBox>
+                    </PixelCard>
+                    <!-- 排位 -->
+                    <PixelCard variant="pink" styleClass="arena-btn, arena-ranked" onMouseClicked="#handleRanked"
+                               HBox.hgrow="ALWAYS" minWidth="200" maxWidth="Infinity" minHeight="200" maxHeight="Infinity">
+                        <VBox alignment="CENTER" spacing="12">
+                            <Label text="♛" styleClass="arena-icon"/>
+                            <Label text="%lobby.rank" styleClass="arena-title"/>
+                            <Label text="RANK" styleClass="arena-sub"/>
+                        </VBox>
+                    </PixelCard>
+                </HBox>
+            </VBox>
+
+            <!-- 浮层：排行榜抽屉，默认隐藏，展开时覆盖在左侧，不影响主内容布局 -->
+            <VBox fx:id="rankDrawer" styleClass="side-drawer"
+                  prefWidth="240" maxWidth="240"
+                  managed="false" visible="false"
+                  StackPane.alignment="TOP_LEFT">
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="%lobby.ranking" styleClass="section-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="«" onAction="#toggleRankDrawer" styleClass="drawer-toggle"/>
+                </HBox>
+                <Separator styleClass="section-divider" prefWidth="Infinity"/>
+                <ListView fx:id="rankDrawerList" VBox.vgrow="ALWAYS" styleClass="drawer-list"/>
+            </VBox>
+        </StackPane>
+    </center>
+</BorderPane>

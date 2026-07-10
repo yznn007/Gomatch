@@ -1,27 +1,131 @@
 package com.gomatch.server.dao;
 
+import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.sql.*;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RecordDAO {
     private static final Logger log = LoggerFactory.getLogger(RecordDAO.class);
+    private static final Gson gson = new Gson();
 
-    public void saveRecord(String roomId, long blackId, long whiteId,
-                           Long winnerId, int result, String steps) {
-        String sql = "INSERT INTO t_game_record (room_id, black_user_id, white_user_id, winner_id, result, steps, start_time) VALUES (?, ?, ?, ?, ?, ?, NOW())";
+    public long saveRecord(String roomId, long player1Id, long player2Id,
+                           Long winnerId, String result,
+                           List<MoveRecord> moves, Instant startTime) {
+        return saveRecord(roomId, player1Id, player2Id, winnerId, result, moves, startTime, "PVP");
+    }
+
+    public long saveRecord(String roomId, long player1Id, long player2Id,
+                           Long winnerId, String result,
+                           List<MoveRecord> moves, Instant startTime, String gameType) {
+        return saveRecord(roomId, player1Id, player2Id, winnerId, result, moves, startTime, gameType, 0, 0);
+    }
+
+    public long saveRecord(String roomId, long player1Id, long player2Id,
+                           Long winnerId, String result,
+                           List<MoveRecord> moves, Instant startTime, String gameType,
+                           int player1ScoreChange, int player2ScoreChange) {
+        int duration = startTime != null
+                ? (int) Duration.between(startTime, Instant.now()).getSeconds()
+                : 0;
+        int moveCount = moves.size();
+
+        String boardData = gson.toJson(moves);
+
+        String sql = "INSERT INTO t_game_record " +
+                     "(player1_id, player2_id, game_type, winner_id, result, " +
+                     "board_data, duration, move_count, player1_score_change, player2_score_change, create_time) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setLong(1, player1Id);
+            ps.setLong(2, player2Id);
+            ps.setString(3, gameType);
+            if (winnerId != null) {
+                ps.setLong(4, winnerId);
+            } else {
+                ps.setNull(4, Types.BIGINT);
+            }
+            ps.setString(5, result);
+            ps.setString(6, boardData);
+            ps.setInt(7, duration);
+            ps.setInt(8, moveCount);
+            ps.setInt(9, player1ScoreChange);
+            ps.setInt(10, player2ScoreChange);
+            ps.executeUpdate();
+
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    long recordId = rs.getLong(1);
+                    log.info("Game record saved: room={}, recordId={}, p1={}, p2={}, winner={}, duration={}s, moves={}, p1Delta={}, p2Delta={}",
+                            roomId, recordId, player1Id, player2Id, winnerId, duration, moveCount,
+                            player1ScoreChange, player2ScoreChange);
+                    return recordId;
+                }
+            }
+        } catch (SQLException e) {
+            log.error("Save record failed: roomId={}", roomId, e);
+        }
+        return -1;
+    }
+
+    public static class MoveRecord {
+        public int x;
+        public int y;
+        public int color;
+        public long userId;
+
+        public MoveRecord(int x, int y, int color, long userId) {
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            this.userId = userId;
+        }
+    }
+
+    public List<String[]> getHistory(long userId, int page, int size) {
+        String sql = "SELECT record_id, player1_id, player2_id, winner_id, result, " +
+                     "board_data, duration, move_count, player1_score_change, player2_score_change, create_time " +
+                     "FROM t_game_record " +
+                     "WHERE player1_id = ? OR player2_id = ? " +
+                     "ORDER BY create_time DESC LIMIT ? OFFSET ?";
+
+        List<String[]> result = new ArrayList<>();
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, roomId);
-            ps.setLong(2, blackId);
-            ps.setLong(3, whiteId);
-            if (winnerId != null) ps.setLong(4, winnerId);
-            else ps.setNull(4, Types.BIGINT);
-            ps.setInt(5, result);
-            ps.setString(6, steps);
-            ps.executeUpdate();
+            ps.setLong(1, userId);
+            ps.setLong(2, userId);
+            ps.setInt(3, size);
+            ps.setInt(4, page * size);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long winnerId = rs.getLong("winner_id");
+                    String winnerIdStr = rs.wasNull() ? "0" : String.valueOf(winnerId);
+                    result.add(new String[]{
+                        String.valueOf(rs.getLong("record_id")),
+                        String.valueOf(rs.getLong("player1_id")),
+                        String.valueOf(rs.getLong("player2_id")),
+                        winnerIdStr,
+                        rs.getString("result"),
+                        String.valueOf(rs.getInt("move_count")),
+                        String.valueOf(rs.getInt("duration")),
+                        rs.getString("create_time"),
+                        rs.getString("board_data"),
+                        String.valueOf(rs.getInt("player1_score_change")),
+                        String.valueOf(rs.getInt("player2_score_change"))
+                    });
+                }
+            }
         } catch (SQLException e) {
-            log.error("Save record failed", e);
+            log.error("Get history error: userId={}", userId, e);
         }
+        return result;
     }
 }

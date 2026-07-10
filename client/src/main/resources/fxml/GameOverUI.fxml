@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.GameOverController"
+            styleClass="page-root">
+    <center>
+        <VBox styleClass="card-padded" alignment="CENTER" spacing="18" maxWidth="380">
+            <Label fx:id="resultLabel" styleClass="title"/>
+            <Label fx:id="scoreChangeLabel" styleClass="subtitle"/>
+            <Label fx:id="reasonLabel" styleClass="subtitle"/>
+            <HBox spacing="12" alignment="CENTER">
+                <Button text="返回大厅" onAction="#handleBack" styleClass="btn-primary"/>
+                <Button fx:id="replayButton" text="再来一局" onAction="#handleReplay" styleClass="btn-secondary"/>
+            </HBox>
+        </VBox>
+    </center>
+</BorderPane>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import com.gomatch.client.ui.AsciiTextCanvas?>
+<?import com.gomatch.client.ui.PixelCard?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.gomatch.client.ui.LoginController"
+            styleClass="page-root">
+    <center>
+        <GridPane hgap="40" alignment="CENTER">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="55" />
+                <ColumnConstraints percentWidth="45" />
+            </columnConstraints>
+
+            <StackPane GridPane.columnIndex="0" alignment="CENTER">
+                <VBox styleClass="brand-panel" alignment="CENTER" maxWidth="480">
+                    <AsciiTextCanvas fx:id="brandCanvas" width="480" height="380"/>
+                </VBox>
+            </StackPane>
+
+            <PixelCard GridPane.columnIndex="1" variant="blue" showParticles="false"
+                       maxWidth="480" minWidth="320" prefHeight="520"
+                       styleClass="auth-pixel-card">
+                <VBox alignment="CENTER" spacing="22" styleClass="glass-card"
+                      maxWidth="Infinity" maxHeight="Infinity"
+                      style="-fx-padding: 28 32;">
+                    <Label text="%login.title" styleClass="title" style="-fx-font-size: 26px; -fx-padding: 0 0 10 0;"/>
+
+                    <HBox styleClass="login-tab-container" alignment="CENTER" maxWidth="320">
+                        <Button fx:id="btnAccountTab" text="账号登录" onAction="#handleAccountTab" styleClass="login-tab-btn" focusTraversable="false"/>
+                        <Button fx:id="btnPhoneTab" text="手机号登录" onAction="#handlePhoneTab" styleClass="login-tab-btn" focusTraversable="false"/>
+                    </HBox>
+
+                    <StackPane alignment="TOP_LEFT" maxWidth="320" viewOrder="-1.0">
+                        <HBox alignment="CENTER_LEFT" spacing="10" maxWidth="320">
+                            <VBox fx:id="countryCodeCard" styleClass="input-field-group" prefWidth="70" minWidth="70" maxWidth="70" style="-fx-padding: 6 0 4 0;" visible="false" managed="false">
+                                <Button fx:id="btnCountryCode" text="+86 ▼" onAction="#toggleInlineMenu" styleClass="glass-input" style="-fx-background-color: transparent; -fx-padding: 0 4; -fx-cursor: hand;" maxWidth="70" focusTraversable="false"/>
+                            </VBox>
+                            <VBox styleClass="input-field-group" HBox.hgrow="ALWAYS" maxWidth="320" style="-fx-padding: 6 0 4 0;">
+                                <TextField fx:id="accountField" styleClass="glass-input" promptText="用户名 / 邮箱 / ID"/>
+                            </VBox>
+                        </HBox>
+                        <VBox fx:id="inlineCodeMenu" visible="false" managed="false" styleClass="inline-popup-menu" translateY="32" prefWidth="70" maxWidth="70">
+                            <Button text="+86" onAction="#selectInlineCode" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                            <Button text="+1" onAction="#selectInlineCode" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                            <Button text="+81" onAction="#selectInlineCode" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                            <Button text="+44" onAction="#selectInlineCode" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                        </VBox>
+                    </StackPane>
+
+                    <VBox styleClass="input-field-group" maxWidth="320" style="-fx-padding: 6 0 4 0;">
+                        <PasswordField fx:id="passwordField" styleClass="glass-input" promptText="%login.password"/>
+                    </VBox>
+
+                    <Label fx:id="errorLabel" text="" styleClass="error-text" maxWidth="320"/>
+
+                    <HBox spacing="10" alignment="CENTER_LEFT" maxWidth="320">
+                        <CheckBox fx:id="rememberCheckBox" text="%login.remember" styleClass="remember-checkbox"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button text="%login.forgot" onAction="#handleForgotPassword" styleClass="btn-link" style="-fx-font-size: 13px; -fx-padding: 0;"/>
+                    </HBox>
+
+                    <Button text="%login.enter" onAction="#handleLogin" styleClass="btn-primary"
+                            maxWidth="320" style="-fx-font-size: 15px;"/>
+
+                    <VBox alignment="CENTER" spacing="8" maxWidth="320">
+                        <HBox alignment="CENTER" spacing="4">
+                            <Label text="%login.noAccount" styleClass="subtitle"/>
+                            <Button text="%login.register" onAction="#handleRegister" styleClass="btn-link" style="-fx-padding: 0; -fx-font-size: 13px;"/>
+                        </HBox>
+                        <Button text="%login.preview" onAction="#handlePreview" styleClass="btn-link" style="-fx-padding: 4 0 0 0; -fx-font-size: 13px;"/>
+                    </VBox>
+
+                    <Button text="%login.server" onAction="#handleOpenServerConfig"
+                            styleClass="btn-link" style="-fx-font-size: 12px; -fx-text-fill: #94a3b8; -fx-padding: 0;"/>
+                </VBox>
+            </PixelCard>
+        </GridPane>
+    </center>
+</BorderPane>

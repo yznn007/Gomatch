@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.gomatch.client.ui.ServerConfigDialogController"
+      styleClass="card-padded" alignment="CENTER" spacing="20" prefWidth="380" maxWidth="380">
+
+    <Label text="%serverconfig.title" styleClass="title" style="-fx-font-size: 18px;"/>
+
+    <Separator styleClass="section-divider" prefWidth="Infinity"/>
+
+    <GridPane hgap="24" vgap="16" alignment="CENTER" style="-fx-padding: 4 0;">
+        <columnConstraints>
+            <ColumnConstraints minWidth="90" prefWidth="90" halignment="RIGHT"/>
+            <ColumnConstraints minWidth="200" prefWidth="200" halignment="LEFT"/>
+        </columnConstraints>
+
+        <Label text="%serverconfig.host" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
+        <ComboBox fx:id="ipComboBox" editable="true" prefWidth="200" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+        <Label text="%serverconfig.port" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
+        <TextField fx:id="portField" prefWidth="200" styleClass="field" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+        <Label text="%serverconfig.status" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="muted"/>
+        <Label fx:id="statusLabel" text="" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="section-label"/>
+    </GridPane>
+
+    <Separator styleClass="section-divider" prefWidth="Infinity"/>
+
+    <Button fx:id="applyBtn" text="%serverconfig.apply" onAction="#handleApply" styleClass="btn-secondary" prefWidth="150"/>
+
+</VBox>
