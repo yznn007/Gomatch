@@ -1530,6 +1530,29 @@
 .theme-dark .dialog-pane .header-panel, .theme-dark .dialog-pane .content { -fx-background-color: transparent; }
 .theme-dark .dialog-pane .header-panel .label { -fx-text-fill: #f8fafc; }
 .theme-dark .dialog-pane .content, .theme-dark .dialog-pane .content.label { -fx-text-fill: #dbe4f0; }
+.dialog-pane.theme-dark {
+    -fx-background-color: rgba(6, 9, 17, 0.96);
+    -fx-border-color: rgba(226, 232, 240, 0.12);
+    -fx-effect: dropshadow(gaussian, rgba(248, 250, 252, 0.10), 24, 0, 0, 9);
+}
+.dialog-pane.theme-dark .header-panel, .dialog-pane.theme-dark .content { -fx-background-color: transparent; }
+.dialog-pane.theme-dark .header-panel .label { -fx-text-fill: #f8fafc; }
+.dialog-pane.theme-dark .content, .dialog-pane.theme-dark .content.label { -fx-text-fill: #dbe4f0; }
+.dialog-pane.theme-dark .button {
+    -fx-background-color: rgba(30, 41, 59, 0.62);
+    -fx-text-fill: #e2e8f0;
+    -fx-border-color: transparent transparent rgba(203, 213, 225, 0.26) transparent;
+    -fx-effect: none;
+}
+.dialog-pane.theme-dark .button:hover {
+    -fx-background-color: rgba(71, 85, 105, 0.72);
+    -fx-border-color: transparent transparent rgba(226, 232, 240, 0.52) transparent;
+    -fx-text-fill: #f8fafc;
+}
+.dialog-pane.theme-dark .button:pressed {
+    -fx-background-color: rgba(226, 232, 240, 0.18);
+    -fx-border-color: transparent transparent #f8fafc transparent;
+}
 .theme-dark .profile-header-card {
     -fx-background-color: rgba(5, 8, 15, 0.48);
     -fx-border-color: rgba(248, 250, 252, 0.12);

@@ -416,7 +416,11 @@ public class ScreenManager {
         if (scene == null || scene.getRoot() == null) return;
         scene.getRoot().getStyleClass().removeAll(THEME_LIGHT, THEME_DARK);
         scene.getRoot().getStyleClass().add(isDarkTheme() ? THEME_DARK : THEME_LIGHT);
-        scene.getRoot().setStyle(appendBackgroundColor(scene.getRoot().getStyle(), "transparent"));
+        if (scene.getRoot() instanceof javafx.scene.control.DialogPane) {
+            scene.getRoot().setStyle(removeBackgroundColor(scene.getRoot().getStyle()));
+        } else {
+            scene.getRoot().setStyle(appendBackgroundColor(scene.getRoot().getStyle(), "transparent"));
+        }
         applyUserFont(scene);
     }
 
@@ -447,6 +451,11 @@ public class ScreenManager {
             return existingStyle.replaceAll("-fx-background-color:\\s*[^;]+;", newProp);
         }
         return existingStyle + " " + newProp;
+    }
+    /** 移除内联背景色，让 DialogPane 的主题 CSS 能绘制圆角表面。 */
+    private static String removeBackgroundColor(String existingStyle) {
+        if (existingStyle == null || existingStyle.isBlank()) return "";
+        return existingStyle.replaceAll("-fx-background-color:\\s*[^;]+;", "").trim();
     }
     /** 在已有 style 字符串中追加或替换 -fx-font-family，保留其他属性 */
     private static String appendFontFamily(String existingStyle, String fontFamilyValue) {
