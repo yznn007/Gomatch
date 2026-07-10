@@ -20,16 +20,23 @@ public class FriendDAO {
         private final String relationType;
         private final String remark;
         private final boolean online;
+        private final String avatarUrl;
 
         public FriendInfo(long friendId, long userId, long friendUserId,
                          String friendUsername, int friendScore,
                          String relationType, String remark) {
-            this(friendId, userId, friendUserId, friendUsername, friendScore, relationType, remark, false);
+            this(friendId, userId, friendUserId, friendUsername, friendScore, relationType, remark, false, "");
         }
 
         public FriendInfo(long friendId, long userId, long friendUserId,
                          String friendUsername, int friendScore,
                          String relationType, String remark, boolean online) {
+            this(friendId, userId, friendUserId, friendUsername, friendScore, relationType, remark, online, "");
+        }
+
+        public FriendInfo(long friendId, long userId, long friendUserId,
+                         String friendUsername, int friendScore,
+                         String relationType, String remark, boolean online, String avatarUrl) {
             this.friendId = friendId;
             this.userId = userId;
             this.friendUserId = friendUserId;
@@ -38,6 +45,7 @@ public class FriendDAO {
             this.relationType = relationType;
             this.remark = remark;
             this.online = online;
+            this.avatarUrl = avatarUrl;
         }
 
         public long getFriendId() { return friendId; }
@@ -48,6 +56,7 @@ public class FriendDAO {
         public String getRelationType() { return relationType; }
         public String getRemark() { return remark; }
         public boolean isOnline() { return online; }
+        public String getAvatarUrl() { return avatarUrl; }
     }
 
     public static class FriendRequestInfo {
@@ -277,7 +286,7 @@ public class FriendDAO {
     }
 
     public List<FriendInfo> getFriendList(long userId) {
-        String sql = "SELECT f.friend_id, f.user_id, f.friend_user_id, u.username, u.score, f.relation_type, f.remark " +
+        String sql = "SELECT f.friend_id, f.user_id, f.friend_user_id, u.username, u.score, f.relation_type, f.remark, u.avatar_url " +
                      "FROM t_friend f JOIN t_user u ON f.friend_user_id = u.user_id " +
                      "WHERE f.user_id = ? AND f.relation_type = 'FRIEND' " +
                      "ORDER BY u.score DESC";
@@ -295,6 +304,11 @@ public class FriendDAO {
                     } else {
                         online = com.gomatch.server.session.SessionManager.getInstance().getSessionByUserId(friendUserId) != null;
                     }
+                    String avatarPath = rs.getString("avatar_url");
+                    String avatarUrl = "";
+                    if (avatarPath != null && !avatarPath.isEmpty() && com.gomatch.server.storage.StorageManager.getInstance().isEnabled()) {
+                        avatarUrl = com.gomatch.server.storage.StorageManager.getInstance().getOssService().generatePresignedUrl(avatarPath, 86400 * 30);
+                    }
                     result.add(new FriendInfo(
                             rs.getLong("friend_id"),
                             rs.getLong("user_id"),
@@ -303,7 +317,8 @@ public class FriendDAO {
                             rs.getInt("score"),
                             rs.getString("relation_type"),
                             rs.getString("remark"),
-                            online
+                            online,
+                            avatarUrl
                     ));
                 }
             }

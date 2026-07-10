@@ -351,6 +351,44 @@ public class UserDAO {
     }
 
     /**
+     * 获取用户头像URL
+     */
+    public String getAvatar(long userId) {
+        String sql = "SELECT avatar_url FROM t_user WHERE user_id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String url = rs.getString("avatar_url");
+                    return url != null ? url : "";
+                }
+            }
+        } catch (SQLException e) {
+            log.error("Get avatar error: userId={}", userId, e);
+        }
+        return "";
+    }
+
+    /**
+     * 更新用户头像URL
+     */
+    public boolean updateAvatar(long userId, String avatarUrl) {
+        String sql = "UPDATE t_user SET avatar_url = ?, update_time = NOW() WHERE user_id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, avatarUrl);
+            ps.setLong(2, userId);
+            boolean success = ps.executeUpdate() > 0;
+            if (success) log.info("Avatar updated: userId={}", userId);
+            return success;
+        } catch (SQLException e) {
+            log.error("Update avatar error: userId={}", userId, e);
+            return false;
+        }
+    }
+
+    /**
      * 获取所有用户列表（分页，含 role 和 status）
      */
     public List<UserInfo> getAllUsers(int page, int size) {

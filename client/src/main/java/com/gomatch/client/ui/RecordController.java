@@ -122,8 +122,12 @@ public class RecordController implements NetworkListener {
                 recordMap.put("scoreChange", String.valueOf(scoreChange));
                 recordMap.put("player1Id", String.valueOf(player1Id));
                 recordMap.put("player1Name", r.getString("player1Name"));
+                recordMap.put("player1Score", String.valueOf(r.optInt("player1Score", -1)));
+                recordMap.put("player1Avatar", r.optString("player1Avatar", ""));
                 recordMap.put("player2Id", String.valueOf(r.getLong("player2Id")));
                 recordMap.put("player2Name", r.getString("player2Name"));
+                recordMap.put("player2Score", String.valueOf(r.optInt("player2Score", -1)));
+                recordMap.put("player2Avatar", r.optString("player2Avatar", ""));
                 records.add(recordMap);
             }
         }
@@ -208,16 +212,6 @@ public class RecordController implements NetworkListener {
                 replayBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
                 replayBtn.setOnAction(e -> {
                     String movesStr = finalRecord.get("moves");
-                    // 打印 recordMap 的全部 key=value，便于排查 recordMap 是否正确填充
-                    StringBuilder allEntries = new StringBuilder();
-                    for (java.util.Map.Entry<String, String> en : finalRecord.entrySet()) {
-                        String v = en.getValue();
-                        allEntries.append(en.getKey()).append("=").append(v == null ? "null" : v).append(" | ");
-                    }
-                    System.out.println("[REPLAY-DEBUG] recordMap={" + allEntries + "}");
-                    System.out.println("[REPLAY-DEBUG] moves=" + (movesStr == null ? "null" : ("len=" + movesStr.length() + " head=" + movesStr.substring(0, Math.min(80, movesStr.length()))))
-                            + " p1id=" + finalRecord.get("player1Id") + " p1name=" + finalRecord.get("player1Name")
-                            + " p2id=" + finalRecord.get("player2Id") + " p2name=" + finalRecord.get("player2Name"));
                     if (movesStr != null && !movesStr.isEmpty()) {
                         // 第一保险：从 recordMap 拿 p1/p2 的 ID 和名字
                         String p1Id   = safeStr(finalRecord.get("player1Id"));
@@ -235,13 +229,16 @@ public class RecordController implements NetworkListener {
                                 if (p2Id.isEmpty() && firstWhiteUid != -2) p2Id = String.valueOf(firstWhiteUid);
                                 if (p1Name.isEmpty() && firstBlackUid != -2) p1Name = String.valueOf(firstBlackUid);
                                 if (p2Name.isEmpty() && firstWhiteUid != -2) p2Name = String.valueOf(firstWhiteUid);
-                                System.out.println("[REPLAY-DEBUG] 兜底从 boardData 反推 p1=" + p1Id + "/" + p1Name + " p2=" + p2Id + "/" + p2Name);
                             }
                         } catch (Exception ex) {
-                            System.out.println("[REPLAY-DEBUG] boardData 解析失败: " + ex.getMessage());
+                            // boardData 解析失败，使用兜底信息
                         }
+                        int p1Score = parseIntOrDefault(finalRecord.get("player1Score"), -1);
+                        int p2Score = parseIntOrDefault(finalRecord.get("player2Score"), -1);
+                        String p1Avatar = finalRecord.getOrDefault("player1Avatar", "");
+                        String p2Avatar = finalRecord.getOrDefault("player2Avatar", "");
                         BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-                        ctrl.setReplayMode(true, p1Id, p1Name, p2Id, p2Name);
+                        ctrl.setReplayMode(true, p1Id, p1Name, p2Id, p2Name, p1Score, p2Score, p1Avatar, p2Avatar);
                         ctrl.replayMoves(movesStr);
                     } else {
                         Alert alert = new Alert(Alert.AlertType.INFORMATION, "暂无棋谱数据");

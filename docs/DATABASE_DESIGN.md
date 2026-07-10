@@ -281,7 +281,7 @@ erDiagram
         varchar username UK "用户名"
         varchar password "密码"
         varchar email UK "邮箱"
-        varchar avatar "头像"
+        varchar avatar_url "头像URL"
         varchar role "角色"
         varchar status "状态"
         int score "积分"
@@ -478,6 +478,7 @@ erDiagram
 | idx_status | status | 普通索引 |
 | idx_score | score | 普通索引 |
 | idx_role_status | role, status | 联合索引 |
+| idx_avatar_url | avatar_url | 普通索引 |
 
 #### 2.2.2 t_game_record（游戏记录表）
 
@@ -1196,7 +1197,7 @@ public class User {
     private String username;
     private String password;
     private String email;
-    private String avatar;
+    private String avatarUrl;
     private String role;
     private String status;
     private Integer score;
@@ -1378,7 +1379,7 @@ public class FriendRequest {
 | userId | Long | 用户ID |
 | username | String | 用户名 |
 | email | String | 邮箱 |
-| avatar | String | 头像URL |
+| avatar | String | 头像URL(阿里云OSS) |
 | score | Integer | 积分 |
 | winCount | Integer | 胜场数 |
 | loseCount | Integer | 负场数 |
@@ -1508,7 +1509,7 @@ CREATE TABLE IF NOT EXISTS `t_user` (
     `username` VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
     `password` VARCHAR(100) NOT NULL COMMENT '密码(加密)',
     `email` VARCHAR(100) UNIQUE COMMENT '邮箱',
-    `avatar` VARCHAR(255) COMMENT '头像URL',
+    `avatar_url` VARCHAR(500) COMMENT '头像URL(阿里云OSS)',
     `role` VARCHAR(20) NOT NULL DEFAULT 'PLAYER' COMMENT '角色: PLAYER/ADMIN',
     `status` VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' COMMENT '状态: ACTIVE/BANNED/INACTIVE',
     `score` INT DEFAULT 1000 COMMENT '积分',
@@ -1524,7 +1525,8 @@ CREATE TABLE IF NOT EXISTS `t_user` (
     INDEX `idx_role` (`role`),
     INDEX `idx_status` (`status`),
     INDEX `idx_role_status` (`role`, `status`),
-    INDEX `idx_score` (`score`)
+    INDEX `idx_score` (`score`),
+    INDEX `idx_avatar_url` (`avatar_url`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 
 CREATE TABLE IF NOT EXISTS `t_game_record` (

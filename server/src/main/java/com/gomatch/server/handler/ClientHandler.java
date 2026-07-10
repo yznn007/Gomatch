@@ -8,6 +8,7 @@ import com.gomatch.server.redis.RedisManager;
 import com.gomatch.server.room.Room;
 import com.gomatch.server.room.RoomManager;
 import com.gomatch.server.session.SessionManager;
+import com.gomatch.server.storage.StorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.json.JSONArray;
@@ -157,6 +158,9 @@ public class ClientHandler implements Runnable {
             case Protocol.LOGOUT          -> handleLogout();
             case Protocol.HEARTBEAT       -> handleHeartbeat();
             case Protocol.AI_MATCH        -> handleAiMatch(msg);
+            case Protocol.UPLOAD_AVATAR   -> handleUploadAvatar(msg);
+            case Protocol.GET_AVATAR      -> handleGetAvatar(msg);
+            case Protocol.DELETE_AVATAR   -> handleDeleteAvatar();
             // Admin commands
             case Protocol.BAN_USER         -> handleBanUser(msg);
             case Protocol.UNBAN_USER       -> handleUnbanUser(msg);
@@ -273,6 +277,10 @@ public class ClientHandler implements Runnable {
                             ? activeRoom.getWhiteUserId() : activeRoom.getBlackUserId();
                     long disconnectedId = activeRoom.isPlayerDisconnected(opponentId) ? opponentId : 0;
 
+                    String avatarPath = userDAO.getAvatar(userInfo.getUserId());
+                    String avatarUrl = (avatarPath != null && !avatarPath.isEmpty()) 
+                            ? StorageManager.getInstance().getOssService().generatePresignedUrl(avatarPath, 86400 * 30) 
+                            : "";
                     send(Message.builder(Protocol.LOGIN_OK)
                             .set("userId", String.valueOf(userInfo.getUserId()))
                             .set("username", userInfo.getUsername())
@@ -282,6 +290,7 @@ public class ClientHandler implements Runnable {
                             .set("drawCount", String.valueOf(userInfo.getDrawCount()))
                             .set("rank", String.valueOf(rank))
                             .set("role", userInfo.getRole())
+                            .set("avatar", avatarUrl)
                             .set("token", session.token)
                             .set("roomId", activeRoom.getRoomId())
                             .set("blackUserId", String.valueOf(activeRoom.getBlackUserId()))
@@ -304,6 +313,10 @@ public class ClientHandler implements Runnable {
                 }
             }
 
+            String avatarPath = userDAO.getAvatar(userInfo.getUserId());
+            String avatarUrl = (avatarPath != null && !avatarPath.isEmpty()) 
+                    ? StorageManager.getInstance().getOssService().generatePresignedUrl(avatarPath, 86400 * 30) 
+                    : "";
             send(Message.builder(Protocol.LOGIN_OK)
                     .set("userId", String.valueOf(userInfo.getUserId()))
                     .set("username", userInfo.getUsername())
@@ -313,6 +326,7 @@ public class ClientHandler implements Runnable {
                     .set("drawCount", String.valueOf(userInfo.getDrawCount()))
                     .set("rank", String.valueOf(rank))
                     .set("role", userInfo.getRole())
+                    .set("avatar", avatarUrl)
                     .set("token", session.token)
                     .build());
             
@@ -828,9 +842,11 @@ public class ClientHandler implements Runnable {
         for (var u : ranking) {
             JSONObject obj = new JSONObject();
             obj.put("rank", u.getRank());
+            obj.put("userId", u.getUserId());
             obj.put("username", u.getUsername());
             obj.put("score", u.getScore());
             obj.put("winRate", u.getWinRate());
+            obj.put("avatarUrl", u.getAvatarUrl() != null ? u.getAvatarUrl() : "");
             users.put(obj);
         }
         send(Message.builder(Protocol.RANKING_LIST)
@@ -856,7 +872,16 @@ public class ClientHandler implements Runnable {
         if (!redisRecords.isEmpty()) {
             JSONArray recs = new JSONArray();
             for (String json : redisRecords) {
-                recs.put(new JSONObject(json));
+                JSONObject r = new JSONObject(json);
+                // 旧 record（在 cacheGameRecordToRedis 加 avatar 字段前写入的）缺 player1Avatar/player2Avatar，
+                // 这里实时从 MySQL 补全签名 URL，让回放页面能显示双方头像
+                if (!r.has("player1Avatar") || r.optString("player1Avatar", "").isEmpty()) {
+                    r.put("player1Avatar", resolveAvatarPresigned(r.optLong("player1Id", 0)));
+                }
+                if (!r.has("player2Avatar") || r.optString("player2Avatar", "").isEmpty()) {
+                    r.put("player2Avatar", resolveAvatarPresigned(r.optLong("player2Id", 0)));
+                }
+                recs.put(r);
             }
             send(Message.builder("RECORD_LIST").set("records", recs).build());
             log.info("Sent record list from Redis to user {} ({} records)", userId, redisRecords.size());
@@ -878,17 +903,46 @@ public class ClientHandler implements Runnable {
             String player1Name = player1 != null ? player1.getUsername() : "未知";
             String player2Name = player2 != null ? player2.getUsername() : (player2Id == -1 ? "AI" : "未知");
 
+            // 查询双方头像 URL：MySQL 中 t_user.avatar_url 列保存的是 OSS 相对路径
+            // （如 avatar/72_xxx.png），必须用 generatePresignedUrl 包成可访问的签名 URL。
+            // 30 天有效期与 LOGIN_OK 保持一致，避免回放时头像过期。
+            String player1AvatarPath = userDAO.getAvatar(player1Id);
+            String player2AvatarPath = userDAO.getAvatar(player2Id);
+            String player1Avatar = "";
+            String player2Avatar = "";
+            try {
+                StorageManager sm = StorageManager.getInstance();
+                if (sm != null && sm.getOssService() != null) {
+                    if (player1AvatarPath != null && !player1AvatarPath.isEmpty()) {
+                        player1Avatar = sm.getOssService().generatePresignedUrl(player1AvatarPath, 86400 * 30);
+                    }
+                    if (player2AvatarPath != null && !player2AvatarPath.isEmpty()) {
+                        player2Avatar = sm.getOssService().generatePresignedUrl(player2AvatarPath, 86400 * 30);
+                    }
+                }
+            } catch (Exception ex) {
+                log.warn("Failed to generate presigned URL for record avatars (p1={}, p2={}): {}",
+                        player1Id, player2Id, ex.getMessage());
+            }
+
             String boardData = record.length > 8 ? record[8] : "";
             int p1ScoreChange = record.length > 9 ? Integer.parseInt(record[9]) : 0;
             int p2ScoreChange = record.length > 10 ? Integer.parseInt(record[10]) : 0;
             int userScoreChange = userId == player1Id ? p1ScoreChange : p2ScoreChange;
 
+            int player1Score = player1 != null ? player1.getScore() : 0;
+            int player2Score = player2 != null ? player2.getScore() : 0;
+
             JSONObject r = new JSONObject();
             r.put("recordId", record[0]);
             r.put("player1Id", player1Id);
             r.put("player1Name", player1Name);
+            r.put("player1Score", player1Score);
+            r.put("player1Avatar", player1Avatar != null ? player1Avatar : "");
             r.put("player2Id", player2Id);
             r.put("player2Name", player2Name);
+            r.put("player2Score", player2Score);
+            r.put("player2Avatar", player2Avatar != null ? player2Avatar : "");
             r.put("winnerId", winnerId);
             r.put("result", record[4]);
             r.put("moveCount", record[5]);
@@ -900,6 +954,28 @@ public class ClientHandler implements Runnable {
         }
         send(Message.builder("RECORD_LIST").set("records", recs).build());
         log.info("Sent record list to user {} ({} records)", userId, records.size());
+    }
+
+    /**
+     * 取用户头像的 30 天预签名 URL，userId 无效或 OSS 未启用时返回空串。
+     * 用于从 Redis 老 record 补全 player1Avatar/player2Avatar 字段。
+     */
+    private String resolveAvatarPresigned(long userId) {
+        if (userId <= 0) return "";
+        try {
+            String path = userDAO.getAvatar(userId);
+            if (path == null || path.isEmpty()) return "";
+            String lower = path.toLowerCase();
+            if (path.contains("?") && (lower.startsWith("http://") || lower.startsWith("https://"))) {
+                return path;
+            }
+            StorageManager sm = StorageManager.getInstance();
+            if (sm == null || sm.getOssService() == null) return "";
+            return sm.getOssService().generatePresignedUrl(path, 86400 * 30);
+        } catch (Exception ex) {
+            log.debug("resolveAvatarPresigned failed for userId={}: {}", userId, ex.getMessage());
+            return "";
+        }
     }
 
     // ==================== 悔棋请求 ====================
@@ -1235,6 +1311,7 @@ public class ClientHandler implements Runnable {
             obj.put("friendUsername", f.getFriendUsername());
             obj.put("friendScore", String.valueOf(f.getFriendScore()));
             obj.put("online", f.isOnline());
+            obj.put("avatarUrl", f.getAvatarUrl() != null ? f.getAvatarUrl() : "");
             arr.put(obj);
         }
         send(Message.builder("FRIEND_LIST").set("friends", arr).build());
@@ -1645,6 +1722,107 @@ public class ClientHandler implements Runnable {
         } else {
             send(Message.of(Protocol.ERROR, "msg", "修改角色失败"));
         }
+    }
+
+    // ==================== 头像上传 ====================
+
+    private void handleUploadAvatar(Message msg) {
+        if (!authenticated) {
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
+            return;
+        }
+
+        if (!StorageManager.getInstance().isEnabled()) {
+            send(Message.of("AVATAR_UPLOADED", "msg", "存储服务未启用"));
+            return;
+        }
+
+        String base64Data = msg.getString("data");
+        if (base64Data == null || base64Data.isEmpty()) {
+            send(Message.of("AVATAR_UPLOADED", "msg", "图片数据为空"));
+            return;
+        }
+
+        try {
+            String filePath = StorageManager.getInstance().getOssService().uploadAvatar(userId, base64Data);
+            
+            boolean updated = userDAO.updateAvatar(userId, filePath);
+            if (updated) {
+                String presignedUrl = StorageManager.getInstance().getOssService().generatePresignedUrl(filePath, 86400 * 30);
+                send(Message.builder("AVATAR_UPLOADED")
+                        .set("url", presignedUrl)
+                        .set("msg", "上传成功")
+                        .build());
+                log.info("玩家 {} 上传头像成功: {}", userId, presignedUrl);
+            } else {
+                send(Message.of("AVATAR_UPLOADED", "msg", "更新用户信息失败"));
+            }
+        } catch (Exception e) {
+            log.error("玩家 {} 上传头像失败", userId, e);
+            send(Message.of("AVATAR_UPLOADED", "msg", "上传失败: " + e.getMessage()));
+        }
+    }
+
+    private void handleGetAvatar(Message msg) {
+        if (!authenticated) {
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
+            return;
+        }
+
+        long targetUserId = msg.has("userId") ? msg.getLong("userId") : userId;
+        
+        String filePath = userDAO.getAvatar(targetUserId);
+        if (filePath != null && !filePath.isEmpty()) {
+            String presignedUrl = StorageManager.getInstance().getOssService().generatePresignedUrl(filePath, 86400 * 30);
+            send(Message.builder("AVATAR_DATA")
+                    .set("userId", String.valueOf(targetUserId))
+                    .set("url", presignedUrl)
+                    .build());
+        } else {
+            send(Message.of("AVATAR_DATA", "userId", String.valueOf(targetUserId), "url", ""));
+        }
+    }
+
+    private void handleDeleteAvatar() {
+        if (!authenticated) {
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
+            return;
+        }
+
+        if (!StorageManager.getInstance().isEnabled()) {
+            send(Message.of("AVATAR_DELETED", "msg", "存储服务未启用"));
+            return;
+        }
+
+        try {
+            String avatarPath = userDAO.getAvatar(userId);
+            if (avatarPath != null && !avatarPath.isEmpty()) {
+                StorageManager.getInstance().getOssService().deleteFile(avatarPath);
+            }
+            
+            boolean updated = userDAO.updateAvatar(userId, "");
+            if (updated) {
+                send(Message.of("AVATAR_DELETED", "msg", "删除成功"));
+                log.info("玩家 {} 删除头像成功", userId);
+            } else {
+                send(Message.of("AVATAR_DELETED", "msg", "删除失败"));
+            }
+        } catch (Exception e) {
+            log.error("玩家 {} 删除头像失败", userId, e);
+            send(Message.of("AVATAR_DELETED", "msg", "删除失败: " + e.getMessage()));
+        }
+    }
+
+    private String getBucketName() {
+        return DBUtil.getConfig().getProperty("oss.bucket", "gomatch-storage");
+    }
+
+    private String getEndpoint() {
+        String endpoint = DBUtil.getConfig().getProperty("oss.endpoint", "");
+        if (endpoint.startsWith("https://")) {
+            return endpoint.substring(8);
+        }
+        return endpoint;
     }
 
     // ==================== 资源清理 ====================

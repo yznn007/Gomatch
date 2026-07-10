@@ -6,6 +6,7 @@ import com.gomatch.server.dao.DBUtil;
 import com.gomatch.server.dao.RankDAO;
 import com.gomatch.server.dao.RoomDAO;
 import com.gomatch.server.redis.RedisManager;
+import com.gomatch.server.storage.StorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,9 @@ public class ServerMain {
 
         // 初始化 Redis
         RedisManager.getInstance().init();
+
+        // 初始化 OSS 存储
+        StorageManager.getInstance().initialize(DBUtil.getConfig());
 
         // 初始化排行榜物化表
         initRankMaterializedView();

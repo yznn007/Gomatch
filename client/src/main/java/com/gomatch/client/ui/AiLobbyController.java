@@ -80,6 +80,9 @@ public class AiLobbyController implements NetworkListener {
             int wScore = msg.has("whiteScore") ? msg.getInt("whiteScore") : 0;
             String username = currentUser != null ? currentUser.getUsername() : "";
             ctrl.setGameInfo(bId, bName, wId, wName, username, bScore, wScore);
+            String bAvatar = msg.has("blackAvatarUrl") ? msg.getString("blackAvatarUrl") : "";
+            String wAvatar = msg.has("whiteAvatarUrl") ? msg.getString("whiteAvatarUrl") : "";
+            ctrl.setPlayerAvatars(bAvatar, wAvatar);
         } else if (Protocol.ERROR.equals(cmd)) {
             matchStatus.setText(msg.getString("msg"));
         }

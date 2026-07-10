@@ -77,6 +77,8 @@
 | 63 | 设置页面交互功能实现 | 已完成 |
 | 64 | UserSettings 用户偏好持久化 | 已完成 |
 | 65 | 国际化中英文切换 | 已完成 |
+| 66 | 头像显示一致性修复（排行榜透明 + 对战回放缺头像 + 头像预览颜色不一致） | 已完成 |
+
 
 ### 状态说明
 
@@ -152,6 +154,7 @@
 | 2026-07-08 | Contributor| BoardController 新增 handleRequestRematch/handleReplyRematch 方法及 rematchRequested 状态；对局结束弹窗 GameOverController 新增"再来一局"按钮；BoardController 监听 REMATCH_REQUESTED/REMATCH_ACCEPTED/REMATCH_REJECTED 消息，同意后自动重置棋盘开始新对局 |
 | 2026-07-08 | Contributor| BoardController.onMessage(GAME_START) 解析新增的 blackUsername/blackScore/whiteUsername/whiteScore 字段；新增带分数的 setGameInfo 重载，对手卡片显示真实用户名和积分而非 ID 和问号 |
 | 2026-07-09 | Contributor| 1. 将 .theme-dark .glass-card 背景不透明度从 0.48 提升至 0.60；新增 .theme-dark .auth-pixel-card .pixel-card-body 专属深色磨砂背景（0.55 不透明度）并改用深色投影；保留 .theme-dark .auth-pixel-card 外层白色高光投影。2. 将浅色/暗色模式下的 .custom-title-bar 和 .top-bar 背景统一为透明并去除投影。3. 统一侧栏菜单 active/导航按钮/标题栏按钮 hover/active 背景色。4. 补齐暗色模式下缺失的 pressed 状态。5. AsciiTextCanvas 支持暗色模式：根据 ScreenManager.isDarkTheme() 动态切换采样贴图（白底黑字）和输出色调，核心字符使用 #f8fafc，边缘使用柔和浅色偏色，使登录页 Gomatch 标题在暗色背景下清晰可见且风格统一。 | mvn -f client/pom.xml compile 通过 |
+| 2026-07-10 | Contributor| AvatarPreviewUI.fxml：Circle 填充改为 StackPane 渐变背景 + 150px 圆角，保留 Circle 透明兜底。AvatarPreviewController：pickColor 8 色纯色调色板替换为 gradientFor 7 色渐变调色板（与 LobbyController/RankingController 一致），保证同一用户在小头像、排行榜、大头像预览中颜色完全一致。 |
 
 ### 服务端（Server）
 
@@ -256,6 +259,7 @@
 | 2026-07-09 | Contributor| 1. 全局音乐新增独立开关与弹性音量条；2. 背景音乐、音效保留无文字开关并新增 ElasticVolumeSlider；3. 将"大厅音乐"改名为"大厅歌曲"，仅保留歌曲下拉选择（默认主题曲、清晨棋局、静夜对弈、赛场低语）；4. SettingsController 绑定开关与对应音量条的禁用和透明度状态。 | 编译通过 |
 | 2026-07-09 | Contributor| 1. 新增由用户指定 D:\CloudMusic 原曲转码得到的 audio/lobby-theme.mp3；2. 新增 BackgroundMusicManager，通过 JavaFX MediaPlayer 循环播放并在退出时释放；3. ClientMain 启动时播放背景音乐，SettingsController 将全局音乐/背景音乐开关与音量条同步到实际播放状态；4. client/pom.xml 补充 javafx-media 依赖。 | 编译通过 |
 | 2026-07-09 | Contributor| **原因**：CasualLobbyController.onMessage(GAME_START) 只调用了 3 参数版 setGameInfo(bId, wId, username)，丢弃了服务端传来的 blackUsername/blackScore/whiteUsername/whiteScore 全部数据；同时 JOIN_OK 在 GAME_START 后又被发送，导致已切入 BoardUI 的客户端又被切回 RoomWaitingUI。**修复**：1. GAME_START 处理改为解析全部 6 个字段（blackUsername/blackScore/whiteUsername/whiteScore），传递到 BoardController.setGameInfo() 的完整参数重载；2. 新增 joinedGame 标记位，在已进入 GAME_START 对局后忽略后续 JOIN_OK 消息，防止界面回切到等待室 | 编译通过 |
+| 2026-07-10 | Contributor| **根因 1 - 排行榜透明**：RankingController 只对 rank 1/2/3 通过 setStyle 给金/银/铜纯色背景，rank 4+ 匿名用户无兜底背景色；`.avatar-badge` CSS 类也未设背景色，白色首字母 Label 在透明背景上完全看不见。修复：rank 4+ 按用户名 hash 给渐变底色（gradientFor 方法与 LobbyController 抽屉一致）。**根因 2 - 对战回放缺头像**：ProfileController 只调用了 6 参数 setReplayMode（无 avatar URL），且 GameRecord 模型根本没有 player1Avatar/player2Avatar 字段。修复：GameRecord 新增 player1Avatar/player2Avatar 字段及 getter/setter；ProfileController 解析 record 时保存 avatar 字段，改用 8 参数 setReplayMode 传入头像 URL。**根因 3 - 头像预览颜色不一致**：AvatarPreviewController 使用独立的 8 色纯色调色板 (pickColor)，与 LobbyController/RankingController 的 7 色渐变调色板 (gradientFor) 不同；同一用户在弹窗中显示的颜色与顶栏小头像不一致。修复：AvatarPreviewController 改用与 LobbyController 完全一致的 7 色渐变调色板；AvatarPreviewUI.fxml 的 Circle 背景改为 StackPane 渐变 + 150px 圆角，Circle 节点保留透明兜底。 | 编译通过 |
 | 2026-07-09 | Contributor| 1. 定位大厅音乐未播放原因为 JavaFX Media 对 FLAC 运行时支持不稳定且原逻辑静默降级；2. 使用 ShareX ffmpeg 将原曲转为纯音频 lobby-theme.mp3；3. BackgroundMusicManager 改为加载 MP3，移除未使用 FLAC 资源；4. MODULE_CLIENT.md 同步资源路径。 | 媒体探针 READY；编译通过 |
 | 2026-07-09 | Contributor| 将 BackgroundMusicManager 的默认全局音乐音量从 80 调整为 45、背景音乐音量从 70 调整为 35，初始实际播放音量由 56% 降至约 16%；SettingsUI.fxml 同步默认滑杆显示值。 | 编译通过 |
 | 2026-07-09 | Contributor| RoomManager.quickMatch() 中 createRoom() 已将 player 加入房间，但后续又调用 room.join(player) 被重复检查拒绝；删除重复调用 | 编译通过 |

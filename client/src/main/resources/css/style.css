@@ -744,6 +744,17 @@
     -fx-background-color: rgba(148, 163, 184, 0.35);
 }
 
+.drawer-list {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.drawer-list .list-view {
+    -fx-background-color: transparent;
+}
+.drawer-list .list-cell {
+    -fx-padding: 6 8;
+}
+
 .drawer-rank-row {
     -fx-padding: 8 12;
     -fx-background-radius: 8;
@@ -1094,14 +1105,9 @@
     -fx-background-color: rgba(255, 255, 255, 1.0);
 }
 
-/* 头像徽章 */
+/* 头像徽章：CSS 只负责圆形与居中，背景色由代码按黑白方动态设置 */
 .avatar-badge {
-    -fx-background-color: #0ea5e9;
     -fx-background-radius: 50%;
-    -fx-min-width: 32px;
-    -fx-max-width: 32px;
-    -fx-min-height: 32px;
-    -fx-max-height: 32px;
     -fx-alignment: CENTER;
 }
 .avatar-badge-text {
@@ -1219,6 +1225,16 @@
     -fx-border-color: rgba(71, 85, 105, 0.35);
     -fx-border-width: 1px;
     -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 14, 0.08, 0, 5);
+}
+/* 当前玩家自己的卡片：左侧高亮条 + 蓝色描边，与 active 状态叠加 */
+.player-info-card-self {
+    -fx-border-color: #2563eb;
+    -fx-border-width: 0 0 0 4px;
+    -fx-background-color: rgba(219, 234, 254, 0.45);
+}
+.player-info-card-self.player-info-card-active {
+    -fx-background-color: rgba(219, 234, 254, 0.7);
+    -fx-effect: dropshadow(gaussian, rgba(37, 99, 235, 0.18), 14, 0.18, 0, 5);
 }
 
 /* ---------- Board: 回合指示器 ---------- */

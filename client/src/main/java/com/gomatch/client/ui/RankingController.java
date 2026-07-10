@@ -12,6 +12,9 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.json.JSONArray;
@@ -119,21 +122,74 @@ public class RankingController implements NetworkListener {
                 rankBadge.getChildren().add(rankNum);
 
                 // Avatar Circle
+                final double AVATAR_SIZE = 44;
+                String name = user.getUsername() != null ? user.getUsername() : "U";
                 javafx.scene.layout.StackPane avatar = new javafx.scene.layout.StackPane();
                 avatar.getStyleClass().add("avatar-badge");
+                avatar.setPrefSize(AVATAR_SIZE, AVATAR_SIZE);
+                avatar.setMinSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
+                avatar.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
+                // 必须给 avatar 一个兜底背景色，否则首字母 Label（白字）显示在透明背景上完全看不见
                 if (rankVal == 1) {
                     avatar.setStyle("-fx-background-color: #fbbf24;"); // Gold for 1st
                 } else if (rankVal == 2) {
                     avatar.setStyle("-fx-background-color: #cbd5e1;"); // Silver for 2nd
                 } else if (rankVal == 3) {
                     avatar.setStyle("-fx-background-color: #d97706;"); // Bronze for 3rd
+                } else {
+                    // rank 4+：按用户名 hash 给一个渐变底色，与 LobbyController 抽屉头像风格一致
+                    avatar.setStyle("-fx-background-color: " + gradientFor(name) + ";");
                 }
-                String name = user.getUsername() != null ? user.getUsername() : "U";
                 String charVal = name.isEmpty() ? "U" : name.substring(0, 1).toUpperCase();
                 Label avatarText = new Label(charVal);
                 avatarText.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 avatarText.getStyleClass().add("avatar-badge-text");
-                avatar.getChildren().add(avatarText);
+
+                // 加载真实头像（如果有）
+                String avatarUrl = user.getAvatarUrl();
+                if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                    try {
+                        Image image = new Image(avatarUrl, true);
+                        ImageView avatarImg = new ImageView();
+                        avatarImg.setFitWidth(AVATAR_SIZE);
+                        avatarImg.setFitHeight(AVATAR_SIZE);
+                        javafx.scene.shape.Circle imgClip = new javafx.scene.shape.Circle(
+                                AVATAR_SIZE / 2.0, AVATAR_SIZE / 2.0, AVATAR_SIZE / 2.0);
+                        avatarImg.setClip(imgClip);
+                        image.errorProperty().addListener((obs, oldVal, newVal) -> {
+                            if (newVal) {
+                                avatarImg.setVisible(false);
+                                avatarText.setVisible(true);
+                            }
+                        });
+                        image.progressProperty().addListener((obs, oldVal, newVal) -> {
+                            if (newVal.doubleValue() >= 1.0 && !image.isError()) {
+                                avatarImg.setImage(image);
+                                avatarImg.setVisible(true);
+                                avatarText.setVisible(false);
+                            }
+                        });
+                        if (!image.isBackgroundLoading() && !image.isError()) {
+                            avatarImg.setImage(image);
+                            avatarImg.setVisible(true);
+                            avatarText.setVisible(false);
+                        }
+                        avatar.getChildren().addAll(avatarText, avatarImg);
+                    } catch (Exception e) {
+                        avatar.getChildren().add(avatarText);
+                    }
+                } else {
+                    avatar.getChildren().add(avatarText);
+                }
+
+                // 点击头像放大预览
+                final String previewUrl = avatarUrl;
+                final String previewName = name;
+                avatar.setOnMouseClicked((MouseEvent e) -> {
+                    e.consume();
+                    showAvatarPreview(previewUrl, previewName);
+                });
+                avatar.setStyle(avatar.getStyle() + " -fx-cursor: hand;");
 
                 // Info VBox
                 VBox infoBox = new VBox(4);
@@ -289,6 +345,8 @@ public class RankingController implements NetworkListener {
                 user.setRank(u.optInt("rank", i + 1));
                 user.setUsername(u.optString("username", ""));
                 user.setScore(u.optInt("score", 0));
+                // 头像 URL
+                user.setAvatarUrl(u.optString("avatarUrl", ""));
                 // 服务端 winRate 可能是 double 或字符串，统一按字符串读取
                 Object winRateObj = u.opt("winRate");
                 String winRateStr = winRateObj != null ? String.valueOf(winRateObj) : "";
@@ -304,5 +362,38 @@ public class RankingController implements NetworkListener {
 
     private boolean isPreview() {
         return previewMode || AppConfig.isPreviewMode();
+    }
+
+    /**
+     * username -> 渐变底色。JavaFX CSS 不支持 CSS3 语法 `linear-gradient(to bottom right, ...)`，
+     * 必须用 `from x1 y1 to x2 y2`。让 rank 4+ 名用户也有兜底底色，避免首字母白字显示在透明背景上。
+     */
+    private String gradientFor(String username) {
+        if (username == null || username.isEmpty()) {
+            return "linear-gradient(from 0% 0% to 100% 100%, #60a5fa, #1e293b)";
+        }
+        String[] palette = {
+            "linear-gradient(from 0% 0% to 100% 100%, #60a5fa, #1e293b)",
+            "linear-gradient(from 0% 0% to 100% 100%, #fbbf24, #b45309)",
+            "linear-gradient(from 0% 0% to 100% 100%, #34d399, #065f46)",
+            "linear-gradient(from 0% 0% to 100% 100%, #f472b6, #9d174d)",
+            "linear-gradient(from 0% 0% to 100% 100%, #a78bfa, #5b21b6)",
+            "linear-gradient(from 0% 0% to 100% 100%, #22d3ee, #155e75)",
+            "linear-gradient(from 0% 0% to 100% 100%, #f87171, #991b1b)"
+        };
+        return palette[Math.abs(username.hashCode()) % palette.length];
+    }
+
+    private void showAvatarPreview(String avatarUrl, String username) {
+        ScreenManager.showDialog("/fxml/AvatarPreviewUI.fxml",
+            (AvatarPreviewController ctrl) -> {
+                if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                    Image image = new Image(avatarUrl, true);
+                    ctrl.setAvatar(image, username);
+                } else {
+                    ctrl.setAvatar(null, username);
+                }
+            }
+        );
     }
 }

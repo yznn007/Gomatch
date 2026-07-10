@@ -28,6 +28,16 @@ public class DBUtil {
             log.error("Failed to load database.properties", e);
         }
 
+        try (InputStream is = DBUtil.class.getClassLoader().getResourceAsStream("oss.properties")) {
+            if (is != null) {
+                configProps.load(is);
+            } else {
+                log.warn("oss.properties not found in classpath, OSS storage will be disabled");
+            }
+        } catch (Exception e) {
+            log.error("Failed to load oss.properties", e);
+        }
+
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(configProps.getProperty("mysql.url", "jdbc:mysql://localhost:3306/gomatch?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"));
         config.setUsername(configProps.getProperty("mysql.username", "gomatch"));
@@ -50,6 +60,10 @@ public class DBUtil {
     }
 
     public static Properties getConfigProps() {
+        return configProps;
+    }
+
+    public static Properties getConfig() {
         return configProps;
     }
 }

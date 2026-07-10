@@ -14,8 +14,12 @@ public class GameRecord {
     private int scoreChange;
     private String player1Id;
     private String player1Name;
+    private int player1Score;
+    private String player1Avatar;  // 黑方头像预签名 URL（用于回放显示）
     private String player2Id;
     private String player2Name;
+    private int player2Score;
+    private String player2Avatar;  // 白方头像预签名 URL（用于回放显示）
 
     public GameRecord() {}
 
@@ -62,8 +66,16 @@ public class GameRecord {
     public void setPlayer1Id(String player1Id) { this.player1Id = player1Id; }
     public String getPlayer1Name() { return player1Name; }
     public void setPlayer1Name(String player1Name) { this.player1Name = player1Name; }
+    public int getPlayer1Score() { return player1Score; }
+    public void setPlayer1Score(int player1Score) { this.player1Score = player1Score; }
+    public String getPlayer1Avatar() { return player1Avatar; }
+    public void setPlayer1Avatar(String player1Avatar) { this.player1Avatar = player1Avatar; }
     public String getPlayer2Id() { return player2Id; }
     public void setPlayer2Id(String player2Id) { this.player2Id = player2Id; }
     public String getPlayer2Name() { return player2Name; }
     public void setPlayer2Name(String player2Name) { this.player2Name = player2Name; }
+    public int getPlayer2Score() { return player2Score; }
+    public void setPlayer2Score(int player2Score) { this.player2Score = player2Score; }
+    public String getPlayer2Avatar() { return player2Avatar; }
+    public void setPlayer2Avatar(String player2Avatar) { this.player2Avatar = player2Avatar; }
 }
