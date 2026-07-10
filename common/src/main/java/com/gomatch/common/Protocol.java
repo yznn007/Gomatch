@@ -77,6 +77,8 @@ public class Protocol {
     public static final String MATCH_TIMEOUT = "MATCH_TIMEOUT";
     public static final String RANKED_MATCH_FOUND = "RANKED_MATCH_FOUND";
     public static final String RANKED_READY = "RANKED_READY";
+    public static final String QUICK_MATCH_FOUND = "QUICK_MATCH_FOUND";
+    public static final String QUICK_READY = "QUICK_READY";
     // Forgot password - Client -> Server
     public static final String FORGOT_PASSWORD     = "FORGOT_PASSWORD";
     public static final String VERIFY_FORGOT_CODE  = "VERIFY_FORGOT_CODE";

@@ -240,10 +240,18 @@ public class RoomManager {
             room.join(opponentHandler);
             player.setCurrentRoom(room);
             opponentHandler.setCurrentRoom(room);
-            room.startGame();
 
-            log.info("快速匹配成功: 玩家 {}(score={}) vs 玩家 {}(score={})",
-                    userId, score, opponentId, opponentScore);
+            String playerUsername = player.getUsername();
+            String opponentUsername = opponentHandler.getUsername();
+
+            player.send(Message.of(Protocol.QUICK_MATCH_FOUND,
+                    "opponentId", String.valueOf(opponentId),
+                    "opponentUsername", opponentUsername));
+            opponentHandler.send(Message.of(Protocol.QUICK_MATCH_FOUND,
+                    "opponentId", String.valueOf(userId),
+                    "opponentUsername", playerUsername));
+
+            log.info("快速匹配成功: 玩家 {} vs 玩家 {}，等待双方准备", userId, opponentId);
             return room;
         }
 
