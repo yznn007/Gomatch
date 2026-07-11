@@ -11,7 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-/** Persists only a remembered username and removes legacy plaintext passwords. */
+/** Persists remembered username and password (plaintext, local-only). */
 public final class CredentialStore {
     private static final Gson GSON = new Gson();
     private final Path file;
@@ -39,16 +39,32 @@ public final class CredentialStore {
                 clear();
                 return Optional.empty();
             }
-            if (json.has("password")) {
-                saveUsername(username);
-            }
             return Optional.of(username);
         } catch (IOException | RuntimeException invalidFile) {
             return Optional.empty();
         }
     }
 
-    public void saveUsername(String username) throws IOException {
+    public Optional<String> loadPassword() {
+        if (!Files.isRegularFile(file)) {
+            return Optional.empty();
+        }
+        try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+            JsonObject json = GSON.fromJson(reader, JsonObject.class);
+            if (json == null || !json.has("password")) {
+                return Optional.empty();
+            }
+            String password = json.get("password").getAsString();
+            if (password.isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(password);
+        } catch (IOException | RuntimeException invalidFile) {
+            return Optional.empty();
+        }
+    }
+
+    public void saveCredentials(String username, String password) throws IOException {
         String normalized = username == null ? "" : username.trim();
         if (normalized.isEmpty()) {
             clear();
@@ -60,9 +76,14 @@ public final class CredentialStore {
         }
         JsonObject json = new JsonObject();
         json.addProperty("username", normalized);
+        json.addProperty("password", password != null ? password : "");
         try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
             GSON.toJson(json, writer);
         }
+    }
+
+    public void saveUsername(String username) throws IOException {
+        saveCredentials(username, loadPassword().orElse(""));
     }
 
     public void clear() throws IOException {
