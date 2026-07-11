@@ -22,25 +22,15 @@ if (-not $jdkFound) {
     Write-Host "[WARN] Could not auto-detect JDK 21. Assuming java is on PATH." -ForegroundColor Yellow
 }
 
-# Auto-detect Maven
-$MvnCandidates = @(
-    "C:\codetool\IntelliJ IDEA 2026.1.4\plugins\maven\lib\maven3\bin",
-    "$HOME\scoop\apps\maven\current\bin"
-)
-$mvnFound = $false
-foreach ($mvnDir in $MvnCandidates) {
-    if ($mvnDir -and (Test-Path "$mvnDir\mvn.cmd")) {
-        $env:Path = "$mvnDir;$env:Path"
-        $mvnFound = $true
-        break
-    }
-}
-if (-not $mvnFound) {
-    Write-Host "[WARN] Could not auto-detect Maven. Assuming mvn is on PATH." -ForegroundColor Yellow
-}
-
 # Set console code page to UTF-8
 chcp 65001 | Out-Null
+
+# Stop any process using port 8888
+Write-Host "[KILL] Stopping processes on port 8888..." -ForegroundColor Yellow
+Get-NetTCPConnection -LocalPort 8888 -ErrorAction SilentlyContinue | ForEach-Object {
+    taskkill /F /PID $_.OwningProcess 2>&1 | Out-Null
+}
+Start-Sleep -Seconds 1
 
 # Compile common module first
 Write-Host "[BUILD] Installing common module..." -ForegroundColor Yellow

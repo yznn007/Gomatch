@@ -25,6 +25,13 @@ if (-not $jdkFound) {
 # Set console code page to UTF-8
 chcp 65001 | Out-Null
 
+# Stop any process using port 8888
+Write-Host "[KILL] Stopping processes on port 8888..." -ForegroundColor Yellow
+Get-NetTCPConnection -LocalPort 8888 -ErrorAction SilentlyContinue | ForEach-Object {
+    taskkill /F /PID $_.OwningProcess 2>&1 | Out-Null
+}
+Start-Sleep -Seconds 1
+
 # Compile common module first
 Write-Host "[BUILD] Installing common module..." -ForegroundColor Yellow
 mvn -f "$PSScriptRoot/../pom.xml" install -pl common -am -DskipTests -q
