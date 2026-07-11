@@ -307,9 +307,8 @@ public class RedisManager {
         if (!isConnected()) return;
         try {
             syncCommands.zadd("rank:leaderboard", score, String.valueOf(userId));
-            log.debug("Updated rank: userId={}, score={}", userId, score);
         } catch (Exception e) {
-            log.warn("Failed to update rank: {}", e.getMessage());
+            log.warn("Failed to update rank: userId={}, score={}", userId, score, e);
         }
     }
 
