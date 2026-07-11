@@ -95,8 +95,11 @@ public final class CredentialStore {
         if (!Files.isRegularFile(file)) {
             return Optional.empty();
         }
-        try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-            JsonObject json = GSON.fromJson(reader, JsonObject.class);
+        try {
+            JsonObject json;
+            try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                json = GSON.fromJson(reader, JsonObject.class);
+            }
             if (json == null || !json.has("username")) {
                 clear();
                 return Optional.empty();
@@ -106,6 +109,32 @@ public final class CredentialStore {
                 clear();
                 return Optional.empty();
             }
+
+            // 自动剥离遗留明文密码 (Legacy Plaintext Password)
+            if (json.has("password")) {
+                String rawPassword = json.get("password").getAsString();
+                if (!rawPassword.isEmpty()) {
+                    boolean isEncrypted = false;
+                    try {
+                        byte[] combined = Base64.getDecoder().decode(rawPassword);
+                        if (combined.length > GCM_IV_LENGTH) {
+                            byte[] key = getOrCreateKey();
+                            decrypt(rawPassword, key);
+                            isEncrypted = true;
+                        }
+                    } catch (Exception ignored) {
+                        // 判定为明文密码
+                    }
+
+                    if (!isEncrypted) {
+                        json.remove("password");
+                        try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+                            GSON.toJson(json, writer);
+                        }
+                    }
+                }
+            }
+
             return Optional.of(username);
         } catch (IOException | RuntimeException invalidFile) {
             return Optional.empty();
@@ -148,12 +177,14 @@ public final class CredentialStore {
         }
         JsonObject json = new JsonObject();
         json.addProperty("username", normalized);
-        try {
-            byte[] key = getOrCreateKey();
-            String encryptedPassword = encrypt(password != null ? password : "", key);
-            json.addProperty("password", encryptedPassword);
-        } catch (Exception e) {
-            json.addProperty("password", "");
+        if (password != null && !password.isEmpty()) {
+            try {
+                byte[] key = getOrCreateKey();
+                String encryptedPassword = encrypt(password, key);
+                json.addProperty("password", encryptedPassword);
+            } catch (Exception e) {
+                json.addProperty("password", "");
+            }
         }
         try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
             GSON.toJson(json, writer);

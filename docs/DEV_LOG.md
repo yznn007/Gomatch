@@ -15,6 +15,7 @@
 > FXML 布局、CSS 样式、动画特效、视觉组件
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
+| 2026-07-12 00:05 | Contributor| fix(client): 修复本地凭据存储逻辑以通过单元测试并防范明文密码残留 | 优化了 `CredentialStore.java`：1. 仅在传入密码非空时写入 `password` 属性；2. 增加 `loadUsername` 时的旧明文密码判定逻辑，当解密失败时自动剥离明文密码并更新存储文件，修复了 `CredentialStoreTest` 两个单元测试 100% 失败的缺陷。 | 编译与测试成功 |
 | 2026-07-11 23:05 | Contributor| fix(client): 修复好友请求列表无法渲染及好友头像缺失的 Bug (Issue #17) | 在 FriendsController 中重构 FRIEND_LIST 和 FRIEND_REQUEST_LIST 消息解析逻辑，改用 opt/optString 等防御性 API 读取字段，避免 requestId 作为数字类型传回时触发 `r.getString()` 产生的 JSONException 导致中断；并将头像字段映射修改为与服务端一致的 avatarUrl。 | 编译与测试成功 |
 | 2026-07-11 22:45 | Contributor| fix(client): 修复应用在后台时静音失效与内存泄漏的 Bug | 将失焦静音监听器重构为 ScreenManager 下的全局 Application 级事件，通过 BackgroundMusicManager.setMutedByBackground 属性独立控制静音状态；删除 SettingsController 中的旧局部监听器及 checkbox 状态强改逻辑，彻底杜绝 SettingsController 实例多次被 Stage 持有造成的内存泄漏与状态覆盖行为。 | 验证通过 |
 | 2026-07-11 22:00 | Contributor| fix(server): PR code review 修复——消除 OSS 重复代码、修复 leaveRoom 通知顺序 Bug、消除 TOCTOU 竞态 | 1. **ClientHandler**：提取 `generateAvatarUrl(String)` 统一处理 OSS 判断与 try-catch，消除 4 处内联三元重复；2. **RoomManager.leaveRoom**：修复先 `room.leave()` 再判断通知名单的顺序 Bug，补全观战者通知与引用清理，移除危险的 `.clear()` 调用；3. **Room / ClientHandler.cleanup()**：新增 `cleanupDisconnect` 同步方法，将 WAITING / 非 WAITING 状态判断原子化到 Room 锁内，消除 TOCTOU；4. **init.sql**：补充生产环境安全警告注释；5. **AsciiTextCanvas**：补充 D3D 管线 NPE 修复说明注释 |
