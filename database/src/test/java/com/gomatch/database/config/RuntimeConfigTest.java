@@ -47,6 +47,17 @@ class RuntimeConfigTest {
     }
 
     @Test
+    void allowsRedisWithoutAuthentication() {
+        Properties properties = new Properties();
+        properties.setProperty("mysql.url", "jdbc:mysql://localhost/gomatch");
+        properties.setProperty("mysql.username", "gomatch");
+        properties.setProperty("mysql.password", "test-password");
+        properties.setProperty("redis.host", "127.0.0.1");
+        properties.setProperty("redis.port", "6379");
+
+        RuntimeConfig.requireRuntimeCredentials(properties);
+    }
+    @Test
     void rejectsMissingRequiredCredential() {
         IllegalStateException error = assertThrows(IllegalStateException.class,
                 () -> RuntimeConfig.requireRuntimeCredentials(new Properties()));

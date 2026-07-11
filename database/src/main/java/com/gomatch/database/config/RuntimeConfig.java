@@ -30,8 +30,7 @@ public final class RuntimeConfig {
             Map.entry("mysql.username", "GOMATCH_DB_USERNAME"),
             Map.entry("mysql.password", "GOMATCH_DB_PASSWORD"),
             Map.entry("redis.host", "GOMATCH_REDIS_HOST"),
-            Map.entry("redis.port", "GOMATCH_REDIS_PORT"),
-            Map.entry("redis.password", "GOMATCH_REDIS_PASSWORD")
+            Map.entry("redis.port", "GOMATCH_REDIS_PORT")
     );
 
     private RuntimeConfig() {

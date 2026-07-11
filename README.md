@@ -125,6 +125,6 @@ mvn -f client/pom.xml javafx:run
 1. **JDK 21**：JavaFX 21 依赖 JDK 17+，项目强制使用 JDK 21，启动脚本已内置 `JAVA_HOME` 检测。
 2. **首次运行**：必须先执行 `mvn install -pl common -am` 和 `mysql -u root -p < sql/init.sql`。
 3. **启动顺序**：MySQL → Redis → 初始化数据库 → 服务端 → 客户端，缺一不可。
-4. **运行凭据**：将 `.env.example` 复制为 `.env`，填写 MySQL、Redis 与可选 OSS 变量；优先级为系统环境变量 → `.env` → `database.properties` 中的非敏感默认值。空值不会覆盖较低层；MySQL 与 Redis 的必填变量缺失时服务端停止启动。默认从项目根目录读取 `.env`，可用系统环境变量 `GOMATCH_ENV_FILE` 指定其他文件。
+4. **运行凭据**：将 `.env.example` 复制为 `.env`，填写 MySQL、Redis 与可选 OSS 变量；优先级为系统环境变量 → `.env` → `database.properties` 中的非敏感默认值。空值不会覆盖较低层；MySQL 与 Redis 的主机/端口等必填变量缺失时服务端停止启动；`GOMATCH_REDIS_PASSWORD` 仅在 Redis 启用认证时填写。默认从项目根目录读取 `.env`，可用系统环境变量 `GOMATCH_ENV_FILE` 指定其他文件。
 5. **端口**：服务端 TCP 8888、MySQL 3306、Redis 6379，确保未被占用。
 

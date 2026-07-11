@@ -16,12 +16,12 @@ mvn clean package -pl server -am -DskipTests
 应用不在资源文件中保存数据库、Redis 或 OSS 凭据。将项目的 `.env.example` 复制为部署目录中的 `.env`，在该文件中填写：
 
 - `GOMATCH_DB_URL`、`GOMATCH_DB_USERNAME`、`GOMATCH_DB_PASSWORD`
-- `GOMATCH_REDIS_HOST`、`GOMATCH_REDIS_PORT`、`GOMATCH_REDIS_PASSWORD`、`GOMATCH_REDIS_DATABASE`
+- `GOMATCH_REDIS_HOST`、`GOMATCH_REDIS_PORT`、`GOMATCH_REDIS_DATABASE`，以及 Redis 启用认证时的 `GOMATCH_REDIS_PASSWORD`
 - 启用 OSS 存储时填写 `OSS_ENDPOINT`、`OSS_BUCKET`、`OSS_ACCESS_KEY_ID`、`OSS_ACCESS_KEY_SECRET`
 
 进程环境变量优先于 `.env`，因此 Docker、CI 和 systemd 可以通过其各自的安全凭据机制注入同名变量。不要提交 `.env`，也不要在 systemd 单元、Compose 文件或 Markdown 中写入实际密码。
 
-配置优先级依次为：系统环境变量、`.env`、资源文件中的非敏感默认值。空值不会覆盖较低层值；必填的 MySQL 与 Redis 变量缺失时服务端会停止启动。默认 `.env` 路径为工作目录下的 `.env`；系统环境变量 `GOMATCH_ENV_FILE` 可指定其他文件路径。
+配置优先级依次为：系统环境变量、`.env`、资源文件中的非敏感默认值。空值不会覆盖较低层值；必填的 MySQL 与 Redis 主机/端口变量缺失时服务端会停止启动；未启用 Redis 认证时可将 `GOMATCH_REDIS_PASSWORD` 留空。默认 `.env` 路径为工作目录下的 `.env`；系统环境变量 `GOMATCH_ENV_FILE` 可指定其他文件路径。
 
 ## 启动
 

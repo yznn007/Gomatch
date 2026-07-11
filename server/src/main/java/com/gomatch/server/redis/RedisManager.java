@@ -31,7 +31,7 @@ public class RedisManager {
             RuntimeConfig.requireRuntimeCredentials(props);
             String host = props.getProperty("redis.host");
             int port = Integer.parseInt(props.getProperty("redis.port"));
-            String password = props.getProperty("redis.password");
+            String password = props.getProperty("redis.password", "");
             int database = Integer.parseInt(props.getProperty("redis.database", "0"));
             int timeout = Integer.parseInt(props.getProperty("redis.timeout", "3000"));
 
