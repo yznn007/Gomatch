@@ -60,7 +60,7 @@ public class ForgotPasswordController implements NetworkListener {
 
         currentEmail = email;
         messageLabel.setText("");
-        messageLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#b45309", "#fcd34d") + ";");
+        messageLabel.setStyle("-fx-text-fill: #f59e0b;");
 
         try {
             if (!ClientMain.getConnector().isConnected()) {
@@ -70,7 +70,7 @@ public class ForgotPasswordController implements NetworkListener {
             ClientMain.getConnector().send(Message.of(Protocol.FORGOT_PASSWORD, "email", email));
         } catch (Exception e) {
             messageLabel.setText("连接服务器失败: " + e.getMessage());
-            messageLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+            messageLabel.setStyle("-fx-text-fill: #ef4444;");
         }
     }
 
@@ -81,12 +81,12 @@ public class ForgotPasswordController implements NetworkListener {
         String code = codeField.getText().trim();
         if (code.isEmpty()) {
             messageLabel.setText("请输入验证码");
-            messageLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+            messageLabel.setStyle("-fx-text-fill: #ef4444;");
             return;
         }
         if (code.length() != 6) {
             messageLabel.setText("验证码为6位数字");
-            messageLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+            messageLabel.setStyle("-fx-text-fill: #ef4444;");
             return;
         }
 
@@ -97,7 +97,7 @@ public class ForgotPasswordController implements NetworkListener {
                     "code", code));
         } catch (Exception e) {
             messageLabel.setText("发送失败: " + e.getMessage());
-            messageLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+            messageLabel.setStyle("-fx-text-fill: #ef4444;");
         }
     }
 
@@ -110,20 +110,20 @@ public class ForgotPasswordController implements NetworkListener {
 
         if (newPwd.isEmpty()) {
             messageLabel.setText("新密码不能为空");
-            messageLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+            messageLabel.setStyle("-fx-text-fill: #ef4444;");
             return;
         }
         if (newPwd.length() < 6) {
             messageLabel.setText("密码长度需 ≥6 位");
-            messageLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+            messageLabel.setStyle("-fx-text-fill: #ef4444;");
             return;
         }
         if (!newPwd.equals(confirm)) {
             messageLabel.setText("两次密码输入不一致");
-            messageLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+            messageLabel.setStyle("-fx-text-fill: #ef4444;");
             return;
         }
- 
+
         messageLabel.setText("");
         try {
             ClientMain.getConnector().send(Message.of(Protocol.FORGOT_PWD_RESET,
@@ -132,7 +132,7 @@ public class ForgotPasswordController implements NetworkListener {
                     "newPassword", newPwd));
         } catch (Exception e) {
             messageLabel.setText("发送失败: " + e.getMessage());
-            messageLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+            messageLabel.setStyle("-fx-text-fill: #ef4444;");
         }
     }
 
@@ -176,7 +176,7 @@ public class ForgotPasswordController implements NetworkListener {
         stepPasswordBox.setManaged(false);
 
         messageLabel.setText("");
-        messageLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+        messageLabel.setStyle("-fx-text-fill: #16a34a;");
 
         // 启动定时器
         startCodeTimers();
@@ -194,13 +194,13 @@ public class ForgotPasswordController implements NetworkListener {
         stepPasswordBox.setManaged(true);
 
         messageLabel.setText("验证成功，请设置新密码");
-        messageLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+        messageLabel.setStyle("-fx-text-fill: #16a34a;");
     }
 
     private void handleResetOk() {
         stopTimers();
         messageLabel.setText("密码重置成功，请返回登录");
-        messageLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+        messageLabel.setStyle("-fx-text-fill: #16a34a;");
 
         // 禁用密码输入区域
         stepPasswordBox.setDisable(true);
@@ -209,7 +209,7 @@ public class ForgotPasswordController implements NetworkListener {
     private void handleFailed(Message msg) {
         String errMsg = msg.getString("msg");
         messageLabel.setText(errMsg.isEmpty() ? "操作失败" : errMsg);
-        messageLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+        messageLabel.setStyle("-fx-text-fill: #ef4444;");
     }
 
     // ==================== 验证码定时器 ====================
@@ -238,7 +238,7 @@ public class ForgotPasswordController implements NetworkListener {
                 codeExpiryTimer.stop();
                 codeDisplayLabel.setText("已过期");
                 codeExpiryLabel.setText("验证码已过期，请重新获取");
-                codeExpiryLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+                codeExpiryLabel.setStyle("-fx-text-fill: #ef4444;");
             }
         }));
         codeExpiryTimer.setCycleCount(Timeline.INDEFINITE);
