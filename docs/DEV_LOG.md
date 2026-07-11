@@ -15,6 +15,7 @@
 > FXML 布局、CSS 样式、动画特效、视觉组件
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
+| 2026-07-11 22:00 | Contributor| fix(server): PR code review 修复——消除 OSS 重复代码、修复 leaveRoom 通知顺序 Bug、消除 TOCTOU 竞态 | 1. **ClientHandler**：提取 `generateAvatarUrl(String)` 统一处理 OSS 判断与 try-catch，消除 4 处内联三元重复；2. **RoomManager.leaveRoom**：修复先 `room.leave()` 再判断通知名单的顺序 Bug，补全观战者通知与引用清理，移除危险的 `.clear()` 调用；3. **Room / ClientHandler.cleanup()**：新增 `cleanupDisconnect` 同步方法，将 WAITING / 非 WAITING 状态判断原子化到 Room 锁内，消除 TOCTOU；4. **init.sql**：补充生产环境安全警告注释；5. **AsciiTextCanvas**：补充 D3D 管线 NPE 修复说明注释 |
 | 2026-07-11 | Contributor| fix(auth): 修复旧密码改密兼容 | 旧明文密码账户改密时使用兼容校验，成功后统一写入 BCrypt 哈希；新增旧密码与 BCrypt 密码匹配回归测试。 |
 | 2026-07-11 | Contributor| fix(build): 取消 Maven forked javac 编译 | Windows 下 forked javac 无法访问 common 模块的 classpath，导致客户端误报 `com.gomatch.common` 缺失；统一改用 Maven 进程内编译。 |
 | 2026-07-11 | Contributor| fix(scripts): 客户端启动不再强制清理构建目录 | 移除四份客户端脚本中的 `clean`，避免运行中的 JavaFX MediaPlayer 锁定音频资源时导致启动失败。 |
@@ -88,6 +89,7 @@
 | 2026-07-08 19:03 | Contributor| feat(server,client): 重构排位匹配系统，修复并优化匹配逻辑 | 匹配大厅界面优化 |
 | 2026-07-08 23:00 | Contributor| feat: 实现再来一局（Rematch）功能（客户端部分） | BoardController 新增 handleRequestRematch/handleReplyRematch 方法及 rematchRequested 状态；对局结束弹窗 GameOverController 新增"再来一局"按钮；BoardController 监听 REMATCH_REQUESTED/REMATCH_ACCEPTED/REMATCH_REJECTED 消息，同意后自动重置棋盘开始新对局 |
 | 2026-07-08 23:00 | Contributor| feat: GAME_START 协议增强 — 显示对手用户名和积分（客户端部分） | BoardController.onMessage(GAME_START) 解析新增的 blackUsername/blackScore/whiteUsername/whiteScore 字段；新增带分数的 setGameInfo 重载，对手卡片显示真实用户名和积分而非 ID 和问号 |
+| 2026-07-11 21:42 | Contributor| fix(client): 修复登录界面 ASCII 粒子标题在 D3D 管线下发生渲染空指针报错的 Bug | 重构 AsciiTextCanvas.java，将原先基于 JavaFX Canvas.snapshot() 转换为在 CPU 堆内存上运行的 java.awt.image.BufferedImage，彻底避开 JavaFX 渲染引擎 (Prism) 与 Direct3D/VRAM 资源回收触发的 `NullPointerException`，保障高频采样效率与零崩溃稳定性。 | 编译与渲染测试成功 |
 | 2026-07-09 23:44 | Contributor| fix: 修复黑色主题下登录/注册卡片内部泛白问题 + 全盘黑白样式同步 + 登录标题暗色色调适配 | 1. 将 .theme-dark .glass-card 背景不透明度从 0.48 提升至 0.60；新增 .theme-dark .auth-pixel-card .pixel-card-body 专属深色磨砂背景（0.55 不透明度）并改用深色投影；保留 .theme-dark .auth-pixel-card 外层白色高光投影。2. 将浅色/暗色模式下的 .custom-title-bar 和 .top-bar 背景统一为透明并去除投影。3. 统一侧栏菜单 active/导航按钮/标题栏按钮 hover/active 背景色。4. 补齐暗色模式下缺失的 pressed 状态。5. AsciiTextCanvas 支持暗色模式：根据 ScreenManager.isDarkTheme() 动态切换采样贴图（白底黑字）和输出色调，核心字符使用 #f8fafc，边缘使用柔和浅色偏色，使登录页 Gomatch 标题在暗色背景下清晰可见且风格统一。 | mvn -f client/pom.xml compile 通过 |
 | 2026-07-10 12:01 | Contributor| style: 修复头像预览弹窗背景色与顶栏小头像不一致问题 | AvatarPreviewUI.fxml：Circle 填充改为 StackPane 渐变背景 + 150px 圆角，保留 Circle 透明兜底。AvatarPreviewController：pickColor 8 色纯色调色板替换为 gradientFor 7 色渐变调色板（与 LobbyController/RankingController 一致），保证同一用户在小头像、排行榜、大头像预览中颜色完全一致。 |
 
@@ -97,6 +99,9 @@
 
 | 时间 | 作者 | 工作内容 | 问题/备注 |
 |------|------|----------|-----------|
+| 2026-07-11 21:42 | Contributor| fix(storage): 修复未配置 OSS 对象存储时，读取头像触发 NullPointerException 的 Bug | 在 ClientHandler.java 与 RankDAO.java 中补齐对 StorageManager.getInstance().isEnabled() 的前置防御检查，防止本地开发或未启用 OSS 服务时触发 `getOssService().generatePresignedUrl(...)` 空指针异常崩溃。 | 验证通过 |
+| 2026-07-11 21:35 | Contributor| fix(auth): 修复使用非数字标识符（用户名/邮箱/手机号）登录时匹配到 AI 的 Bug | 1. 在 UserDAO.login 中，若 accountId 解析为 -1，则对 PreparedStatement 的 user_id 参数设为 NULL，避免匹配到 user_id = -1 的 AI 占位记录；2. 在 ClientHandler.cleanup() 及 RoomManager.leaveRoom() 中增强对 WAITING 房间的清理逻辑，防止房主断线或离开时残留幽灵房间导致持久化警告。 | 验证通过 |
+| 2026-07-11 21:20 | Contributor| feat(database): 修改 init.sql 中的数据库账号创建与授权配置 | 新增 'gomatch'@'%' 用户的创建与授权规则，保留 'gomatch'@'localhost' 规则，以便支持远程数据库客户端（如 DataGrip 等）及跨主机远程连接。 | 验证通过 |
 | 2026-07-11 01:00 | Contributor| fix: 修复 Redis 背景保存失败导致写入命令被禁用的问题 | 1. 通过 redis-cli 将 stop-writes-on-bgsave-error 设置为 no 恢复本地运行；2. 在 RedisManager.init() 中添加了程序内配置，确保在其他环境初始化时同样禁用此选项以提高健壮性。 | 验证通过 |
 | 2026-07-11 03:05 | Contributor| docs: 编写服务端部署指南 docs/DEPLOY_GUIDE.md | 整理并编写了服务端的部署文档，包含本地 shaded Maven 打包、JDK 21 与 MySQL/Redis 环境准备、基于环境变量的配置覆盖机制，以及终端直接启动、Systemd 服务化、Docker/Docker Compose 容器化部署这三种运行与守护形式。 | 验证通过 |
 | 2026-07-04 13:20 | Contributor| 搭建 Maven 多模块项目骨架，创建 pom.xml 及目录结构 | 使用 JDK 21 |

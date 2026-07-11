@@ -359,6 +359,9 @@ public class RankDAO {
             return trimmed;
         }
         try {
+            if (!StorageManager.getInstance().isEnabled()) {
+                return "";
+            }
             return StorageManager.getInstance().getOssService().generatePresignedUrl(trimmed, 86400 * 30);
         } catch (Exception e) {
             log.debug("Generate presigned url failed for {}, fallback empty: {}", trimmed, e.getMessage());

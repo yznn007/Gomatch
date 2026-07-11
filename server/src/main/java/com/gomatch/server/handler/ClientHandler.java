@@ -329,19 +329,11 @@ public class ClientHandler implements Runnable {
                     long disconnectedId = activeRoom.isPlayerDisconnected(opponentId) ? opponentId : 0;
 
                     String avatarPath = userDAO.getAvatar(userInfo.getUserId());
-                    String avatarUrl = (avatarPath != null && !avatarPath.isEmpty())
-                            ? StorageManager.getInstance().getOssService().generatePresignedUrl(avatarPath, 86400 * 30)
-                            : "";
+                    String avatarUrl = generateAvatarUrl(avatarPath);
 
                     // 双方头像 URL（断线重连后客户端不会收到 GAME_START，必须在 LOGIN_OK 携带）
-                    String blackAvatarPath = userDAO.getAvatar(activeRoom.getBlackUserId());
-                    String whiteAvatarPath = userDAO.getAvatar(activeRoom.getWhiteUserId());
-                    String blackAvatarUrl = (blackAvatarPath != null && !blackAvatarPath.isEmpty())
-                            ? StorageManager.getInstance().getOssService().generatePresignedUrl(blackAvatarPath, 86400 * 30)
-                            : "";
-                    String whiteAvatarUrl = (whiteAvatarPath != null && !whiteAvatarPath.isEmpty())
-                            ? StorageManager.getInstance().getOssService().generatePresignedUrl(whiteAvatarPath, 86400 * 30)
-                            : "";
+                    String blackAvatarUrl = generateAvatarUrl(userDAO.getAvatar(activeRoom.getBlackUserId()));
+                    String whiteAvatarUrl = generateAvatarUrl(userDAO.getAvatar(activeRoom.getWhiteUserId()));
 
                     send(Message.builder(Protocol.LOGIN_OK)
                             .set("userId", String.valueOf(userInfo.getUserId()))
@@ -381,9 +373,7 @@ public class ClientHandler implements Runnable {
             }
 
             String avatarPath = userDAO.getAvatar(userInfo.getUserId());
-            String avatarUrl = (avatarPath != null && !avatarPath.isEmpty()) 
-                    ? StorageManager.getInstance().getOssService().generatePresignedUrl(avatarPath, 86400 * 30) 
-                    : "";
+            String avatarUrl = generateAvatarUrl(avatarPath);
             send(Message.builder(Protocol.LOGIN_OK)
                     .set("userId", String.valueOf(userInfo.getUserId()))
                     .set("username", userInfo.getUsername())
@@ -1243,6 +1233,22 @@ public class ClientHandler implements Runnable {
             return sm.getOssService().generatePresignedUrl(path, 86400 * 30);
         } catch (Exception ex) {
             log.debug("resolveAvatarPresigned failed for userId={}: {}", userId, ex.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * 根据 avatarPath（OSS 相对路径）生成 30 天预签名 URL。
+     * OSS 未启用、路径为空或生成异常时均返回空串，调用方无需额外判断。
+     */
+    private String generateAvatarUrl(String avatarPath) {
+        if (avatarPath == null || avatarPath.isEmpty()) return "";
+        StorageManager sm = StorageManager.getInstance();
+        if (sm == null || !sm.isEnabled() || sm.getOssService() == null) return "";
+        try {
+            return sm.getOssService().generatePresignedUrl(avatarPath, 86400 * 30);
+        } catch (Exception e) {
+            log.warn("Failed to generate avatar URL for {}: {}", avatarPath, e.getMessage());
             return "";
         }
     }
@@ -2113,15 +2119,11 @@ public class ClientHandler implements Runnable {
         long targetUserId = msg.has("userId") ? msg.getLong("userId") : userId;
         
         String filePath = userDAO.getAvatar(targetUserId);
-        if (filePath != null && !filePath.isEmpty()) {
-            String presignedUrl = StorageManager.getInstance().getOssService().generatePresignedUrl(filePath, 86400 * 30);
-            send(Message.builder("AVATAR_DATA")
-                    .set("userId", String.valueOf(targetUserId))
-                    .set("url", presignedUrl)
-                    .build());
-        } else {
-            send(Message.of("AVATAR_DATA", "userId", String.valueOf(targetUserId), "url", ""));
-        }
+        String presignedUrl = generateAvatarUrl(filePath);
+        send(Message.builder("AVATAR_DATA")
+                .set("userId", String.valueOf(targetUserId))
+                .set("url", presignedUrl)
+                .build());
     }
 
     private void handleDeleteAvatar() {
@@ -2174,8 +2176,15 @@ public class ClientHandler implements Runnable {
                 currentRoom != null ? currentRoom.getRoomId() : "none");
 
         if (currentRoom != null) {
-            currentRoom.disconnect(this);
-            log.info("玩家 {} 从房间 {} 断开连接", userId, currentRoom.getRoomId());
+            // cleanupDisconnect 在 Room 的 synchronized 锁内原子判断状态，
+            // 避免 getStatus() 与实际操作之间的 TOCTOU 竞态。
+            // 返回 true 表示房间处于 WAITING，需要通过 RoomManager 清理残留。
+            boolean wasWaiting = currentRoom.cleanupDisconnect(this);
+            if (wasWaiting) {
+                roomManager.leaveRoom(this);
+            } else {
+                log.info("玩家 {} 从房间 {} 断开连接", userId, currentRoom.getRoomId());
+            }
         }
 
         if (authenticated && userId > 0) {

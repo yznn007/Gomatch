@@ -9,7 +9,9 @@ import com.gomatch.server.session.SessionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
@@ -452,22 +454,38 @@ public class RoomManager {
     }
 
     /**
-     * 玩家离开当前房间
+     * 玩家主动离开当前房间。
+     * <p>若离开者是房主且对局未开始，则解散房间并通知其余成员（包含观战者）。</p>
      */
     public void leaveRoom(ClientHandler player) {
         Room room = player.getCurrentRoom();
-        if (room != null) {
-            String roomId = room.getRoomId();
-            room.leave(player);
-            log.info("玩家 {} 离开房间 {}", player.getUserId(), roomId);
-            player.setCurrentRoom(null);
-            // 无玩家时，自动清理房间
-            if (room.getPlayerCount() == 0) {
-                removeRoom(roomId);
-                log.info("房间 {} 已无玩家，自动清理", roomId);
+        if (room == null) return;
+        String roomId = room.getRoomId();
+
+        boolean isOwnerLeaving = (player == room.getOwner());
+        boolean shouldDissolve = isOwnerLeaving && room.getStatus() == Room.Status.WAITING;
+
+        // 先快照待通知成员（在 room.leave() 移除成员之前）
+        List<ClientHandler> toNotify = Collections.emptyList();
+        if (shouldDissolve) {
+            toNotify = new ArrayList<>(room.getPlayers());
+            toNotify.addAll(room.getObservers());
+            toNotify.remove(player); // 移除自身，剩余成员才需被通知
+        }
+
+        room.leave(player);
+        log.info("玩家 {} 离开房间 {}", player.getUserId(), roomId);
+        player.setCurrentRoom(null);
+
+        if (room.getPlayerCount() == 0 || shouldDissolve) {
+            removeRoom(roomId);
+            log.info("房间 {} 已清理（无玩家或房主离开）", roomId);
+
+            // 通知尚在房间内的其他玩家 / 观战者
+            for (ClientHandler p : toNotify) {
+                p.setCurrentRoom(null);
+                p.send(Message.of(Protocol.PLAYER_LEAVE, "msg", "房主已离开，房间已关闭"));
             }
         }
     }
 }
-
-

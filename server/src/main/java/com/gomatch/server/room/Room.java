@@ -272,6 +272,28 @@ public class Room {
         }
     }
 
+    /**
+     * 连接断开时的原子路由：在 Room 的 synchronized 锁内判断状态，避免
+     * 调用方在 {@code getStatus()} 和实际操作之间发生 TOCTOU 竞态。
+     * <ul>
+     *   <li>WAITING：调用 {@link #leave(ClientHandler, boolean) leave(handler, false)}，
+     *       不重置房间（由 {@code RoomManager.leaveRoom} 负责清理），返回 {@code true}。</li>
+     *   <li>PLAYING / FINISHED：调用 {@link #disconnect(ClientHandler)}，返回 {@code false}。</li>
+     * </ul>
+     *
+     * @return {@code true} 若按"主动离开"处理（调用方需再调 {@code RoomManager.leaveRoom}），
+     *         {@code false} 若按"断线"处理
+     */
+    public synchronized boolean cleanupDisconnect(ClientHandler handler) {
+        if (status == Status.WAITING) {
+            leave(handler, false);
+            return true;
+        } else {
+            disconnect(handler);
+            return false;
+        }
+    }
+
     public synchronized void disconnect(ClientHandler handler) {
         log.debug("Attempting disconnect from room {}: handler={}", roomId,
                 handler != null ? handler.getUserId() : "null");

@@ -18,8 +18,7 @@ public class AsciiTextCanvas extends Canvas {
     private static final String CHARSET = " .'`^\",:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
 
     private AnimationTimer timer;
-    private WritableImage textImage;
-    private PixelReader textureReader;
+    private java.awt.image.BufferedImage bufferedImage;
     private int textWidth;
     private int textHeight;
 
@@ -67,56 +66,51 @@ public class AsciiTextCanvas extends Canvas {
         }
     }
 
+    /**
+     * 初始化文字贴图。
+     * <p><b>注意</b>：此处刻意使用 AWT {@code BufferedImage} 而非 JavaFX {@code Canvas.snapshot()}。
+     * 在 JavaFX 的 Direct3D（D3D）渲染管线下，{@code snapshot()} 在 FX 应用线程尚未完成 GPU
+     * 初始化时会返回 null 或向上抛出 {@code NullPointerException}，导致登录界面标题粒子效果崩溃。
+     * AWT 的离屏绘图完全在 CPU 侧完成，不依赖 GPU 管线，因此不受此问题影响。</p>
+     */
     private void initTextImage() {
-        // 180px 巨大高清粗体字作为贴图源
-        Font font = Font.font("System", FontWeight.EXTRA_BOLD, 180);
-        
-        javafx.scene.text.Text textNode = new javafx.scene.text.Text(text);
-        textNode.setFont(font);
-        double layoutW = textNode.getLayoutBounds().getWidth();
-        double layoutH = textNode.getLayoutBounds().getHeight();
-        
-        if (layoutW <= 0 || layoutH <= 0) {
-            layoutW = 400;  // fallback
-            layoutH = 180;
-        }
-        
-        int rawW = (int) Math.ceil(layoutW) + 40;
-        int rawH = (int) Math.ceil(layoutH) + 40;
+        java.awt.Font awtFont = new java.awt.Font("SansSerif", java.awt.Font.BOLD, 180);
+        java.awt.image.BufferedImage tempImg = new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D gTemp = tempImg.createGraphics();
+        gTemp.setFont(awtFont);
+        java.awt.FontMetrics fm = gTemp.getFontMetrics();
+        int layoutW = fm.stringWidth(text);
+        int layoutH = fm.getHeight();
+        gTemp.dispose();
+
+        int rawW = layoutW + 40;
+        int rawH = layoutH + 40;
         if (rawW <= 0) rawW = 100;
         if (rawH <= 0) rawH = 100;
 
-        Canvas tempCanvas = new Canvas(rawW, rawH);
-        GraphicsContext gc = tempCanvas.getGraphicsContext2D();
+        java.awt.image.BufferedImage bufImg = new java.awt.image.BufferedImage(rawW, rawH, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g2d = bufImg.createGraphics();
+        g2d.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
         boolean dark = ScreenManager.isDarkTheme();
         if (dark) {
-            gc.setFill(Color.WHITE);
-            gc.fillRect(0, 0, rawW, rawH);
-            gc.setFill(Color.BLACK);
+            g2d.setColor(java.awt.Color.WHITE);
+            g2d.fillRect(0, 0, rawW, rawH);
+            g2d.setColor(java.awt.Color.BLACK);
         } else {
-            gc.setFill(Color.BLACK);
-            gc.fillRect(0, 0, rawW, rawH);
-            gc.setFill(Color.WHITE);
+            g2d.setColor(java.awt.Color.BLACK);
+            g2d.fillRect(0, 0, rawW, rawH);
+            g2d.setColor(java.awt.Color.WHITE);
         }
-        gc.setFont(font);
+        g2d.setFont(awtFont);
         
-        double textY = rawH / 2.0 + layoutH / 4.0;
-        gc.fillText(text, 20, textY);
+        int textY = rawH / 2 + layoutH / 4;
+        g2d.drawString(text, 20, textY);
+        g2d.dispose();
 
-        try {
-            textImage = tempCanvas.snapshot(null, null);
-        } catch (Exception e) {
-            System.err.println("[AsciiTextCanvas] snapshot failed: " + e.getMessage());
-            return;
-        }
-
-        if (textImage == null) return;
-
-        textWidth = (int) textImage.getWidth();
-        textHeight = (int) textImage.getHeight();
-        if (textWidth <= 0 || textHeight <= 0) return;
-
-        textureReader = textImage.getPixelReader();
+        this.bufferedImage = bufImg;
+        this.textWidth = rawW;
+        this.textHeight = rawH;
     }
 
     private void startAnimation() {
@@ -135,19 +129,19 @@ public class AsciiTextCanvas extends Canvas {
     }
 
     private double sampleTexture(double u, double v, int channel) {
-        if (textureReader == null) return 0.0;
+        if (bufferedImage == null) return 0.0;
         if (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0) {
             return 0.0;
         }
         int tx = (int) (u * (textWidth - 1));
         int ty = (int) (v * (textHeight - 1));
         if (tx >= 0 && tx < textWidth && ty >= 0 && ty < textHeight) {
-            Color c = textureReader.getColor(tx, ty);
+            int argb = bufferedImage.getRGB(tx, ty);
             switch (channel) {
-                case 0: return c.getRed();
-                case 1: return c.getGreen();
-                case 2: return c.getBlue();
-                default: return c.getOpacity();
+                case 0: return ((argb >> 16) & 0xff) / 255.0;
+                case 1: return ((argb >> 8) & 0xff) / 255.0;
+                case 2: return (argb & 0xff) / 255.0;
+                default: return ((argb >> 24) & 0xff) / 255.0;
             }
         }
         return 0.0;

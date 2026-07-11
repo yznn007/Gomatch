@@ -158,7 +158,11 @@ public class UserDAO {
         }
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(LOGIN_BY_ACCOUNT_SQL)) {
-            ps.setLong(1, accountId);
+            if (accountId == -1) {
+                ps.setNull(1, java.sql.Types.BIGINT);
+            } else {
+                ps.setLong(1, accountId);
+            }
             ps.setString(2, accountValue);
             ps.setString(3, normalizedEmail);
             ps.setString(4, normalizedPhone);
