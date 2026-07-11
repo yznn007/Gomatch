@@ -132,6 +132,10 @@ public class ServerConnector {
                         handleReconnectFail();
                         continue;
                     }
+                    if ("LOGOUT".equals(message.getCmd())) {
+                        handleLogout(message);
+                        continue;
+                    }
                     Platform.runLater(() -> listeners.forEach(listener -> listener.onMessage(message)));
                 } catch (IOException error) {
                     break;
@@ -178,6 +182,16 @@ public class ServerConnector {
                 listener -> listener.onMessage(Message.cmdOnly("DISCONNECT"))));
     }
 
+    private void handleLogout(Message message) {
+        running = false;
+        closeSocket();
+        String msg = message.has("msg") ? message.getString("msg") : "您的账号在其他设备登录";
+        Platform.runLater(() -> listeners.forEach(
+                listener -> listener.onMessage(Message.builder("DISCONNECT")
+                        .set("msg", msg)
+                        .build())));
+    }
+
     private boolean tryReconnect() {
         for (int attempt = 1; attempt <= MAX_RECONNECT_ATTEMPTS; attempt++) {
             try {
@@ -187,12 +201,30 @@ public class ServerConnector {
                 String token = AppConfig.getAuthToken();
                 if (token != null && !token.isEmpty()) {
                     writer.println(Message.of(Protocol.RECONNECT, "token", token).toJson());
+                    writer.flush();
+                    String response = reader.readLine();
+                    if (response != null) {
+                        Optional<Message> parsed = InboundMessageParser.parse(response);
+                        if (parsed.isPresent()) {
+                            Message message = parsed.get();
+                            if ("RECONNECT_OK".equals(message.getCmd())) {
+                                running = true;
+                                lastServerResponseTime.set(System.currentTimeMillis());
+                                startReceiveThread();
+                                startHeartbeat();
+                                handleReconnectOk(message);
+                                return true;
+                            } else if ("RECONNECT_FAIL".equals(message.getCmd())) {
+                                String msg = message.has("msg") ? message.getString("msg") : "重连失败";
+                                Platform.runLater(() -> listeners.forEach(
+                                        listener -> listener.onMessage(Message.builder("DISCONNECT")
+                                                .set("msg", msg)
+                                                .build())));
+                                return false;
+                            }
+                        }
+                    }
                 }
-                running = true;
-                lastServerResponseTime.set(System.currentTimeMillis());
-                startReceiveThread();
-                startHeartbeat();
-                return true;
             } catch (Exception ignored) {
             }
         }
