@@ -53,3 +53,7 @@ dump.rdb
 
 #  AOF 持久化
 *.aof
+# Local runtime credentials
+.env
+.env.*
+!.env.example
