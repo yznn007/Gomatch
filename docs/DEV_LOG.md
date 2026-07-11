@@ -102,6 +102,7 @@
 
 | 时间 | 作者 | 工作内容 | 问题/备注 |
 |------|------|----------|-----------|
+| 2026-07-12 00:09 | Contributor| fix(database): 修复 init.sql 约束与种子数据不匹配导致初始化失败的 Bug | 将 t_user 表的 phone 字段 NOT NULL 约束移除（改为允许为 NULL），并为初始种子用户数据补全符合 E.164 规范的唯一测试手机号，解决初始化数据冲突问题。 | 验证通过 |
 | 2026-07-11 23:05 | Contributor| fix(server): 允许手机号为选填进行注册 (Issue #16) | 修复 ClientHandler.java 与 UserDAO.java 中注册校验逻辑对空手机号的不当检验；若手机号为空则不再进行 E.164 规范化和唯一性校验，直接允许空值插入，打通了“手机号选填”的注册通路。 | 编译与测试成功 |
 | 2026-07-11 21:42 | Contributor| fix(storage): 修复未配置 OSS 对象存储时，读取头像触发 NullPointerException 的 Bug | 在 ClientHandler.java 与 RankDAO.java 中补齐对 StorageManager.getInstance().isEnabled() 的前置防御检查，防止本地开发或未启用 OSS 服务时触发 `getOssService().generatePresignedUrl(...)` 空指针异常崩溃。 | 验证通过 |
 | 2026-07-11 21:35 | Contributor| fix(auth): 修复使用非数字标识符（用户名/邮箱/手机号）登录时匹配到 AI 的 Bug | 1. 在 UserDAO.login 中，若 accountId 解析为 -1，则对 PreparedStatement 的 user_id 参数设为 NULL，避免匹配到 user_id = -1 的 AI 占位记录；2. 在 ClientHandler.cleanup() 及 RoomManager.leaveRoom() 中增强对 WAITING 房间的清理逻辑，防止房主断线或离开时残留幽灵房间导致持久化警告。 | 验证通过 |
