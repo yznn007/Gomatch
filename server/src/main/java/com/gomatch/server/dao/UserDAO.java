@@ -505,13 +505,13 @@ public class UserDAO {
      * 获取用户头像URL
      */
     public String getAvatar(long userId) {
-        String sql = "SELECT avatar_url FROM t_user WHERE user_id = ?";
+        String sql = "SELECT avatar FROM t_user WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    String url = rs.getString("avatar_url");
+                    String url = rs.getString("avatar");
                     return url != null ? url : "";
                 }
             }
@@ -524,11 +524,11 @@ public class UserDAO {
     /**
      * 更新用户头像URL
      */
-    public boolean updateAvatar(long userId, String avatarUrl) {
-        String sql = "UPDATE t_user SET avatar_url = ?, update_time = NOW() WHERE user_id = ?";
+    public boolean updateAvatar(long userId, String avatar) {
+        String sql = "UPDATE t_user SET avatar = ?, update_time = NOW() WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, avatarUrl);
+            ps.setString(1, avatar);
             ps.setLong(2, userId);
             boolean success = ps.executeUpdate() > 0;
             if (success) log.info("Avatar updated: userId={}", userId);

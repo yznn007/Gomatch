@@ -1,15 +1,19 @@
 package com.gomatch.client.ui;
 
+import java.util.ArrayList;
+
 import com.gomatch.client.ClientMain;
 import com.gomatch.client.model.User;
-import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
@@ -23,10 +27,7 @@ import javafx.scene.text.Text;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class LobbyController implements NetworkListener {
+public class LobbyController extends AutoCleanupController {
     @FXML private Label userInfoLabel;
     @FXML private Label userScoreLabel;
     @FXML private StackPane lobbyAvatarPane;
@@ -41,12 +42,12 @@ public class LobbyController implements NetworkListener {
         public final int rank;
         public final String username;
         public final int score;
-        public final String avatarUrl;
-        public RankItem(int rank, String username, int score, String avatarUrl) {
+        public final String avatar;
+        public RankItem(int rank, String username, int score, String avatar) {
             this.rank = rank;
             this.username = username;
             this.score = score;
-            this.avatarUrl = avatarUrl;
+            this.avatar = avatar;
         }
     }
 
@@ -71,7 +72,7 @@ public class LobbyController implements NetworkListener {
                 row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
                 // 渐变小头像
-                StackPane avatar = buildDrawerAvatar(item.username, item.avatarUrl, 28);
+                StackPane avatar = buildDrawerAvatar(item.username, item.avatar, 28);
                 row.getChildren().add(avatar);
 
                 // 中间：排名 + 用户名
@@ -80,21 +81,21 @@ public class LobbyController implements NetworkListener {
                 HBox.setHgrow(info, javafx.scene.layout.Priority.ALWAYS);
 
                 Label nameLabel = new Label(item.username);
-                nameLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1e293b;");
+                nameLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
                 Label rankLabel = new Label("第 " + item.rank + " 名");
-                rankLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
+                rankLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#94a3b8") + ";");
                 info.getChildren().addAll(nameLabel, rankLabel);
                 row.getChildren().add(info);
 
                 // 右侧：分数
                 Label scoreLabel = new Label(item.score + " 分");
-                scoreLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #0ea5e9;");
+                scoreLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + ScreenManager.themeColor("#0ea5e9", "#38bdf8") + ";");
                 row.getChildren().add(scoreLabel);
 
                 setGraphic(row);
             }
         });
-        ClientMain.getConnector().addListener(this);
+        registerListener();
         if (!ClientMain.getConnector().isConnected()) {
             drawerRanks.addAll(
                 new RankItem(1, "棋圣", 1500, ""),
@@ -144,10 +145,12 @@ public class LobbyController implements NetworkListener {
             // 图片加载完成后再添加并盖住首字母；失败则保留首字母
             img.progressProperty().addListener((obs, o, n) -> {
                 if (n != null && n.doubleValue() >= 1.0 && !img.isError()) {
-                    if (!pane.getChildren().contains(iv)) {
-                        pane.getChildren().add(iv);
-                        iv.toFront();
-                    }
+                    Platform.runLater(() -> {
+                        if (!pane.getChildren().contains(iv)) {
+                            pane.getChildren().add(iv);
+                            iv.toFront();
+                        }
+                    });
                 }
             });
             img.errorProperty().addListener((obs, o, n) -> {
@@ -196,7 +199,7 @@ public class LobbyController implements NetworkListener {
             userScoreLabel.setText("未定级");
         }
 
-        String avatarUrl = user.getAvatarUrl();
+        String avatarUrl = user.getAvatar();
         // 顶栏默认渐变 + 描边，与全站小头像风格一致
         lobbyAvatarPane.setStyle("-fx-background-color: " + gradientFor(name) + ";"
                 + "-fx-cursor: hand;"
@@ -273,7 +276,7 @@ public class LobbyController implements NetworkListener {
     private void handleAvatarClick(MouseEvent e) {
         e.consume(); // 阻止冒泡到 playerInfoBox 的 handleProfile
         if (currentUser == null) return;
-        String url = currentUser.getAvatarUrl();
+        String url = currentUser.getAvatar();
         String name = currentUser.getUsername();
         showAvatarPreview(url, name);
     }
@@ -343,17 +346,17 @@ public class LobbyController implements NetworkListener {
         if (Protocol.RANKING_LIST.equals(msg.getCmd())) {
             JSONArray users = msg.getData().optJSONArray("users");
             if (users != null) {
-                List<RankItem> items = new ArrayList<>();
+                ArrayList<RankItem> items = new ArrayList<>();
                 for (int i = 0; i < users.length(); i++) {
                     JSONObject u = users.optJSONObject(i);
                     if (u == null) continue;
                     int rank = u.optInt("rank", i + 1);
                     String username = u.optString("username", "");
                     int score = u.optInt("score", 0);
-                    String avatarUrl = u.optString("avatarUrl", "");
-                    items.add(new RankItem(rank, username, score, avatarUrl));
+                    String avatar = u.optString("avatar", "");
+                    items.add(new RankItem(rank, username, score, avatar));
                 }
-                drawerRanks.setAll(items);
+                Platform.runLater(() -> drawerRanks.setAll(items));
             }
         } else if (Protocol.USER_SCORE_UPDATE.equals(msg.getCmd())) {
             if (currentUser != null) {
@@ -362,18 +365,32 @@ public class LobbyController implements NetworkListener {
                 currentUser.setLoseCount(msg.getInt("loseCount"));
                 currentUser.setDrawCount(msg.getInt("drawCount"));
                 currentUser.setRank(msg.getInt("rank"));
-                if (currentUser.getScore() > 0) {
-                    userScoreLabel.setText(currentUser.getScore() + " 分");
-                } else {
-                    userScoreLabel.setText("未定级");
-                }
+                Platform.runLater(() -> {
+                    if (currentUser.getScore() > 0) {
+                        userScoreLabel.setText(currentUser.getScore() + " 分");
+                    } else {
+                        userScoreLabel.setText("未定级");
+                    }
+                });
             }
+        } else if ("DISCONNECT".equals(msg.getCmd())) {
+            String disconnectMsg = msg.has("msg") ? msg.getString("msg") : "连接已断开";
+            Platform.runLater(() -> {
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                        javafx.scene.control.Alert.AlertType.INFORMATION);
+                alert.setTitle("登录状态");
+                alert.setHeaderText(null);
+                alert.setContentText(disconnectMsg);
+                ScreenManager.showStyledAlert(alert);
+                ScreenManager.switchTo("/fxml/LoginUI.fxml");
+            });
         }
     }
 
     private void showAvatarPreview(String avatarUrl, String username) {
         ScreenManager.showDialog("/fxml/AvatarPreviewUI.fxml",
             (AvatarPreviewController ctrl) -> {
+                if (ctrl == null) return;
                 if (avatarUrl != null && !avatarUrl.isEmpty()) {
                     Image image = new Image(avatarUrl, true);
                     ctrl.setAvatar(image, username);
