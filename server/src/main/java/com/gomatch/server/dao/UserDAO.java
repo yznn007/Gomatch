@@ -106,14 +106,17 @@ public class UserDAO {
             log.warn("Register failed: email already registered: {}", emailTrimmed);
             return false;
         }
-        String normalizedPhone = PhoneNumberNormalizer.normalize(phone);
-        if (normalizedPhone == null) {
-            log.warn("Register failed: invalid phone number");
-            return false;
-        }
-        if (phoneExists(normalizedPhone)) {
-            log.warn("Register failed: phone already registered: {}", normalizedPhone);
-            return false;
+        String normalizedPhone = null;
+        if (phone != null && !phone.trim().isEmpty()) {
+            normalizedPhone = PhoneNumberNormalizer.normalize(phone);
+            if (normalizedPhone == null) {
+                log.warn("Register failed: invalid phone number");
+                return false;
+            }
+            if (phoneExists(normalizedPhone)) {
+                log.warn("Register failed: phone already registered: {}", normalizedPhone);
+                return false;
+            }
         }
 
         String sql = "INSERT INTO t_user (username, password, email, phone) VALUES (?, ?, ?, ?)";

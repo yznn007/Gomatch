@@ -190,11 +190,11 @@ public class FriendsController implements NetworkListener {
                 for (int i = 0; i < friends.length(); i++) {
                     org.json.JSONObject f = friends.getJSONObject(i);
                     friendsData.add(new FriendInfoModel(
-                            String.valueOf(f.getLong("friendUserId")),
-                            f.getString("friendUsername"),
-                            String.valueOf(f.getInt("friendScore")),
+                            String.valueOf(f.optLong("friendUserId")),
+                            f.optString("friendUsername"),
+                            String.valueOf(f.optInt("friendScore")),
                             f.optBoolean("online", false),
-                            f.optString("avatar", "")
+                            f.optString("avatarUrl", f.optString("avatar", ""))
                     ));
                 }
             }
@@ -204,7 +204,13 @@ public class FriendsController implements NetworkListener {
             if (requests != null) {
                 for (int i = 0; i < requests.length(); i++) {
                     org.json.JSONObject r = requests.getJSONObject(i);
-                    requestsData.add(new FriendRequestModel(r.getString("requestId"), String.valueOf(r.getLong("fromUserId")), r.getString("fromUsername"), String.valueOf(r.getInt("fromScore")), r.getString("message")));
+                    requestsData.add(new FriendRequestModel(
+                            String.valueOf(r.opt("requestId")),
+                            String.valueOf(r.optLong("fromUserId")),
+                            r.optString("fromUsername"),
+                            String.valueOf(r.optInt("fromScore")),
+                            r.optString("message")
+                    ));
                 }
             }
         } else if ("ADD_FRIEND_OK".equals(cmd)) {

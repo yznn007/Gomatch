@@ -242,10 +242,13 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        String normalizedPhone = PhoneNumberNormalizer.normalize(phone);
-        if (normalizedPhone == null) {
-            send(Message.of("REGISTER_FAIL", "msg", "手机号必须是有效的国际号码（E.164，含国家区号）"));
-            return;
+        String normalizedPhone = null;
+        if (phone != null && !phone.trim().isEmpty()) {
+            normalizedPhone = PhoneNumberNormalizer.normalize(phone);
+            if (normalizedPhone == null) {
+                send(Message.of("REGISTER_FAIL", "msg", "手机号必须是有效的国际号码（E.164，含国家区号）"));
+                return;
+            }
         }
 
         boolean success = userDAO.register(username, password, email, normalizedPhone);

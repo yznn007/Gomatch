@@ -15,6 +15,7 @@
 > FXML 布局、CSS 样式、动画特效、视觉组件
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
+| 2026-07-11 23:05 | Contributor| fix(client): 修复好友请求列表无法渲染及好友头像缺失的 Bug (Issue #17) | 在 FriendsController 中重构 FRIEND_LIST 和 FRIEND_REQUEST_LIST 消息解析逻辑，改用 opt/optString 等防御性 API 读取字段，避免 requestId 作为数字类型传回时触发 `r.getString()` 产生的 JSONException 导致中断；并将头像字段映射修改为与服务端一致的 avatarUrl。 | 编译与测试成功 |
 | 2026-07-11 22:45 | Contributor| fix(client): 修复应用在后台时静音失效与内存泄漏的 Bug | 将失焦静音监听器重构为 ScreenManager 下的全局 Application 级事件，通过 BackgroundMusicManager.setMutedByBackground 属性独立控制静音状态；删除 SettingsController 中的旧局部监听器及 checkbox 状态强改逻辑，彻底杜绝 SettingsController 实例多次被 Stage 持有造成的内存泄漏与状态覆盖行为。 | 验证通过 |
 | 2026-07-11 22:00 | Contributor| fix(server): PR code review 修复——消除 OSS 重复代码、修复 leaveRoom 通知顺序 Bug、消除 TOCTOU 竞态 | 1. **ClientHandler**：提取 `generateAvatarUrl(String)` 统一处理 OSS 判断与 try-catch，消除 4 处内联三元重复；2. **RoomManager.leaveRoom**：修复先 `room.leave()` 再判断通知名单的顺序 Bug，补全观战者通知与引用清理，移除危险的 `.clear()` 调用；3. **Room / ClientHandler.cleanup()**：新增 `cleanupDisconnect` 同步方法，将 WAITING / 非 WAITING 状态判断原子化到 Room 锁内，消除 TOCTOU；4. **init.sql**：补充生产环境安全警告注释；5. **AsciiTextCanvas**：补充 D3D 管线 NPE 修复说明注释 |
 | 2026-07-11 | Contributor| fix(auth): 修复旧密码改密兼容 | 旧明文密码账户改密时使用兼容校验，成功后统一写入 BCrypt 哈希；新增旧密码与 BCrypt 密码匹配回归测试。 |
@@ -100,6 +101,7 @@
 
 | 时间 | 作者 | 工作内容 | 问题/备注 |
 |------|------|----------|-----------|
+| 2026-07-11 23:05 | Contributor| fix(server): 允许手机号为选填进行注册 (Issue #16) | 修复 ClientHandler.java 与 UserDAO.java 中注册校验逻辑对空手机号的不当检验；若手机号为空则不再进行 E.164 规范化和唯一性校验，直接允许空值插入，打通了“手机号选填”的注册通路。 | 编译与测试成功 |
 | 2026-07-11 21:42 | Contributor| fix(storage): 修复未配置 OSS 对象存储时，读取头像触发 NullPointerException 的 Bug | 在 ClientHandler.java 与 RankDAO.java 中补齐对 StorageManager.getInstance().isEnabled() 的前置防御检查，防止本地开发或未启用 OSS 服务时触发 `getOssService().generatePresignedUrl(...)` 空指针异常崩溃。 | 验证通过 |
 | 2026-07-11 21:35 | Contributor| fix(auth): 修复使用非数字标识符（用户名/邮箱/手机号）登录时匹配到 AI 的 Bug | 1. 在 UserDAO.login 中，若 accountId 解析为 -1，则对 PreparedStatement 的 user_id 参数设为 NULL，避免匹配到 user_id = -1 的 AI 占位记录；2. 在 ClientHandler.cleanup() 及 RoomManager.leaveRoom() 中增强对 WAITING 房间的清理逻辑，防止房主断线或离开时残留幽灵房间导致持久化警告。 | 验证通过 |
 | 2026-07-11 21:20 | Contributor| feat(database): 修改 init.sql 中的数据库账号创建与授权配置 | 新增 'gomatch'@'%' 用户的创建与授权规则，保留 'gomatch'@'localhost' 规则，以便支持远程数据库客户端（如 DataGrip 等）及跨主机远程连接。 | 验证通过 |
