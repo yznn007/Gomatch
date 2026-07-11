@@ -15,6 +15,7 @@
 > FXML 布局、CSS 样式、动画特效、视觉组件
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
+| 2026-07-11 | Contributor| docs(config): 补充运行凭据优先级 | 明确系统环境变量、`.env` 与非敏感资源默认值的优先级，以及 `GOMATCH_ENV_FILE` 的定位规则。 |
 | 2026-07-11 | Contributor| feat(config): 统一运行时凭据为 `.env` 与环境变量 | MySQL、Redis 与 OSS 凭据不再提交到资源配置；系统环境变量优先于 `.env`，服务端启动校验必填 MySQL/Redis 配置。 |
 |------|------|----------|-----------|
 | 2026-07-11 13:42 | Contributor| refactor(database): 移除未接入的用户设置与音乐表业务 | 删除 `t_user_settings`、`t_user_music`、未接入设置/媒体协议及其 database 实体/仓储；云端配置继续使用 `t_user_profile.config_json`，头像 OSS 与审计日志保持不变。 |
