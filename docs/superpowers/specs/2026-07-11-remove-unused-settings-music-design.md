@@ -15,7 +15,7 @@
 - `sql/init.sql` 中 `t_user_settings` 与 `t_user_music` 的建表定义。
 - `database` 模块中两张表对应的实体、Repository 接口和 Repository 实现。
 - `docs/DB_DESIGN.md` 中与两张表有关的表说明、ER 图、流程图、索引说明和 SQL 副本。
-- `docs/DEV_LOG.md` 中本次收敛记录。
+- `docs/DEV_LOG.md` 中追加本次收敛记录；保留此前的历史日志。
 
 ## 数据与兼容性
 
@@ -23,6 +23,6 @@
 
 ## 验证标准
 
-1. 全仓库源代码、SQL 与维护文档不再包含两张表名及对应 Repository/实体名称。
+1. 源代码、初始化 SQL 与 `docs/DB_DESIGN.md` 不再包含两张表名及对应 Repository/实体名称；设计文档与开发日志中的历史记录除外。
 2. `database`、`server`、`client` Maven 模块能够编译。
 3. 现有 `t_user_profile` 配置同步相关代码与头像 OSS 代码仍保留。
