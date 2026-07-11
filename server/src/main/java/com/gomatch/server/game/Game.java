@@ -150,11 +150,6 @@ public class Game {
     public synchronized boolean undo() {
         log.debug("Attempting undo: moveCount={}, finished={}", moveCount, finished);
 
-        if (finished) {
-            log.warn("Undo rejected: game already finished");
-            return false;
-        }
-
         if (moveHistory.isEmpty()) {
             log.warn("Undo rejected: no moves to undo");
             return false;
@@ -164,6 +159,12 @@ public class Game {
         board[lastMove.x][lastMove.y] = EMPTY;
         moveCount--;
         currentPlayer = lastMove.color;
+        
+        if (finished) {
+            finished = false;
+            winner = EMPTY;
+            log.debug("Undo reset game state: finished=false, winner=EMPTY");
+        }
 
         log.info("Undo successful: removed move ({},{}) by player {}, moveCount={}",
                 lastMove.x, lastMove.y, lastMove.color == BLACK ? "BLACK" : "WHITE", moveCount);
