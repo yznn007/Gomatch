@@ -261,6 +261,7 @@ public class Room {
                 blackUserId = 0;
                 whiteUserId = 0;
                 gameStartTime = null;
+                resetReady();
             }
         } else if (removedFromObservers) {
             log.info("Observer {} left room {}: remaining observers {}",
@@ -818,7 +819,7 @@ public class Room {
         cancelTurnTimer();
         if (status != Status.PLAYING) return;
 
-        // AI 模式下只对人类玩家（黑方）计时，AI 几乎立即落子不需要计时
+        // AI 模式下只对人类玩家（黑方）计时，AI（白方）不需要计时
         if (aiMode && game.getCurrentPlayer() != Game.BLACK) return;
 
         long currentPlayerId = (game.getCurrentPlayer() == Game.BLACK) ? blackUserId : whiteUserId;
