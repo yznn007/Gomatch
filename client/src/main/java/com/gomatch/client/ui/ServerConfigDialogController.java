@@ -75,7 +75,7 @@ public class ServerConfigDialogController {
             try {
                 ClientMain.getConnector().connect(finalHost, finalPort);
                 javafx.application.Platform.runLater(() -> {
-                    statusLabel.setText(I18N.get("serverconfig.connectedWith", finalHost, finalPort));
+                    statusLabel.setText(I18N.get("serverconfig.connected"));
                     statusLabel.setStyle("-fx-text-fill: green;");
                     applyBtn.setDisable(false);
                 });
