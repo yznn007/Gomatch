@@ -6,16 +6,19 @@ import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 
 public class RegisterController implements NetworkListener {
     @FXML private TextField usernameField;
     @FXML private TextField emailField;
     @FXML private TextField phoneField;
-    @FXML private javafx.scene.control.Button btnCountryCode;
-    @FXML private javafx.scene.layout.VBox inlineCodeMenu;
+    @FXML private Button btnCountryCode;
+    @FXML private VBox inlineCodeMenu;
+    @FXML private VBox countryCodeCard;
     @FXML private PasswordField passwordField;
     @FXML private PasswordField confirmField;
     @FXML private Label errorLabel;
@@ -23,11 +26,7 @@ public class RegisterController implements NetworkListener {
     @FXML
     private void initialize() {
         hideInlineMenu();
-        usernameField.focusedProperty().addListener((obs, old, nv) -> { if (nv) hideInlineMenu(); });
-        emailField.focusedProperty().addListener((obs, old, nv) -> { if (nv) hideInlineMenu(); });
         phoneField.focusedProperty().addListener((obs, old, nv) -> { if (nv) hideInlineMenu(); });
-        passwordField.focusedProperty().addListener((obs, old, nv) -> { if (nv) hideInlineMenu(); });
-        confirmField.focusedProperty().addListener((obs, old, nv) -> { if (nv) hideInlineMenu(); });
     }
 
     @FXML
@@ -45,21 +44,25 @@ public class RegisterController implements NetworkListener {
 
     @FXML
     private void selectInlineCode(javafx.event.ActionEvent e) {
-        javafx.scene.control.Button btn = (javafx.scene.control.Button) e.getSource();
+        Button btn = (Button) e.getSource();
         btnCountryCode.setText(btn.getText() + " ▼");
         hideInlineMenu();
+    }
+
+    private String selectedCode() {
+        if (btnCountryCode == null) return "+86";
+        return btnCountryCode.getText().replace("▼", "").trim();
     }
 
     @FXML
     private void handleRegister() {
         String username = usernameField.getText().trim();
         String email = emailField.getText().trim();
-        String phone = PhoneInputValidator.toE164(selectedCode(), phoneField.getText());
         String password = passwordField.getText().trim();
         String confirm  = confirmField.getText().trim();
 
-        if (username.isEmpty() || password.isEmpty() || email.isEmpty() || phone.isEmpty()) {
-            errorLabel.setText("用户名、邮箱、手机号和密码不能为空");
+        if (username.isEmpty() || password.isEmpty() || email.isEmpty()) {
+            errorLabel.setText("用户名、邮箱和密码不能为空");
             return;
         }
         if (username.length() < 4 || username.length() > 16) {
@@ -70,10 +73,6 @@ public class RegisterController implements NetworkListener {
             errorLabel.setText("邮箱格式不正确");
             return;
         }
-        if (phone == null) {
-            errorLabel.setText("请选择国家区号后填写有效手机号");
-            return;
-        }
         if (password.length() < 6) {
             errorLabel.setText("密码长度需 ≥6 位");
             return;
@@ -82,25 +81,34 @@ public class RegisterController implements NetworkListener {
             errorLabel.setText("两次密码输入不一致");
             return;
         }
+
+        // 手机号为选填，若填写则校验格式
+        String rawPhone = phoneField.getText().trim();
+        String phone = null;
+        if (!rawPhone.isEmpty()) {
+            phone = PhoneInputValidator.toE164(selectedCode(), rawPhone);
+            if (phone == null) {
+                errorLabel.setText("手机号格式不正确");
+                return;
+            }
+        }
+
         try {
             if (!ClientMain.getConnector().isConnected()) {
                 ClientMain.getConnector().connect(AppConfig.SERVER_HOST, AppConfig.SERVER_PORT);
             }
             ClientMain.getConnector().addListener(this);
-            ClientMain.getConnector().send(Message.of(Protocol.REGISTER,
+            Message msg = Message.of(Protocol.REGISTER,
                     "username", username,
                     "password", password,
-                    "email", email,
-                    "phone", phone));
+                    "email", email);
+            if (phone != null) {
+                msg.getData().put("phone", phone);
+            }
+            ClientMain.getConnector().send(msg);
         } catch (Exception e) {
             errorLabel.setText("连接服务器失败: " + e.getMessage());
         }
-    }
-
-    private String selectedCode() {
-        if (btnCountryCode == null) return "+86";
-        String value = btnCountryCode.getText();
-        return value.replace("▼", "").trim();
     }
 
     @FXML
