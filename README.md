@@ -26,7 +26,7 @@
 | ----- | -------------- | -------------------------------------------- |
 | JDK   | 21 LTS（必须） | JavaFX 21 依赖，需配置`JAVA_HOME`          |
 | Maven | 3.9+           | 项目构建工具，需配置`PATH`                 |
-| MySQL | 8.x            | 数据库，账号：`gomatch`，密码：`gomatch` |
+| MySQL | 8.x            | 数据库运行凭据由根目录 `.env` 提供 |
 | Redis | 7.x（必须）    | 会话持久化、排行榜缓存、匹配队列             |
 
 ### 启动步骤
@@ -39,17 +39,17 @@ net start MySQL80
 # 终端 B - 启动 Redis
 redis-server
 
-# 2. 初始化数据库（首次运行或数据库结构变更后执行）
-# 账号：gomatch  密码：gomatch
+# 2. 复制 `.env.example` 为 `.env`，填写 MySQL、Redis 与可选 OSS 凭据。
+# 3. 初始化数据库（首次运行或数据库结构变更后执行）
 mysql -u root -p < sql/init.sql
 
-# 3. 安装 common 到本地 Maven 仓库（首次或 common 变更后必须执行）
+# 4. 安装 common 到本地 Maven 仓库（首次或 common 变更后必须执行）
 mvn install -pl common -am
 
-# 4. 启动服务端（先启动，可按成员选择对应脚本）
+# 5. 启动服务端（先启动，可按成员选择对应脚本）
 .\scripts\ssc_server.ps1
 
-# 5. 启动客户端（后启动，可按成员选择对应脚本）
+# 6. 启动客户端（后启动，可按成员选择对应脚本）
 .\scripts\ssc_client.ps1
 ```
 
@@ -125,6 +125,6 @@ mvn -f client/pom.xml javafx:run
 1. **JDK 21**：JavaFX 21 依赖 JDK 17+，项目强制使用 JDK 21，启动脚本已内置 `JAVA_HOME` 检测。
 2. **首次运行**：必须先执行 `mvn install -pl common -am` 和 `mysql -u root -p < sql/init.sql`。
 3. **启动顺序**：MySQL → Redis → 初始化数据库 → 服务端 → 客户端，缺一不可。
-4. **数据库**：账号 `gomatch` / 密码 `gomatch`，配置位于 `database/src/main/resources/database.properties`。
+4. **运行凭据**：将 `.env.example` 复制为 `.env`，填写 MySQL、Redis 与可选 OSS 变量；`.env` 不会提交到仓库，进程环境变量可覆盖它。
 5. **端口**：服务端 TCP 8888、MySQL 3306、Redis 6379，确保未被占用。
 

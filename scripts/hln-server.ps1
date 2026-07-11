@@ -1,3 +1,9 @@
+$ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+Set-Location $ProjectRoot
+if (-not (Test-Path (Join-Path $ProjectRoot ".env"))) {
+    Write-Host "[ERROR] Missing .env. Copy .env.example to .env and configure runtime credentials." -ForegroundColor Red
+    exit 1
+}
 # Auto-detect JDK 21+
 $JDKCandidates = @(
     "$env:JAVA_HOME",

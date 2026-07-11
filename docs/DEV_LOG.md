@@ -15,6 +15,7 @@
 > FXML 布局、CSS 样式、动画特效、视觉组件
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
+| 2026-07-11 | Contributor| feat(config): 统一运行时凭据为 `.env` 与环境变量 | MySQL、Redis 与 OSS 凭据不再提交到资源配置；系统环境变量优先于 `.env`，服务端启动校验必填 MySQL/Redis 配置。 |
 |------|------|----------|-----------|
 | 2026-07-11 13:42 | Contributor| refactor(database): 移除未接入的用户设置与音乐表业务 | 删除 `t_user_settings`、`t_user_music`、未接入设置/媒体协议及其 database 实体/仓储；云端配置继续使用 `t_user_profile.config_json`，头像 OSS 与审计日志保持不变。 |
 | 2026-07-11 03:54 | Contributor| style(client): 将登录和注册界面的手机号码前缀与输入框合并到同一行，只留前缀代码并实现登录切换栏 | 1. **LoginUI/RegisterUI.fxml**：合并国家区号 ComboBox 和输入框至同一行，并缩窄宽度至 65px；2. **Login/RegisterController**：区号项移除中文仅留 +86 等代码；3. **LoginUI.fxml / LoginController**：在登录标题下加入“账号登录/手机号登录”的极简 HBox 切换栏，切至手机号时展开区号下拉框并改变占位符为“手机号”，切至账号时隐藏区号，并支持在记住密码时根据账号类型自动切换 Tab 加载；4. **style.css**：为登录切换栏定制极简双主题底划线样式；5. **RegisterUI.fxml**：手机号默认文字简化为“手机号”，并移动行位置。 |
