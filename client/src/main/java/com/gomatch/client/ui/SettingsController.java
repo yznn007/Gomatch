@@ -86,10 +86,6 @@ public class SettingsController {
     private boolean initializing;
     private boolean audioConfigSyncSuppressed;
 
-    // 后台静音：记住音乐启用状态，用于恢复
-    private boolean wasGlobalMusicEnabled;
-    private boolean wasBgMusicEnabled;
-
     /** 填充所有 ComboBox 的可选项（i18n） */
     private void populateComboBoxItems() {
         // 帧率
@@ -164,7 +160,6 @@ public class SettingsController {
 
         // 后台静音
         muteOnBgCheckBox.setSelected(s.muteOnBackground);
-        setupMuteOnBackground();
 
         // UI 风格
         // 根据保存的 fontFamily key 设置当前显示值
@@ -306,36 +301,7 @@ public class SettingsController {
         updatePlayOrderButtonText();
     }
 
-    /** 后台静音：窗口失焦时暂停音乐，获焦时恢复 */
-    private void setupMuteOnBackground() {
-        Stage stage = ScreenManager.getStage();
-        if (stage == null) return;
 
-        stage.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-            if (!muteOnBgCheckBox.isSelected()) return;
-
-            if (!isNowFocused) {
-                // 窗口失焦：记住当前音乐状态，然后暂停
-                wasGlobalMusicEnabled = globalMusicCheckBox.isSelected();
-                wasBgMusicEnabled = backgroundMusicCheckBox.isSelected();
-                setAudioEnabled(globalMusicCheckBox, false);
-                setAudioEnabled(backgroundMusicCheckBox, false);
-            } else {
-                // 窗口获焦：恢复之前的音乐状态
-                setAudioEnabled(globalMusicCheckBox, wasGlobalMusicEnabled);
-                setAudioEnabled(backgroundMusicCheckBox, wasBgMusicEnabled);
-            }
-        });
-    }
-
-    private void setAudioEnabled(CheckBox toggle, boolean enabled) {
-        audioConfigSyncSuppressed = true;
-        try {
-            toggle.setSelected(enabled);
-        } finally {
-            audioConfigSyncSuppressed = false;
-        }
-    }
     public void setCurrentUser(User user) {
         this.currentUser = user;
     }
@@ -463,13 +429,12 @@ public class SettingsController {
         UserSettings.get().muteOnBackground = enabled;
         UserSettings.save();
 
-        // 如果取消了后台静音，立即恢复音乐（如果之前因失焦被暂停）
         if (!enabled) {
+            BackgroundMusicManager.setMutedByBackground(false);
+        } else {
             Stage stage = ScreenManager.getStage();
             if (stage != null && !stage.isFocused()) {
-                // 窗口仍在后台但用户取消了静音，恢复之前状态
-                setAudioEnabled(globalMusicCheckBox, wasGlobalMusicEnabled);
-                setAudioEnabled(backgroundMusicCheckBox, wasBgMusicEnabled);
+                BackgroundMusicManager.setMutedByBackground(true);
             }
         }
     }

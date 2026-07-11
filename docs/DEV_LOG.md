@@ -15,6 +15,7 @@
 > FXML 布局、CSS 样式、动画特效、视觉组件
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
+| 2026-07-11 22:45 | Contributor| fix(client): 修复应用在后台时静音失效与内存泄漏的 Bug | 将失焦静音监听器重构为 ScreenManager 下的全局 Application 级事件，通过 BackgroundMusicManager.setMutedByBackground 属性独立控制静音状态；删除 SettingsController 中的旧局部监听器及 checkbox 状态强改逻辑，彻底杜绝 SettingsController 实例多次被 Stage 持有造成的内存泄漏与状态覆盖行为。 | 验证通过 |
 | 2026-07-11 22:00 | Contributor| fix(server): PR code review 修复——消除 OSS 重复代码、修复 leaveRoom 通知顺序 Bug、消除 TOCTOU 竞态 | 1. **ClientHandler**：提取 `generateAvatarUrl(String)` 统一处理 OSS 判断与 try-catch，消除 4 处内联三元重复；2. **RoomManager.leaveRoom**：修复先 `room.leave()` 再判断通知名单的顺序 Bug，补全观战者通知与引用清理，移除危险的 `.clear()` 调用；3. **Room / ClientHandler.cleanup()**：新增 `cleanupDisconnect` 同步方法，将 WAITING / 非 WAITING 状态判断原子化到 Room 锁内，消除 TOCTOU；4. **init.sql**：补充生产环境安全警告注释；5. **AsciiTextCanvas**：补充 D3D 管线 NPE 修复说明注释 |
 | 2026-07-11 | Contributor| fix(auth): 修复旧密码改密兼容 | 旧明文密码账户改密时使用兼容校验，成功后统一写入 BCrypt 哈希；新增旧密码与 BCrypt 密码匹配回归测试。 |
 | 2026-07-11 | Contributor| fix(build): 取消 Maven forked javac 编译 | Windows 下 forked javac 无法访问 common 模块的 classpath，导致客户端误报 `com.gomatch.common` 缺失；统一改用 Maven 进程内编译。 |

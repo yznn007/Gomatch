@@ -78,6 +78,17 @@ public class ScreenManager {
                 stage.toFront();
             }
         });
+
+        // 核心功能：监听窗口焦点，在后台时根据用户设置静音/恢复音乐，解决页面切换及内存泄漏导致的逻辑错乱
+        stage.focusedProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                com.gomatch.client.audio.BackgroundMusicManager.setMutedByBackground(false);
+            } else {
+                if (com.gomatch.client.UserSettings.get().muteOnBackground) {
+                    com.gomatch.client.audio.BackgroundMusicManager.setMutedByBackground(true);
+                }
+            }
+        });
     }
 
     public static <T> T switchTo(String fxmlPath) {
