@@ -24,12 +24,12 @@ public class StorageManager {
     public void initialize(Properties config) {
         String endpoint = config.getProperty("oss.endpoint");
         String bucket = config.getProperty("oss.bucket");
-        String accessKeyId = resolveProperty(config, "oss.access-key-id");
-        String accessKeySecret = resolveProperty(config, "oss.access-key-secret");
+        String accessKeyId = config.getProperty("oss.access-key-id");
+        String accessKeySecret = config.getProperty("oss.access-key-secret");
         long avatarMaxSize = Long.parseLong(config.getProperty("oss.avatar-max-size", "2097152"));
         long musicMaxSize = Long.parseLong(config.getProperty("oss.music-max-size", "10485760"));
 
-        if (endpoint != null && bucket != null && accessKeyId != null && accessKeySecret != null) {
+        if (isConfigured(endpoint) && isConfigured(bucket) && isConfigured(accessKeyId) && isConfigured(accessKeySecret)) {
             ossService = new OssService(endpoint, bucket, accessKeyId, accessKeySecret, avatarMaxSize, musicMaxSize);
             enabled = true;
             logger.info("StorageManager initialized with OSS endpoint: {}", endpoint);
@@ -39,20 +39,9 @@ public class StorageManager {
         }
     }
 
-    private String resolveProperty(Properties config, String key) {
-        String value = config.getProperty(key);
-        if (value != null && value.startsWith("${") && value.endsWith("}")) {
-            String envKey = value.substring(2, value.length() - 1);
-            String envValue = System.getenv(envKey);
-            if (envValue != null) {
-                return envValue;
-            }
-            logger.warn("Environment variable {} not found", envKey);
-            return null;
-        }
-        return value;
+    private boolean isConfigured(String value) {
+        return value != null && !value.isBlank() && !value.startsWith("${");
     }
-
     public OssService getOssService() {
         return ossService;
     }
