@@ -35,8 +35,8 @@
                     <VBox fx:id="playersPane" spacing="16" alignment="TOP_CENTER" maxWidth="560" prefWidth="560" style="-fx-background-color: transparent; -fx-padding: 0 16 0 0;">
                         <Label text="%room.currentPlayers" styleClass="section-label" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 0 0 10 0;"/>
                         <ListView fx:id="playerList" prefHeight="240" minHeight="200" styleClass="list-view"/>
-                        <HBox alignment="CENTER" style="-fx-padding: 10 0 0 0;">
-                            <Button text="%room.startGame" fx:id="startBtn" onAction="#handleStart" visible="false" styleClass="btn-primary" prefWidth="160" prefHeight="36"/>
+                        <HBox alignment="CENTER" spacing="12" style="-fx-padding: 10 0 0 0;">
+                            <Button text="%room.ready" fx:id="readyBtn" onAction="#handleReady" visible="false" styleClass="btn-primary" prefWidth="160" prefHeight="36"/>
                         </HBox>
                     </VBox>
 
@@ -46,7 +46,7 @@
                         <TextArea fx:id="chatArea" editable="false" prefHeight="200" styleClass="chat-area"/>
                         <HBox spacing="8" alignment="CENTER_LEFT" prefWidth="560">
                             <TextField fx:id="chatInput" promptText="%room.chatInput" HBox.hgrow="ALWAYS" styleClass="field"/>
-                            <Button text="%room.send" onAction="#handleSendChat" styleClass="btn-primary" prefWidth="80"/>
+                            <Button text="%room.send" onAction="#handleSendChat" styleClass="btn-primary" prefWidth="100"/>
                         </HBox>
                     </VBox>
                     
