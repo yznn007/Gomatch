@@ -83,6 +83,10 @@ public class BoardController implements NetworkListener {
     private Stage gameOverDialogStage;   // 游戏结束弹窗引用，用于再来一局时关闭
     private boolean pendingRequest = false; // 是否有待处理的悔棋/求和请求
     private Stage pendingRequestStage; // 等待对方回复的弹窗引用
+    private int localUndoCount = 0;
+    private int localDrawCount = 0;
+    private static final int MAX_UNDO_COUNT = 3;
+    private static final int MAX_DRAW_COUNT = 1;
     private int cellSize; // 动态计算
     private final List<int[]> moveHistory = new ArrayList<>();
     private final List<int[]> replayMoveList = new ArrayList<>();
@@ -1042,8 +1046,12 @@ public class BoardController implements NetworkListener {
     }
 
     private void startCountdown() {
+        startCountdown(AppConfig.TURN_TIME_LIMIT);
+    }
+
+    private void startCountdown(int initialSeconds) {
         stopCountdown();
-        remainingSeconds = AppConfig.TURN_TIME_LIMIT;
+        remainingSeconds = Math.max(0, initialSeconds);
         updateTimerLabel();
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             remainingSeconds--;
@@ -1052,7 +1060,7 @@ public class BoardController implements NetworkListener {
                 stopCountdown();
             }
         }));
-        countdownTimeline.setCycleCount(AppConfig.TURN_TIME_LIMIT);
+        countdownTimeline.setCycleCount(remainingSeconds);
         countdownTimeline.play();
     }
 
@@ -1093,6 +1101,12 @@ public class BoardController implements NetworkListener {
     @FXML
     private void handleUndo() {
         if (pendingRequest) return;
+
+        if (localUndoCount >= MAX_UNDO_COUNT) {
+            showLimitAlert("悔棋", "本局悔棋次数已达上限，不能再次悔棋。");
+            return;
+        }
+
         stopCountdown();
         ClientMain.getConnector().send(Protocol.REQUEST_UNDO);
         pendingRequest = true;
@@ -1102,6 +1116,12 @@ public class BoardController implements NetworkListener {
     @FXML
     private void handleDraw() {
         if (pendingRequest) return;
+
+        if (localDrawCount >= MAX_DRAW_COUNT) {
+            showLimitAlert("求和", "本局求和次数已达上限，不能再次求和。");
+            return;
+        }
+
         stopCountdown();
         ClientMain.getConnector().send(Protocol.REQUEST_DRAW);
         pendingRequest = true;
@@ -1231,6 +1251,40 @@ public class BoardController implements NetworkListener {
         }
         pendingRequest = false;
         updateActionButtons();
+    }
+
+    private void showLimitAlert(String title, String message) {
+        javafx.scene.layout.VBox layout = new javafx.scene.layout.VBox(15);
+        layout.setAlignment(javafx.geometry.Pos.CENTER);
+        layout.setPadding(new javafx.geometry.Insets(30));
+        layout.setStyle("-fx-background-color: " + ScreenManager.themeColor("rgba(255,255,255,0.96)", "rgba(10,15,28,0.96)") + "; -fx-border-radius: 12px; -fx-background-radius: 12px;");
+
+        javafx.scene.control.Label titleLabel = new javafx.scene.control.Label(title);
+        titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
+
+        javafx.scene.control.Label messageLabel = new javafx.scene.control.Label(message);
+        messageLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
+
+        javafx.scene.control.Button okBtn = new javafx.scene.control.Button("确定");
+        okBtn.setStyle("-fx-background-color: " + ScreenManager.themeColor("#3b82f6", "#60a5fa") + "; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 8px 24px; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+
+        layout.getChildren().addAll(titleLabel, messageLabel, okBtn);
+
+        Stage dialog = new Stage();
+        dialog.setTitle(title);
+        dialog.initOwner(ScreenManager.getStage());
+        dialog.initModality(javafx.stage.Modality.WINDOW_MODAL);
+        dialog.initStyle(javafx.stage.StageStyle.TRANSPARENT);
+
+        javafx.scene.Scene scene = new javafx.scene.Scene(layout);
+        scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+        ScreenManager.applyStylesheetPublic(scene);
+        ScreenManager.applyDialogTheme(scene);
+        dialog.setScene(scene);
+        dialog.setResizable(false);
+
+        okBtn.setOnAction(e -> dialog.close());
+        dialog.show();
     }
 
     @FXML
@@ -1369,7 +1423,8 @@ public class BoardController implements NetworkListener {
             updatePlayerAvatar(blackAvatarPane, blackAvatarText, blackAvatarImageView, bAvatar, true);
             updatePlayerAvatar(whiteAvatarPane, whiteAvatarText, whiteAvatarImageView, wAvatar, false);
             redrawAll();
-            startCountdown();
+            int remaining = msg.has("remainingSeconds") ? msg.getInt("remainingSeconds") : AppConfig.TURN_TIME_LIMIT;
+            startCountdown(remaining);
         } else if (Protocol.MOVE_SYNC.equals(cmd)) {
             int x     = msg.getInt("x");
             int y     = msg.getInt("y");
@@ -1381,7 +1436,9 @@ public class BoardController implements NetworkListener {
                      (myColor.equals("white") && currentTurn == 2);
             updateTurnLabel();
             updateActionButtons();
-            startCountdown();
+        } else if (Protocol.TIME_SYNC.equals(cmd)) {
+            int remaining = msg.getInt("remainingSeconds");
+            startCountdown(remaining);
         } else if (Protocol.GAME_OVER.equals(cmd)) {
             gameOver = true;
             myTurn = false;
@@ -1482,7 +1539,6 @@ public class BoardController implements NetworkListener {
             alert.setContentText("是否同意悔棋？");
             ScreenManager.showStyledAlert(alert).ifPresent(response -> {
                 if (response == ButtonType.OK) {
-                    startCountdown();
                     ClientMain.getConnector().send(Message.of(Protocol.REPLY_UNDO, "accept", true));
                 } else {
                     resumeCountdown();
@@ -1511,7 +1567,6 @@ public class BoardController implements NetworkListener {
                 updateActionButtons();
                 redrawAll();
             }
-            startCountdown();
             chatArea.appendText("[系统] 悔棋成功\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
         } else if ("UNDO_REJECTED".equals(cmd)) {
@@ -1541,10 +1596,20 @@ public class BoardController implements NetworkListener {
                 }
             });
         } else if ("DRAW_REJECTED".equals(cmd)) {
+            localDrawCount++;
             closePendingRequestDialog();
             resumeCountdown();
             chatArea.appendText("[系统] 对手拒绝求和\n");
             chatArea.setScrollTop(Double.MAX_VALUE);
+        } else if (Protocol.ERROR.equals(cmd)) {
+            String errorMsg = msg.getString("msg");
+            if ("undo_limit_exceeded".equals(errorMsg)) {
+                localUndoCount = MAX_UNDO_COUNT;
+                showLimitAlert("悔棋", "本局悔棋次数已达上限，不能再次悔棋。");
+            } else if ("draw_limit_exceeded".equals(errorMsg)) {
+                localDrawCount = MAX_DRAW_COUNT;
+                showLimitAlert("求和", "本局求和次数已达上限，不能再次求和。");
+            }
         } else if (Protocol.REMATCH_REQUESTED.equals(cmd)) {
             // 收到对手的再来一局请求
             String requesterName = msg.getString("requesterName");

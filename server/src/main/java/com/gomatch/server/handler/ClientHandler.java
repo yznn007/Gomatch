@@ -1064,6 +1064,10 @@ public class ClientHandler implements Runnable {
                     "color", String.valueOf(mr.color)));
         }
 
+          send(Message.of(Protocol.TIME_SYNC,
+                "remainingSeconds", room.getRemainingSeconds(),
+                "currentPlayer", room.getGame().getCurrentPlayer()));
+
         log.info("玩家 {} 开始观战房间 {} (已回放 {} 步)", userId, roomId, room.getGame().getMoveHistory().size());
     }
 
@@ -1285,7 +1289,12 @@ public class ClientHandler implements Runnable {
                     "requesterName", getUsername()));
             log.info("玩家 {} 请求悔棋", userId);
         } else {
-            send(Message.of(Protocol.ERROR, "msg", "无法请求悔棋"));
+            int undoCount = currentRoom.getUndoCount(userId);
+            if (undoCount >= 3) {
+                send(Message.of(Protocol.ERROR, "msg", "undo_limit_exceeded"));
+            } else {
+                send(Message.of(Protocol.ERROR, "msg", "无法请求悔棋"));
+            }
         }
     }
 
@@ -1344,7 +1353,12 @@ public class ClientHandler implements Runnable {
                     "requesterName", getUsername()));
             log.info("玩家 {} 请求求和", userId);
         } else {
-            send(Message.of(Protocol.ERROR, "msg", "无法请求求和"));
+            int drawCount = currentRoom.getDrawCount(userId);
+            if (drawCount >= 1) {
+                send(Message.of(Protocol.ERROR, "msg", "draw_limit_exceeded"));
+            } else {
+                send(Message.of(Protocol.ERROR, "msg", "无法请求求和"));
+            }
         }
     }
 

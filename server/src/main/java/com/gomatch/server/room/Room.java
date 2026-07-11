@@ -67,6 +67,11 @@ public class Room {
     private Long pendingUndoActionId;
     private Long pendingDrawActionId;
 
+    private final Map<Long, Integer> playerUndoCounts = new HashMap<>();
+    private final Map<Long, Integer> playerDrawCounts = new HashMap<>();
+    private static final int MAX_UNDO_PER_PLAYER = 3;
+    private static final int MAX_DRAW_PER_PLAYER = 1;
+
     private boolean aiMode;
     private AIPlayer aiPlayer;
     private AIPlayer.Difficulty aiDifficulty = AIPlayer.Difficulty.MEDIUM;
@@ -88,6 +93,7 @@ public class Room {
                 return t;
             });
     private ScheduledFuture<?> turnTimerFuture;
+    private long turnStartTime;
 
     private static final RecordDAO recordDAO = new RecordDAO();
     private static final UserDAO userDAO = new UserDAO();
@@ -844,8 +850,13 @@ public class Room {
         // AI 模式下只对人类玩家（黑方）计时，AI（白方）不需要计时
         if (aiMode && game.getCurrentPlayer() != Game.BLACK) return;
 
+        turnStartTime = System.currentTimeMillis();
         long currentPlayerId = (game.getCurrentPlayer() == Game.BLACK) ? blackUserId : whiteUserId;
         log.debug("Starting turn timer for room {}: currentPlayer={}, timeout={}s", roomId, currentPlayerId, TURN_TIMEOUT_SECONDS);
+
+        broadcastAll(Message.of(Protocol.TIME_SYNC,
+                "remainingSeconds", TURN_TIMEOUT_SECONDS,
+                "currentPlayer", game.getCurrentPlayer()));
 
         turnTimerFuture = turnTimerPool.schedule(() -> {
             synchronized (Room.this) {
@@ -865,6 +876,15 @@ public class Room {
             turnTimerFuture = null;
             log.debug("Turn timer cancelled for room {}", roomId);
         }
+    }
+
+    public synchronized int getRemainingSeconds() {
+        if (status != Status.PLAYING || turnStartTime == 0) {
+            return TURN_TIMEOUT_SECONDS;
+        }
+        long elapsed = System.currentTimeMillis() - turnStartTime;
+        int remaining = TURN_TIMEOUT_SECONDS - (int) (elapsed / 1000);
+        return Math.max(0, remaining);
     }
 
     public synchronized boolean requestUndo(long requesterId) {
@@ -897,6 +917,13 @@ public class Room {
             return false;
         }
 
+        int undoCount = playerUndoCounts.getOrDefault(requesterId, 0);
+        if (undoCount >= MAX_UNDO_PER_PLAYER) {
+            log.warn("requestUndo rejected: player {} has exceeded max undo count ({})", requesterId, MAX_UNDO_PER_PLAYER);
+            return false;
+        }
+
+        playerUndoCounts.put(requesterId, undoCount + 1);
         undoRequesterId = requesterId;
         pendingUndoActionId = gameActionDAO.recordAction(currentRecordId > 0 ? currentRecordId : null, requesterId, "undo", game.getMoveCount());
         log.info("Undo requested by {} in room {}, actionId={}", requesterId, roomId, pendingUndoActionId);
@@ -964,6 +991,13 @@ public class Room {
             return false;
         }
 
+        int drawCount = playerDrawCounts.getOrDefault(requesterId, 0);
+        if (drawCount >= MAX_DRAW_PER_PLAYER) {
+            log.warn("requestDraw rejected: player {} has exceeded max draw count ({})", requesterId, MAX_DRAW_PER_PLAYER);
+            return false;
+        }
+
+        playerDrawCounts.put(requesterId, drawCount + 1);
         drawRequesterId = requesterId;
         pendingDrawActionId = gameActionDAO.recordAction(currentRecordId > 0 ? currentRecordId : null, requesterId, "draw", game.getMoveCount());
         log.info("Draw requested by {} in room {}, actionId={}", requesterId, roomId, pendingDrawActionId);
@@ -1006,6 +1040,14 @@ public class Room {
             pendingDrawActionId = null;
             return true;
         }
+    }
+
+    public synchronized int getUndoCount(long playerId) {
+        return playerUndoCounts.getOrDefault(playerId, 0);
+    }
+
+    public synchronized int getDrawCount(long playerId) {
+        return playerDrawCounts.getOrDefault(playerId, 0);
     }
 
     // ==================== 再来一局 ====================
@@ -1402,7 +1444,8 @@ public class Room {
                 "whiteUserId", whiteUserId,
                 "whiteUsername", whiteUsername != null ? whiteUsername : String.valueOf(whiteUserId),
                 "whiteScore", whiteScore,
-                "whiteAvatarUrl", whiteAvatarUrl != null ? whiteAvatarUrl : "");
+                "whiteAvatarUrl", whiteAvatarUrl != null ? whiteAvatarUrl : "",
+                "remainingSeconds", getRemainingSeconds());
     }
 
     public static List<String[]> getRoomListInfo(Map<String, Room> rooms) {
