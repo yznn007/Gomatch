@@ -53,17 +53,6 @@ mvn install -pl common -am
 .\scripts\ssc_client.ps1
 ```
 
-## 运行凭据优先级
-
-服务端按以下优先级解析 MySQL、Redis 和 OSS 的运行配置：
-
-1. **系统环境变量**（最高优先级）
-2. 项目根目录 `.env` 文件
-3. `database.properties` 中的非敏感默认配置（最低优先级）
-
-只有非空的环境变量或 `.env` 值才会覆盖较低层配置。`GOMATCH_DB_URL`、`GOMATCH_DB_USERNAME`、`GOMATCH_DB_PASSWORD`、`GOMATCH_REDIS_HOST`、`GOMATCH_REDIS_PORT`、`GOMATCH_REDIS_PASSWORD` 为必填项；缺失时服务端会报出变量名并停止启动，不会回退到提交的账号或密码。
-
-默认读取项目根目录的 `.env`。如需使用其他位置的配置文件，可通过系统环境变量 `GOMATCH_ENV_FILE` 指向该文件；`GOMATCH_ENV_FILE` 本身不从 `.env` 读取。
 ## 默认测试数据
 
 `sql/init.sql` 's seed password is injected from local `.env`; the repository does not expose seed-account email addresses or passwords.
@@ -136,6 +125,6 @@ mvn -f client/pom.xml javafx:run
 1. **JDK 21**：JavaFX 21 依赖 JDK 17+，项目强制使用 JDK 21，启动脚本已内置 `JAVA_HOME` 检测。
 2. **首次运行**：必须先执行 `mvn install -pl common -am` 和 `mysql -u root -p < sql/init.sql`。
 3. **启动顺序**：MySQL → Redis → 初始化数据库 → 服务端 → 客户端，缺一不可。
-4. **运行凭据**：将 `.env.example` 复制为 `.env`，填写 MySQL、Redis 与可选 OSS 变量；`.env` 不会提交到仓库，进程环境变量可覆盖它。
+4. **运行凭据**：将 `.env.example` 复制为 `.env`，填写 MySQL、Redis 与可选 OSS 变量；优先级为系统环境变量 → `.env` → `database.properties` 中的非敏感默认值。空值不会覆盖较低层；MySQL 与 Redis 的必填变量缺失时服务端停止启动。默认从项目根目录读取 `.env`，可用系统环境变量 `GOMATCH_ENV_FILE` 指定其他文件。
 5. **端口**：服务端 TCP 8888、MySQL 3306、Redis 6379，确保未被占用。
 
