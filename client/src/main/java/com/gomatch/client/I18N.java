@@ -48,6 +48,16 @@ public final class I18N {
         }
     }
 
+    /** 获取翻译文本并格式化（支持 %s / %d 等占位符） */
+    public static String get(String key, Object... args) {
+        String pattern = get(key);
+        try {
+            return String.format(pattern, args);
+        } catch (Exception e) {
+            return pattern;
+        }
+    }
+
     public static boolean isEnglish() {
         return currentLocale.equals(Locale.ENGLISH);
     }

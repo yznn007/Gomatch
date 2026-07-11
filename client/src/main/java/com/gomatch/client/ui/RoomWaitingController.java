@@ -1,6 +1,7 @@
 package com.gomatch.client.ui;
 
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.model.RoomInfo;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
@@ -127,9 +128,9 @@ public class RoomWaitingController implements NetworkListener {
     @FXML
     private void handleReady() {
         if (previewMode) {
-            players.add("玩家C（bot）");
+            players.add(I18N.get("common.playerBot"));
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-            ctrl.setGameInfo(currentUser.getUsername(), "玩家C（bot）", currentUser.getUsername());
+            ctrl.setGameInfo(currentUser.getUsername(), I18N.get("common.playerBot"), currentUser.getUsername());
             ctrl.setPreviewMode(true);
             return;
         }
@@ -163,14 +164,16 @@ public class RoomWaitingController implements NetworkListener {
 
     private void updateReadyStatusLabel() {
         if (players.size() < 2) {
-            statusLabel.setText("等待其他玩家加入...");
+            statusLabel.setText(I18N.get("roomwaiting.waitingForPlayers"));
             return;
         }
-        String blackName = players.size() > 0 ? players.get(0) : "黑方";
-        String whiteName = players.size() > 1 ? players.get(1) : "白方";
+        String blackLabel = I18N.get("roomwaiting.black");
+        String whiteLabel = I18N.get("roomwaiting.white");
+        String blackName = players.size() > 0 ? players.get(0) : blackLabel;
+        String whiteName = players.size() > 1 ? players.get(1) : whiteLabel;
         String blackStatus = blackReady ? "✓" : "⏳";
         String whiteStatus = whiteReady ? "✓" : "⏳";
-        statusLabel.setText(String.format("黑方 %s %s  |  白方 %s %s", blackName, blackStatus, whiteName, whiteStatus));
+        statusLabel.setText(String.format("%s %s %s  |  %s %s %s", blackLabel, blackName, blackStatus, whiteLabel, whiteName, whiteStatus));
     }
 
     @FXML
@@ -272,15 +275,15 @@ public class RoomWaitingController implements NetworkListener {
             String wAvatar = msg.has("whiteAvatarUrl") ? msg.getString("whiteAvatarUrl") : "";
             ctrl.setPlayerAvatars(bAvatar, wAvatar);
         } else if ("UNDO_REQUESTED".equals(cmd)) {
-            statusLabel.setText("玩家 " + msg.getString("requesterName") + " 请求悔棋");
+            statusLabel.setText(I18N.get("roomwaiting.undoRequested", msg.getString("requesterName")));
         } else if ("UNDO_ACCEPTED".equals(cmd)) {
-            statusLabel.setText("对手同意悔棋");
+            statusLabel.setText(I18N.get("roomwaiting.undoAccepted"));
         } else if ("UNDO_REJECTED".equals(cmd)) {
-            statusLabel.setText("对手拒绝悔棋");
+            statusLabel.setText(I18N.get("roomwaiting.undoRejected"));
         } else if ("DRAW_REQUESTED".equals(cmd)) {
-            statusLabel.setText("玩家 " + msg.getString("requesterName") + " 请求求和");
+            statusLabel.setText(I18N.get("roomwaiting.drawRequested", msg.getString("requesterName")));
         } else if ("DRAW_REJECTED".equals(cmd)) {
-            statusLabel.setText("对手拒绝求和");
+            statusLabel.setText(I18N.get("roomwaiting.drawRejected"));
         }
     }
 }

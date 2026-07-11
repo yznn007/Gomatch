@@ -3,6 +3,7 @@ package com.gomatch.client.ui;
 import java.util.ArrayList;
 
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.model.User;
 import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
@@ -82,13 +83,13 @@ public class LobbyController extends AutoCleanupController {
 
                 Label nameLabel = new Label(item.username);
                 nameLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
-                Label rankLabel = new Label("第 " + item.rank + " 名");
+                Label rankLabel = new Label(I18N.get("lobby.rankNo", item.rank));
                 rankLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#94a3b8") + ";");
                 info.getChildren().addAll(nameLabel, rankLabel);
                 row.getChildren().add(info);
 
                 // 右侧：分数
-                Label scoreLabel = new Label(item.score + " 分");
+                Label scoreLabel = new Label(item.score + " " + I18N.get("lobby.scoreUnit"));
                 scoreLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + ScreenManager.themeColor("#0ea5e9", "#38bdf8") + ";");
                 row.getChildren().add(scoreLabel);
 
@@ -98,9 +99,9 @@ public class LobbyController extends AutoCleanupController {
         registerListener();
         if (!ClientMain.getConnector().isConnected()) {
             drawerRanks.addAll(
-                new RankItem(1, "棋圣", 1500, ""),
-                new RankItem(2, "高手如云", 1350, ""),
-                new RankItem(3, "五子连珠", 1200, "")
+                new RankItem(1, I18N.get("lobby.preview.rank1"), 1500, ""),
+                new RankItem(2, I18N.get("lobby.preview.rank2"), 1350, ""),
+                new RankItem(3, I18N.get("lobby.preview.rank3"), 1200, "")
             );
         } else {
             ClientMain.getConnector().send(Protocol.RANKING);
@@ -194,9 +195,9 @@ public class LobbyController extends AutoCleanupController {
         String name = user.getUsername();
         userInfoLabel.setText(name);
         if (user.getScore() > 0) {
-            userScoreLabel.setText(user.getScore() + " 分");
+            userScoreLabel.setText(user.getScore() + " " + I18N.get("lobby.scoreUnit"));
         } else {
-            userScoreLabel.setText("未定级");
+            userScoreLabel.setText(I18N.get("lobby.unranked"));
         }
 
         String avatarUrl = user.getAvatar();
@@ -367,9 +368,9 @@ public class LobbyController extends AutoCleanupController {
                 currentUser.setRank(msg.getInt("rank"));
                 Platform.runLater(() -> {
                     if (currentUser.getScore() > 0) {
-                        userScoreLabel.setText(currentUser.getScore() + " 分");
+                        userScoreLabel.setText(currentUser.getScore() + " " + I18N.get("lobby.scoreUnit"));
                     } else {
-                        userScoreLabel.setText("未定级");
+                        userScoreLabel.setText(I18N.get("lobby.unranked"));
                     }
                 });
             }

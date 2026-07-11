@@ -1,6 +1,7 @@
 package com.gomatch.client.ui;
 
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
@@ -35,23 +36,23 @@ public class RankedLobbyController implements NetworkListener {
         this.currentUser = user;
         int score = user.getScore();
         String tier;
-        if (score <= 0)        tier = "未定级";
-        else if (score < 1100) tier = "青铜 " + score;
-        else if (score < 1300) tier = "白银 " + score;
-        else if (score < 1500) tier = "黄金 " + score;
-        else if (score < 1800) tier = "铂金 " + score;
-        else if (score < 2100) tier = "钻石 " + score;
-        else                   tier = "王者 " + score;
-        rankLabel.setText("当前段位: " + tier);
+        if (score <= 0)        tier = I18N.get("ranked.unranked");
+        else if (score < 1100) tier = I18N.get("ranked.bronze") + " " + score;
+        else if (score < 1300) tier = I18N.get("ranked.silver") + " " + score;
+        else if (score < 1500) tier = I18N.get("ranked.gold") + " " + score;
+        else if (score < 1800) tier = I18N.get("ranked.platinum") + " " + score;
+        else if (score < 2100) tier = I18N.get("ranked.diamond") + " " + score;
+        else                   tier = I18N.get("ranked.master") + " " + score;
+        rankLabel.setText(I18N.get("ranked.currentTier", tier));
     }
 
     @FXML
     private void handleMatch() {
         if (!isMatching && !isFound) {
             isMatching = true;
-            matchStatus.setText("正在寻找对手...");
+            matchStatus.setText(I18N.get("ranked.finding"));
             matchStatus.setStyle("-fx-text-fill: #3b82f6; -fx-font-size: 16px;");
-            matchBtn.setText("取消排位匹配");
+            matchBtn.setText(I18N.get("ranked.cancelMatch"));
             matchBtn.getStyleClass().remove("btn-primary");
             matchBtn.getStyleClass().add("btn-danger");
             ClientMain.getConnector().addListener(this);
@@ -66,18 +67,18 @@ public class RankedLobbyController implements NetworkListener {
     private void handleReady() {
         isReady = !isReady;
         if (isReady) {
-            matchBtn.setText("已准备");
+            matchBtn.setText(I18N.get("ranked.ready"));
             matchBtn.getStyleClass().remove("btn-primary");
             matchBtn.getStyleClass().add("btn-success");
             matchBtn.setDisable(false);
-            matchStatus.setText("对手: " + opponentUsername + "\n我方已准备，等待对方准备...");
+            matchStatus.setText(I18N.get("ranked.opponentReady", opponentUsername));
             matchStatus.setStyle("-fx-text-fill: #10b981; -fx-font-size: 16px; -fx-text-alignment: center;");
         } else {
-            matchBtn.setText("未准备");
+            matchBtn.setText(I18N.get("ranked.notReady"));
             matchBtn.getStyleClass().remove("btn-success");
             matchBtn.getStyleClass().add("btn-primary");
             matchBtn.setDisable(false);
-            matchStatus.setText("对手: " + opponentUsername + "\n点击按钮准备");
+            matchStatus.setText(I18N.get("ranked.clickToReady", opponentUsername));
             matchStatus.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 16px; -fx-text-alignment: center;");
         }
         ClientMain.getConnector().send(Message.of(Protocol.RANKED_READY, "ready", isReady ? "true" : "false"));
@@ -94,7 +95,7 @@ public class RankedLobbyController implements NetworkListener {
         isReady = false;
         opponentUsername = "";
         stopCountdown();
-        matchBtn.setText("开 始 排 位 匹 配");
+        matchBtn.setText(I18N.get("ranked.startMatch"));
         matchBtn.getStyleClass().removeAll("btn-danger", "btn-success", "btn-primary");
         matchBtn.getStyleClass().add("btn-primary");
         matchBtn.setDisable(false);
@@ -113,12 +114,12 @@ public class RankedLobbyController implements NetworkListener {
             public void run() {
                 Platform.runLater(() -> {
                     if (countdownSeconds > 0) {
-                        countdownLabel.setText("准备时间: " + countdownSeconds + "s");
+                        countdownLabel.setText(I18N.get("ranked.countdown", countdownSeconds));
                         countdownSeconds--;
                     } else {
                         stopCountdown();
                         countdownLabel.setText("");
-                        matchStatus.setText("准备时间超时，已取消匹配");
+                        matchStatus.setText(I18N.get("ranked.timeout"));
                         matchStatus.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 16px; -fx-text-alignment: center;");
                         ClientMain.getConnector().send(Protocol.CANCEL_MATCH);
                         stopMatching();
@@ -139,9 +140,9 @@ public class RankedLobbyController implements NetworkListener {
     private void handleBack() {
         if (isFound) {
             javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
-            alert.setTitle("提示");
+            alert.setTitle(I18N.get("message.title"));
             alert.setHeaderText(null);
-            alert.setContentText("您当前在准备阶段，不能返回大厅");
+            alert.setContentText(I18N.get("ranked.cannotLeave"));
             ScreenManager.showStyledAlert(alert);
             return;
         }
@@ -169,9 +170,9 @@ public class RankedLobbyController implements NetworkListener {
             opponentUsername = msg.getString("opponentUsername");
             startCountdown();
             Platform.runLater(() -> {
-                matchStatus.setText("找到对手: " + opponentUsername + "\n点击按钮准备");
+                matchStatus.setText(I18N.get("ranked.foundOpponent", opponentUsername));
                 matchStatus.setStyle("-fx-text-fill: #10b981; -fx-font-size: 16px; -fx-text-alignment: center;");
-                matchBtn.setText("未准备");
+                matchBtn.setText(I18N.get("ranked.notReady"));
                 matchBtn.getStyleClass().remove("btn-danger");
                 matchBtn.getStyleClass().add("btn-primary");
             });
@@ -182,26 +183,26 @@ public class RankedLobbyController implements NetworkListener {
                 if (isReady) {
                     boolean opponentReady = blackReady && whiteReady;
                     if (opponentReady) {
-                        matchStatus.setText("对手: " + opponentUsername + "\n双方已准备，即将开始...");
+                        matchStatus.setText(I18N.get("ranked.bothReady", opponentUsername));
                         matchStatus.setStyle("-fx-text-fill: #10b981; -fx-font-size: 16px; -fx-text-alignment: center;");
                     } else {
-                        matchStatus.setText("对手: " + opponentUsername + "\n对战即将开始，等待对方玩家准备");
+                        matchStatus.setText(I18N.get("ranked.waitOpponentReady", opponentUsername));
                         matchStatus.setStyle("-fx-text-fill: #f59e0b; -fx-font-size: 16px; -fx-text-alignment: center;");
                     }
                 } else {
                     boolean opponentReady = blackReady || whiteReady;
                     if (opponentReady) {
-                        matchStatus.setText("对手: " + opponentUsername + "\n对方已准备，等待我方准备...");
+                        matchStatus.setText(I18N.get("ranked.opponentPrepared", opponentUsername));
                         matchStatus.setStyle("-fx-text-fill: #f59e0b; -fx-font-size: 16px; -fx-text-alignment: center;");
                     } else {
-                        matchStatus.setText("对手: " + opponentUsername + "\n点击按钮准备");
+                        matchStatus.setText(I18N.get("ranked.clickToReady", opponentUsername));
                         matchStatus.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 16px; -fx-text-alignment: center;");
                     }
                 }
             });
         } else if (Protocol.JOIN_OK.equals(cmd)) {
             if (!isFound) {
-                matchStatus.setText("匹配成功，等待对手信息...");
+                matchStatus.setText(I18N.get("ranked.matchOk"));
                 matchStatus.setStyle("-fx-text-fill: #3b82f6; -fx-font-size: 16px;");
             }
         } else if (Protocol.GAME_START.equals(cmd)) {
@@ -222,12 +223,12 @@ public class RankedLobbyController implements NetworkListener {
             });
         } else if (Protocol.CANCEL_MATCH.equals(cmd)) {
             Platform.runLater(() -> {
-                matchStatus.setText("已取消匹配");
+                matchStatus.setText(I18N.get("ranked.canceled"));
                 matchStatus.setStyle("-fx-text-fill: #3b82f6; -fx-font-size: 16px;");
             });
         } else if (Protocol.ERROR.equals(cmd)) {
             Platform.runLater(() -> {
-                matchStatus.setText("匹配失败: " + msg.getString("msg"));
+                matchStatus.setText(I18N.get("ranked.matchFail", msg.getString("msg")));
                 matchStatus.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 16px;");
             });
             stopMatching();

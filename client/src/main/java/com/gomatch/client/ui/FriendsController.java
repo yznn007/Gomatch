@@ -1,6 +1,7 @@
 package com.gomatch.client.ui;
 
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
@@ -90,9 +91,9 @@ public class FriendsController implements NetworkListener {
         } else {
             // 预览模式伪数据
             friendsData.setAll(
-                new FriendInfoModel("2", "高手小白", "1200", true),
-                new FriendInfoModel("3", "五子棋王者", "1450", true),
-                new FriendInfoModel("4", "大厅萌新", "1000", false)
+                new FriendInfoModel("2", I18N.get("friends.preview.friend1"), "1200", true),
+                new FriendInfoModel("3", I18N.get("friends.preview.friend2"), "1450", true),
+                new FriendInfoModel("4", I18N.get("friends.preview.friend3"), "1000", false)
             );
         }
     }
@@ -103,8 +104,8 @@ public class FriendsController implements NetworkListener {
         } else {
             // 预览模式伪数据
             requestsData.setAll(
-                new FriendRequestModel("1", "5", "求战棋魔", "1100", "加个好友一起下棋啊！"),
-                new FriendRequestModel("2", "6", "棋圣传人", "1380", "打得不错，加个好友。")
+                new FriendRequestModel("1", "5", I18N.get("friends.preview.req1"), "1100", I18N.get("friends.preview.reqMsg1")),
+                new FriendRequestModel("2", "6", I18N.get("friends.preview.req2"), "1380", I18N.get("friends.preview.reqMsg2"))
             );
         }
     }
@@ -115,15 +116,15 @@ public class FriendsController implements NetworkListener {
         String msg = addMsgField.getText().trim();
         errorLabel.setText("");
         if (targetIdStr.isEmpty()) {
-            errorLabel.setText("用户ID不能为空");
+            errorLabel.setText(I18N.get("friends.idEmpty"));
             return;
         }
 
         if (ClientMain.getConnector().isConnected()) {
             ClientMain.getConnector().send(Message.of(Protocol.ADD_FRIEND, "friendUserId", Long.parseLong(targetIdStr), "message", msg));
         } else {
-            errorLabel.setStyle("-fx-text-fill: green;");
-            errorLabel.setText("预览模式：已模拟向用户 " + targetIdStr + " 发送好友申请");
+            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+            errorLabel.setText(I18N.get("friends.preview.sentRequest", targetIdStr));
         }
     }
 
@@ -131,7 +132,7 @@ public class FriendsController implements NetworkListener {
         if (ClientMain.getConnector().isConnected()) {
             ClientMain.getConnector().send(Message.of(Protocol.ACCEPT_FRIEND, "requestId", Long.parseLong(requestId)));
         } else {
-            showAlert("已模拟接受请求 " + requestId);
+            showAlert(I18N.get("friends.simulatedAccept", requestId));
             requestsData.removeIf(r -> r.getRequestId().equals(requestId));
         }
     }
@@ -140,7 +141,7 @@ public class FriendsController implements NetworkListener {
         if (ClientMain.getConnector().isConnected()) {
             ClientMain.getConnector().send(Message.of(Protocol.REJECT_FRIEND, "requestId", Long.parseLong(requestId)));
         } else {
-            showAlert("已模拟拒绝请求 " + requestId);
+            showAlert(I18N.get("friends.simulatedReject", requestId));
             requestsData.removeIf(r -> r.getRequestId().equals(requestId));
         }
     }
@@ -149,7 +150,7 @@ public class FriendsController implements NetworkListener {
         if (ClientMain.getConnector().isConnected()) {
             ClientMain.getConnector().send(Message.of(Protocol.DELETE_FRIEND, "friendUserId", Long.parseLong(friendUserId)));
         } else {
-            showAlert("已模拟删除好友 " + friendUserId);
+            showAlert(I18N.get("friends.simulatedDelete", friendUserId));
             friendsData.removeIf(f -> f.getFriendUserId().equals(friendUserId));
         }
     }
@@ -207,31 +208,31 @@ public class FriendsController implements NetworkListener {
                 }
             }
         } else if ("ADD_FRIEND_OK".equals(cmd)) {
-            errorLabel.setStyle("-fx-text-fill: green;");
-            errorLabel.setText("好友申请发送成功！");
+            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+            errorLabel.setText(I18N.get("friends.requestSent"));
             friendIdField.clear();
             addMsgField.clear();
         } else if ("ADD_FRIEND_FAIL".equals(cmd)) {
             errorLabel.setStyle("-fx-text-fill: red;");
             errorLabel.setText(msg.getString("msg"));
         } else if ("ACCEPT_FRIEND_OK".equals(cmd)) {
-            showAlert("已成功添加好友！");
+            showAlert(I18N.get("friends.addedSuccess"));
             fetchRequestsList();
             fetchFriendsList();
         } else if ("ACCEPT_FRIEND_FAIL".equals(cmd)) {
-            showAlert("接受好友申请失败！");
+            showAlert(I18N.get("friends.acceptFail"));
         } else if ("REJECT_FRIEND_OK".equals(cmd)) {
-            showAlert("已拒绝该好友申请。");
+            showAlert(I18N.get("friends.rejected"));
             fetchRequestsList();
         } else if ("REJECT_FRIEND_FAIL".equals(cmd)) {
-            showAlert("拒绝操作失败！");
+            showAlert(I18N.get("friends.rejectFail"));
         } else if ("DELETE_FRIEND_OK".equals(cmd)) {
-            showAlert("删除好友成功。");
+            showAlert(I18N.get("friends.deleteSuccess"));
             fetchFriendsList();
         } else if ("DELETE_FRIEND_FAIL".equals(cmd)) {
-            showAlert("删除好友失败！");
+            showAlert(I18N.get("friends.deleteFail"));
         } else if (Protocol.ERROR.equals(cmd)) {
-            showAlert("错误: " + msg.getString("msg"));
+            showAlert(I18N.get("friends.error", msg.getString("msg")));
         }
     }
 
@@ -289,8 +290,8 @@ public class FriendsController implements NetworkListener {
         javafx.application.Platform.runLater(() -> {
             friendsContainer.getChildren().clear();
             if (friendsData.isEmpty()) {
-                Label noFriendLabel = new Label("暂无好友，快去添加吧！");
-                noFriendLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
+                Label noFriendLabel = new Label(I18N.get("friends.noFriends"));
+                noFriendLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
                 friendsContainer.getChildren().add(noFriendLabel);
                 return;
             }
@@ -376,11 +377,11 @@ public class FriendsController implements NetworkListener {
 
                 HBox detailRow = new HBox(8);
                 detailRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-                Label scoreLabel = new Label(friend.getFriendScore() + " 分");
+                Label scoreLabel = new Label(friend.getFriendScore() + I18N.get("board.score"));
                 scoreLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 scoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
                 
-                Label activeLabel = new Label(isOnline ? "在线" : "离线");
+                Label activeLabel = new Label(isOnline ? I18N.get("friends.online") : I18N.get("friends.offline"));
                 activeLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 activeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + (isOnline ? "#16a34a;" : "#64748b;"));
                 
@@ -391,15 +392,15 @@ public class FriendsController implements NetworkListener {
                 HBox actionBox = new HBox(8);
                 actionBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
-                Button deleteBtn = new Button("删除");
-                deleteBtn.getStyleClass().add("btn-secondary");
+                Button deleteBtn = new Button(I18N.get("friends.delete"));
+                deleteBtn.getStyleClass().add("btn-danger");
                 deleteBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 deleteBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px; -fx-text-fill: #ef4444;");
  
                 // Create ContextMenu for double confirmation (secondary menu)
                 ContextMenu confirmMenu = new ContextMenu();
-                MenuItem confirmItem = new MenuItem("确认删除");
-                confirmItem.setStyle("-fx-text-fill: #ef4444; -fx-font-weight: bold;");
+                MenuItem confirmItem = new MenuItem(I18N.get("friends.confirmDelete"));
+                confirmItem.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + "; -fx-font-weight: bold;");
                 confirmItem.setOnAction(evt -> handleDeleteFriend(friend.getFriendUserId()));
                 confirmMenu.getItems().add(confirmItem);
  
@@ -420,8 +421,8 @@ public class FriendsController implements NetworkListener {
         javafx.application.Platform.runLater(() -> {
             requestsContainer.getChildren().clear();
             if (requestsData.isEmpty()) {
-                Label noReqLabel = new Label("暂无待处理的好友申请。");
-                noReqLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
+                Label noReqLabel = new Label(I18N.get("friends.noRequests"));
+                noReqLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
                 requestsContainer.getChildren().add(noReqLabel);
                 return;
             }
@@ -461,7 +462,7 @@ public class FriendsController implements NetworkListener {
                 nameRow.getChildren().addAll(nameLabel, idLabel);
 
                 String msg = req.getMessage() != null && !req.getMessage().isEmpty() ? 
-                             "“" + req.getMessage() + "”" : "加个好友吧！";
+                             "\u201C" + req.getMessage() + "\u201D" : I18N.get("friends.defaultReqMsg");
                 Label msgLabel = new Label(msg);
                 msgLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 msgLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b; -fx-font-style: italic;");
@@ -471,14 +472,14 @@ public class FriendsController implements NetworkListener {
                 HBox actionBox = new HBox(8);
                 actionBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
-                Button acceptBtn = new Button("接受");
+                Button acceptBtn = new Button(I18N.get("friends.accept"));
                 acceptBtn.getStyleClass().add("btn-primary");
                 acceptBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 acceptBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
                 acceptBtn.setOnAction(e -> handleAcceptRequest(req.getRequestId()));
 
-                Button rejectBtn = new Button("拒绝");
-                rejectBtn.getStyleClass().add("btn-secondary");
+                Button rejectBtn = new Button(I18N.get("friends.reject"));
+                rejectBtn.getStyleClass().add("btn-danger");
                 rejectBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 rejectBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px; -fx-text-fill: #ef4444;");
                 rejectBtn.setOnAction(e -> handleRejectRequest(req.getRequestId()));

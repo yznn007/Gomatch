@@ -1,6 +1,7 @@
 package com.gomatch.client.ui;
 
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
@@ -35,7 +36,7 @@ public class CreateRoomController implements NetworkListener {
     private void handleConfirm() {
         String name = roomNameField.getText().trim();
         if (name.isEmpty()) {
-            errorLabel.setText("房间名不能为空");
+            errorLabel.setText(I18N.get("room.nameEmpty"));
             return;
         }
         String password = passwordField.getText().trim();

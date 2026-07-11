@@ -352,7 +352,7 @@ public class ScreenManager {
         titleBar.getStyleClass().add("custom-title-bar");
         titleBar.setStyle("-fx-pref-height: 32; -fx-min-height: 32; -fx-max-height: 32;");
 
-        Label titleLabel = new Label("提示");
+        Label titleLabel = new Label(I18N.get("message.title"));
         titleLabel.getStyleClass().add("muted");
         titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px;");
 
@@ -395,7 +395,7 @@ public class ScreenManager {
     /** 当前是否使用暗夜黑磨砂主题。 */
     public static boolean isDarkTheme() {
         String theme = UserSettings.get().theme;
-        return theme != null && (theme.contains("暗夜") || theme.toLowerCase().contains("dark"));
+        return theme != null && (theme.contains("暗夜") || theme.toLowerCase().contains("dark") || theme.contains("Frosted Dark"));
     }
 
     /** 给当前 Scene 根节点挂载主题类，浅色原色与暗色覆盖层互斥。 */

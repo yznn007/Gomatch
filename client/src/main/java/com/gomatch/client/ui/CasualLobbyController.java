@@ -1,6 +1,7 @@
 package com.gomatch.client.ui;
 
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.model.RoomInfo;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
@@ -48,10 +49,10 @@ public class CasualLobbyController implements NetworkListener {
         ClientMain.getConnector().addListener(this);
         if (!ClientMain.getConnector().isConnected()) {
             roomData.addAll(
-                new RoomInfo("1001", "五子棋切磋", "玩家A", 2, "对局中"),
-                new RoomInfo("1002", "休闲一局",  "玩家B", 1, "等待中")
+                new RoomInfo("1001", I18N.get("casual.preview.room1"), I18N.get("casual.preview.playerA"), 2, I18N.get("casual.preview.statusPlaying")),
+                new RoomInfo("1002", I18N.get("casual.preview.room2"), I18N.get("casual.preview.playerB"), 1, I18N.get("casual.preview.statusWaiting"))
             );
-            spectateData.addAll("#1001 五子棋切磋  玩家A vs 玩家D");
+            spectateData.addAll("#1001 " + I18N.get("casual.preview.room1") + "  " + I18N.get("casual.preview.playerA") + " vs " + I18N.get("casual.preview.playerD"));
         } else {
             ClientMain.getConnector().send(Protocol.ROOM_LIST);
         }
@@ -95,7 +96,7 @@ public class CasualLobbyController implements NetworkListener {
     @FXML
     private void handleCreateRoom() {
         if (previewMode) {
-            RoomInfo fakeRoom = new RoomInfo("9999", "预览房间", currentUser.getUsername(), 1, "等待中");
+            RoomInfo fakeRoom = new RoomInfo("9999", I18N.get("casual.previewRoom"), currentUser.getUsername(), 1, I18N.get("casual.waiting"));
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
             ctrl.setPreviewMode(true);
             ctrl.setRoomInfo(fakeRoom, currentUser);
@@ -117,9 +118,9 @@ public class CasualLobbyController implements NetworkListener {
         }
         if (room.isHasPassword()) {
             TextInputDialog dialog = new TextInputDialog();
-            dialog.setTitle("密码验证");
-            dialog.setHeaderText("该房间需要密码");
-            dialog.setContentText("请输入房间密码:");
+            dialog.setTitle(I18N.get("casual.passwordTitle"));
+            dialog.setHeaderText(I18N.get("casual.passwordHeader"));
+            dialog.setContentText(I18N.get("casual.passwordPrompt"));
             ScreenManager.showStyledDialog(dialog).ifPresent(password ->
                 ClientMain.getConnector().send(Message.of(Protocol.JOIN_ROOM, "roomId", room.getRoomId(), "password", password.trim()))
             );
@@ -132,7 +133,7 @@ public class CasualLobbyController implements NetworkListener {
     private void handleQuickMatch() {
         if (previewMode) {
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
-            ctrl.setGameInfo(currentUser.getUsername(), "对手（bot）", currentUser.getUsername());
+            ctrl.setGameInfo(currentUser.getUsername(), I18N.get("profile.previewBot"), currentUser.getUsername());
             ctrl.setPreviewMode(true);
             return;
         }
@@ -151,7 +152,7 @@ public class CasualLobbyController implements NetworkListener {
         startCountdown();
         Platform.runLater(() -> {
             if (quickMatchBtn != null) {
-                quickMatchBtn.setText("取消匹配");
+                quickMatchBtn.setText(I18N.get("casual.cancelMatch"));
                 quickMatchBtn.getStyleClass().add("btn-danger");
             }
         });
@@ -171,7 +172,7 @@ public class CasualLobbyController implements NetworkListener {
         setStatus("", false);
         Platform.runLater(() -> {
             if (quickMatchBtn != null) {
-                quickMatchBtn.setText("快速匹配");
+                quickMatchBtn.setText(I18N.get("casual.quickMatch"));
                 quickMatchBtn.getStyleClass().remove("btn-danger");
                 quickMatchBtn.getStyleClass().remove("btn-success");
             }
@@ -191,7 +192,7 @@ public class CasualLobbyController implements NetworkListener {
     }
 
     private void updateMatchStatus() {
-        setStatus("正在匹配中... 已等待: " + matchCountdown + "秒 (点击'取消匹配'取消)", true);
+        setStatus(I18N.get("casual.matching", matchCountdown), true);
     }
 
     // handleSpectate 已被内嵌卡片按钮取代
@@ -215,11 +216,11 @@ public class CasualLobbyController implements NetworkListener {
         if (previewMode) {
             roomData.clear();
             roomData.addAll(
-                new RoomInfo("1001", "五子棋切磋", "玩家A", 2, "对局中"),
-                new RoomInfo("1002", "休闲一局",  "玩家B", 1, "等待中")
+                new RoomInfo("1001", I18N.get("casual.preview.room1"), I18N.get("casual.preview.playerA"), 2, I18N.get("casual.preview.statusPlaying")),
+                new RoomInfo("1002", I18N.get("casual.preview.room2"), I18N.get("casual.preview.playerB"), 1, I18N.get("casual.preview.statusWaiting"))
             );
             spectateData.clear();
-            spectateData.addAll("#1001 五子棋切磋  玩家A vs 玩家D");
+            spectateData.addAll("#1001 " + I18N.get("casual.preview.room1") + "  " + I18N.get("casual.preview.playerA") + " vs " + I18N.get("casual.preview.playerD"));
         } else {
             ClientMain.getConnector().send(Protocol.ROOM_LIST);
         }
@@ -254,7 +255,7 @@ public class CasualLobbyController implements NetworkListener {
                 room.setStatus(r.getString("status"));
                 room.setPlayerCount(Integer.parseInt(r.getString("players").split("/")[0]));
                 room.setHasPassword(r.optBoolean("hasPassword", false));
-                room.setOwnerName(r.optString("ownerName", "未知"));
+                room.setOwnerName(r.optString("ownerName", I18N.get("casual.unknown")));
                 roomData.add(room);
             }
             spectateData.setAll(roomData.stream()
@@ -293,7 +294,7 @@ public class CasualLobbyController implements NetworkListener {
                 }
             }
         } else if (Protocol.JOIN_FAIL.equals(cmd)) {
-            showAlert("加入失败: " + msg.getString("msg"));
+            showAlert(I18N.get("casual.joinFail", msg.getString("msg")));
         } else if (Protocol.GAME_START.equals(cmd)) {
             stopMatching();
             setStatus("", false);
@@ -323,20 +324,20 @@ public class CasualLobbyController implements NetworkListener {
             });
         } else if (Protocol.MATCH_TIMEOUT.equals(cmd)) {
             stopMatching();
-            setStatus("匹配超时，请重试", true);
+            setStatus(I18N.get("casual.matchTimeout"), true);
         } else if (Protocol.CANCEL_MATCH.equals(cmd)) {
             stopMatching();
-            setStatus("已取消匹配", true);
+            setStatus(I18N.get("casual.matchCanceled"), true);
         } else if (Protocol.ERROR.equals(cmd)) {
             String errMsg = msg.getString("msg");
-            if (errMsg.contains("等待对手")) {
+            if (errMsg.contains("等待对手") || errMsg.contains("waiting")) {
                 if (isMatching) {
                     // 已在本地点动倒计时，忽略服务端等待消息
                     return;
                 }
                 int idx = errMsg.lastIndexOf('(');
                 String suffix = idx >= 0 ? " " + errMsg.substring(idx) : "";
-                setStatus("等待对手中..." + suffix, true);
+                setStatus(I18N.get("casual.waitingForOpponent", suffix), true);
             } else {
                 setStatus("", false);
                 showAlert(errMsg);
@@ -349,7 +350,7 @@ public class CasualLobbyController implements NetworkListener {
         javafx.application.Platform.runLater(() -> {
             roomsContainer.getChildren().clear();
             if (roomData.isEmpty()) {
-                Label noRoomLabel = new Label("暂无活动房间，您可以创建一个！");
+                Label noRoomLabel = new Label(I18N.get("casual.noRooms"));
                 noRoomLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
                 roomsContainer.getChildren().add(noRoomLabel);
                 return;
@@ -373,7 +374,7 @@ public class CasualLobbyController implements NetworkListener {
                 // Avatar Circle
                 javafx.scene.layout.StackPane avatar = new javafx.scene.layout.StackPane();
                 avatar.getStyleClass().add("avatar-badge");
-                String hostName = room.getOwnerName() != null ? room.getOwnerName() : "未知";
+                String hostName = room.getOwnerName() != null ? room.getOwnerName() : I18N.get("casual.unknown");
                 String charVal = hostName.isEmpty() ? "R" : hostName.substring(0, 1).toUpperCase();
                 Label avatarText = new Label(charVal);
                 avatarText.getStyleClass().add("avatar-badge-text");
@@ -399,7 +400,7 @@ public class CasualLobbyController implements NetworkListener {
                     nameRow.getChildren().add(lockIcon);
                 }
 
-                Label ownerLabel = new Label("房主: " + hostName);
+                Label ownerLabel = new Label(I18N.get("casual.host", hostName));
                 ownerLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + ScreenManager.themeColor("#475569", "#cbd5e1") + ";");
                 infoBox.getChildren().addAll(nameRow, ownerLabel);
 
@@ -407,7 +408,7 @@ public class CasualLobbyController implements NetworkListener {
                 HBox slots = new HBox(4);
                 slots.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 int pc = room.getPlayerCount();
-                Label slotLabel = new Label("人数: " + pc + "/2");
+                Label slotLabel = new Label(I18N.get("casual.players") + pc + "/2");
                 slotLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 slotLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: " + ScreenManager.themeColor("#475569", "#cbd5e1") + "; -fx-font-weight: bold;");
                 slots.getChildren().add(slotLabel);
@@ -416,15 +417,15 @@ public class CasualLobbyController implements NetworkListener {
                 Label statusTag = new Label();
                 statusTag.getStyleClass().add("tag-badge");
                 if ("对局中".equals(room.getStatus()) || "playing".equalsIgnoreCase(room.getStatus())) {
-                    statusTag.setText("对局中");
+                    statusTag.setText(I18N.get("casual.playing"));
                     statusTag.getStyleClass().add("tag-badge-grey");
                 } else {
-                    statusTag.setText("等待中");
+                    statusTag.setText(I18N.get("casual.waiting"));
                     statusTag.getStyleClass().add("tag-badge-green");
                 }
 
                 // Join Button
-                Button actionBtn = new Button("加入");
+                Button actionBtn = new Button(I18N.get("casual.join"));
                 actionBtn.getStyleClass().add("btn-primary");
                 actionBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 actionBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
@@ -442,7 +443,7 @@ public class CasualLobbyController implements NetworkListener {
         javafx.application.Platform.runLater(() -> {
             spectateContainer.getChildren().clear();
             if (spectateData.isEmpty()) {
-                Label noSpectateLabel = new Label("当前暂无进行中的精彩对局。");
+                Label noSpectateLabel = new Label(I18N.get("casual.noSpectate"));
                 noSpectateLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
                 spectateContainer.getChildren().add(noSpectateLabel);
                 return;
@@ -458,7 +459,7 @@ public class CasualLobbyController implements NetworkListener {
 
                 // Parse spectate string
                 String roomId = "";
-                String roomName = "对局";
+                String roomName = I18N.get("casual.game");
                 String matchDetails = "";
                 try {
                     int firstSpace = specItem.indexOf(' ');
@@ -481,7 +482,7 @@ public class CasualLobbyController implements NetworkListener {
                 avatar.setMinSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
                 avatar.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
                 avatar.setStyle("-fx-background-color: " + ScreenManager.themeColor("rgba(148,163,184,0.45)", "rgba(71,85,105,0.65)") + ";"); // 观战头像用板岩灰系
-                Label avatarText = new Label("观");
+                Label avatarText = new Label(I18N.get("casual.spectator"));
                 avatarText.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 avatarText.getStyleClass().add("avatar-badge-text");
                 avatar.getChildren().add(avatarText);
@@ -494,19 +495,19 @@ public class CasualLobbyController implements NetworkListener {
                 Label titleLabel = new Label(roomName);
                 titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
                 
-                Label detailLabel = new Label(matchDetails.isEmpty() ? "对局编号: #" + roomId : matchDetails);
+                Label detailLabel = new Label(matchDetails.isEmpty() ? I18N.get("casual.gameId", roomId) : matchDetails);
                 detailLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
                 infoBox.getChildren().addAll(titleLabel, detailLabel);
 
                 // Spectate Button
-                Button actionBtn = new Button("观战");
+                Button actionBtn = new Button(I18N.get("casual.spectate"));
                 actionBtn.getStyleClass().add("btn-primary");
                 actionBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 actionBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
                 final String finalRoomId = roomId;
                 actionBtn.setOnAction(e -> {
                     if (previewMode) {
-                        showAlert("预览模式：观战功能需要服务器");
+                        showAlert(I18N.get("casual.preview.spectate"));
                         return;
                     }
                     ClientMain.getConnector().send(Message.of(Protocol.SPECTATE, "roomId", finalRoomId));

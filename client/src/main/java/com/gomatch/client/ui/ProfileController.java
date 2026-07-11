@@ -2,6 +2,7 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.model.GameRecord;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
@@ -61,9 +62,9 @@ public class ProfileController implements NetworkListener {
         int m = seconds / 60;
         int s = seconds % 60;
         if (m > 0) {
-            return m + "分" + (s > 0 ? s + "秒" : "");
+            return m + I18N.get("profile.minute") + (s > 0 ? s + I18N.get("profile.second") : "");
         }
-        return s + "秒";
+        return s + I18N.get("profile.second");
     }
 
     /**
@@ -137,8 +138,8 @@ public class ProfileController implements NetworkListener {
         javafx.application.Platform.runLater(() -> {
             recordsContainer.getChildren().clear();
             if (recordData.isEmpty()) {
-                Label noRecordLabel = new Label("暂无对战记录，快去对战大厅来一局吧！");
-                noRecordLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
+                Label noRecordLabel = new Label(I18N.get("profile.noRecords"));
+                noRecordLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
                 recordsContainer.getChildren().add(noRecordLabel);
                 return;
             }
@@ -154,7 +155,7 @@ public class ProfileController implements NetworkListener {
                 // Result Badge & ELO change indicator
                 javafx.scene.layout.StackPane badgeContainer = new javafx.scene.layout.StackPane();
                 badgeContainer.getStyleClass().add("result-badge");
-                String result = record.getResult() != null && !record.getResult().isEmpty() ? record.getResult() : "平";
+                String result = record.getResult() != null && !record.getResult().isEmpty() ? record.getResult() : I18N.get("profile.draw");
                 Label badgeText = new Label(result.substring(0, 1));
                 badgeText.getStyleClass().add("result-badge-text");
                 badgeContainer.getChildren().add(badgeText);
@@ -162,11 +163,11 @@ public class ProfileController implements NetworkListener {
                 int scoreChange = record.getScoreChange();
                 Label scoreChangeLabel = new Label();
                 scoreChangeLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 32px;");
-                if (result.contains("胜")) {
+                if (I18N.get("record.win").equals(result)) {
                     badgeContainer.getStyleClass().add("result-badge-win");
                     scoreChangeLabel.setText("+" + scoreChange);
-                    scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #22c55e;");
-                } else if (result.contains("负")) {
+                    scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+                } else if (I18N.get("record.lose").equals(result)) {
                     badgeContainer.getStyleClass().add("result-badge-lose");
                     scoreChangeLabel.setText(String.valueOf(scoreChange));
                     scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #ef4444;");
@@ -181,13 +182,13 @@ public class ProfileController implements NetworkListener {
                 infoBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 javafx.scene.layout.HBox.setHgrow(infoBox, javafx.scene.layout.Priority.ALWAYS);
 
-                Label opponentLabel = new Label("与 " + record.getOpponent() + " 的对局");
+                Label opponentLabel = new Label(I18N.get("profile.gameWith", record.getOpponent()));
                 opponentLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
 
                 int moveCount = record.getMoveCount();
                 int durationSec = record.getDuration();
                 String durationStr = formatDuration(durationSec);
-                Label detailsLabel = new Label("落子: " + (moveCount > 0 ? moveCount : "--") + " 步 | 用时: " + durationStr);
+                Label detailsLabel = new Label(I18N.get("profile.moves", moveCount > 0 ? String.valueOf(moveCount) : I18N.get("profile.noMoves"), durationStr));
                 detailsLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 detailsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
 
@@ -200,7 +201,7 @@ public class ProfileController implements NetworkListener {
                 Label timeLabel = new Label(record.getTime());
                 timeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
 
-                Button replayBtn = new Button("回放");
+                Button replayBtn = new Button(I18N.get("profile.replay"));
                 replayBtn.getStyleClass().add("btn-primary");
                 replayBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 replayBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
@@ -217,7 +218,7 @@ public class ProfileController implements NetworkListener {
                             record.getPlayer1Avatar(), record.getPlayer2Avatar());
                         ctrl.replayMoves(movesStr);
                     } else {
-                        Alert alert = new Alert(Alert.AlertType.INFORMATION, "暂无棋谱数据");
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION, I18N.get("profile.noReplayData"));
                         ScreenManager.showStyledAlert(alert);
                     }
                 });
@@ -278,8 +279,8 @@ public class ProfileController implements NetworkListener {
 
     private void loadMockRecords() {
         recordData.setAll(
-            new GameRecord("玩家A", "胜", "2026-07-04 15:30", "查看", "0,0,1;1,1,2;2,2,1;3,3,2;4,4,1"),
-            new GameRecord("玩家B", "负", "2026-07-04 16:10", "查看", "5,5,1;6,6,2;7,7,1;8,8,2;9,9,1")
+            new GameRecord(I18N.get("casual.preview.playerA"), I18N.get("record.win"), "2026-07-04 15:30", I18N.get("profile.viewReplay"), "0,0,1;1,1,2;2,2,1;3,3,2;4,4,1"),
+            new GameRecord(I18N.get("casual.preview.playerB"), I18N.get("record.lose"), "2026-07-04 16:10", I18N.get("profile.viewReplay"), "5,5,1;6,6,2;7,7,1;8,8,2;9,9,1")
         );
     }
 
@@ -368,14 +369,14 @@ public class ProfileController implements NetworkListener {
             uploadAvatarBtn.setText(user.getAvatar() != null && !user.getAvatar().isEmpty() ? "修改头像" : "上传头像");
         }
         
-        scoreLabel.setText(user.getScore() > 0 ? String.valueOf(user.getScore()) : "未定级");
+        scoreLabel.setText(user.getScore() > 0 ? String.valueOf(user.getScore()) : I18N.get("profile.unranked"));
         winLabel.setText(String.valueOf(user.getWinCount()));
         loseLabel.setText(String.valueOf(user.getLoseCount()));
         drawLabel.setText(String.valueOf(user.getDrawCount()));
  
         // 计算并设置总局数
         int total = user.getWinCount() + user.getLoseCount() + user.getDrawCount();
-        totalGamesLabel.setText(total + " 场");
+        totalGamesLabel.setText(I18N.get("profile.totalGames", total));
  
         // 计算并设置综合胜率
         String winRateStr = user.getWinRate();
@@ -392,9 +393,9 @@ public class ProfileController implements NetworkListener {
         // 设置全服排名
         int rankVal = user.getRank();
         if (rankVal > 0 && rankVal <= 1000) {
-            rankLabel.setText("第 " + rankVal + " 名");
+            rankLabel.setText(I18N.get("profile.rankNo", rankVal));
         } else {
-            rankLabel.setText("暂无排名");
+            rankLabel.setText(I18N.get("profile.noRank"));
         }
 
         // 用户信息设置完成后再查询战绩，避免 currentUser 为空时解析异常
@@ -411,22 +412,22 @@ public class ProfileController implements NetworkListener {
         String newPwd = newPwdField.getText().trim();
         errorLabel.setStyle("-fx-text-fill: red;");
         if (oldPwd.isEmpty() || newPwd.isEmpty()) {
-            errorLabel.setText("密码不能为空");
+            errorLabel.setText(I18N.get("profile.pwdEmpty"));
             return;
         }
         if (newPwd.length() < 6) {
-            errorLabel.setText("新密码长度需 ≥6 位");
+            errorLabel.setText(I18N.get("profile.pwdLength"));
             return;
         }
         if (newPwd.equals(oldPwd)) {
-            errorLabel.setText("新密码不能与旧密码相同");
+            errorLabel.setText(I18N.get("profile.pwdSame"));
             return;
         }
         if (ClientMain.getConnector().isConnected()) {
             ClientMain.getConnector().send(Message.of(Protocol.CHANGE_PWD, "oldPassword", oldPwd, "newPassword", newPwd));
         } else {
-            errorLabel.setStyle("-fx-text-fill: green;");
-            errorLabel.setText("预览模式：密码修改请求已模拟");
+            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+            errorLabel.setText(I18N.get("profile.preview.changePwd"));
         }
     }
 
@@ -449,14 +450,14 @@ public class ProfileController implements NetworkListener {
     @FXML
     private void handleUploadAvatar() {
         if (isPreview() || !ClientMain.getConnector().isConnected()) {
-            showUploadStatus("预览模式：头像上传功能不可用", "orange");
+            showUploadStatus(I18N.get("profile.preview.avatar"), "orange");
             return;
         }
 
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("选择头像图片");
+        fileChooser.setTitle(I18N.get("profile.selectAvatar"));
         fileChooser.getExtensionFilters().addAll(
-            new FileChooser.ExtensionFilter("图片文件", "*.png", "*.jpg", "*.jpeg", "*.gif"),
+            new FileChooser.ExtensionFilter(I18N.get("profile.imageFiles"), "*.png", "*.jpg", "*.jpeg", "*.gif"),
             new FileChooser.ExtensionFilter("PNG", "*.png"),
             new FileChooser.ExtensionFilter("JPG", "*.jpg", "*.jpeg")
         );
@@ -473,7 +474,7 @@ public class ProfileController implements NetworkListener {
                 ctrl.setOnCropComplete(croppedBytes -> {
                     String base64Data = Base64.getEncoder().encodeToString(croppedBytes);
                     ClientMain.getConnector().send(Message.of("UPLOAD_AVATAR", "data", base64Data));
-                    showUploadStatus("正在上传头像...", "blue");
+                    showUploadStatus(I18N.get("profile.uploadingAvatar"), "blue");
                 });
             }
         );
@@ -490,24 +491,24 @@ public class ProfileController implements NetworkListener {
     public void onMessage(Message msg) {
         String cmd = msg.getCmd();
         if (Protocol.PWD_CHANGED.equals(cmd)) {
-            errorLabel.setStyle("-fx-text-fill: green;");
-            errorLabel.setText("密码修改成功");
+            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+            errorLabel.setText(I18N.get("profile.pwdChanged"));
             oldPwdField.clear();
             newPwdField.clear();
         } else if (Protocol.ERROR.equals(cmd)) {
-            errorLabel.setStyle("-fx-text-fill: red;");
-            errorLabel.setText(msg.has("msg") ? msg.getString("msg") : "操作失败");
+            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+            errorLabel.setText(msg.has("msg") ? msg.getString("msg") : I18N.get("profile.operationFailed"));
         } else if ("AVATAR_UPLOADED".equals(cmd)) {
             String url = msg.getString("url");
             String message = msg.getString("msg");
             if (url != null && !url.isEmpty()) {
-                showUploadStatus("头像上传成功", "green");
+                showUploadStatus(I18N.get("profile.avatarUploaded"), "green");
                 if (currentUser != null) {
                     currentUser.setAvatar(url);
                     setCurrentUser(currentUser);
                 }
             } else {
-                showUploadStatus(message != null ? message : "头像上传失败", "red");
+                showUploadStatus(message != null ? message : I18N.get("profile.avatarUploadFailed"), "red");
             }
         } else if ("AVATAR_DATA".equals(cmd)) {
             String url = msg.getString("url");
@@ -526,8 +527,8 @@ public class ProfileController implements NetworkListener {
                 if (records == null) return;
                 for (int i = 0; i < records.length(); i++) {
                     JSONObject r = records.getJSONObject(i);
-                    String p1Name = r.optString("player1Name", "未知");
-                    String p2Name = r.optString("player2Name", "未知");
+                    String p1Name = r.optString("player1Name", I18N.get("profile.unknown"));
+                    String p2Name = r.optString("player2Name", I18N.get("profile.unknown"));
                     String winnerId = String.valueOf(r.optLong("winnerId", 0));
                     String time = r.optString("createTime", "");
                     // 兼容多种格式：JSON 数组字符串（Redis 缓存）、老格式的分号/管道分隔、JSON 字符串
@@ -541,18 +542,18 @@ public class ProfileController implements NetworkListener {
                     // 判断结果：比较 winnerId 与当前用户 ID
                     String result;
                     if ("0".equals(winnerId)) {
-                        result = "平局";
+                        result = I18N.get("record.draw");
                     } else if (String.valueOf(currentUser.getUserId()).equals(winnerId)) {
-                        result = "胜";
+                        result = I18N.get("record.win");
                     } else {
-                        result = "负";
+                        result = I18N.get("record.lose");
                     }
 
                     // 对手名：当前用户是 p1 则对手是 p2，反之亦然
                     String currentName = currentUser.getUsername();
                     String opponent = currentName != null && currentName.equals(p1Name) ? p2Name : p1Name;
 
-                    GameRecord gr = new GameRecord(opponent, result, time, "查看", boardData);
+                    GameRecord gr = new GameRecord(opponent, result, time, I18N.get("profile.viewReplay"), boardData);
                     gr.setMoveCount(moveCount);
                     gr.setDuration(duration);
                     gr.setScoreChange(scoreChange);

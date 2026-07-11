@@ -2,6 +2,7 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.network.ClientConfig;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -30,10 +31,10 @@ public class ServerConfigDialogController {
 
     private void refreshStatus() {
         if (ClientMain.getConnector().isConnected()) {
-            statusLabel.setText("已连接");
+            statusLabel.setText(I18N.get("serverconfig.connected"));
             statusLabel.setStyle("-fx-text-fill: green;");
         } else {
-            statusLabel.setText("未连接");
+            statusLabel.setText(I18N.get("serverconfig.disconnected"));
             statusLabel.setStyle("-fx-text-fill: #dc2626;");
         }
     }
@@ -50,7 +51,7 @@ public class ServerConfigDialogController {
             port = Integer.parseInt(portField.getText().trim());
             if (port <= 0 || port > 65535) throw new NumberFormatException();
         } catch (NumberFormatException e) {
-            statusLabel.setText("错误：端口须为 1-65535 的整数");
+            statusLabel.setText(I18N.get("serverconfig.portInvalid"));
             statusLabel.setStyle("-fx-text-fill: #dc2626;");
             return;
         }
@@ -61,7 +62,7 @@ public class ServerConfigDialogController {
         ClientConfig.saveConfig(enteredHost, port);
 
         // 置为"连接中"，禁用按钮防止重复点击
-        statusLabel.setText("连接中...");
+        statusLabel.setText(I18N.get("serverconfig.connecting"));
         statusLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
         applyBtn.setDisable(true);
 
@@ -74,13 +75,13 @@ public class ServerConfigDialogController {
             try {
                 ClientMain.getConnector().connect(finalHost, finalPort);
                 javafx.application.Platform.runLater(() -> {
-                    statusLabel.setText("✅ 已连接");
+                    statusLabel.setText(I18N.get("serverconfig.connectedWith", finalHost, finalPort));
                     statusLabel.setStyle("-fx-text-fill: green;");
                     applyBtn.setDisable(false);
                 });
             } catch (Exception e) {
                 javafx.application.Platform.runLater(() -> {
-                    statusLabel.setText("❌ 连接失败：" + e.getMessage());
+                    statusLabel.setText(I18N.get("serverconfig.connectFailed", e.getMessage()));
                     statusLabel.setStyle("-fx-text-fill: #dc2626;");
                     applyBtn.setDisable(false);
                     // 失败时保留弹窗，让用户看到错误信息

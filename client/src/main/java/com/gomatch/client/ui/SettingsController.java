@@ -371,7 +371,7 @@ public class SettingsController {
     public void setPreviewMode(boolean previewMode) {
         this.previewMode = previewMode;
         if (previewMode) {
-            statusLabel.setText(I18N.get("settings.connected") + " (" + (I18N.isEnglish() ? "Preview" : "浏览模式") + ")");
+            statusLabel.setText(I18N.get("settings.connected") + " (" + I18N.get("settings.previewMode") + ")");
             statusLabel.setStyle("-fx-text-fill: #86efac;");
         }
     }
@@ -440,7 +440,7 @@ public class SettingsController {
                 }
             }
         } catch (Exception e) {
-            showInfoAlert("设置开机自启失败：" + e.getMessage());
+            showInfoAlert(I18N.get("settings.autoStartFail", e.getMessage()));
             autoStartCheckBox.setSelected(!enabled);
         }
     }
@@ -594,7 +594,7 @@ public class SettingsController {
                 throw new NumberFormatException();
             }
         } catch (NumberFormatException e) {
-            statusLabel.setText("错误：端口须为 1-65535 的整数");
+            statusLabel.setText(I18N.get("settings.portInvalid"));
             statusLabel.setStyle("-fx-text-fill: #dc2626;");
             return;
         }
@@ -603,7 +603,7 @@ public class SettingsController {
         AppConfig.SERVER_PORT = port;
         ClientConfig.saveConfig(enteredHost, port);
 
-        statusLabel.setText("连接中...");
+        statusLabel.setText(I18N.get("settings.connecting"));
         statusLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
 
         final String finalHost = host;
@@ -613,12 +613,12 @@ public class SettingsController {
             try {
                 ClientMain.getConnector().connect(finalHost, finalPort);
                 javafx.application.Platform.runLater(() -> {
-                    statusLabel.setText("✅ 已连接");
+                    statusLabel.setText(I18N.get("settings.connectedWith", finalHost, finalPort));
                     statusLabel.setStyle("-fx-text-fill: #86efac;");
                 });
             } catch (Exception e) {
                 javafx.application.Platform.runLater(() -> {
-                    statusLabel.setText("❌ 连接失败：" + e.getMessage());
+                    statusLabel.setText(I18N.get("settings.connectFailed", e.getMessage()));
                     statusLabel.setStyle("-fx-text-fill: #dc2626;");
                 });
             }

@@ -2,6 +2,7 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
@@ -62,23 +63,23 @@ public class RegisterController implements NetworkListener {
         String confirm  = confirmField.getText().trim();
 
         if (username.isEmpty() || password.isEmpty() || email.isEmpty()) {
-            errorLabel.setText("用户名、邮箱和密码不能为空");
+            errorLabel.setText(I18N.get("register.allRequired"));
             return;
         }
         if (username.length() < 4 || username.length() > 16) {
-            errorLabel.setText("用户名长度需 4-16 位");
+            errorLabel.setText(I18N.get("register.usernameLength"));
             return;
         }
         if (!email.matches("^[\\w.+-]+@[\\w-]+\\.[\\w.]+$")) {
-            errorLabel.setText("邮箱格式不正确");
+            errorLabel.setText(I18N.get("register.emailInvalid"));
             return;
         }
         if (password.length() < 6) {
-            errorLabel.setText("密码长度需 ≥6 位");
+            errorLabel.setText(I18N.get("register.pwdLength"));
             return;
         }
         if (!password.equals(confirm)) {
-            errorLabel.setText("两次密码输入不一致");
+            errorLabel.setText(I18N.get("register.pwdMismatch"));
             return;
         }
 
@@ -88,7 +89,7 @@ public class RegisterController implements NetworkListener {
         if (!rawPhone.isEmpty()) {
             phone = PhoneInputValidator.toE164(selectedCode(), rawPhone);
             if (phone == null) {
-                errorLabel.setText("手机号格式不正确");
+                errorLabel.setText(I18N.get("register.phoneInvalid"));
                 return;
             }
         }
@@ -107,7 +108,7 @@ public class RegisterController implements NetworkListener {
             }
             ClientMain.getConnector().send(msg);
         } catch (Exception e) {
-            errorLabel.setText("连接服务器失败: " + e.getMessage());
+            errorLabel.setText(I18N.get("register.connectFailed", e.getMessage()));
         }
     }
 
@@ -122,7 +123,7 @@ public class RegisterController implements NetworkListener {
         // 服务端注册成功应回复 REGISTER_OK，兼容旧服务端也处理 LOGIN_OK
         if (Protocol.REGISTER_OK.equals(cmd) || Protocol.LOGIN_OK.equals(cmd)) {
             errorLabel.setStyle("-fx-text-fill: green;");
-            errorLabel.setText("注册成功，请登录");
+            errorLabel.setText(I18N.get("register.success"));
             ClientMain.getConnector().disconnect();
             ScreenManager.switchTo("/fxml/LoginUI.fxml");
         } else if ("REGISTER_FAIL".equals(cmd)) {

@@ -24,16 +24,16 @@ public final class BackgroundMusicManager {
     private static final Map<String, String> AVAILABLE_SONGS = new LinkedHashMap<>();
 
     static {
-        AVAILABLE_SONGS.put("/audio/main_1.mp3", "223AM");
-        AVAILABLE_SONGS.put("/audio/main_2.mp3", "123我哈你");
-        AVAILABLE_SONGS.put("/audio/main_3.mp3", "AllWeKnow");
-        AVAILABLE_SONGS.put("/audio/main_4.mp3", "NormalNoMore");
-        AVAILABLE_SONGS.put("/audio/main_5.mp3", "哈基大冒险");
-        AVAILABLE_SONGS.put("/audio/main_6.mp3", "愤怒的小基");
-        AVAILABLE_SONGS.put("/audio/main_7.mp3", "地铁基米");
-        AVAILABLE_SONGS.put("/audio/main_8.mp3", "基米谷物语");
-        AVAILABLE_SONGS.put("/audio/main_9.mp3", "千耄万耋");
-        AVAILABLE_SONGS.put("/audio/main_10.mp3", "神人村");
+        AVAILABLE_SONGS.put("/audio/main_1.mp3", "music.223am");
+        AVAILABLE_SONGS.put("/audio/main_2.mp3", "music.song2");
+        AVAILABLE_SONGS.put("/audio/main_3.mp3", "music.allweknow");
+        AVAILABLE_SONGS.put("/audio/main_4.mp3", "music.normalnomore");
+        AVAILABLE_SONGS.put("/audio/main_5.mp3", "music.song5");
+        AVAILABLE_SONGS.put("/audio/main_6.mp3", "music.song6");
+        AVAILABLE_SONGS.put("/audio/main_7.mp3", "music.song7");
+        AVAILABLE_SONGS.put("/audio/main_8.mp3", "music.song8");
+        AVAILABLE_SONGS.put("/audio/main_9.mp3", "music.song9");
+        AVAILABLE_SONGS.put("/audio/main_10.mp3", "music.song10");
     }
 
     private static String currentSongPath = "/audio/main_1.mp3";
