@@ -19,8 +19,11 @@ public class ServerConfigDialogController {
     @FXML
     private void initialize() {
         String host = AppConfig.SERVER_HOST;
-        if (host == null || host.trim().isEmpty()) host = "127.0.0.1";
-        ipComboBox.setValue(host);
+        if (ClientConfig.getDefaultHost().equals(host)) {
+            ipComboBox.getEditor().clear();
+        } else {
+            ipComboBox.setValue(host);
+        }
         portField.setText(String.valueOf(AppConfig.SERVER_PORT));
         refreshStatus();
     }
@@ -37,13 +40,10 @@ public class ServerConfigDialogController {
 
     @FXML
     private void handleApply() {
-        String host = ipComboBox.getValue();
-        if (host == null || host.trim().isEmpty()) {
-            statusLabel.setText("错误：IP 地址不能为空");
-            statusLabel.setStyle("-fx-text-fill: #dc2626;");
-            return;
-        }
-        host = host.trim();
+        String enteredHost = ipComboBox.getEditor().getText();
+        String host = enteredHost == null || enteredHost.trim().isEmpty()
+                ? ClientConfig.getDefaultHost()
+                : enteredHost.trim();
 
         int port;
         try {
@@ -58,7 +58,7 @@ public class ServerConfigDialogController {
         // 保存配置
         AppConfig.SERVER_HOST = host;
         AppConfig.SERVER_PORT = port;
-        ClientConfig.saveConfig(host, port);
+        ClientConfig.saveConfig(enteredHost, port);
 
         // 置为"连接中"，禁用按钮防止重复点击
         statusLabel.setText("连接中...");
@@ -74,7 +74,7 @@ public class ServerConfigDialogController {
             try {
                 ClientMain.getConnector().connect(finalHost, finalPort);
                 javafx.application.Platform.runLater(() -> {
-                    statusLabel.setText("✅ 已连接 (" + finalHost + ":" + finalPort + ")");
+                    statusLabel.setText("✅ 已连接");
                     statusLabel.setStyle("-fx-text-fill: green;");
                     applyBtn.setDisable(false);
                 });

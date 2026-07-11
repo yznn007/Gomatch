@@ -153,10 +153,11 @@ public class SettingsController {
 
         // 服务器配置
         String currentHost = AppConfig.SERVER_HOST;
-        if (currentHost == null || currentHost.trim().isEmpty()) {
-            currentHost = "127.0.0.1";
+        if (ClientConfig.getDefaultHost().equals(currentHost)) {
+            ipComboBox.getEditor().clear();
+        } else {
+            ipComboBox.setValue(currentHost);
         }
-        ipComboBox.setValue(currentHost);
         portField.setText(String.valueOf(AppConfig.SERVER_PORT));
 
         if (ClientMain.getConnector().isConnected()) {
@@ -581,13 +582,10 @@ public class SettingsController {
 
     @FXML
     private void handleSaveConfig() {
-        String host = ipComboBox.getValue();
-        if (host == null || host.trim().isEmpty()) {
-            statusLabel.setText("错误：IP 地址不能为空");
-            statusLabel.setStyle("-fx-text-fill: #dc2626;");
-            return;
-        }
-        host = host.trim();
+        String enteredHost = ipComboBox.getEditor().getText();
+        String host = enteredHost == null || enteredHost.trim().isEmpty()
+                ? ClientConfig.getDefaultHost()
+                : enteredHost.trim();
 
         int port;
         try {
@@ -603,7 +601,7 @@ public class SettingsController {
 
         AppConfig.SERVER_HOST = host;
         AppConfig.SERVER_PORT = port;
-        ClientConfig.saveConfig(host, port);
+        ClientConfig.saveConfig(enteredHost, port);
 
         statusLabel.setText("连接中...");
         statusLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
@@ -615,7 +613,7 @@ public class SettingsController {
             try {
                 ClientMain.getConnector().connect(finalHost, finalPort);
                 javafx.application.Platform.runLater(() -> {
-                    statusLabel.setText("✅ 已连接 (" + finalHost + ":" + finalPort + ")");
+                    statusLabel.setText("✅ 已连接");
                     statusLabel.setStyle("-fx-text-fill: #86efac;");
                 });
             } catch (Exception e) {

@@ -16,10 +16,14 @@
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
 | 2026-07-11 | Contributor| fix(auth): 修复旧密码改密兼容 | 旧明文密码账户改密时使用兼容校验，成功后统一写入 BCrypt 哈希；新增旧密码与 BCrypt 密码匹配回归测试。 |
+| 2026-07-11 | Contributor| fix(build): 取消 Maven forked javac 编译 | Windows 下 forked javac 无法访问 common 模块的 classpath，导致客户端误报 `com.gomatch.common` 缺失；统一改用 Maven 进程内编译。 |
+| 2026-07-11 | Contributor| fix(scripts): 客户端启动不再强制清理构建目录 | 移除四份客户端脚本中的 `clean`，避免运行中的 JavaFX MediaPlayer 锁定音频资源时导致启动失败。 |
+| 2026-07-11 | Contributor| fix(client): 空服务器地址回退至发布服务器 | 客户端默认连接改为 `${GOMATCH_SERVER_HOST}:8888`；登录弹窗与设置页的 IP 输入框留空时使用该默认地址，填写 IP 才保存为本地覆盖；连接状态不显示服务器地址。 |
 | 2026-07-11 | Contributor| fix(config): 允许无认证 Redis 使用 `.env` 配置 | Redis 密码保持环境变量来源；未启用 Redis 认证时允许其为空，避免旧本地配置无法启动。 |
 | 2026-07-11 | Contributor| docs(config): 补充运行凭据优先级 | 明确系统环境变量、`.env` 与非敏感资源默认值的优先级，以及 `GOMATCH_ENV_FILE` 的定位规则。 |
 | 2026-07-11 | Contributor| feat(config): 统一运行时凭据为 `.env` 与环境变量 | MySQL、Redis 与 OSS 凭据不再提交到资源配置；系统环境变量优先于 `.env`，服务端启动校验必填 MySQL/Redis 配置。 |
 |------|------|----------|-----------|
+| 2026-07-11 14:36 | Contributor| ci(client): 新增 MSI 自动发布流程 | 新增本地/CI 共用 MSI 打包脚本、标签 Release 工作流与 `docs/releases/` 版本说明约定；标签对应说明缺失时自动生成 GitHub 变更摘要。 |
 | 2026-07-11 13:42 | Contributor| refactor(database): 移除未接入的用户设置与音乐表业务 | 删除 `t_user_settings`、`t_user_music`、未接入设置/媒体协议及其 database 实体/仓储；云端配置继续使用 `t_user_profile.config_json`，头像 OSS 与审计日志保持不变。 |
 | 2026-07-11 03:54 | Contributor| style(client): 将登录和注册界面的手机号码前缀与输入框合并到同一行，只留前缀代码并实现登录切换栏 | 1. **LoginUI/RegisterUI.fxml**：合并国家区号 ComboBox 和输入框至同一行，并缩窄宽度至 65px；2. **Login/RegisterController**：区号项移除中文仅留 +86 等代码；3. **LoginUI.fxml / LoginController**：在登录标题下加入“账号登录/手机号登录”的极简 HBox 切换栏，切至手机号时展开区号下拉框并改变占位符为“手机号”，切至账号时隐藏区号，并支持在记住密码时根据账号类型自动切换 Tab 加载；4. **style.css**：为登录切换栏定制极简双主题底划线样式；5. **RegisterUI.fxml**：手机号默认文字简化为“手机号”，并移动行位置。 |
 | 2026-07-11 03:20 | Contributor| fix: 修复大厅音乐选择与播放顺序在下次登录时无法同步的 bug | 1. **UserSettings**：新增 `selectedSongPath` 和 `playOrder` 字段，通过 GSON 自动持久化；2. **BackgroundMusicManager**：将 `currentPlayOrder` 升级为 `ObjectProperty<PlayOrder>` 以支持响应式 UI，增加 `selectAndPlaySong` 以区分用户主动选歌与自动切歌，并实现 `applySettings` 用于应用/同步本地及云端偏好；3. **SettingsController**：将选歌下拉框改为调用新 API，并对播放顺序属性添加 Listener，在云端同步播放顺序时自动刷新按钮文本；4. **ClientMain / ConfigManager**：分别在本地加载和云端配置同步完后自动触发 `applySettings` 平滑过渡应用。 |
@@ -247,3 +251,8 @@
 - 在 `style.css` 结尾处提升类选择器特异性为 `.glass-card .inline-popup-menu`，强制实色（清透白/暗夜深色）不透明背景，彻底压制父卡片的透明度影响。
 - 解决 visible/managed 为 false 时 JavaFX 首次渲染跳过 CSS apply 的怪癖 Bug，在 `toggleInlineMenu()` 展开时强制调用 `inlineCodeMenu.applyCss()` 重新刷入 CSS。
 - 修改 `scripts/` 下全部 4 个成员的客户端启动脚本（`hln/jzx/ssc/zpw-client.ps1`），在运行命令中补充 `clean` 编译阶段，彻底根治 Maven 增量构建跳过 CSS 资源文件拷贝的旧缓存问题。
+
+### 2026-07-11 — 规范 Git 提交与分支合并流程
+
+- 修改 `docs/DEV_GUIDELINE.md` 中的分支与提交规范，明确所有日常开发工作必须在个人功能/修复分支进行，开发完毕并测试通过后，通过在远程仓库提交 Pull Request (PR) 的形式进行合并，严禁开发人员在本地将个人分支直接合并或直接推送至开发主分支（如 `dev`）。
+- 同步修改根目录 `AGENTS.md` 中的 Git 提交规范，在其中增加 **提交与合并要求** 章节，明确“禁止直接推送”原则。
