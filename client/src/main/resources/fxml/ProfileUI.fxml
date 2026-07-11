@@ -68,13 +68,13 @@
                                     <Label fx:id="scoreLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" styleClass="section-label"/>
                                     
                                     <Label text="%profile.rank" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
-                                    <Label fx:id="rankLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="section-label, rank-text"/>
+                                    <Label fx:id="rankLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="section-label" style="-fx-text-fill: #b45309; -fx-font-weight: bold;"/>
                                     
                                     <Label text="%profile.totalGames" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="muted"/>
                                     <Label fx:id="totalGamesLabel" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="section-label"/>
                                     
                                     <Label text="%profile.winRate" GridPane.rowIndex="3" GridPane.columnIndex="0" styleClass="muted"/>
-                                    <Label fx:id="winRateLabel" GridPane.rowIndex="3" GridPane.columnIndex="1" styleClass="section-label, win-rate-text"/>
+                                    <Label fx:id="winRateLabel" GridPane.rowIndex="3" GridPane.columnIndex="1" styleClass="section-label" style="-fx-text-fill: #16a34a; -fx-font-weight: bold;"/>
                                     
                                     <Label text="%profile.wins" GridPane.rowIndex="4" GridPane.columnIndex="0" styleClass="muted"/>
                                     <Label fx:id="winLabel" GridPane.rowIndex="4" GridPane.columnIndex="1" styleClass="section-label"/>

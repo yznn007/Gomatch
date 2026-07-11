@@ -16,18 +16,18 @@ public class RankDAO {
         private final long rankId;
         private final long userId;
         private final String username;
-        private final String avatarUrl;
+        private final String avatar;
         private final int rank;
         private final int score;
         private final double winRate;
         private final double aiWinRate;
 
-        public RankInfo(long rankId, long userId, String username, String avatarUrl,
+        public RankInfo(long rankId, long userId, String username, String avatar,
                         int rank, int score, double winRate, double aiWinRate) {
             this.rankId = rankId;
             this.userId = userId;
             this.username = username;
-            this.avatarUrl = avatarUrl;
+            this.avatar = avatar;
             this.rank = rank;
             this.score = score;
             this.winRate = winRate;
@@ -37,7 +37,7 @@ public class RankDAO {
         public long getRankId() { return rankId; }
         public long getUserId() { return userId; }
         public String getUsername() { return username; }
-        public String getAvatarUrl() { return avatarUrl; }
+        public String getAvatar() { return avatar; }
         public int getRank() { return rank; }
         public int getScore() { return score; }
         public double getWinRate() { return winRate; }
@@ -102,7 +102,7 @@ public class RankDAO {
     }
 
     private List<RankInfo> getRankingFromDB(int limit) {
-        String sql = "SELECT r.rank_id, r.user_id, u.username, u.avatar_url, r.rank, r.score, r.win_rate, r.ai_win_rate " +
+        String sql = "SELECT r.rank_id, r.user_id, u.username, u.avatar, r.rank, r.score, r.win_rate, r.ai_win_rate " +
                      "FROM t_rank r JOIN t_user u ON r.user_id = u.user_id " +
                      "WHERE u.status = 'ACTIVE' " +
                      "ORDER BY r.score DESC LIMIT ?";
@@ -118,7 +118,7 @@ public class RankDAO {
                             rs.getLong("rank_id"),
                             rs.getLong("user_id"),
                             rs.getString("username"),
-                            resolveAvatarUrl(rs.getString("avatar_url")),
+                            resolveAvatarUrl(rs.getString("avatar")),
                             rank++,
                             rs.getInt("score"),
                             rs.getDouble("win_rate"),
@@ -134,7 +134,7 @@ public class RankDAO {
 
 
     public List<RankInfo> getFriendsRanking(long userId) {
-        String sql = "SELECT r.rank_id, r.user_id, u.username, u.avatar_url, r.rank, r.score, r.win_rate, r.ai_win_rate " +
+        String sql = "SELECT r.rank_id, r.user_id, u.username, u.avatar, r.rank, r.score, r.win_rate, r.ai_win_rate " +
                      "FROM t_rank r JOIN t_user u ON r.user_id = u.user_id " +
                      "WHERE (u.user_id = ? OR u.user_id IN (SELECT friend_user_id FROM t_friend WHERE user_id = ? AND relation_type = 'FRIEND')) " +
                      "AND u.status = 'ACTIVE' " +
@@ -152,7 +152,7 @@ public class RankDAO {
                             rs.getLong("rank_id"),
                             rs.getLong("user_id"),
                             rs.getString("username"),
-                            resolveAvatarUrl(rs.getString("avatar_url")),
+                            resolveAvatarUrl(rs.getString("avatar")),
                             rank++,
                             rs.getInt("score"),
                             rs.getDouble("win_rate"),
@@ -167,7 +167,7 @@ public class RankDAO {
     }
 
     private List<RankInfo> getRankingFromRedis(List<Long> userIds, int limit) {
-        String sql = "SELECT r.rank_id, r.user_id, u.username, u.avatar_url, r.rank, r.score, r.win_rate, r.ai_win_rate " +
+        String sql = "SELECT r.rank_id, r.user_id, u.username, u.avatar, r.rank, r.score, r.win_rate, r.ai_win_rate " +
                      "FROM t_rank r JOIN t_user u ON r.user_id = u.user_id " +
                      "WHERE r.user_id IN (" + buildPlaceholders(userIds.size()) + ") " +
                      "AND u.status = 'ACTIVE'";
@@ -185,7 +185,7 @@ public class RankDAO {
                             rs.getLong("rank_id"),
                             rs.getLong("user_id"),
                             rs.getString("username"),
-                            resolveAvatarUrl(rs.getString("avatar_url")),
+                            resolveAvatarUrl(rs.getString("avatar")),
                             0,
                             rs.getInt("score"),
                             rs.getDouble("win_rate"),
@@ -200,7 +200,7 @@ public class RankDAO {
                                 info.getRankId(),
                                 info.getUserId(),
                                 info.getUsername(),
-                                info.getAvatarUrl(),
+                                info.getAvatar(),
                                 rank++,
                                 info.getScore(),
                                 info.getWinRate(),
@@ -237,7 +237,7 @@ public class RankDAO {
         Long redisRank = RedisManager.getInstance().getRank(userId);
         Integer redisScore = RedisManager.getInstance().getScore(userId);
 
-        String sql = "SELECT r.rank_id, r.user_id, u.username, u.avatar_url, r.rank, r.score, r.win_rate, r.ai_win_rate " +
+        String sql = "SELECT r.rank_id, r.user_id, u.username, u.avatar, r.rank, r.score, r.win_rate, r.ai_win_rate " +
                      "FROM t_rank r JOIN t_user u ON r.user_id = u.user_id " +
                      "WHERE r.user_id = ?";
 
@@ -252,7 +252,7 @@ public class RankDAO {
                             rs.getLong("rank_id"),
                             rs.getLong("user_id"),
                             rs.getString("username"),
-                            resolveAvatarUrl(rs.getString("avatar_url")),
+                            resolveAvatarUrl(rs.getString("avatar")),
                             rank,
                             score,
                             rs.getDouble("win_rate"),
@@ -340,7 +340,7 @@ public class RankDAO {
     }
 
     /**
-     * 将数据库存储的 avatar_url（可能是裸 OSS object key、完整 URL、已签名 URL）转成客户端可直接访问的 URL。
+     * 将数据库存储的 avatar（可能是裸 OSS object key、完整 URL、已签名 URL）转成客户端可直接访问的 URL。
      * - 已经是 http(s):// 或 file:// 的，直接返回
      * - 含 ?（已带签名参数）的，直接返回
      * - 否则视为裸 object key，走 OssService 生成 30 天预签名 URL

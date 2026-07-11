@@ -29,12 +29,11 @@ public class LoginController implements NetworkListener {
     @FXML private javafx.scene.layout.VBox countryCodeCard;
 
     private final CredentialStore credentialStore = new CredentialStore();
-    private boolean isPhoneLogin = false;
+    private boolean isPhoneLogin;
 
     @FXML
     private void initialize() {
         rememberCheckBox.setSelected(UserSettings.get().rememberPassword);
-        passwordField.clear();
         hideInlineMenu();
         if (!btnAccountTab.getStyleClass().contains("login-tab-btn-active")) {
             btnAccountTab.getStyleClass().add("login-tab-btn-active");
@@ -68,6 +67,8 @@ public class LoginController implements NetworkListener {
                 accountField.setPromptText("用户名 / 邮箱 / ID");
             }
         });
+
+        credentialStore.loadPassword().ifPresent(passwordField::setText);
     }
 
     @FXML
@@ -94,7 +95,7 @@ public class LoginController implements NetworkListener {
         try {
             if (rememberCheckBox.isSelected()) {
                 String account = isPhoneLogin ? selectedCode() + accountField.getText().trim() : accountField.getText().trim();
-                credentialStore.saveUsername(account);
+                credentialStore.saveCredentials(account, passwordField.getText().trim());
             } else {
                 credentialStore.clear();
             }
@@ -112,7 +113,7 @@ public class LoginController implements NetworkListener {
     private void handleAccountTab() {
         if (!isPhoneLogin) return;
         isPhoneLogin = false;
-        hideInlineMenu(); // 切换登录方式时，强制关闭可能开启的区号悬浮下拉菜单
+        hideInlineMenu();
         if (!btnAccountTab.getStyleClass().contains("login-tab-btn-active")) {
             btnAccountTab.getStyleClass().add("login-tab-btn-active");
         }
@@ -127,7 +128,7 @@ public class LoginController implements NetworkListener {
     private void handlePhoneTab() {
         if (isPhoneLogin) return;
         isPhoneLogin = true;
-        hideInlineMenu(); // 切换登录方式时，强制关闭可能开启的区号悬浮下拉菜单
+        hideInlineMenu();
         if (!btnPhoneTab.getStyleClass().contains("login-tab-btn-active")) {
             btnPhoneTab.getStyleClass().add("login-tab-btn-active");
         }
@@ -207,6 +208,9 @@ public class LoginController implements NetworkListener {
         } else if (Protocol.LOGIN_FAIL.equals(message.getCmd())) {
             errorLabel.setText(message.getString("msg"));
             ClientMain.getConnector().disconnect();
+        } else if ("DISCONNECT".equals(message.getCmd())) {
+            String disconnectMsg = message.has("msg") ? message.getString("msg") : "连接已断开";
+            errorLabel.setText(disconnectMsg);
         }
     }
 
@@ -220,7 +224,7 @@ public class LoginController implements NetworkListener {
         user.setDrawCount(message.getInt("drawCount"));
         user.setRank(message.getInt("rank"));
         user.setRole(message.getString("role").isEmpty() ? "PLAYER" : message.getString("role"));
-        user.setAvatarUrl(message.getString("avatar"));
+        user.setAvatar(message.getString("avatar"));
         AppConfig.setCurrentUser(user);
         AppConfig.setPreviewMode(false);
 

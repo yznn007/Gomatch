@@ -16,7 +16,7 @@ public class RoomWaitingController implements NetworkListener {
     @FXML private Label roomTitleLabel;
     @FXML private Label statusLabel;
     @FXML private ListView<String> playerList;
-    @FXML private Button startBtn;
+    @FXML private Button readyBtn;
     @FXML private TextField chatInput;
     @FXML private TextArea chatArea;
 
@@ -30,6 +30,9 @@ public class RoomWaitingController implements NetworkListener {
     private boolean previewMode;
     private String lastLocalChat;
     private long lastLocalChatTime;
+    private boolean isReady;
+    private boolean blackReady;
+    private boolean whiteReady;
 
     @FXML
     private void initialize() {
@@ -76,17 +79,53 @@ public class RoomWaitingController implements NetworkListener {
             players.add(user.getUsername());
         }
         playerList.setItems(players);
-        if (user != null && (user.getUsername().equals(room.getOwnerName()) || previewMode)) {
-            startBtn.setVisible(true);
+        // 预览模式下房主可见开始按钮；正式模式下始终显示准备按钮（等待对手加入后才能开始）
+        if (previewMode) {
+            readyBtn.setVisible(true);
+            readyBtn.setText("%room.startGame");
+        } else {
+            readyBtn.setVisible(true); // 始终显示准备按钮
+            readyBtn.setDisable(players.size() < 2); // 人数不足时禁用
         }
-        // 非预览模式才注册网络监听（时序已由 ScreenManager.clearListeners + 先 setPreviewMode 保证）
+        updateReadyStatusLabel();
+        // 非预览模式才注册网络监听
         if (!previewMode) {
             ClientMain.getConnector().addListener(this);
         }
     }
 
+    /** 添加对手用户名到列表中（用于加入者收到 JOIN_OK 后） */
+    public void addOpponentName(String opponentName) {
+        if (opponentName != null && !opponentName.isEmpty()) {
+            String displayName = getDisplayName(opponentName, false);
+            if (!players.contains(displayName)) {
+                players.add(0, displayName); // 对手在前（黑方在先）
+                readyBtn.setVisible(true);
+                readyBtn.setDisable(false); // 对手加入后启用准备按钮
+            }
+        }
+    }
+
+    /** 获取带准备状态的显示名称 */
+    private String getDisplayName(String username, boolean isReady) {
+        return username + (isReady ? " ✓" : "");
+    }
+
+    /** 更新玩家列表的准备状态显示 */
+    private void updatePlayerListReadyStatus() {
+        if (players.size() >= 2) {
+            String blackName = players.get(0).replace(" ✓", "");
+            String whiteName = players.get(1).replace(" ✓", "");
+            players.set(0, getDisplayName(blackName, blackReady));
+            players.set(1, getDisplayName(whiteName, whiteReady));
+        } else if (players.size() == 1) {
+            String name = players.get(0).replace(" ✓", "");
+            players.set(0, getDisplayName(name, blackReady));
+        }
+    }
+
     @FXML
-    private void handleStart() {
+    private void handleReady() {
         if (previewMode) {
             players.add("玩家C（bot）");
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");
@@ -94,7 +133,44 @@ public class RoomWaitingController implements NetworkListener {
             ctrl.setPreviewMode(true);
             return;
         }
-        ClientMain.getConnector().send(Protocol.READY);
+        isReady = !isReady;
+        ClientMain.getConnector().send(Message.of(Protocol.READY, "ready", String.valueOf(isReady)));
+        updateReadyButtonText();
+        // 立即更新本地状态显示
+        if (currentUser != null && players.size() >= 2) {
+            String myName = currentUser.getUsername();
+            if (myName.equals(players.get(0).replace(" ✓", ""))) {
+                blackReady = isReady;
+            } else if (myName.equals(players.get(1).replace(" ✓", ""))) {
+                whiteReady = isReady;
+            }
+            updateReadyStatusLabel();
+            updatePlayerListReadyStatus();
+        }
+    }
+
+    private void updateReadyButtonText() {
+        if (isReady) {
+            readyBtn.setText("取消准备");
+            readyBtn.getStyleClass().remove("btn-primary");
+            readyBtn.getStyleClass().add("btn-secondary");
+        } else {
+            readyBtn.setText("准备");
+            readyBtn.getStyleClass().remove("btn-secondary");
+            readyBtn.getStyleClass().add("btn-primary");
+        }
+    }
+
+    private void updateReadyStatusLabel() {
+        if (players.size() < 2) {
+            statusLabel.setText("等待其他玩家加入...");
+            return;
+        }
+        String blackName = players.size() > 0 ? players.get(0) : "黑方";
+        String whiteName = players.size() > 1 ? players.get(1) : "白方";
+        String blackStatus = blackReady ? "✓" : "⏳";
+        String whiteStatus = whiteReady ? "✓" : "⏳";
+        statusLabel.setText(String.format("黑方 %s %s  |  白方 %s %s", blackName, blackStatus, whiteName, whiteStatus));
     }
 
     @FXML
@@ -132,11 +208,46 @@ public class RoomWaitingController implements NetworkListener {
         String cmd = msg.getCmd();
         if (Protocol.PLAYER_ENTER.equals(cmd)) {
             String username = msg.getString("username");
-            players.add(username);
-            statusLabel.setText("玩家 " + username + " 已加入");
+            String displayName = getDisplayName(username, false);
+            if (!players.contains(displayName)) {
+                players.add(displayName);
+            }
+            // 第二人加入后启用准备按钮
+            if (players.size() >= 2) {
+                readyBtn.setVisible(true);
+                readyBtn.setDisable(false);
+            }
+            updateReadyStatusLabel();
         } else if (Protocol.PLAYER_LEAVE.equals(cmd)) {
             String username = msg.getString("username");
+            // 移除可能带准备状态标记的玩家名称
             players.remove(username);
+            players.remove(getDisplayName(username, true));
+            isReady = false;
+            blackReady = false;
+            whiteReady = false;
+            updateReadyButtonText();
+            updateReadyStatusLabel();
+            updatePlayerListReadyStatus();
+            // 人数不足时禁用准备按钮
+            if (players.size() < 2) {
+                readyBtn.setDisable(true);
+            }
+        } else if (Protocol.READY.equals(cmd)) {
+            blackReady = "true".equals(msg.getString("blackReady"));
+            whiteReady = "true".equals(msg.getString("whiteReady"));
+            // 同步自己的准备状态（防止服务端状态与本地不一致）
+            if (currentUser != null) {
+                String myName = currentUser.getUsername();
+                if (players.size() >= 1 && myName.equals(players.get(0).replace(" ✓", ""))) {
+                    isReady = blackReady;
+                } else if (players.size() >= 2 && myName.equals(players.get(1).replace(" ✓", ""))) {
+                    isReady = whiteReady;
+                }
+            }
+            updateReadyButtonText();
+            updateReadyStatusLabel();
+            updatePlayerListReadyStatus();
         } else if (Protocol.CHAT_MSG.equals(cmd)) {
             String username = msg.getString("username");
             String message = msg.getString("message");

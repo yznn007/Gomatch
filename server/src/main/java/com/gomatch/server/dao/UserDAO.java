@@ -1,9 +1,12 @@
 package com.gomatch.server.dao;
 
 import com.gomatch.server.security.PhoneNumberNormalizer;
+import org.mindrot.jbcrypt.BCrypt;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +16,8 @@ public class UserDAO {
     private static final Logger log = LoggerFactory.getLogger(UserDAO.class);
     private final RankDAO rankDAO = new RankDAO();
 
-    static final String LOGIN_BY_ACCOUNT_SQL = "SELECT user_id, username, score, win_count, lose_count, draw_count, " +
-            "role, status, phone FROM t_user WHERE (user_id = ? OR username = ? OR email = ? OR phone = ?) AND password = ?";
+    static final String LOGIN_BY_ACCOUNT_SQL = "SELECT user_id, username, password, score, win_count, lose_count, draw_count, " +
+            "role, status, phone FROM t_user WHERE (user_id = ? OR username = ? OR email = ? OR phone = ?)";
 
     public static class UserInfo {
         private final long userId;
@@ -117,7 +120,7 @@ public class UserDAO {
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, username.trim());
-            ps.setString(2, password);
+            ps.setString(2, BCrypt.hashpw(password, BCrypt.gensalt()));
             ps.setString(3, emailTrimmed);
             ps.setString(4, normalizedPhone);
             ps.executeUpdate();
@@ -159,16 +162,31 @@ public class UserDAO {
             ps.setString(2, accountValue);
             ps.setString(3, normalizedEmail);
             ps.setString(4, normalizedPhone);
-            ps.setString(5, password);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
+                    long userId = rs.getLong("user_id");
+                    String storedPassword = rs.getString("password");
+                    boolean passwordValid;
+
+                    passwordValid = matchesPassword(password, storedPassword);
+                    if (!isBcryptHash(storedPassword)) {
+                        if (passwordValid) {
+                            upgradePasswordToHash(userId, password);
+                            log.info("Password upgraded to bcrypt for userId={}", userId);
+                        }
+                    }
+
+                    if (!passwordValid) {
+                        log.warn("Login failed: password mismatch for account: {}", account);
+                        return null;
+                    }
                     String status = rs.getString("status");
                     if ("BANNED".equals(status)) {
                         log.warn("Banned user attempt to login: {}", account);
                         return null;
                     }
                     return new UserInfo(
-                            rs.getLong("user_id"),
+                            userId,
                             rs.getString("username"),
                             rs.getInt("score"),
                             rs.getInt("win_count"),
@@ -184,6 +202,34 @@ public class UserDAO {
             log.error("Login SQL error: {}", account, e);
         }
         return null;
+    }
+
+    private static boolean isBcryptHash(String password) {
+        return password != null && password.startsWith("$2a$");
+    }
+
+    static boolean matchesPassword(String candidate, String storedPassword) {
+        if (candidate == null || storedPassword == null) {
+            return false;
+        }
+        if (isBcryptHash(storedPassword)) {
+            return BCrypt.checkpw(candidate, storedPassword);
+        }
+        return MessageDigest.isEqual(
+                candidate.getBytes(StandardCharsets.UTF_8),
+                storedPassword.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private void upgradePasswordToHash(long userId, String plainPassword) {
+        String sql = "UPDATE t_user SET password = ?, update_time = NOW() WHERE user_id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, BCrypt.hashpw(plainPassword, BCrypt.gensalt()));
+            ps.setLong(2, userId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Failed to upgrade password for userId={}", userId, e);
+        }
     }
 
     private long parseAccountId(String account) {
@@ -348,7 +394,7 @@ public class UserDAO {
         String sql = "UPDATE t_user SET password = ?, update_time = NOW() WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newPassword);
+            ps.setString(1, BCrypt.hashpw(newPassword, BCrypt.gensalt()));
             ps.setLong(2, userId);
             boolean success = ps.executeUpdate() > 0;
             if (success) {
@@ -376,12 +422,12 @@ public class UserDAO {
                     log.warn("Change password failed: user not found, userId={}", userId);
                     return false;
                 }
-                String currentPassword = rs.getString("password");
-                if (!oldPassword.equals(currentPassword)) {
+                String storedPassword = rs.getString("password");
+                if (!matchesPassword(oldPassword, storedPassword)) {
                     log.warn("Change password failed: old password mismatch, userId={}", userId);
                     return false;
                 }
-                if (newPassword.equals(oldPassword)) {
+                if (matchesPassword(newPassword, storedPassword)) {
                     log.warn("Change password failed: new password same as old, userId={}", userId);
                     return false;
                 }
@@ -394,7 +440,7 @@ public class UserDAO {
         String updateSql = "UPDATE t_user SET password = ?, update_time = NOW() WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(updateSql)) {
-            ps.setString(1, newPassword);
+            ps.setString(1, BCrypt.hashpw(newPassword, BCrypt.gensalt()));
             ps.setLong(2, userId);
             boolean success = ps.executeUpdate() > 0;
             if (success) {
@@ -505,13 +551,13 @@ public class UserDAO {
      * 获取用户头像URL
      */
     public String getAvatar(long userId) {
-        String sql = "SELECT avatar_url FROM t_user WHERE user_id = ?";
+        String sql = "SELECT avatar FROM t_user WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    String url = rs.getString("avatar_url");
+                    String url = rs.getString("avatar");
                     return url != null ? url : "";
                 }
             }
@@ -524,11 +570,11 @@ public class UserDAO {
     /**
      * 更新用户头像URL
      */
-    public boolean updateAvatar(long userId, String avatarUrl) {
-        String sql = "UPDATE t_user SET avatar_url = ?, update_time = NOW() WHERE user_id = ?";
+    public boolean updateAvatar(long userId, String avatar) {
+        String sql = "UPDATE t_user SET avatar = ?, update_time = NOW() WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, avatarUrl);
+            ps.setString(1, avatar);
             ps.setLong(2, userId);
             boolean success = ps.executeUpdate() > 0;
             if (success) log.info("Avatar updated: userId={}", userId);

@@ -100,12 +100,14 @@ public class OssService {
         return String.format("data:%s;base64,%s", mimeType, Base64.getEncoder().encodeToString(data));
     }
 
-    public void deleteFile(String filePath) {
+    public void deleteFile(String filePath) throws IOException {
         OSS ossClient = null;
         try {
             ossClient = createOssClient();
             ossClient.deleteObject(bucketName, filePath);
             logger.info("Deleted file: {}", filePath);
+        } catch (Exception e) {
+            throw new IOException("Failed to delete OSS file: " + filePath, e);
         } finally {
             if (ossClient != null) {
                 ossClient.shutdown();
@@ -153,14 +155,13 @@ public class OssService {
         }
     }
 
-    public long getFileSize(String filePath) {
+    public long getFileSize(String filePath) throws IOException {
         OSS ossClient = null;
         try {
             ossClient = createOssClient();
             return ossClient.getObjectMetadata(bucketName, filePath).getContentLength();
         } catch (Exception e) {
-            logger.error("Error getting file size: {}", filePath, e);
-            return 0;
+            throw new IOException("Failed to get OSS file size: " + filePath, e);
         } finally {
             if (ossClient != null) {
                 ossClient.shutdown();

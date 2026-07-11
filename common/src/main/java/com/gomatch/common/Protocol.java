@@ -40,9 +40,6 @@ public class Protocol {
     public static final String LOGOUT = "LOGOUT";
     public static final String HEARTBEAT = "HEARTBEAT";
     public static final String HEARTBEAT_OK = "HEARTBEAT_OK";
-    // Cloud profile configuration - Client -> Server
-    public static final String REQ_GET_CONFIG    = "REQ_GET_CONFIG";
-    public static final String REQ_UPDATE_CONFIG = "REQ_UPDATE_CONFIG";
     public static final String CREATE_AI_ROOM = "CREATE_AI_ROOM";
     public static final String AI_MATCH = "AI_MATCH";
     public static final String RECONNECT = "RECONNECT";
@@ -69,9 +66,6 @@ public class Protocol {
     public static final String RANKING_LIST = "RANKING_LIST";
     public static final String ERROR        = "ERROR";
     public static final String DISCONNECT   = "DISCONNECT";
-    // Cloud profile configuration - Server -> Client
-    public static final String RESP_GET_CONFIG    = "RESP_GET_CONFIG";
-    public static final String RESP_UPDATE_CONFIG = "RESP_UPDATE_CONFIG";
     public static final String ROOM_CREATED     = "ROOM_CREATED";
     public static final String GAME_RECORDS     = "GAME_RECORDS";
     public static final String GAME_RECORDS_LIST = "GAME_RECORDS_LIST";
@@ -98,6 +92,14 @@ public class Protocol {
     public static final String FORGOT_PWD_VERIFY_OK = "FORGOT_PWD_VERIFY_OK";
     public static final String FORGOT_PWD_OK       = "FORGOT_PWD_OK";
     public static final String FORGOT_PWD_FAIL     = "FORGOT_PWD_FAIL";
+    // Config commands
+    public static final String REQ_GET_CONFIG    = "REQ_GET_CONFIG";
+    public static final String REQ_UPDATE_CONFIG = "REQ_UPDATE_CONFIG";
+    public static final String RESP_GET_CONFIG   = "RESP_GET_CONFIG";
+    public static final String RESP_UPDATE_CONFIG = "RESP_UPDATE_CONFIG";
+    // Settings commands - Client -> Server
+    public static final String GET_SETTINGS      = "GET_SETTINGS";
+    public static final String SAVE_SETTINGS     = "SAVE_SETTINGS";
     // Avatar commands - Client -> Server
     public static final String UPLOAD_AVATAR     = "UPLOAD_AVATAR";
     public static final String GET_AVATAR        = "GET_AVATAR";

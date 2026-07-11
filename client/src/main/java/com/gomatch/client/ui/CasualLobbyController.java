@@ -274,9 +274,24 @@ public class CasualLobbyController implements NetworkListener {
                 String[] pc = ps.split("/");
                 try { room.setPlayerCount(Integer.parseInt(pc[0])); } catch (Exception ignored) {}
             }
+            User u = currentUser != null ? currentUser : new com.gomatch.client.model.User();
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
             ctrl.setPreviewMode(false);
-            ctrl.setRoomInfo(room, currentUser != null ? currentUser : new com.gomatch.client.model.User());
+            ctrl.setRoomInfo(room, u);
+            // 加入者：补上已在房间中的对手名字
+            String myName = u != null ? u.getUsername() : "";
+            if (msg.has("blackUsername")) {
+                String black = msg.getString("blackUsername");
+                if (!black.isEmpty() && !black.equals(myName)) {
+                    ctrl.addOpponentName(black);
+                }
+            }
+            if (msg.has("whiteUsername")) {
+                String white = msg.getString("whiteUsername");
+                if (!white.isEmpty() && !white.equals(myName)) {
+                    ctrl.addOpponentName(white);
+                }
+            }
         } else if (Protocol.JOIN_FAIL.equals(cmd)) {
             showAlert("加入失败: " + msg.getString("msg"));
         } else if (Protocol.GAME_START.equals(cmd)) {

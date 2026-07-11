@@ -26,7 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 /** Gomatch game server entry point. */
 public class ServerMain {
     private static final Logger log = LoggerFactory.getLogger(ServerMain.class);
-    private static final int PORT = 8888;
+    private static final int DEFAULT_PORT = 8888;
+    private static int port = DEFAULT_PORT;
     private static final int MAX_CONNECTIONS = 100;
     private static final int MAX_CONNECTIONS_PER_ADDRESS = 10;
 
@@ -42,6 +43,7 @@ public class ServerMain {
 
     public static void main(String[] args) {
         log.info("=== Gomatch Server Starting ===");
+        parseArgs(args);
         DBUtil.init();
         RoomManager.getInstance();
         RedisManager.getInstance().init();
@@ -50,6 +52,25 @@ public class ServerMain {
         initRoomPersistence();
         Runtime.getRuntime().addShutdownHook(new Thread(ServerMain::shutdown, "shutdown-hook"));
         startListening();
+    }
+
+    private static void parseArgs(String[] args) {
+        for (int i = 0; i < args.length; i++) {
+            if ("-p".equals(args[i]) || "--port".equals(args[i])) {
+                if (i + 1 < args.length) {
+                    try {
+                        port = Integer.parseInt(args[i + 1]);
+                        if (port < 1 || port > 65535) {
+                            log.warn("Invalid port {} specified, using default port {}", port, DEFAULT_PORT);
+                            port = DEFAULT_PORT;
+                        }
+                    } catch (NumberFormatException e) {
+                        log.warn("Invalid port number format: {}, using default port {}", args[i + 1], DEFAULT_PORT);
+                    }
+                }
+            }
+        }
+        log.info("Server port configured: {}", port);
     }
 
     private static void initRankMaterializedView() {
@@ -95,8 +116,11 @@ public class ServerMain {
     private static void startListening() {
         ServerSocket serverSocket = null;
         try {
-            serverSocket = new ServerSocket(PORT);
-            log.info("Server listening on port {}", PORT);
+            java.net.InetSocketAddress addr = new java.net.InetSocketAddress(port);
+            serverSocket = new ServerSocket();
+            serverSocket.setReuseAddress(true);
+            serverSocket.bind(addr);
+            log.info("Server listening on port {}", port);
             log.info("Connection limits: total={}, perAddress={}",
                     MAX_CONNECTIONS, MAX_CONNECTIONS_PER_ADDRESS);
 
@@ -135,8 +159,13 @@ public class ServerMain {
                     }
                 }
             }
+        } catch (java.net.BindException e) {
+            log.error("Port {} is already in use!", port);
+            log.error("Please stop the existing server process or use a different port with:");
+            log.error("  mvn exec:java -Dexec.args=\"--port <new_port>\"");
+            System.exit(1);
         } catch (IOException e) {
-            log.error("Server failed to start on port {}", PORT, e);
+            log.error("Server failed to start on port {}", port, e);
             System.exit(1);
         } finally {
             closeServerSocket(serverSocket);

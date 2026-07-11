@@ -138,7 +138,7 @@ public class ProfileController implements NetworkListener {
             recordsContainer.getChildren().clear();
             if (recordData.isEmpty()) {
                 Label noRecordLabel = new Label("暂无对战记录，快去对战大厅来一局吧！");
-                noRecordLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
+                noRecordLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
                 recordsContainer.getChildren().add(noRecordLabel);
                 return;
             }
@@ -165,15 +165,15 @@ public class ProfileController implements NetworkListener {
                 if (result.contains("胜")) {
                     badgeContainer.getStyleClass().add("result-badge-win");
                     scoreChangeLabel.setText("+" + scoreChange);
-                    scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+                    scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #22c55e;");
                 } else if (result.contains("负")) {
                     badgeContainer.getStyleClass().add("result-badge-lose");
                     scoreChangeLabel.setText(String.valueOf(scoreChange));
-                    scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+                    scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #ef4444;");
                 } else {
                     badgeContainer.getStyleClass().add("result-badge-draw");
                     scoreChangeLabel.setText("+" + scoreChange);
-                    scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + ";");
+                    scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #94a3b8;");
                 }
 
                 // Info VBox
@@ -302,7 +302,7 @@ public class ProfileController implements NetworkListener {
         
         if (profileAvatarLabel != null && profileAvatarImg != null) {
             String name = user.getUsername();
-            String avatarUrl = user.getAvatarUrl();
+            String avatarUrl = user.getAvatar();
 
             // 设置渐变背景，与 Lobby / Ranking 风格统一
             profileAvatarPane.setStyle("-fx-background-color: " + gradientFor(name) + ";"
@@ -365,6 +365,7 @@ public class ProfileController implements NetworkListener {
         
         if (uploadAvatarBtn != null) {
             uploadAvatarBtn.setVisible(!isPreview());
+            uploadAvatarBtn.setText(user.getAvatar() != null && !user.getAvatar().isEmpty() ? "修改头像" : "上传头像");
         }
         
         scoreLabel.setText(user.getScore() > 0 ? String.valueOf(user.getScore()) : "未定级");
@@ -408,7 +409,7 @@ public class ProfileController implements NetworkListener {
     private void handleChangePwd() {
         String oldPwd = oldPwdField.getText().trim();
         String newPwd = newPwdField.getText().trim();
-        errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+        errorLabel.setStyle("-fx-text-fill: red;");
         if (oldPwd.isEmpty() || newPwd.isEmpty()) {
             errorLabel.setText("密码不能为空");
             return;
@@ -424,7 +425,7 @@ public class ProfileController implements NetworkListener {
         if (ClientMain.getConnector().isConnected()) {
             ClientMain.getConnector().send(Message.of(Protocol.CHANGE_PWD, "oldPassword", oldPwd, "newPassword", newPwd));
         } else {
-            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+            errorLabel.setStyle("-fx-text-fill: green;");
             errorLabel.setText("预览模式：密码修改请求已模拟");
         }
     }
@@ -440,7 +441,7 @@ public class ProfileController implements NetworkListener {
     @FXML
     private void handleAvatarClick(MouseEvent e) {
         if (currentUser == null) return;
-        String url = currentUser.getAvatarUrl();
+        String url = currentUser.getAvatar();
         String name = currentUser.getUsername();
         showAvatarPreview(url, name);
     }
@@ -481,14 +482,7 @@ public class ProfileController implements NetworkListener {
     private void showUploadStatus(String message, String color) {
         if (uploadStatusLabel != null) {
             uploadStatusLabel.setText(message);
-            String themeColor = switch (color) {
-                case "green" -> ScreenManager.themeColor("#16a34a", "#86efac");
-                case "red" -> ScreenManager.themeColor("#dc2626", "#fca5a5");
-                case "orange" -> ScreenManager.themeColor("#b45309", "#fcd34d");
-                case "blue" -> ScreenManager.themeColor("#475569", "#cbd5e1");
-                default -> color;
-            };
-            uploadStatusLabel.setStyle("-fx-text-fill: " + themeColor + ";");
+            uploadStatusLabel.setStyle("-fx-text-fill: " + color + ";");
         }
     }
 
@@ -496,12 +490,12 @@ public class ProfileController implements NetworkListener {
     public void onMessage(Message msg) {
         String cmd = msg.getCmd();
         if (Protocol.PWD_CHANGED.equals(cmd)) {
-            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+            errorLabel.setStyle("-fx-text-fill: green;");
             errorLabel.setText("密码修改成功");
             oldPwdField.clear();
             newPwdField.clear();
         } else if (Protocol.ERROR.equals(cmd)) {
-            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+            errorLabel.setStyle("-fx-text-fill: red;");
             errorLabel.setText(msg.has("msg") ? msg.getString("msg") : "操作失败");
         } else if ("AVATAR_UPLOADED".equals(cmd)) {
             String url = msg.getString("url");
@@ -509,7 +503,7 @@ public class ProfileController implements NetworkListener {
             if (url != null && !url.isEmpty()) {
                 showUploadStatus("头像上传成功", "green");
                 if (currentUser != null) {
-                    currentUser.setAvatarUrl(url);
+                    currentUser.setAvatar(url);
                     setCurrentUser(currentUser);
                 }
             } else {
@@ -518,7 +512,7 @@ public class ProfileController implements NetworkListener {
         } else if ("AVATAR_DATA".equals(cmd)) {
             String url = msg.getString("url");
             if (currentUser != null && url != null) {
-                currentUser.setAvatarUrl(url);
+                currentUser.setAvatar(url);
                 setCurrentUser(currentUser);
             }
         } else if (Protocol.RECORD_LIST.equals(cmd)) {

@@ -155,6 +155,12 @@ public class SessionManager {
         if (redisSession == null) {
             return null;
         }
+        Session existingByUserId = sessionsByUserId.get(redisSession.userId);
+        if (existingByUserId != null) {
+            log.warn("recoverFromRedis skipped: userId {} already has active session with token {}",
+                    redisSession.userId, existingByUserId.token.substring(0, 8));
+            return null;
+        }
         Session session = new Session(token, redisSession.userId, redisSession.username,
                 redisSession.score, redisSession.winCount, redisSession.loseCount,
                 redisSession.drawCount, redisSession.role == null ? "PLAYER" : redisSession.role);

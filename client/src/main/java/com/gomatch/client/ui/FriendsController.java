@@ -11,7 +11,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
@@ -123,7 +122,7 @@ public class FriendsController implements NetworkListener {
         if (ClientMain.getConnector().isConnected()) {
             ClientMain.getConnector().send(Message.of(Protocol.ADD_FRIEND, "friendUserId", Long.parseLong(targetIdStr), "message", msg));
         } else {
-            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+            errorLabel.setStyle("-fx-text-fill: green;");
             errorLabel.setText("预览模式：已模拟向用户 " + targetIdStr + " 发送好友申请");
         }
     }
@@ -190,11 +189,11 @@ public class FriendsController implements NetworkListener {
                 for (int i = 0; i < friends.length(); i++) {
                     org.json.JSONObject f = friends.getJSONObject(i);
                     friendsData.add(new FriendInfoModel(
-                            String.valueOf(f.getLong("friendUserId")), 
-                            f.getString("friendUsername"), 
-                            String.valueOf(f.getInt("friendScore")), 
+                            String.valueOf(f.getLong("friendUserId")),
+                            f.getString("friendUsername"),
+                            String.valueOf(f.getInt("friendScore")),
                             f.optBoolean("online", false),
-                            f.optString("avatarUrl", "")
+                            f.optString("avatar", "")
                     ));
                 }
             }
@@ -208,12 +207,12 @@ public class FriendsController implements NetworkListener {
                 }
             }
         } else if ("ADD_FRIEND_OK".equals(cmd)) {
-            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+            errorLabel.setStyle("-fx-text-fill: green;");
             errorLabel.setText("好友申请发送成功！");
             friendIdField.clear();
             addMsgField.clear();
         } else if ("ADD_FRIEND_FAIL".equals(cmd)) {
-            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+            errorLabel.setStyle("-fx-text-fill: red;");
             errorLabel.setText(msg.getString("msg"));
         } else if ("ACCEPT_FRIEND_OK".equals(cmd)) {
             showAlert("已成功添加好友！");
@@ -242,25 +241,25 @@ public class FriendsController implements NetworkListener {
         private final String friendUsername;
         private final String friendScore;
         private final boolean online;
-        private final String avatarUrl;
+        private final String avatar;
 
         public FriendInfoModel(String friendUserId, String friendUsername, String friendScore, boolean online) {
             this(friendUserId, friendUsername, friendScore, online, "");
         }
 
-        public FriendInfoModel(String friendUserId, String friendUsername, String friendScore, boolean online, String avatarUrl) {
+        public FriendInfoModel(String friendUserId, String friendUsername, String friendScore, boolean online, String avatar) {
             this.friendUserId = friendUserId;
             this.friendUsername = friendUsername;
             this.friendScore = friendScore;
             this.online = online;
-            this.avatarUrl = avatarUrl;
+            this.avatar = avatar;
         }
 
         public String getFriendUserId() { return friendUserId; }
         public String getFriendUsername() { return friendUsername; }
         public String getFriendScore() { return friendScore; }
         public boolean isOnline() { return online; }
-        public String getAvatarUrl() { return avatarUrl; }
+        public String getAvatar() { return avatar; }
     }
 
     public static class FriendRequestModel {
@@ -291,7 +290,7 @@ public class FriendsController implements NetworkListener {
             friendsContainer.getChildren().clear();
             if (friendsData.isEmpty()) {
                 Label noFriendLabel = new Label("暂无好友，快去添加吧！");
-                noFriendLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
+                noFriendLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
                 friendsContainer.getChildren().add(noFriendLabel);
                 return;
             }
@@ -305,33 +304,24 @@ public class FriendsController implements NetworkListener {
                 javafx.scene.layout.HBox.setHgrow(card, javafx.scene.layout.Priority.ALWAYS);
 
                 // Avatar with Status Dot
-                final double AVATAR_SIZE = 44;
                 javafx.scene.layout.StackPane avatarContainer = new javafx.scene.layout.StackPane();
                 avatarContainer.setAlignment(javafx.geometry.Pos.BOTTOM_RIGHT);
-                avatarContainer.setPrefSize(AVATAR_SIZE + 4, AVATAR_SIZE + 4);
 
                 javafx.scene.layout.StackPane avatar = new javafx.scene.layout.StackPane();
                 avatar.getStyleClass().add("avatar-badge");
-                avatar.setPrefSize(AVATAR_SIZE, AVATAR_SIZE);
-                avatar.setMinSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
-                avatar.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
                 String name = friend.getFriendUsername() != null ? friend.getFriendUsername() : "F";
                 String charVal = name.isEmpty() ? "F" : name.substring(0, 1).toUpperCase();
                 Label avatarText = new Label(charVal);
                 avatarText.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 avatarText.getStyleClass().add("avatar-badge-text");
-
-                String avatarUrl = friend.getAvatarUrl();
+                
+                String avatarUrl = friend.getAvatar();
                 if (avatarUrl != null && !avatarUrl.isEmpty()) {
                     try {
                         Image image = new Image(avatarUrl, true);
                         ImageView avatarImg = new ImageView();
-                        avatarImg.setFitWidth(AVATAR_SIZE);
-                        avatarImg.setFitHeight(AVATAR_SIZE);
-                        // 圆形裁剪
-                        javafx.scene.shape.Circle imgClip = new javafx.scene.shape.Circle(
-                                AVATAR_SIZE / 2.0, AVATAR_SIZE / 2.0, AVATAR_SIZE / 2.0);
-                        avatarImg.setClip(imgClip);
+                        avatarImg.setFitWidth(36);
+                        avatarImg.setFitHeight(36);
                         image.errorProperty().addListener((obs, oldVal, newVal) -> {
                             if (newVal) {
                                 avatarImg.setVisible(false);
@@ -369,15 +359,6 @@ public class FriendsController implements NetworkListener {
 
                 avatarContainer.getChildren().addAll(avatar, statusDot);
 
-                // 点击头像放大预览
-                String previewUrl = avatarUrl;
-                String previewName = name;
-                avatarContainer.setOnMouseClicked((MouseEvent e) -> {
-                    e.consume();
-                    showAvatarPreview(previewUrl, previewName);
-                });
-                avatarContainer.setStyle("-fx-cursor: hand;");
-
                 // Info VBox
                 VBox infoBox = new VBox(4);
                 infoBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
@@ -387,21 +368,21 @@ public class FriendsController implements NetworkListener {
                 nameRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 Label nameLabel = new Label(friend.getFriendUsername());
                 nameLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
+                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
                 Label idLabel = new Label("#" + friend.getFriendUserId());
                 idLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
+                idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
                 nameRow.getChildren().addAll(nameLabel, idLabel);
 
                 HBox detailRow = new HBox(8);
                 detailRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 Label scoreLabel = new Label(friend.getFriendScore() + " 分");
                 scoreLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                scoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
+                scoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
                 
                 Label activeLabel = new Label(isOnline ? "在线" : "离线");
                 activeLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                activeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + (isOnline ? ScreenManager.themeColor("#16a34a", "#86efac") : ScreenManager.themeColor("#64748b", "#a7b0c2")) + ";");
+                activeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + (isOnline ? "#16a34a;" : "#64748b;"));
                 
                 detailRow.getChildren().addAll(scoreLabel, activeLabel);
                 infoBox.getChildren().addAll(nameRow, detailRow);
@@ -411,14 +392,14 @@ public class FriendsController implements NetworkListener {
                 actionBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
                 Button deleteBtn = new Button("删除");
-                deleteBtn.getStyleClass().add("btn-danger");
+                deleteBtn.getStyleClass().add("btn-secondary");
                 deleteBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                deleteBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
+                deleteBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px; -fx-text-fill: #ef4444;");
  
                 // Create ContextMenu for double confirmation (secondary menu)
                 ContextMenu confirmMenu = new ContextMenu();
                 MenuItem confirmItem = new MenuItem("确认删除");
-                confirmItem.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + "; -fx-font-weight: bold;");
+                confirmItem.setStyle("-fx-text-fill: #ef4444; -fx-font-weight: bold;");
                 confirmItem.setOnAction(evt -> handleDeleteFriend(friend.getFriendUserId()));
                 confirmMenu.getItems().add(confirmItem);
  
@@ -440,7 +421,7 @@ public class FriendsController implements NetworkListener {
             requestsContainer.getChildren().clear();
             if (requestsData.isEmpty()) {
                 Label noReqLabel = new Label("暂无待处理的好友申请。");
-                noReqLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
+                noReqLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
                 requestsContainer.getChildren().add(noReqLabel);
                 return;
             }
@@ -454,13 +435,9 @@ public class FriendsController implements NetworkListener {
                 javafx.scene.layout.HBox.setHgrow(card, javafx.scene.layout.Priority.ALWAYS);
 
                 // Avatar Circle
-                final double REQ_AVATAR_SIZE = 44;
                 javafx.scene.layout.StackPane avatar = new javafx.scene.layout.StackPane();
                 avatar.getStyleClass().add("avatar-badge");
-                avatar.setStyle("-fx-background-color: " + ScreenManager.themeColor("rgba(245,158,11,0.45)", "rgba(245,158,11,0.65)") + ";"); // Orange for requests
-                avatar.setPrefSize(REQ_AVATAR_SIZE, REQ_AVATAR_SIZE);
-                avatar.setMinSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
-                avatar.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
+                avatar.setStyle("-fx-background-color: #f59e0b;"); // Orange for requests
                 String name = req.getFromUsername() != null ? req.getFromUsername() : "R";
                 String charVal = name.isEmpty() ? "R" : name.substring(0, 1).toUpperCase();
                 Label avatarText = new Label(charVal);
@@ -477,17 +454,17 @@ public class FriendsController implements NetworkListener {
                 nameRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 Label nameLabel = new Label(req.getFromUsername());
                 nameLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
+                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
                 Label idLabel = new Label("#" + req.getFromUserId());
                 idLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
+                idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
                 nameRow.getChildren().addAll(nameLabel, idLabel);
 
                 String msg = req.getMessage() != null && !req.getMessage().isEmpty() ? 
                              "“" + req.getMessage() + "”" : "加个好友吧！";
                 Label msgLabel = new Label(msg);
                 msgLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                msgLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + "; -fx-font-style: italic;");
+                msgLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b; -fx-font-style: italic;");
                 infoBox.getChildren().addAll(nameRow, msgLabel);
 
                 // Action Buttons
@@ -501,9 +478,9 @@ public class FriendsController implements NetworkListener {
                 acceptBtn.setOnAction(e -> handleAcceptRequest(req.getRequestId()));
 
                 Button rejectBtn = new Button("拒绝");
-                rejectBtn.getStyleClass().add("btn-danger");
+                rejectBtn.getStyleClass().add("btn-secondary");
                 rejectBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                rejectBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
+                rejectBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px; -fx-text-fill: #ef4444;");
                 rejectBtn.setOnAction(e -> handleRejectRequest(req.getRequestId()));
 
                 actionBox.getChildren().addAll(acceptBtn, rejectBtn);
@@ -512,18 +489,5 @@ public class FriendsController implements NetworkListener {
                 requestsContainer.getChildren().add(card);
             }
         });
-    }
-
-    private void showAvatarPreview(String avatarUrl, String username) {
-        ScreenManager.showDialog("/fxml/AvatarPreviewUI.fxml",
-            (AvatarPreviewController ctrl) -> {
-                if (avatarUrl != null && !avatarUrl.isEmpty()) {
-                    Image image = new Image(avatarUrl, true);
-                    ctrl.setAvatar(image, username);
-                } else {
-                    ctrl.setAvatar(null, username);
-                }
-            }
-        );
     }
 }

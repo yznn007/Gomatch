@@ -15,6 +15,7 @@
 > FXML 布局、CSS 样式、动画特效、视觉组件
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
+| 2026-07-11 | Contributor| fix(auth): 修复旧密码改密兼容 | 旧明文密码账户改密时使用兼容校验，成功后统一写入 BCrypt 哈希；新增旧密码与 BCrypt 密码匹配回归测试。 |
 | 2026-07-11 | Contributor| fix(config): 允许无认证 Redis 使用 `.env` 配置 | Redis 密码保持环境变量来源；未启用 Redis 认证时允许其为空，避免旧本地配置无法启动。 |
 | 2026-07-11 | Contributor| docs(config): 补充运行凭据优先级 | 明确系统环境变量、`.env` 与非敏感资源默认值的优先级，以及 `GOMATCH_ENV_FILE` 的定位规则。 |
 | 2026-07-11 | Contributor| feat(config): 统一运行时凭据为 `.env` 与环境变量 | MySQL、Redis 与 OSS 凭据不再提交到资源配置；系统环境变量优先于 `.env`，服务端启动校验必填 MySQL/Redis 配置。 |
