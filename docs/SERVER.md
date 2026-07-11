@@ -168,13 +168,6 @@ private static final SessionManager sessionManager = SessionManager.getInstance(
 | `UPLOAD_AVATAR` | `handleUploadAvatar` | 上传头像到 OSS |
 | `GET_AVATAR` | `handleGetAvatar` | 获取头像 |
 | `DELETE_AVATAR` | `handleDeleteAvatar` | 删除头像 |
-| `UPLOAD_MUSIC` | `handleUploadMusic` | 上传背景音乐到 OSS |
-| `GET_MUSIC` | `handleGetMusic` | 获取音乐 |
-| `DELETE_MUSIC` | `handleDeleteMusic` | 删除音乐 |
-| `SET_DEFAULT_MUSIC` | `handleSetDefaultMusic` | 设置默认大厅音乐 |
-| `MUSIC_LIST` | `handleMusicList` | 返回音乐列表 |
-| `GET_SETTINGS` | `handleGetSettings` | 读取用户设置 |
-| `SAVE_SETTINGS` | `handleSaveSettings` | 保存用户设置 |
 | `BAN_USER` | `handleBanUser` | 管理员：封禁用户 |
 | `UNBAN_USER` | `handleUnbanUser` | 管理员：解禁用户 |
 | `FORCE_CLOSE_ROOM` | `handleForceCloseRoom` | 管理员：强制结束房间 |

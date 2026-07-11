@@ -153,9 +153,7 @@ String username = parsed.getString("username");
 | `CREATE_AI_ROOM` / `AI_MATCH` | 同名值 | 人机对战 |
 | `RECONNECT` | `RECONNECT` | 断线重连 |
 | `HEARTBEAT` | `HEARTBEAT` | 心跳 |
-| `GET_SETTINGS` / `SAVE_SETTINGS` | 同名值 | 用户设置读取与保存 |
 | `UPLOAD_AVATAR` / `GET_AVATAR` / `DELETE_AVATAR` | 同名值 | 头像数据 |
-| `UPLOAD_MUSIC` / `GET_MUSIC` / `DELETE_MUSIC` / `SET_DEFAULT_MUSIC` / `MUSIC_LIST` | 同名值 | 音乐数据 |
 | `BAN_USER` / `UNBAN_USER` / `FORCE_CLOSE_ROOM` / `USER_LIST` / `ADMIN_STATS` / `UPDATE_USER_ROLE` | 同名值 | 管理端操作 |
 | `LOGOUT` | `LOGOUT` | 退出登录 |
 | `FORGOT_PASSWORD` / `VERIFY_FORGOT_CODE` / `FORGOT_PWD_RESET` | 同名值 | 忘记密码：发送验证码 / 校验验证码 / 重置密码 |
@@ -180,9 +178,7 @@ String username = parsed.getString("username");
 | `TURN_TIMEOUT` | `TURN_TIMEOUT` | 回合超时 |
 | `MATCH_TIMEOUT` / `QUICK_MATCH_FOUND` / `RANKED_MATCH_FOUND` | 同名值 | 匹配状态：匹配超时 / 快速匹配成功 / 排位匹配成功 |
 | `HEARTBEAT_OK` | `HEARTBEAT_OK` | 心跳响应 |
-| `SETTINGS_DATA` | `SETTINGS_DATA` | 用户设置数据 |
 | `AVATAR_DATA` / `AVATAR_UPLOADED` / `AVATAR_DELETED` | 同名值 | 头像响应 |
-| `MUSIC_DATA` / `MUSIC_UPLOADED` / `MUSIC_DELETED` / `MUSIC_LIST_DATA` | 同名值 | 音乐响应 |
 | `ERROR` | `ERROR` | 通用错误响应 |
 | `DISCONNECT` | `DISCONNECT` | 服务端主动断开通知 |
 | `LOGOUT_OK` | `LOGOUT_OK` | 退出登录成功 |
