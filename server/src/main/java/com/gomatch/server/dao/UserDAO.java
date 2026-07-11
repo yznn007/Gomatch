@@ -5,6 +5,8 @@ import org.mindrot.jbcrypt.BCrypt;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -166,10 +168,8 @@ public class UserDAO {
                     String storedPassword = rs.getString("password");
                     boolean passwordValid;
 
-                    if (isBcryptHash(storedPassword)) {
-                        passwordValid = BCrypt.checkpw(password, storedPassword);
-                    } else {
-                        passwordValid = password.equals(storedPassword);
+                    passwordValid = matchesPassword(password, storedPassword);
+                    if (!isBcryptHash(storedPassword)) {
                         if (passwordValid) {
                             upgradePasswordToHash(userId, password);
                             log.info("Password upgraded to bcrypt for userId={}", userId);
@@ -204,8 +204,20 @@ public class UserDAO {
         return null;
     }
 
-    private boolean isBcryptHash(String password) {
+    private static boolean isBcryptHash(String password) {
         return password != null && password.startsWith("$2a$");
+    }
+
+    static boolean matchesPassword(String candidate, String storedPassword) {
+        if (candidate == null || storedPassword == null) {
+            return false;
+        }
+        if (isBcryptHash(storedPassword)) {
+            return BCrypt.checkpw(candidate, storedPassword);
+        }
+        return MessageDigest.isEqual(
+                candidate.getBytes(StandardCharsets.UTF_8),
+                storedPassword.getBytes(StandardCharsets.UTF_8));
     }
 
     private void upgradePasswordToHash(long userId, String plainPassword) {
@@ -410,12 +422,12 @@ public class UserDAO {
                     log.warn("Change password failed: user not found, userId={}", userId);
                     return false;
                 }
-                String hashedPassword = rs.getString("password");
-                if (!BCrypt.checkpw(oldPassword, hashedPassword)) {
+                String storedPassword = rs.getString("password");
+                if (!matchesPassword(oldPassword, storedPassword)) {
                     log.warn("Change password failed: old password mismatch, userId={}", userId);
                     return false;
                 }
-                if (BCrypt.checkpw(newPassword, hashedPassword)) {
+                if (matchesPassword(newPassword, storedPassword)) {
                     log.warn("Change password failed: new password same as old, userId={}", userId);
                     return false;
                 }
