@@ -47,6 +47,8 @@ oss.properties
 .workbuddy/
 .agent/
 .agents/
+/superpowers/
+.worktrees/
 
 # 忽略 Redis 快照文件
 dump.rdb

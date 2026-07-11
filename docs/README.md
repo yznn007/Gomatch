@@ -53,6 +53,7 @@
 | [DEV_GUIDELINE.md](DEV_GUIDELINE.md) | Git 提交、分支、代码规范、FXML/Controller 映射、文档维护约定 |
 | [UI_GUIDELINE.md](UI_GUIDELINE.md) | 双主题磨砂 UI、底划线控件、响应式布局、弹窗规范、可复用按钮/卡片/布局 CSS 模板 |
 | [DEV_LOG.md](DEV_LOG.md) | 开发过程记录；每次完成任务后追加一行 |
+| [releases/README.md](releases/README.md) | 客户端版本说明：标签同名 Markdown、Release 编写模板 |
 | [../AGENTS.md](../AGENTS.md) | AI 协作约定、运行命令、项目架构、UI 约束、文档维护规则 |
 
 ## 5. 实训交付文档

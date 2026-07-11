@@ -163,7 +163,7 @@
                             </columnConstraints>
                             
                             <Label text="%settings.serverIp" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
-                            <ComboBox fx:id="ipComboBox" editable="true" prefWidth="200" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                            <ComboBox fx:id="ipComboBox" editable="true" promptText="留空使用默认服务器" prefWidth="200" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
                             
                             <Label text="%settings.serverPort" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
                             <TextField fx:id="portField" prefWidth="200" styleClass="field" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
