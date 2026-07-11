@@ -68,6 +68,9 @@ public class ScreenManager {
         // 设置为无系统装饰边框窗口，实现自定义沉浸式标题栏
         stage.initStyle(StageStyle.UNDECORATED);
 
+        // 禁止 ESC 键退出全屏，全屏只能通过设置页手动关闭
+        stage.setFullScreenExitKeyCombination(javafx.scene.input.KeyCombination.NO_MATCH);
+
         // 核心修复：监听最小化还原事件，确保在 Windows 任务栏点击图标时能正确唤醒和置顶无边框 stage
         stage.iconifiedProperty().addListener((obs, oldVal, newVal) -> {
             if (!newVal) {
@@ -145,22 +148,31 @@ public class ScreenManager {
             });
 
             Scene oldScene = stage.getScene();
-            double w = oldScene == null ? WIDTH : oldScene.getWidth();
-            double h = oldScene == null ? HEIGHT : oldScene.getHeight();
-            Scene scene = new Scene(wrapper, w, h);
-            scene.setCamera(new javafx.scene.PerspectiveCamera(false));
-            
-            // 核心绑定：将标题栏宽度绑定至 mainLayout 宽度，保证在缩放时仍与主界面容器完美贴合
-            customTitleBar.prefWidthProperty().bind(mainLayout.widthProperty());
-            
-            applyStylesheet(scene);
-            applyUserTheme(scene);
-            applyUserFont(scene);
-            stage.setScene(scene);
 
-            if (firstShow) {
+            if (oldScene == null) {
+                // 首次：创建 Scene 并设置到 Stage
+                Scene scene = new Scene(wrapper, WIDTH, HEIGHT);
+                scene.setCamera(new javafx.scene.PerspectiveCamera(false));
+
+                customTitleBar.prefWidthProperty().bind(mainLayout.widthProperty());
+
+                applyStylesheet(scene);
+                applyUserTheme(scene);
+                applyUserFont(scene);
+                stage.setScene(scene);
+
+                if (UserSettings.get().fullscreen) {
+                    stage.setFullScreen(true);
+                }
                 stage.centerOnScreen();
                 firstShow = false;
+            } else {
+                // 后续：仅替换 root，避免 setScene 导致全屏闪烁
+                customTitleBar.prefWidthProperty().bind(mainLayout.widthProperty());
+                oldScene.setRoot(wrapper);
+                // 替换 root 后需重新应用主题样式
+                applyUserTheme(oldScene);
+                applyUserFont(oldScene);
             }
             stage.show();
             return controller;

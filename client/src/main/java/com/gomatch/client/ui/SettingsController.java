@@ -33,7 +33,6 @@ public class SettingsController {
     @FXML private CheckBox rememberPasswordCheckBox;
 
     // 图像设置
-    @FXML private ComboBox<String> resolutionComboBox;
     @FXML private CheckBox fullscreenCheckBox;
     @FXML private CheckBox vsyncCheckBox;
     @FXML private ComboBox<String> fpsComboBox;
@@ -91,33 +90,8 @@ public class SettingsController {
     private boolean wasGlobalMusicEnabled;
     private boolean wasBgMusicEnabled;
 
-    /** 分辨率字符串 → 宽高映射（使用 i18n key 解析实际尺寸） */
-    private int[] parseResolution(String displayText) {
-        // 从显示文本中提取数字部分，如 "900x640 (默认)" → 900,640
-        try {
-            String nums = displayText.replaceAll("[^0-9x].*", "").trim();
-            String[] parts = nums.split("x");
-            if (parts.length >= 2) {
-                return new int[]{Integer.parseInt(parts[0].trim()), Integer.parseInt(parts[1].trim())};
-            }
-        } catch (Exception ignored) {}
-        return new int[]{900, 640};
-    }
-
-    private String resolutionToDisplay(int w, int h) {
-        if (w == 1024 && h == 768) return I18N.get("settings.resolution.2");
-        if (w == 1280 && h == 720) return I18N.get("settings.resolution.3");
-        return I18N.get("settings.resolution.1");
-    }
-
     /** 填充所有 ComboBox 的可选项（i18n） */
     private void populateComboBoxItems() {
-        // 分辨率
-        resolutionComboBox.getItems().setAll(
-                I18N.get("settings.resolution.1"),
-                I18N.get("settings.resolution.2"),
-                I18N.get("settings.resolution.3"));
-
         // 帧率
         fpsComboBox.getItems().setAll(
                 I18N.get("settings.fps.60"),
@@ -181,10 +155,8 @@ public class SettingsController {
         // 图像设置
         Stage stage = ScreenManager.getStage();
         if (stage != null) {
-            resolutionComboBox.setValue(resolutionToDisplay((int) stage.getWidth(), (int) stage.getHeight()));
             fullscreenCheckBox.setSelected(stage.isFullScreen());
         } else {
-            resolutionComboBox.setValue(I18N.get("settings.resolution.1"));
             fullscreenCheckBox.setSelected(s.fullscreen);
         }
         vsyncCheckBox.setSelected(s.vsync);
@@ -452,26 +424,6 @@ public class SettingsController {
     }
 
     // ========== 图像设置 ==========
-
-    @FXML
-    private void handleResolution() {
-        String val = resolutionComboBox.getValue();
-        if (val == null) return;
-        int[] size = parseResolution(val);
-        if (size == null) return;
-
-        Stage stage = ScreenManager.getStage();
-        if (stage != null) {
-            stage.setFullScreen(false);
-            fullscreenCheckBox.setSelected(false);
-            stage.setWidth(size[0]);
-            stage.setHeight(size[1]);
-            stage.centerOnScreen();
-        }
-
-        UserSettings.get().resolution = size[0] + "x" + size[1];
-        UserSettings.save();
-    }
 
     @FXML
     private void handleFullscreen() {
