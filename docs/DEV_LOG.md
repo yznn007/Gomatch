@@ -16,6 +16,7 @@
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
 |------|------|----------|-----------|
+| 2026-07-11 13:42 | Contributor| refactor(database): 移除未接入的用户设置与音乐表业务 | 删除 `t_user_settings`、`t_user_music` 及其 database 实体/仓储；云端配置继续使用 `t_user_profile.config_json`，头像 OSS 与审计日志保持不变。 |
 | 2026-07-11 03:54 | Contributor| style(client): 将登录和注册界面的手机号码前缀与输入框合并到同一行，只留前缀代码并实现登录切换栏 | 1. **LoginUI/RegisterUI.fxml**：合并国家区号 ComboBox 和输入框至同一行，并缩窄宽度至 65px；2. **Login/RegisterController**：区号项移除中文仅留 +86 等代码；3. **LoginUI.fxml / LoginController**：在登录标题下加入“账号登录/手机号登录”的极简 HBox 切换栏，切至手机号时展开区号下拉框并改变占位符为“手机号”，切至账号时隐藏区号，并支持在记住密码时根据账号类型自动切换 Tab 加载；4. **style.css**：为登录切换栏定制极简双主题底划线样式；5. **RegisterUI.fxml**：手机号默认文字简化为“手机号”，并移动行位置。 |
 | 2026-07-11 03:20 | Contributor| fix: 修复大厅音乐选择与播放顺序在下次登录时无法同步的 bug | 1. **UserSettings**：新增 `selectedSongPath` 和 `playOrder` 字段，通过 GSON 自动持久化；2. **BackgroundMusicManager**：将 `currentPlayOrder` 升级为 `ObjectProperty<PlayOrder>` 以支持响应式 UI，增加 `selectAndPlaySong` 以区分用户主动选歌与自动切歌，并实现 `applySettings` 用于应用/同步本地及云端偏好；3. **SettingsController**：将选歌下拉框改为调用新 API，并对播放顺序属性添加 Listener，在云端同步播放顺序时自动刷新按钮文本；4. **ClientMain / ConfigManager**：分别在本地加载和云端配置同步完后自动触发 `applySettings` 平滑过渡应用。 |
 | 2026-07-11 00:57 | Contributor| physics: 减小 3D 移动卡片 (PixelCard) 的 Z 轴摆动幅度 | 进一步抑制摆动的响应振幅：1. 鼠标滑入瞬间的脉冲推力因子从 0.25 降至 0.06，防止晃动起点过大；2. 鼠标平移速度带来的摆动角加速度传导系数从 0.000025 降低至 0.000006；3. 单帧最大推力限制从 0.15 限制到 0.04，使得晃动幅度和摆角被严格约束在极小且微弱的精致感官范围内。 |
