@@ -66,7 +66,8 @@ New-Item -ItemType Directory -Force -Path $destination | Out-Null
     --win-menu-group Gomatch `
     --win-shortcut `
     --win-dir-chooser `
-    --win-upgrade-uuid 93c1f0fb-248a-4b8a-a1f1-c423e8039f03
+    --win-upgrade-uuid 93c1f0fb-248a-4b8a-a1f1-c423e8039f03 `
+    --java-options "-Dprism.dirtyopts=false"
 if ($LASTEXITCODE -ne 0) {
     throw "MSI 打包失败，退出码：$LASTEXITCODE"
 }
