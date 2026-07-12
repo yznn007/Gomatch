@@ -1,6 +1,7 @@
 package com.gomatch.client.ui;
 
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
 import com.gomatch.common.Protocol;
@@ -45,9 +46,9 @@ public class RecordController implements NetworkListener {
         int m = seconds / 60;
         int s = seconds % 60;
         if (m > 0) {
-            return m + "分" + (s > 0 ? s + "秒" : "");
+            return m + I18N.get("record.minute") + (s > 0 ? s + I18N.get("profile.second") : "");
         }
-        return s + "秒";
+        return s + I18N.get("profile.second");
     }
 
     @SuppressWarnings("unchecked")
@@ -56,8 +57,8 @@ public class RecordController implements NetworkListener {
         records.addListener((javafx.collections.ListChangeListener<Map<String, String>>) c -> renderRecordCards());
         if (!ClientMain.getConnector().isConnected()) {
             records.addAll(
-                Map.of("opponent", "玩家A", "result", "胜", "time", "2026-07-04 15:30", "replay", "回放", "moves", "3,3,1;3,4,2;4,4,1;4,5,2;5,5,1"),
-                Map.of("opponent", "玩家B", "result", "负", "time", "2026-07-04 16:10", "replay", "回放", "moves", "7,7,1;7,8,2;8,8,1;8,9,2;9,9,1;9,10,2")
+                Map.of("opponent", I18N.get("casual.preview.playerA"), "result", I18N.get("record.win"), "time", "2026-07-04 15:30", "replay", I18N.get("record.replay"), "moves", "3,3,1;3,4,2;4,4,1;4,5,2;5,5,1"),
+                Map.of("opponent", I18N.get("casual.preview.playerB"), "result", I18N.get("record.lose"), "time", "2026-07-04 16:10", "replay", I18N.get("record.replay"), "moves", "7,7,1;7,8,2;8,8,1;8,9,2;9,9,1;9,10,2")
             );
         } else {
             ClientMain.getConnector().addListener(this);
@@ -89,11 +90,11 @@ public class RecordController implements NetworkListener {
                 String opponentName = currentUserId == player1Id ? r.getString("player2Name") : r.getString("player1Name");
                 String result;
                 if (winnerId == 0) {
-                    result = "平局";
+                    result = I18N.get("record.draw");
                 } else if (winnerId == currentUserId) {
-                    result = "胜";
+                    result = I18N.get("record.win");
                 } else {
-                    result = "负";
+                    result = I18N.get("record.lose");
                 }
 
                 Object boardDataObj = r.opt("boardData");
@@ -115,7 +116,7 @@ public class RecordController implements NetworkListener {
                 recordMap.put("opponent", opponentName);
                 recordMap.put("result", result);
                 recordMap.put("time", r.getString("createTime"));
-                recordMap.put("replay", "回放");
+                recordMap.put("replay", I18N.get("record.replay"));
                 recordMap.put("moves", boardData);
                 recordMap.put("moveCount", String.valueOf(moveCount));
                 recordMap.put("duration", String.valueOf(duration));
@@ -138,7 +139,7 @@ public class RecordController implements NetworkListener {
         javafx.application.Platform.runLater(() -> {
             recordsContainer.getChildren().clear();
             if (records.isEmpty()) {
-                Label noRecordLabel = new Label("暂无对战记录，快去对战大厅来一局吧！");
+                Label noRecordLabel = new Label(I18N.get("record.noRecords"));
                 noRecordLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px; -fx-padding: 20 0;");
                 recordsContainer.getChildren().add(noRecordLabel);
                 return;
@@ -160,7 +161,7 @@ public class RecordController implements NetworkListener {
                 // Result Badge & ELO change indicator
                 javafx.scene.layout.StackPane badgeContainer = new javafx.scene.layout.StackPane();
                 badgeContainer.getStyleClass().add("result-badge");
-                String result = finalRecord.getOrDefault("result", "平");
+                String result = finalRecord.getOrDefault("result", I18N.get("record.defaultResult"));
                 Label badgeText = new Label(result.substring(0, 1));
                 badgeText.getStyleClass().add("result-badge-text");
                 badgeContainer.getChildren().add(badgeText);
@@ -168,11 +169,11 @@ public class RecordController implements NetworkListener {
                 int scoreChange = parseIntOrDefault(finalRecord.get("scoreChange"), 0);
                 Label scoreChangeLabel = new Label();
                 scoreChangeLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 32px;");
-                if (result.contains("胜")) {
+                if (I18N.get("record.win").equals(result)) {
                     badgeContainer.getStyleClass().add("result-badge-win");
                     scoreChangeLabel.setText("+" + scoreChange);
                     scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #22c55e;");
-                } else if (result.contains("负")) {
+                } else if (I18N.get("record.lose").equals(result)) {
                     badgeContainer.getStyleClass().add("result-badge-lose");
                     scoreChangeLabel.setText(String.valueOf(scoreChange));
                     scoreChangeLabel.setStyle(scoreChangeLabel.getStyle() + " -fx-text-fill: #ef4444;");
@@ -187,13 +188,13 @@ public class RecordController implements NetworkListener {
                 infoBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 javafx.scene.layout.HBox.setHgrow(infoBox, javafx.scene.layout.Priority.ALWAYS);
 
-                Label opponentLabel = new Label("与 " + finalRecord.get("opponent") + " 的对局");
+                Label opponentLabel = new Label(I18N.get("record.gameWith", finalRecord.get("opponent")));
                 opponentLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
 
                 int moveCount = parseIntOrDefault(finalRecord.get("moveCount"), 0);
                 int durationSec = parseIntOrDefault(finalRecord.get("duration"), 0);
                 String durationStr = formatDuration(durationSec);
-                Label detailsLabel = new Label("落子: " + (moveCount > 0 ? moveCount : "--") + " 步 | 用时: " + durationStr);
+                Label detailsLabel = new Label(I18N.get("record.moves", moveCount > 0 ? String.valueOf(moveCount) : I18N.get("record.noMoves"), durationStr));
                 detailsLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 detailsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
 
@@ -206,7 +207,7 @@ public class RecordController implements NetworkListener {
                 Label timeLabel = new Label(finalRecord.get("time"));
                 timeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
 
-                Button replayBtn = new Button("回放");
+                Button replayBtn = new Button(I18N.get("record.replay"));
                 replayBtn.getStyleClass().add("btn-primary");
                 replayBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 replayBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
@@ -241,7 +242,7 @@ public class RecordController implements NetworkListener {
                         ctrl.setReplayMode(true, p1Id, p1Name, p2Id, p2Name, p1Score, p2Score, p1Avatar, p2Avatar);
                         ctrl.replayMoves(movesStr);
                     } else {
-                        Alert alert = new Alert(Alert.AlertType.INFORMATION, "暂无棋谱数据");
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION, I18N.get("record.noReplayData"));
                         ScreenManager.showStyledAlert(alert);
                     }
                 });

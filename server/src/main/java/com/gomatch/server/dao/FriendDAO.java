@@ -20,7 +20,7 @@ public class FriendDAO {
         private final String relationType;
         private final String remark;
         private final boolean online;
-        private final String avatarUrl;
+        private final String avatar;
 
         public FriendInfo(long friendId, long userId, long friendUserId,
                          String friendUsername, int friendScore,
@@ -36,7 +36,7 @@ public class FriendDAO {
 
         public FriendInfo(long friendId, long userId, long friendUserId,
                          String friendUsername, int friendScore,
-                         String relationType, String remark, boolean online, String avatarUrl) {
+                         String relationType, String remark, boolean online, String avatar) {
             this.friendId = friendId;
             this.userId = userId;
             this.friendUserId = friendUserId;
@@ -45,7 +45,7 @@ public class FriendDAO {
             this.relationType = relationType;
             this.remark = remark;
             this.online = online;
-            this.avatarUrl = avatarUrl;
+            this.avatar = avatar;
         }
 
         public long getFriendId() { return friendId; }
@@ -56,7 +56,7 @@ public class FriendDAO {
         public String getRelationType() { return relationType; }
         public String getRemark() { return remark; }
         public boolean isOnline() { return online; }
-        public String getAvatarUrl() { return avatarUrl; }
+        public String getAvatar() { return avatar; }
     }
 
     public static class FriendRequestInfo {
@@ -286,7 +286,7 @@ public class FriendDAO {
     }
 
     public List<FriendInfo> getFriendList(long userId) {
-        String sql = "SELECT f.friend_id, f.user_id, f.friend_user_id, u.username, u.score, f.relation_type, f.remark, u.avatar_url " +
+        String sql = "SELECT f.friend_id, f.user_id, f.friend_user_id, u.username, u.score, f.relation_type, f.remark, u.avatar " +
                      "FROM t_friend f JOIN t_user u ON f.friend_user_id = u.user_id " +
                      "WHERE f.user_id = ? AND f.relation_type = 'FRIEND' " +
                      "ORDER BY u.score DESC";
@@ -301,10 +301,12 @@ public class FriendDAO {
                     boolean online = false;
                     if (RedisManager.getInstance().isConnected()) {
                         online = RedisManager.getInstance().isOnline(friendUserId);
-                    } else {
+                    }
+                    // SessionManager 兜底：Redis key 丢失或 Redis 不可用时仍能正确判断在线状态
+                    if (!online) {
                         online = com.gomatch.server.session.SessionManager.getInstance().getSessionByUserId(friendUserId) != null;
                     }
-                    String avatarPath = rs.getString("avatar_url");
+                    String avatarPath = rs.getString("avatar");
                     String avatarUrl = "";
                     if (avatarPath != null && !avatarPath.isEmpty() && com.gomatch.server.storage.StorageManager.getInstance().isEnabled()) {
                         avatarUrl = com.gomatch.server.storage.StorageManager.getInstance().getOssService().generatePresignedUrl(avatarPath, 86400 * 30);

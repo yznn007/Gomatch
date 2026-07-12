@@ -1,3 +1,9 @@
+$ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+Set-Location $ProjectRoot
+if (-not (Test-Path (Join-Path $ProjectRoot ".env"))) {
+    Write-Host "[ERROR] Missing .env. Copy .env.example to .env and configure runtime credentials." -ForegroundColor Red
+    exit 1
+}
 # Auto-detect JDK 21+
 $JDKCandidates = @(
     "$env:JAVA_HOME",
@@ -18,6 +24,13 @@ if (-not $jdkFound) {
 
 # Set console code page to UTF-8
 chcp 65001 | Out-Null
+
+# Stop any process using port 8888
+Write-Host "[KILL] Stopping processes on port 8888..." -ForegroundColor Yellow
+Get-NetTCPConnection -LocalPort 8888 -ErrorAction SilentlyContinue | ForEach-Object {
+    taskkill /F /PID $_.OwningProcess 2>&1 | Out-Null
+}
+Start-Sleep -Seconds 1
 
 # Compile common module first
 Write-Host "[BUILD] Installing common module..." -ForegroundColor Yellow

@@ -30,8 +30,8 @@
                     <Label text="%login.title" styleClass="title" style="-fx-font-size: 26px; -fx-padding: 0 0 10 0;"/>
 
                     <HBox styleClass="login-tab-container" alignment="CENTER" maxWidth="320">
-                        <Button fx:id="btnAccountTab" text="账号登录" onAction="#handleAccountTab" styleClass="login-tab-btn" focusTraversable="false"/>
-                        <Button fx:id="btnPhoneTab" text="手机号登录" onAction="#handlePhoneTab" styleClass="login-tab-btn" focusTraversable="false"/>
+                        <Button fx:id="btnAccountTab" text="" onAction="#handleAccountTab" styleClass="login-tab-btn" focusTraversable="false"/>
+                        <Button fx:id="btnPhoneTab" text="" onAction="#handlePhoneTab" styleClass="login-tab-btn" focusTraversable="false"/>
                     </HBox>
 
                     <StackPane alignment="TOP_LEFT" maxWidth="320" viewOrder="-1.0">

@@ -47,9 +47,15 @@ oss.properties
 .workbuddy/
 .agent/
 .agents/
+/superpowers/
+.worktrees/
 
 # 忽略 Redis 快照文件
 dump.rdb
 
 #  AOF 持久化
 *.aof
+# Local runtime credentials
+.env
+.env.*
+!.env.example

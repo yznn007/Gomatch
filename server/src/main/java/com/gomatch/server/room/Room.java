@@ -67,6 +67,11 @@ public class Room {
     private Long pendingUndoActionId;
     private Long pendingDrawActionId;
 
+    private final Map<Long, Integer> playerUndoCounts = new HashMap<>();
+    private final Map<Long, Integer> playerDrawCounts = new HashMap<>();
+    private static final int MAX_UNDO_PER_PLAYER = 3;
+    private static final int MAX_DRAW_PER_PLAYER = 1;
+
     private boolean aiMode;
     private AIPlayer aiPlayer;
     private AIPlayer.Difficulty aiDifficulty = AIPlayer.Difficulty.MEDIUM;
@@ -88,6 +93,7 @@ public class Room {
                 return t;
             });
     private ScheduledFuture<?> turnTimerFuture;
+    private long turnStartTime;
 
     private static final RecordDAO recordDAO = new RecordDAO();
     private static final UserDAO userDAO = new UserDAO();
@@ -261,6 +267,7 @@ public class Room {
                 blackUserId = 0;
                 whiteUserId = 0;
                 gameStartTime = null;
+                resetReady();
             }
         } else if (removedFromObservers) {
             log.info("Observer {} left room {}: remaining observers {}",
@@ -268,6 +275,28 @@ public class Room {
         } else {
             log.warn("Leave ignored: handler {} is not in room {} (neither player nor observer)",
                     handler != null ? handler.getUserId() : "null", roomId);
+        }
+    }
+
+    /**
+     * 连接断开时的原子路由：在 Room 的 synchronized 锁内判断状态，避免
+     * 调用方在 {@code getStatus()} 和实际操作之间发生 TOCTOU 竞态。
+     * <ul>
+     *   <li>WAITING：调用 {@link #leave(ClientHandler, boolean) leave(handler, false)}，
+     *       不重置房间（由 {@code RoomManager.leaveRoom} 负责清理），返回 {@code true}。</li>
+     *   <li>PLAYING / FINISHED：调用 {@link #disconnect(ClientHandler)}，返回 {@code false}。</li>
+     * </ul>
+     *
+     * @return {@code true} 若按"主动离开"处理（调用方需再调 {@code RoomManager.leaveRoom}），
+     *         {@code false} 若按"断线"处理
+     */
+    public synchronized boolean cleanupDisconnect(ClientHandler handler) {
+        if (status == Status.WAITING) {
+            leave(handler, false);
+            return true;
+        } else {
+            disconnect(handler);
+            return false;
         }
     }
 
@@ -321,6 +350,21 @@ public class Room {
 
                 disconnectedPlayerIds.add(uid);
                 startReconnectTimer(uid);
+
+                // 双方都断线：立即结束对局，先断线者判负
+                if (disconnectedPlayerIds.contains(blackUserId) && disconnectedPlayerIds.contains(whiteUserId)) {
+                    long firstDisconnector = (uid == blackUserId) ? whiteUserId : blackUserId;
+                    String loserName = getPlayerUsername(firstDisconnector);
+                    String winnerName = getPlayerUsername(uid);
+                    log.info("Both players disconnected from room {}: {} disconnects first, {} wins",
+                            roomId, loserName, winnerName);
+                    cancelReconnectTimer(blackUserId);
+                    cancelReconnectTimer(whiteUserId);
+                    disconnectedPlayerIds.clear();
+                    endGame(uid, "both_disconnect", loserName + " 先断线，自动判负");
+                    return;
+                }
+
                 broadcastToPlayers(Message.of("PLAYER_DISCONNECTED",
                         "userId", uid,
                         "disconnectCount", count));
@@ -818,11 +862,16 @@ public class Room {
         cancelTurnTimer();
         if (status != Status.PLAYING) return;
 
-        // AI 模式下只对人类玩家（黑方）计时，AI 几乎立即落子不需要计时
+        // AI 模式下只对人类玩家（黑方）计时，AI（白方）不需要计时
         if (aiMode && game.getCurrentPlayer() != Game.BLACK) return;
 
+        turnStartTime = System.currentTimeMillis();
         long currentPlayerId = (game.getCurrentPlayer() == Game.BLACK) ? blackUserId : whiteUserId;
         log.debug("Starting turn timer for room {}: currentPlayer={}, timeout={}s", roomId, currentPlayerId, TURN_TIMEOUT_SECONDS);
+
+        broadcastAll(Message.of(Protocol.TIME_SYNC,
+                "remainingSeconds", TURN_TIMEOUT_SECONDS,
+                "currentPlayer", game.getCurrentPlayer()));
 
         turnTimerFuture = turnTimerPool.schedule(() -> {
             synchronized (Room.this) {
@@ -842,6 +891,19 @@ public class Room {
             turnTimerFuture = null;
             log.debug("Turn timer cancelled for room {}", roomId);
         }
+        // 同步当前剩余时间到所有客户端（含观战者），避免观战方倒计时继续跑到 0
+        broadcastAll(Message.of(Protocol.TIME_SYNC,
+                "remainingSeconds", getRemainingSeconds(),
+                "currentPlayer", game.getCurrentPlayer()));
+    }
+
+    public synchronized int getRemainingSeconds() {
+        if (status != Status.PLAYING || turnStartTime == 0) {
+            return TURN_TIMEOUT_SECONDS;
+        }
+        long elapsed = System.currentTimeMillis() - turnStartTime;
+        int remaining = TURN_TIMEOUT_SECONDS - (int) (elapsed / 1000);
+        return Math.max(0, remaining);
     }
 
     public synchronized boolean requestUndo(long requesterId) {
@@ -874,8 +936,16 @@ public class Room {
             return false;
         }
 
+        int undoCount = playerUndoCounts.getOrDefault(requesterId, 0);
+        if (undoCount >= MAX_UNDO_PER_PLAYER) {
+            log.warn("requestUndo rejected: player {} has exceeded max undo count ({})", requesterId, MAX_UNDO_PER_PLAYER);
+            return false;
+        }
+
+        playerUndoCounts.put(requesterId, undoCount + 1);
         undoRequesterId = requesterId;
         pendingUndoActionId = gameActionDAO.recordAction(currentRecordId > 0 ? currentRecordId : null, requesterId, "undo", game.getMoveCount());
+        cancelTurnTimer(); // 等待对方回复期间暂停回合计时
         log.info("Undo requested by {} in room {}, actionId={}", requesterId, roomId, pendingUndoActionId);
         return true;
     }
@@ -919,6 +989,7 @@ public class Room {
             }
             undoRequesterId = null;
             pendingUndoActionId = null;
+            startTurnTimer(); // 悔棋被拒，恢复回合计时
             return true;
         }
     }
@@ -941,8 +1012,16 @@ public class Room {
             return false;
         }
 
+        int drawCount = playerDrawCounts.getOrDefault(requesterId, 0);
+        if (drawCount >= MAX_DRAW_PER_PLAYER) {
+            log.warn("requestDraw rejected: player {} has exceeded max draw count ({})", requesterId, MAX_DRAW_PER_PLAYER);
+            return false;
+        }
+
+        playerDrawCounts.put(requesterId, drawCount + 1);
         drawRequesterId = requesterId;
         pendingDrawActionId = gameActionDAO.recordAction(currentRecordId > 0 ? currentRecordId : null, requesterId, "draw", game.getMoveCount());
+        cancelTurnTimer(); // 等待对方回复期间暂停回合计时
         log.info("Draw requested by {} in room {}, actionId={}", requesterId, roomId, pendingDrawActionId);
         return true;
     }
@@ -981,8 +1060,17 @@ public class Room {
             }
             drawRequesterId = null;
             pendingDrawActionId = null;
+            startTurnTimer(); // 求和被拒，恢复回合计时
             return true;
         }
+    }
+
+    public synchronized int getUndoCount(long playerId) {
+        return playerUndoCounts.getOrDefault(playerId, 0);
+    }
+
+    public synchronized int getDrawCount(long playerId) {
+        return playerDrawCounts.getOrDefault(playerId, 0);
     }
 
     // ==================== 再来一局 ====================
@@ -1071,6 +1159,10 @@ public class Room {
         playerDisconnectCounts.clear();
         disconnectedPlayerIds.clear();
         cancelAllReconnectTimers();
+
+        // 清除悔棋/求和次数（新对局重新计数）
+        playerUndoCounts.clear();
+        playerDrawCounts.clear();
 
         // 刷新双方积分（可能因上一局变化）
         if (!aiMode) {
@@ -1379,7 +1471,8 @@ public class Room {
                 "whiteUserId", whiteUserId,
                 "whiteUsername", whiteUsername != null ? whiteUsername : String.valueOf(whiteUserId),
                 "whiteScore", whiteScore,
-                "whiteAvatarUrl", whiteAvatarUrl != null ? whiteAvatarUrl : "");
+                "whiteAvatarUrl", whiteAvatarUrl != null ? whiteAvatarUrl : "",
+                "remainingSeconds", getRemainingSeconds());
     }
 
     public static List<String[]> getRoomListInfo(Map<String, Room> rooms) {

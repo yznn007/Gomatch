@@ -2,6 +2,7 @@ package com.gomatch.server.storage;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -9,6 +10,8 @@ import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@EnabledIfEnvironmentVariable(named = "OSS_ACCESS_KEY_ID", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "OSS_ACCESS_KEY_SECRET", matches = ".+")
 class OssServiceTest {
     private static OssService ossService;
     private static String testAvatarPath;
@@ -20,10 +23,6 @@ class OssServiceTest {
         String bucket = "gomatch-storage";
         String accessKeyId = System.getenv("OSS_ACCESS_KEY_ID");
         String accessKeySecret = System.getenv("OSS_ACCESS_KEY_SECRET");
-
-        assertNotNull(accessKeyId, "OSS_ACCESS_KEY_ID environment variable not set");
-        assertNotNull(accessKeySecret, "OSS_ACCESS_KEY_SECRET environment variable not set");
-
         ossService = new OssService(endpoint, bucket, accessKeyId, accessKeySecret, 2097152, 10485760);
         System.out.println("OSS Service initialized successfully");
     }

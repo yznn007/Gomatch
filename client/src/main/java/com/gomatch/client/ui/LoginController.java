@@ -2,6 +2,7 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.UserSettings;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
@@ -29,12 +30,13 @@ public class LoginController implements NetworkListener {
     @FXML private javafx.scene.layout.VBox countryCodeCard;
 
     private final CredentialStore credentialStore = new CredentialStore();
-    private boolean isPhoneLogin = false;
+    private boolean isPhoneLogin;
 
     @FXML
     private void initialize() {
+        btnAccountTab.setText(I18N.get("login.accountTab"));
+        btnPhoneTab.setText(I18N.get("login.phoneTab"));
         rememberCheckBox.setSelected(UserSettings.get().rememberPassword);
-        passwordField.clear();
         hideInlineMenu();
         if (!btnAccountTab.getStyleClass().contains("login-tab-btn-active")) {
             btnAccountTab.getStyleClass().add("login-tab-btn-active");
@@ -62,12 +64,14 @@ public class LoginController implements NetworkListener {
                 }
                 btnCountryCode.setText(matchedCode + " ▼");
                 accountField.setText(saved.substring(matchedCode.length()));
-                accountField.setPromptText("手机号");
+                accountField.setPromptText(I18N.get("login.phone"));
             } else {
                 accountField.setText(saved);
-                accountField.setPromptText("用户名 / 邮箱 / ID");
+                accountField.setPromptText(I18N.get("login.accountPrompt"));
             }
         });
+
+        credentialStore.loadPassword().ifPresent(passwordField::setText);
     }
 
     @FXML
@@ -94,7 +98,7 @@ public class LoginController implements NetworkListener {
         try {
             if (rememberCheckBox.isSelected()) {
                 String account = isPhoneLogin ? selectedCode() + accountField.getText().trim() : accountField.getText().trim();
-                credentialStore.saveUsername(account);
+                credentialStore.saveCredentials(account, passwordField.getText().trim());
             } else {
                 credentialStore.clear();
             }
@@ -112,7 +116,7 @@ public class LoginController implements NetworkListener {
     private void handleAccountTab() {
         if (!isPhoneLogin) return;
         isPhoneLogin = false;
-        hideInlineMenu(); // 切换登录方式时，强制关闭可能开启的区号悬浮下拉菜单
+        hideInlineMenu();
         if (!btnAccountTab.getStyleClass().contains("login-tab-btn-active")) {
             btnAccountTab.getStyleClass().add("login-tab-btn-active");
         }
@@ -120,14 +124,14 @@ public class LoginController implements NetworkListener {
         countryCodeCard.setVisible(false);
         countryCodeCard.setManaged(false);
         accountField.clear();
-        accountField.setPromptText("用户名 / 邮箱 / ID");
+        accountField.setPromptText(I18N.get("login.accountPrompt"));
     }
 
     @FXML
     private void handlePhoneTab() {
         if (isPhoneLogin) return;
         isPhoneLogin = true;
-        hideInlineMenu(); // 切换登录方式时，强制关闭可能开启的区号悬浮下拉菜单
+        hideInlineMenu();
         if (!btnPhoneTab.getStyleClass().contains("login-tab-btn-active")) {
             btnPhoneTab.getStyleClass().add("login-tab-btn-active");
         }
@@ -135,7 +139,7 @@ public class LoginController implements NetworkListener {
         countryCodeCard.setVisible(true);
         countryCodeCard.setManaged(true);
         accountField.clear();
-        accountField.setPromptText("手机号");
+        accountField.setPromptText(I18N.get("login.phone"));
     }
 
     private String selectedCode() {
@@ -149,17 +153,19 @@ public class LoginController implements NetworkListener {
         String rawAccount = accountField.getText().trim();
         String password = passwordField.getText().trim();
         if (rawAccount.isEmpty() || password.isEmpty()) {
-            errorLabel.setText("账号和密码不能为空");
+            errorLabel.setText(I18N.get("login.empty"));
             return;
         }
 
         String account;
+        String phone = null;
         if (isPhoneLogin) {
-            account = PhoneInputValidator.toE164(selectedCode(), rawAccount);
-            if (account == null) {
-                errorLabel.setText("请输入有效的手机号");
+            phone = PhoneInputValidator.toE164(selectedCode(), rawAccount);
+            if (phone == null) {
+                errorLabel.setText(I18N.get("login.invalidPhone"));
                 return;
             }
+            account = phone;
         } else {
             account = rawAccount;
         }
@@ -169,10 +175,14 @@ public class LoginController implements NetworkListener {
                 ClientMain.getConnector().connect(AppConfig.SERVER_HOST, AppConfig.SERVER_PORT);
             }
             ClientMain.getConnector().addListener(this);
-            ClientMain.getConnector().send(Message.of(Protocol.LOGIN,
-                    "account", account, "password", password));
+            Message loginMsg = Message.of(Protocol.LOGIN,
+                    "account", account, "password", password);
+            if (phone != null) {
+                loginMsg.getData().put("phone", phone);
+            }
+            ClientMain.getConnector().send(loginMsg);
         } catch (Exception error) {
-            errorLabel.setText("连接服务器失败: " + error.getMessage());
+            errorLabel.setText(I18N.get("login.connectFailed", error.getMessage()));
         }
     }
 
@@ -191,7 +201,7 @@ public class LoginController implements NetworkListener {
     @FXML
     private void handlePreview() {
         if (brandCanvas != null) brandCanvas.stop();
-        User fakeUser = new User(0, "游客");
+        User fakeUser = new User(0, I18N.get("common.guest"));
         fakeUser.setScore(1000);
         AppConfig.setCurrentUser(fakeUser);
         AppConfig.setPreviewMode(true);
@@ -207,6 +217,9 @@ public class LoginController implements NetworkListener {
         } else if (Protocol.LOGIN_FAIL.equals(message.getCmd())) {
             errorLabel.setText(message.getString("msg"));
             ClientMain.getConnector().disconnect();
+        } else if ("DISCONNECT".equals(message.getCmd())) {
+            String disconnectMsg = message.has("msg") ? message.getString("msg") : "连接已断开";
+            errorLabel.setText(disconnectMsg);
         }
     }
 
@@ -220,7 +233,7 @@ public class LoginController implements NetworkListener {
         user.setDrawCount(message.getInt("drawCount"));
         user.setRank(message.getInt("rank"));
         user.setRole(message.getString("role").isEmpty() ? "PLAYER" : message.getString("role"));
-        user.setAvatarUrl(message.getString("avatar"));
+        user.setAvatar(message.getString("avatar"));
         AppConfig.setCurrentUser(user);
         AppConfig.setPreviewMode(false);
 

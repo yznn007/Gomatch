@@ -15,7 +15,21 @@
 > FXML 布局、CSS 样式、动画特效、视觉组件
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
+| 2026-07-12 02:24 | Contributor| fix(client): 连接成功提示隐藏服务器 IP 和端口以防泄漏 | 在设置页和服务器配置弹窗中，连接成功后提示统一改为使用无参的已连接词条，不再显式渲染服务器的具体 IP 和端口，并清理了 messages 配置文件中多余的带参数词条。 | 验证通过 |
+| 2026-07-12 00:05 | Contributor| fix(client): 修复本地凭据存储逻辑以通过单元测试并防范明文密码残留 | 优化了 `CredentialStore.java`：1. 仅在传入密码非空时写入 `password` 属性；2. 增加 `loadUsername` 时的旧明文密码判定逻辑，当解密失败时自动剥离明文密码并更新存储文件，修复了 `CredentialStoreTest` 两个单元测试 100% 失败的缺陷。 | 编译与测试成功 |
+| 2026-07-11 23:05 | Contributor| fix(client): 修复好友请求列表无法渲染及好友头像缺失的 Bug (Issue #17) | 在 FriendsController 中重构 FRIEND_LIST 和 FRIEND_REQUEST_LIST 消息解析逻辑，改用 opt/optString 等防御性 API 读取字段，避免 requestId 作为数字类型传回时触发 `r.getString()` 产生的 JSONException 导致中断；并将头像字段映射修改为与服务端一致的 avatarUrl。 | 编译与测试成功 |
+| 2026-07-11 22:45 | Contributor| fix(client): 修复应用在后台时静音失效与内存泄漏的 Bug | 将失焦静音监听器重构为 ScreenManager 下的全局 Application 级事件，通过 BackgroundMusicManager.setMutedByBackground 属性独立控制静音状态；删除 SettingsController 中的旧局部监听器及 checkbox 状态强改逻辑，彻底杜绝 SettingsController 实例多次被 Stage 持有造成的内存泄漏与状态覆盖行为。 | 验证通过 |
+| 2026-07-11 22:00 | Contributor| fix(server): PR code review 修复——消除 OSS 重复代码、修复 leaveRoom 通知顺序 Bug、消除 TOCTOU 竞态 | 1. **ClientHandler**：提取 `generateAvatarUrl(String)` 统一处理 OSS 判断与 try-catch，消除 4 处内联三元重复；2. **RoomManager.leaveRoom**：修复先 `room.leave()` 再判断通知名单的顺序 Bug，补全观战者通知与引用清理，移除危险的 `.clear()` 调用；3. **Room / ClientHandler.cleanup()**：新增 `cleanupDisconnect` 同步方法，将 WAITING / 非 WAITING 状态判断原子化到 Room 锁内，消除 TOCTOU；4. **init.sql**：补充生产环境安全警告注释；5. **AsciiTextCanvas**：补充 D3D 管线 NPE 修复说明注释 |
+| 2026-07-11 | Contributor| fix(auth): 修复旧密码改密兼容 | 旧明文密码账户改密时使用兼容校验，成功后统一写入 BCrypt 哈希；新增旧密码与 BCrypt 密码匹配回归测试。 |
+| 2026-07-11 | Contributor| fix(build): 取消 Maven forked javac 编译 | Windows 下 forked javac 无法访问 common 模块的 classpath，导致客户端误报 `com.gomatch.common` 缺失；统一改用 Maven 进程内编译。 |
+| 2026-07-11 | Contributor| fix(scripts): 客户端启动不再强制清理构建目录 | 移除四份客户端脚本中的 `clean`，避免运行中的 JavaFX MediaPlayer 锁定音频资源时导致启动失败。 |
+| 2026-07-11 | Contributor| fix(client): 空服务器地址回退至发布服务器 | 客户端默认连接改为 `${GOMATCH_SERVER_HOST}:8888`；登录弹窗与设置页的 IP 输入框留空时使用该默认地址，填写 IP 才保存为本地覆盖；连接状态不显示服务器地址。 |
+| 2026-07-11 | Contributor| fix(config): 允许无认证 Redis 使用 `.env` 配置 | Redis 密码保持环境变量来源；未启用 Redis 认证时允许其为空，避免旧本地配置无法启动。 |
+| 2026-07-11 | Contributor| docs(config): 补充运行凭据优先级 | 明确系统环境变量、`.env` 与非敏感资源默认值的优先级，以及 `GOMATCH_ENV_FILE` 的定位规则。 |
+| 2026-07-11 | Contributor| feat(config): 统一运行时凭据为 `.env` 与环境变量 | MySQL、Redis 与 OSS 凭据不再提交到资源配置；系统环境变量优先于 `.env`，服务端启动校验必填 MySQL/Redis 配置。 |
 |------|------|----------|-----------|
+| 2026-07-11 14:36 | Contributor| ci(client): 新增 MSI 自动发布流程 | 新增本地/CI 共用 MSI 打包脚本、标签 Release 工作流与 `docs/releases/` 版本说明约定；标签对应说明缺失时自动生成 GitHub 变更摘要。 |
+| 2026-07-11 13:42 | Contributor| refactor(database): 移除未接入的用户设置与音乐表业务 | 删除 `t_user_settings`、`t_user_music`、未接入设置/媒体协议及其 database 实体/仓储；云端配置继续使用 `t_user_profile.config_json`，头像 OSS 与审计日志保持不变。 |
 | 2026-07-11 03:54 | Contributor| style(client): 将登录和注册界面的手机号码前缀与输入框合并到同一行，只留前缀代码并实现登录切换栏 | 1. **LoginUI/RegisterUI.fxml**：合并国家区号 ComboBox 和输入框至同一行，并缩窄宽度至 65px；2. **Login/RegisterController**：区号项移除中文仅留 +86 等代码；3. **LoginUI.fxml / LoginController**：在登录标题下加入“账号登录/手机号登录”的极简 HBox 切换栏，切至手机号时展开区号下拉框并改变占位符为“手机号”，切至账号时隐藏区号，并支持在记住密码时根据账号类型自动切换 Tab 加载；4. **style.css**：为登录切换栏定制极简双主题底划线样式；5. **RegisterUI.fxml**：手机号默认文字简化为“手机号”，并移动行位置。 |
 | 2026-07-11 03:20 | Contributor| fix: 修复大厅音乐选择与播放顺序在下次登录时无法同步的 bug | 1. **UserSettings**：新增 `selectedSongPath` 和 `playOrder` 字段，通过 GSON 自动持久化；2. **BackgroundMusicManager**：将 `currentPlayOrder` 升级为 `ObjectProperty<PlayOrder>` 以支持响应式 UI，增加 `selectAndPlaySong` 以区分用户主动选歌与自动切歌，并实现 `applySettings` 用于应用/同步本地及云端偏好；3. **SettingsController**：将选歌下拉框改为调用新 API，并对播放顺序属性添加 Listener，在云端同步播放顺序时自动刷新按钮文本；4. **ClientMain / ConfigManager**：分别在本地加载和云端配置同步完后自动触发 `applySettings` 平滑过渡应用。 |
 | 2026-07-11 00:57 | Contributor| physics: 减小 3D 移动卡片 (PixelCard) 的 Z 轴摆动幅度 | 进一步抑制摆动的响应振幅：1. 鼠标滑入瞬间的脉冲推力因子从 0.25 降至 0.06，防止晃动起点过大；2. 鼠标平移速度带来的摆动角加速度传导系数从 0.000025 降低至 0.000006；3. 单帧最大推力限制从 0.15 限制到 0.04，使得晃动幅度和摆角被严格约束在极小且微弱的精致感官范围内。 |
@@ -79,6 +93,7 @@
 | 2026-07-08 19:03 | Contributor| feat(server,client): 重构排位匹配系统，修复并优化匹配逻辑 | 匹配大厅界面优化 |
 | 2026-07-08 23:00 | Contributor| feat: 实现再来一局（Rematch）功能（客户端部分） | BoardController 新增 handleRequestRematch/handleReplyRematch 方法及 rematchRequested 状态；对局结束弹窗 GameOverController 新增"再来一局"按钮；BoardController 监听 REMATCH_REQUESTED/REMATCH_ACCEPTED/REMATCH_REJECTED 消息，同意后自动重置棋盘开始新对局 |
 | 2026-07-08 23:00 | Contributor| feat: GAME_START 协议增强 — 显示对手用户名和积分（客户端部分） | BoardController.onMessage(GAME_START) 解析新增的 blackUsername/blackScore/whiteUsername/whiteScore 字段；新增带分数的 setGameInfo 重载，对手卡片显示真实用户名和积分而非 ID 和问号 |
+| 2026-07-11 21:42 | Contributor| fix(client): 修复登录界面 ASCII 粒子标题在 D3D 管线下发生渲染空指针报错的 Bug | 重构 AsciiTextCanvas.java，将原先基于 JavaFX Canvas.snapshot() 转换为在 CPU 堆内存上运行的 java.awt.image.BufferedImage，彻底避开 JavaFX 渲染引擎 (Prism) 与 Direct3D/VRAM 资源回收触发的 `NullPointerException`，保障高频采样效率与零崩溃稳定性。 | 编译与渲染测试成功 |
 | 2026-07-09 23:44 | Contributor| fix: 修复黑色主题下登录/注册卡片内部泛白问题 + 全盘黑白样式同步 + 登录标题暗色色调适配 | 1. 将 .theme-dark .glass-card 背景不透明度从 0.48 提升至 0.60；新增 .theme-dark .auth-pixel-card .pixel-card-body 专属深色磨砂背景（0.55 不透明度）并改用深色投影；保留 .theme-dark .auth-pixel-card 外层白色高光投影。2. 将浅色/暗色模式下的 .custom-title-bar 和 .top-bar 背景统一为透明并去除投影。3. 统一侧栏菜单 active/导航按钮/标题栏按钮 hover/active 背景色。4. 补齐暗色模式下缺失的 pressed 状态。5. AsciiTextCanvas 支持暗色模式：根据 ScreenManager.isDarkTheme() 动态切换采样贴图（白底黑字）和输出色调，核心字符使用 #f8fafc，边缘使用柔和浅色偏色，使登录页 Gomatch 标题在暗色背景下清晰可见且风格统一。 | mvn -f client/pom.xml compile 通过 |
 | 2026-07-10 12:01 | Contributor| style: 修复头像预览弹窗背景色与顶栏小头像不一致问题 | AvatarPreviewUI.fxml：Circle 填充改为 StackPane 渐变背景 + 150px 圆角，保留 Circle 透明兜底。AvatarPreviewController：pickColor 8 色纯色调色板替换为 gradientFor 7 色渐变调色板（与 LobbyController/RankingController 一致），保证同一用户在小头像、排行榜、大头像预览中颜色完全一致。 |
 
@@ -88,6 +103,11 @@
 
 | 时间 | 作者 | 工作内容 | 问题/备注 |
 |------|------|----------|-----------|
+| 2026-07-12 00:09 | Contributor| fix(database): 修复 init.sql 约束与种子数据不匹配导致初始化失败的 Bug | 将 t_user 表的 phone 字段 NOT NULL 约束移除（改为允许为 NULL），并为初始种子用户数据补全符合 E.164 规范的唯一测试手机号，解决初始化数据冲突问题。 | 验证通过 |
+| 2026-07-11 23:05 | Contributor| fix(server): 允许手机号为选填进行注册 (Issue #16) | 修复 ClientHandler.java 与 UserDAO.java 中注册校验逻辑对空手机号的不当检验；若手机号为空则不再进行 E.164 规范化和唯一性校验，直接允许空值插入，打通了“手机号选填”的注册通路。 | 编译与测试成功 |
+| 2026-07-11 21:42 | Contributor| fix(storage): 修复未配置 OSS 对象存储时，读取头像触发 NullPointerException 的 Bug | 在 ClientHandler.java 与 RankDAO.java 中补齐对 StorageManager.getInstance().isEnabled() 的前置防御检查，防止本地开发或未启用 OSS 服务时触发 `getOssService().generatePresignedUrl(...)` 空指针异常崩溃。 | 验证通过 |
+| 2026-07-11 21:35 | Contributor| fix(auth): 修复使用非数字标识符（用户名/邮箱/手机号）登录时匹配到 AI 的 Bug | 1. 在 UserDAO.login 中，若 accountId 解析为 -1，则对 PreparedStatement 的 user_id 参数设为 NULL，避免匹配到 user_id = -1 的 AI 占位记录；2. 在 ClientHandler.cleanup() 及 RoomManager.leaveRoom() 中增强对 WAITING 房间的清理逻辑，防止房主断线或离开时残留幽灵房间导致持久化警告。 | 验证通过 |
+| 2026-07-11 21:20 | Contributor| feat(database): 修改 init.sql 中的数据库账号创建与授权配置 | 新增 'gomatch'@'%' 用户的创建与授权规则，保留 'gomatch'@'localhost' 规则，以便支持远程数据库客户端（如 DataGrip 等）及跨主机远程连接。 | 验证通过 |
 | 2026-07-11 01:00 | Contributor| fix: 修复 Redis 背景保存失败导致写入命令被禁用的问题 | 1. 通过 redis-cli 将 stop-writes-on-bgsave-error 设置为 no 恢复本地运行；2. 在 RedisManager.init() 中添加了程序内配置，确保在其他环境初始化时同样禁用此选项以提高健壮性。 | 验证通过 |
 | 2026-07-11 03:05 | Contributor| docs: 编写服务端部署指南 docs/DEPLOY_GUIDE.md | 整理并编写了服务端的部署文档，包含本地 shaded Maven 打包、JDK 21 与 MySQL/Redis 环境准备、基于环境变量的配置覆盖机制，以及终端直接启动、Systemd 服务化、Docker/Docker Compose 容器化部署这三种运行与守护形式。 | 验证通过 |
 | 2026-07-04 13:20 | Contributor| 搭建 Maven 多模块项目骨架，创建 pom.xml 及目录结构 | 使用 JDK 21 |
@@ -242,3 +262,12 @@
 - 在 `style.css` 结尾处提升类选择器特异性为 `.glass-card .inline-popup-menu`，强制实色（清透白/暗夜深色）不透明背景，彻底压制父卡片的透明度影响。
 - 解决 visible/managed 为 false 时 JavaFX 首次渲染跳过 CSS apply 的怪癖 Bug，在 `toggleInlineMenu()` 展开时强制调用 `inlineCodeMenu.applyCss()` 重新刷入 CSS。
 - 修改 `scripts/` 下全部 4 个成员的客户端启动脚本（`hln/jzx/ssc/zpw-client.ps1`），在运行命令中补充 `clean` 编译阶段，彻底根治 Maven 增量构建跳过 CSS 资源文件拷贝的旧缓存问题。
+
+### 2026-07-11 — 规范 Git 提交与分支合并流程
+
+- 修改 `docs/DEV_GUIDELINE.md` 中的分支与提交规范，明确所有日常开发工作必须在个人功能/修复分支进行，开发完毕并测试通过后，通过在远程仓库提交 Pull Request (PR) 的形式进行合并，严禁开发人员在本地将个人分支直接合并或直接推送至开发主分支（如 `dev`）。
+- 同步修改根目录 `AGENTS.md` 中的 Git 提交规范，在其中增加 **提交与合并要求** 章节，明确“禁止直接推送”原则。
+
+### 2026-07-12 — 修复好友页暗色主题可读性
+
+- 好友页动态节点已从 Java 内联主题颜色迁移到 CSS 语义类，修复 PR #8 遗留暗色可读性回退。

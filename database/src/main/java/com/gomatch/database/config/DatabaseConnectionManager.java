@@ -28,7 +28,8 @@ public class DatabaseConnectionManager {
 
     private void initDataSource() {
         try {
-            Properties props = ConfigLoader.loadProperties("database.properties");
+            Properties props = RuntimeConfig.loadRuntimeProperties("database.properties");
+            RuntimeConfig.requireRuntimeCredentials(props);
             
             HikariConfig config = new HikariConfig();
             config.setJdbcUrl(props.getProperty("mysql.url"));
@@ -51,7 +52,6 @@ public class DatabaseConnectionManager {
             
             try (Connection conn = dataSource.getConnection()) {
                 logger.info("Database connection pool initialized successfully");
-                logger.info("MySQL connection: {}", props.getProperty("mysql.url"));
             }
         } catch (Exception e) {
             logger.error("Failed to initialize database connection pool", e);

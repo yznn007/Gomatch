@@ -1,0 +1,86 @@
+name: 发布客户端 MSI
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'MSI 版本，例如 1.2.0'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-client:
+    runs-on: windows-2022
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 配置 JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: 安装 WiX Toolset 3
+        shell: powershell
+        run: choco install wixtoolset --version=3.14.1 --no-progress --yes
+
+      - name: 确定发布版本
+        id: version
+        shell: powershell
+        run: |
+          $version = if ('${{ github.ref_type }}' -eq 'tag') { '${{ github.ref_name }}'.TrimStart('v') } else { '${{ inputs.version }}' }
+          if ($version -notmatch '^\d+\.\d+\.\d+(?:[-.]\d+)?$') { throw "无效版本：$version" }
+          "value=$version" >> $env:GITHUB_OUTPUT
+          "tag=v$version" >> $env:GITHUB_OUTPUT
+
+      - name: 构建 MSI
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File scripts/package_client_msi.ps1 -Version '${{ steps.version.outputs.value }}'
+
+      - name: 上传 MSI 构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gomatch-${{ steps.version.outputs.tag }}-msi
+          path: client/target/installer/*.msi
+          if-no-files-found: error
+
+      - name: 检查版本说明
+        id: notes
+        if: github.ref_type == 'tag'
+        shell: powershell
+        run: |
+          $path = "docs/releases/${{ github.ref_name }}.md"
+          if (Test-Path $path) {
+            "has_file=true" >> $env:GITHUB_OUTPUT
+            "path=$path" >> $env:GITHUB_OUTPUT
+          } else {
+            "has_file=false" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: 依据版本说明创建 Release
+        if: github.ref_type == 'tag' && steps.notes.outputs.has_file == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Gomatch ${{ github.ref_name }}
+          body_path: ${{ steps.notes.outputs.path }}
+          files: client/target/installer/*.msi
+
+      - name: 自动生成说明并创建 Release
+        if: github.ref_type == 'tag' && steps.notes.outputs.has_file != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Gomatch ${{ github.ref_name }}
+          generate_release_notes: true
+          files: client/target/installer/*.msi

@@ -33,9 +33,13 @@ public class ClientMain extends Application {
             public void onMessage(Message msg) {
                 if (Protocol.DISCONNECT.equals(msg.getCmd()) && !disconnectHandled) {
                     disconnectHandled = true;
+                    String reason = msg.has("msg") ? msg.getString("msg") : "与服务器断开连接";
                     Platform.runLater(() -> {
-                        Alert alert = new Alert(Alert.AlertType.WARNING, "与服务器断开连接，请重新登录");
+                        Alert alert = new Alert(Alert.AlertType.WARNING, reason + "，请重新登录");
                         com.gomatch.client.ui.ScreenManager.showStyledAlert(alert);
+                        AppConfig.setCurrentUser(null);
+                        AppConfig.setAuthToken(null);
+                        connector.disconnect();
                         ScreenManager.switchTo("/fxml/LoginUI.fxml");
                         disconnectHandled = false;
                     });

@@ -1,6 +1,7 @@
 package com.gomatch.client.ui;
 
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
@@ -47,7 +48,7 @@ public class AiLobbyController implements NetworkListener {
     }
 
     private void startGame(String difficulty) {
-        matchStatus.setText("正在创建 AI 对战...");
+        matchStatus.setText(I18N.get("ai.creatingGame"));
         
         if (previewMode) {
             BoardController ctrl = ScreenManager.switchTo("/fxml/BoardUI.fxml");

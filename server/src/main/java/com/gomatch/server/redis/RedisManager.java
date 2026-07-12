@@ -1,7 +1,7 @@
 package com.gomatch.server.redis;
 
 import com.google.gson.Gson;
-import com.gomatch.server.config.EnvironmentConfig;
+import com.gomatch.database.config.RuntimeConfig;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.api.sync.RedisCommands;
@@ -10,7 +10,6 @@ import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.InputStream;
 import java.util.*;
 
 public class RedisManager {
@@ -28,26 +27,13 @@ public class RedisManager {
 
     public synchronized void init() {
         try {
-            String host = "localhost";
-            int port = 6379;
-            String password = "";
-            int database = 0;
-            int timeout = 3000;
-
-            Properties props = new Properties();
-            try (InputStream is = getClass().getClassLoader().getResourceAsStream("database.properties")) {
-                if (is != null) {
-                    props.load(is);
-                }
-            } catch (Exception e) {
-                log.warn("Failed to read database.properties, using defaults");
-            }
-            props = EnvironmentConfig.resolve(props);
-            host = props.getProperty("redis.host", host);
-            port = Integer.parseInt(props.getProperty("redis.port", String.valueOf(port)));
-            password = props.getProperty("redis.password", "");
-            database = Integer.parseInt(props.getProperty("redis.database", "0"));
-            timeout = Integer.parseInt(props.getProperty("redis.timeout", "3000"));
+            Properties props = RuntimeConfig.loadRuntimeProperties("database.properties");
+            RuntimeConfig.requireRuntimeCredentials(props);
+            String host = props.getProperty("redis.host");
+            int port = Integer.parseInt(props.getProperty("redis.port"));
+            String password = props.getProperty("redis.password", "");
+            int database = Integer.parseInt(props.getProperty("redis.database", "0"));
+            int timeout = Integer.parseInt(props.getProperty("redis.timeout", "3000"));
 
             RedisURI uri = RedisURI.builder()
                     .withHost(host)
@@ -288,7 +274,6 @@ public class RedisManager {
         try {
             String key = "online:" + userId;
             syncCommands.set(key, token);
-            syncCommands.expire(key, 300);
             log.debug("User online: userId={}", userId);
         } catch (Exception e) {
             log.warn("Failed to set online status: {}", e.getMessage());
@@ -321,9 +306,8 @@ public class RedisManager {
         if (!isConnected()) return;
         try {
             syncCommands.zadd("rank:leaderboard", score, String.valueOf(userId));
-            log.debug("Updated rank: userId={}, score={}", userId, score);
         } catch (Exception e) {
-            log.warn("Failed to update rank: {}", e.getMessage());
+            log.warn("Failed to update rank: userId={}, score={}", userId, score, e);
         }
     }
 

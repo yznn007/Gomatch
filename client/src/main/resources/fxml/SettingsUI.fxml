@@ -60,17 +60,14 @@
                                 <ColumnConstraints minWidth="240" prefWidth="240" halignment="LEFT"/>
                             </columnConstraints>
                             
-                            <Label text="%settings.resolution" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
-                            <ComboBox fx:id="resolutionComboBox" prefWidth="200" onAction="#handleResolution" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                            <Label text="%settings.fullscreen" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
+                            <CheckBox fx:id="fullscreenCheckBox" text="%settings.fullscreenDesc" onAction="#handleFullscreen" GridPane.rowIndex="0" GridPane.columnIndex="1" styleClass="remember-checkbox" selected="false"/>
                             
-                            <Label text="%settings.fullscreen" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
-                            <CheckBox fx:id="fullscreenCheckBox" text="%settings.fullscreenDesc" onAction="#handleFullscreen" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="remember-checkbox" selected="false"/>
+                            <Label text="%settings.vsync" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
+                            <CheckBox fx:id="vsyncCheckBox" text="%settings.vsyncDesc" onAction="#handleVSync" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="remember-checkbox" selected="true"/>
                             
-                            <Label text="%settings.vsync" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="muted"/>
-                            <CheckBox fx:id="vsyncCheckBox" text="%settings.vsyncDesc" onAction="#handleVSync" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="remember-checkbox" selected="true"/>
-                            
-                            <Label text="%settings.fps" GridPane.rowIndex="3" GridPane.columnIndex="0" styleClass="muted"/>
-                            <ComboBox fx:id="fpsComboBox" prefWidth="200" onAction="#handleFpsLimit" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                            <Label text="%settings.fps" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="muted"/>
+                            <ComboBox fx:id="fpsComboBox" prefWidth="200" onAction="#handleFpsLimit" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
                         </GridPane>
                     </VBox>
 
@@ -163,7 +160,7 @@
                             </columnConstraints>
                             
                             <Label text="%settings.serverIp" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="muted"/>
-                            <ComboBox fx:id="ipComboBox" editable="true" prefWidth="200" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                            <ComboBox fx:id="ipComboBox" editable="true" promptText="留空使用默认服务器" prefWidth="200" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
                             
                             <Label text="%settings.serverPort" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="muted"/>
                             <TextField fx:id="portField" prefWidth="200" styleClass="field" GridPane.rowIndex="1" GridPane.columnIndex="1"/>

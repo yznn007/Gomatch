@@ -1,12 +1,13 @@
 package com.gomatch.client.ui;
 
+import com.gomatch.client.I18N;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
 public class MessageDialogController {
-    public static String pendingTitle = "提示";
+    public static String pendingTitle = "";
     public static String pendingMessage = "";
 
     @FXML private Label titleLabel;
@@ -15,7 +16,7 @@ public class MessageDialogController {
 
     @FXML
     private void initialize() {
-        titleLabel.setText(pendingTitle);
+        titleLabel.setText(pendingTitle.isEmpty() ? I18N.get("message.title") : pendingTitle);
         messageLabel.setText(pendingMessage);
     }
 

@@ -1,2 +1,2 @@
-server.host=127.0.0.1
+server.host=${GOMATCH_SERVER_HOST}
 server.port=8888

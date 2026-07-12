@@ -276,8 +276,21 @@ public final class BackgroundMusicManager {
         player.setVolume(isPlayable() ? volume : 0);
     }
 
+    private static boolean mutedByBackground = false;
+
+    public static void setMutedByBackground(boolean muted) {
+        if (mutedByBackground != muted) {
+            mutedByBackground = muted;
+            if (javafx.application.Platform.isFxApplicationThread()) {
+                updatePlaybackState();
+            } else {
+                javafx.application.Platform.runLater(BackgroundMusicManager::updatePlaybackState);
+            }
+        }
+    }
+
     private static boolean isPlayable() {
-        return globalMusicEnabled.get() && backgroundMusicEnabled.get();
+        return globalMusicEnabled.get() && backgroundMusicEnabled.get() && !mutedByBackground;
     }
 
     private static double clamp(double value) {

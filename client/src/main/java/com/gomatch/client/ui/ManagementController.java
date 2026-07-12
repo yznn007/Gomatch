@@ -2,6 +2,7 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
@@ -64,7 +65,7 @@ public class ManagementController implements NetworkListener {
     public void setPreviewMode(boolean previewMode) {
         this.previewMode = previewMode;
         if (previewMode) {
-            statusLabel.setText("浏览模式下仅展示页面结构");
+            statusLabel.setText(I18N.get("management.previewMode"));
         }
     }
 
@@ -119,7 +120,7 @@ public class ManagementController implements NetworkListener {
         if (!ensureOnline()) return;
         String name = saveNameField.getText() == null ? "" : saveNameField.getText().trim();
         if (name.isEmpty()) {
-            name = "棋局存档 " + java.time.LocalDateTime.now().withNano(0);
+            name = I18N.get("management.saveArchive", java.time.LocalDateTime.now().withNano(0));
         }
         ClientMain.getConnector().send(Message.of(Protocol.SAVE_GAME, "saveName", name));
     }
@@ -140,7 +141,7 @@ public class ManagementController implements NetworkListener {
         if (!ensureOnline()) return;
         String roomId = chatRoomIdField.getText() == null ? "" : chatRoomIdField.getText().trim();
         if (roomId.isEmpty()) {
-            setStatus("请输入房间ID");
+            setStatus(I18N.get("management.roomIdEmpty"));
             return;
         }
         ClientMain.getConnector().send(Message.of(Protocol.CHAT_HISTORY, "roomId", roomId, "page", 0, "size", 50));
@@ -187,7 +188,7 @@ public class ManagementController implements NetworkListener {
         if (!isAdmin() || !ensureOnline()) return;
         String roomId = adminRoomIdField.getText() == null ? "" : adminRoomIdField.getText().trim();
         if (roomId.isEmpty()) {
-            setStatus("请输入房间ID");
+            setStatus(I18N.get("management.roomIdEmpty"));
             return;
         }
         ClientMain.getConnector().send(Message.of(Protocol.FORCE_CLOSE_ROOM, "roomId", roomId));
@@ -199,14 +200,14 @@ public class ManagementController implements NetworkListener {
         if (Protocol.SAVE_LIST.equals(cmd)) {
             renderSaves(msg.getData().optJSONArray("saves"));
         } else if ("SAVE_GAME_OK".equals(cmd)) {
-            setStatus("保存成功：" + msg.getString("saveName"));
+            setStatus(I18N.get("management.saveOk", msg.getString("saveName")));
             requestSaves();
         } else if ("SAVE_GAME_FAIL".equals(cmd) || "LOAD_GAME_FAIL".equals(cmd) || "DELETE_SAVE_FAIL".equals(cmd)) {
             setStatus(msg.getString("msg"));
         } else if ("LOAD_GAME_OK".equals(cmd)) {
             openLoadedSave(msg);
         } else if ("DELETE_SAVE_OK".equals(cmd)) {
-            setStatus("存档已删除");
+            setStatus(I18N.get("management.deleted"));
             requestSaves();
         } else if (Protocol.CHAT_HISTORY.equals(cmd)) {
             renderChats(msg.getData().optJSONArray("messages"));
@@ -215,9 +216,9 @@ public class ManagementController implements NetworkListener {
         } else if (Protocol.USER_LIST.equals(cmd)) {
             renderUsers(msg.getData().optJSONArray("users"));
         } else if (Protocol.ADMIN_STATS.equals(cmd)) {
-            adminStatsLabel.setText("用户 " + msg.getInt("totalUsers") + "  在线 " + msg.getInt("onlineUsers") + "  房间 " + msg.getInt("activeRooms"));
+            adminStatsLabel.setText(I18N.get("management.adminStats", msg.getInt("totalUsers"), msg.getInt("onlineUsers"), msg.getInt("activeRooms")));
         } else if (cmd.endsWith("_OK") || "ROLE_UPDATED".equals(cmd)) {
-            setStatus("操作成功：" + cmd);
+            setStatus(I18N.get("management.operationOk", cmd));
             if (isAdmin()) requestUserList();
         } else if (cmd.endsWith("_FAIL") || Protocol.ERROR.equals(cmd)) {
             setStatus(msg.getString("msg"));
@@ -231,7 +232,7 @@ public class ManagementController implements NetworkListener {
     private void renderSaves(JSONArray arr) {
         saves.clear();
         if (arr == null || arr.length() == 0) {
-            saves.add("暂无存档");
+            saves.add(I18N.get("management.noSaves"));
             return;
         }
         for (int i = 0; i < arr.length(); i++) {
@@ -244,7 +245,7 @@ public class ManagementController implements NetworkListener {
     private void renderChats(JSONArray arr) {
         chats.clear();
         if (arr == null || arr.length() == 0) {
-            chats.add("暂无聊天记录");
+            chats.add(I18N.get("management.noChats"));
             return;
         }
         for (int i = 0; i < arr.length(); i++) {
@@ -257,7 +258,7 @@ public class ManagementController implements NetworkListener {
     private void renderWatchers(JSONArray arr) {
         watchers.clear();
         if (arr == null || arr.length() == 0) {
-            watchers.add("暂无观战记录");
+            watchers.add(I18N.get("management.noWatchers"));
             return;
         }
         for (int i = 0; i < arr.length(); i++) {
@@ -270,7 +271,7 @@ public class ManagementController implements NetworkListener {
     private void renderUsers(JSONArray arr) {
         adminUsers.clear();
         if (arr == null || arr.length() == 0) {
-            adminUsers.add("暂无用户");
+            adminUsers.add(I18N.get("management.noUsers"));
             return;
         }
         for (int i = 0; i < arr.length(); i++) {
@@ -282,7 +283,7 @@ public class ManagementController implements NetworkListener {
 
     private boolean ensureOnline() {
         if (previewMode || !ClientMain.getConnector().isConnected()) {
-            setStatus("需要连接服务器");
+            setStatus(I18N.get("management.needServer"));
             return false;
         }
         return true;
@@ -296,20 +297,20 @@ public class ManagementController implements NetworkListener {
     private void updateAdminState() {
         if (adminPane == null) return;
         if (!isAdmin()) {
-            adminStatsLabel.setText("当前账号不是管理员");
+            adminStatsLabel.setText(I18N.get("management.notAdmin"));
         }
     }
 
     private Long selectedId(ListView<String> list) {
         String selected = list.getSelectionModel().getSelectedItem();
-        if (selected == null || selected.isBlank() || selected.startsWith("暂无")) {
-            setStatus("请先选择一条记录");
+        if (selected == null || selected.isBlank() || !Character.isDigit(selected.charAt(0))) {
+            setStatus(I18N.get("management.selectRecord"));
             return null;
         }
         try {
             return Long.parseLong(selected.split("\\|")[0].trim());
         } catch (Exception e) {
-            setStatus("无法识别所选记录ID");
+            setStatus(I18N.get("management.invalidRecordId"));
             return null;
         }
     }
@@ -318,7 +319,7 @@ public class ManagementController implements NetworkListener {
         try {
             return Long.parseLong(adminUserIdField.getText().trim());
         } catch (Exception e) {
-            setStatus("请输入有效用户ID");
+            setStatus(I18N.get("management.invalidUserId"));
             return null;
         }
     }

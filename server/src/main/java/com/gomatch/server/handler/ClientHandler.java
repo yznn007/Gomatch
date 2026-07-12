@@ -10,6 +10,7 @@ import com.gomatch.server.room.RoomManager;
 import com.gomatch.server.session.SessionManager;
 import com.gomatch.server.security.PhoneNumberNormalizer;
 import com.gomatch.server.service.ConfigService;
+import com.gomatch.server.service.EmailService;
 import com.gomatch.server.storage.StorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,6 +128,7 @@ public class ClientHandler implements Runnable {
             case Protocol.CREATE_ROOM     -> handleCreateRoom(msg);
             case Protocol.CREATE_AI_ROOM  -> handleCreateAiRoom(msg);
             case Protocol.JOIN_ROOM       -> handleJoinRoom(msg);
+            case Protocol.READY           -> handleReady(msg);
             case Protocol.LEAVE_ROOM      -> handleLeaveRoom();
             case Protocol.MOVE            -> handleMove(msg);
             case Protocol.CHAT            -> handleChat(msg);
@@ -194,6 +196,14 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    public void sendAndFlush(Message msg) {
+        if (writer != null) {
+            writer.println(msg.toJson());
+            writer.flush();
+            log.debug("Sent and flushed to {}: {}", socket.getPort(), msg.toJson());
+        }
+    }
+
     /** 发送仅含命令的消息（兼容旧调用风格） */
     public void send(String text) {
         if (writer != null) {
@@ -233,10 +243,13 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        String normalizedPhone = PhoneNumberNormalizer.normalize(phone);
-        if (normalizedPhone == null) {
-            send(Message.of("REGISTER_FAIL", "msg", "手机号必须是有效的国际号码（E.164，含国家区号）"));
-            return;
+        String normalizedPhone = null;
+        if (phone != null && !phone.trim().isEmpty()) {
+            normalizedPhone = PhoneNumberNormalizer.normalize(phone);
+            if (normalizedPhone == null) {
+                send(Message.of("REGISTER_FAIL", "msg", "手机号必须是有效的国际号码（E.164，含国家区号）"));
+                return;
+            }
         }
 
         boolean success = userDAO.register(username, password, email, normalizedPhone);
@@ -274,25 +287,33 @@ public class ClientHandler implements Runnable {
 
         UserDAO.UserInfo userInfo = userDAO.login(account, password, phone);
         if (userInfo != null) {
-            SessionManager.Session existingSession = sessionManager.getSessionByUserId(userInfo.getUserId());
-            if (existingSession != null && existingSession.handler != null) {
-                send(Message.of(Protocol.LOGIN_FAIL, "msg", "该账号已在其他设备登录"));
-                log.warn("登录失败: 用户 {} 已在线", account);
+            if ("BANNED".equals(userInfo.getStatus())) {
+                send(Message.of(Protocol.LOGIN_FAIL, "msg", "该账号已被封禁"));
+                log.warn("Banned user {} attempted login", account);
                 return;
             }
+            SessionManager.Session session = null;
+            synchronized (sessionManager) {
+                SessionManager.Session existingSession = sessionManager.getSessionByUserId(userInfo.getUserId());
+                if (existingSession != null && existingSession.handler != null) {
+                    log.info("拒绝重复登录: 用户 {} 已在其他设备登录", account);
+                    send(Message.of(Protocol.LOGIN_FAIL, "msg", "您的账号已在其他设备登录"));
+                    return;
+                }
 
-            this.userId = userInfo.getUserId();
-            this.username = userInfo.getUsername();
-            this.role = userInfo.getRole();
-            this.authenticated = true;
+                this.userId = userInfo.getUserId();
+                this.username = userInfo.getUsername();
+                this.role = userInfo.getRole();
+                this.authenticated = true;
 
-            SessionManager.Session session = sessionManager.createSession(
-                    userInfo.getUserId(), userInfo.getUsername(),
-                    userInfo.getScore(), userInfo.getWinCount(),
-                    userInfo.getLoseCount(), userInfo.getDrawCount(),
-                    userInfo.getRole());
-            this.sessionToken = session.token;
-            sessionManager.updateSessionHandler(userInfo.getUserId(), this);
+                session = sessionManager.createSession(
+                        userInfo.getUserId(), userInfo.getUsername(),
+                        userInfo.getScore(), userInfo.getWinCount(),
+                        userInfo.getLoseCount(), userInfo.getDrawCount(),
+                        userInfo.getRole());
+                this.sessionToken = session.token;
+                sessionManager.updateSessionHandler(userInfo.getUserId(), this);
+            }
 
             int rank = 0;
             RankDAO.RankInfo rankInfo = rankDAO.getRankByUserId(userInfo.getUserId());
@@ -317,19 +338,11 @@ public class ClientHandler implements Runnable {
                     long disconnectedId = activeRoom.isPlayerDisconnected(opponentId) ? opponentId : 0;
 
                     String avatarPath = userDAO.getAvatar(userInfo.getUserId());
-                    String avatarUrl = (avatarPath != null && !avatarPath.isEmpty())
-                            ? StorageManager.getInstance().getOssService().generatePresignedUrl(avatarPath, 86400 * 30)
-                            : "";
+                    String avatarUrl = generateAvatarUrl(avatarPath);
 
                     // 双方头像 URL（断线重连后客户端不会收到 GAME_START，必须在 LOGIN_OK 携带）
-                    String blackAvatarPath = userDAO.getAvatar(activeRoom.getBlackUserId());
-                    String whiteAvatarPath = userDAO.getAvatar(activeRoom.getWhiteUserId());
-                    String blackAvatarUrl = (blackAvatarPath != null && !blackAvatarPath.isEmpty())
-                            ? StorageManager.getInstance().getOssService().generatePresignedUrl(blackAvatarPath, 86400 * 30)
-                            : "";
-                    String whiteAvatarUrl = (whiteAvatarPath != null && !whiteAvatarPath.isEmpty())
-                            ? StorageManager.getInstance().getOssService().generatePresignedUrl(whiteAvatarPath, 86400 * 30)
-                            : "";
+                    String blackAvatarUrl = generateAvatarUrl(userDAO.getAvatar(activeRoom.getBlackUserId()));
+                    String whiteAvatarUrl = generateAvatarUrl(userDAO.getAvatar(activeRoom.getWhiteUserId()));
 
                     send(Message.builder(Protocol.LOGIN_OK)
                             .set("userId", String.valueOf(userInfo.getUserId()))
@@ -357,6 +370,11 @@ public class ClientHandler implements Runnable {
                     // 回放已有落子（在 LOGIN_OK 之后发送，确保客户端先初始化对局界面）
                     activeRoom.replayMovesTo(this);
 
+                    // 同步服务端当前回合倒计时，避免客户端始终用默认 60s
+                    send(Message.of(Protocol.TIME_SYNC,
+                            "remainingSeconds", activeRoom.getRemainingSeconds(),
+                            "currentPlayer", activeRoom.getGame().getCurrentPlayer()));
+
                     // 通知对手该玩家已重连
                     activeRoom.broadcastToPlayers(Message.of(Protocol.PLAYER_ENTER,
                             "userId", String.valueOf(userInfo.getUserId()),
@@ -369,9 +387,7 @@ public class ClientHandler implements Runnable {
             }
 
             String avatarPath = userDAO.getAvatar(userInfo.getUserId());
-            String avatarUrl = (avatarPath != null && !avatarPath.isEmpty()) 
-                    ? StorageManager.getInstance().getOssService().generatePresignedUrl(avatarPath, 86400 * 30) 
-                    : "";
+            String avatarUrl = generateAvatarUrl(avatarPath);
             send(Message.builder(Protocol.LOGIN_OK)
                     .set("userId", String.valueOf(userInfo.getUserId()))
                     .set("username", userInfo.getUsername())
@@ -473,9 +489,18 @@ public class ClientHandler implements Runnable {
         }
 
         String code = VerificationCodeManager.getInstance().generateCode(email);
-        send(Message.of(Protocol.FORGOT_PWD_CODE,
-                "code", code,
-                "email", email));
+        if (code == null) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "验证码生成失败，请重试"));
+            return;
+        }
+
+        boolean sent = EmailService.getInstance().sendVerificationCode(email, code);
+        if (!sent && EmailService.getInstance().isConfigured()) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "邮件发送失败，请稍后重试"));
+            return;
+        }
+
+        send(Message.of(Protocol.FORGOT_PWD_CODE, "email", email));
         log.info("Forgot password code sent to {} (userId={})", email, userId);
     }
 
@@ -586,7 +611,7 @@ public class ClientHandler implements Runnable {
         Room room = roomManager.createRoom(roomName, this, password);
         this.currentRoom = room;
 
-        send(Message.builder("JOIN_OK")
+        send(Message.builder(Protocol.JOIN_OK)
                 .set("roomId", room.getRoomId())
                 .set("roomName", room.getRoomName())
                 .set("players", room.getPlayerCount() + "/" + 2)
@@ -617,7 +642,7 @@ public class ClientHandler implements Runnable {
         Room room = roomManager.createAiRoom(roomName, this);
         this.currentRoom = room;
 
-        send(Message.builder("JOIN_OK")
+        send(Message.builder(Protocol.JOIN_OK)
                 .set("roomId", room.getRoomId())
                 .set("roomName", room.getRoomName())
                 .set("players", room.getPlayerCount() + "/" + 1)
@@ -697,21 +722,56 @@ public class ClientHandler implements Runnable {
                     "userId", String.valueOf(getUserId()),
                     "username", getUsername()));
 
-            send(Message.builder("JOIN_OK")
+            Message.Builder joinOkBuilder = Message.builder(Protocol.JOIN_OK)
                     .set("roomId", room.getRoomId())
                     .set("roomName", room.getRoomName())
                     .set("players", room.getPlayerCount() + "/" + 2)
-                    .build());
+                    .set("blackUserId", String.valueOf(room.getBlackUserId()))
+                    .set("blackUsername", room.getBlackUsername());
 
             if (room.getPlayerCount() == 2) {
-                room.startGame();
-                room.broadcastAll(room.buildGameStartMessage());
-                log.info("房间 {} 已满，游戏开始: BLACK={}, WHITE={}", roomId, room.getBlackUserId(), room.getWhiteUserId());
+                joinOkBuilder.set("whiteUserId", String.valueOf(room.getWhiteUserId()))
+                        .set("whiteUsername", room.getWhiteUsername());
+                log.info("房间 {} 已满，等待双方准备", roomId);
             }
+
+            send(joinOkBuilder.build());
 
             log.info("玩家 {} 加入房间 {}", userId, roomId);
         } else {
             send(Message.of(Protocol.JOIN_FAIL, "msg", "房间已满或游戏进行中"));
+        }
+    }
+
+    // ==================== 准备/取消准备 ====================
+
+    private void handleReady(Message msg) {
+        if (!authenticated) {
+            send(Message.of(Protocol.ERROR, "msg", "未登录"));
+            return;
+        }
+
+        if (currentRoom == null) {
+            send(Message.of(Protocol.ERROR, "msg", "不在房间"));
+            return;
+        }
+
+        Room room = currentRoom;
+        boolean ready = "true".equals(msg.getString("ready"));
+
+        boolean success = room.setReady(userId, ready);
+        if (success) {
+            room.broadcastToPlayers(Message.of(Protocol.READY,
+                    "blackReady", String.valueOf(room.isBlackReady()),
+                    "whiteReady", String.valueOf(room.isWhiteReady())));
+
+            if (room.getPlayerCount() == 2 && room.bothReady()) {
+                room.startGame();
+                room.broadcastAll(room.buildGameStartMessage());
+                log.info("房间 {} 双方已准备，游戏开始: BLACK={}, WHITE={}", room.getRoomId(), room.getBlackUserId(), room.getWhiteUserId());
+            }
+        } else {
+            send(Message.of(Protocol.ERROR, "msg", "设置准备状态失败"));
         }
     }
 
@@ -1027,6 +1087,10 @@ public class ClientHandler implements Runnable {
                     "color", String.valueOf(mr.color)));
         }
 
+          send(Message.of(Protocol.TIME_SYNC,
+                "remainingSeconds", room.getRemainingSeconds(),
+                "currentPlayer", room.getGame().getCurrentPlayer()));
+
         log.info("玩家 {} 开始观战房间 {} (已回放 {} 步)", userId, roomId, room.getGame().getMoveHistory().size());
     }
 
@@ -1068,7 +1132,7 @@ public class ClientHandler implements Runnable {
             obj.put("username", u.getUsername());
             obj.put("score", u.getScore());
             obj.put("winRate", u.getWinRate());
-            obj.put("avatarUrl", u.getAvatarUrl() != null ? u.getAvatarUrl() : "");
+            obj.put("avatarUrl", u.getAvatar() != null ? u.getAvatar() : "");
             users.put(obj);
         }
         send(Message.builder(Protocol.RANKING_LIST)
@@ -1200,6 +1264,22 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /**
+     * 根据 avatarPath（OSS 相对路径）生成 30 天预签名 URL。
+     * OSS 未启用、路径为空或生成异常时均返回空串，调用方无需额外判断。
+     */
+    private String generateAvatarUrl(String avatarPath) {
+        if (avatarPath == null || avatarPath.isEmpty()) return "";
+        StorageManager sm = StorageManager.getInstance();
+        if (sm == null || !sm.isEnabled() || sm.getOssService() == null) return "";
+        try {
+            return sm.getOssService().generatePresignedUrl(avatarPath, 86400 * 30);
+        } catch (Exception e) {
+            log.warn("Failed to generate avatar URL for {}: {}", avatarPath, e.getMessage());
+            return "";
+        }
+    }
+
     // ==================== 悔棋请求 ====================
 
     private void handleRequestUndo() {
@@ -1232,7 +1312,12 @@ public class ClientHandler implements Runnable {
                     "requesterName", getUsername()));
             log.info("玩家 {} 请求悔棋", userId);
         } else {
-            send(Message.of(Protocol.ERROR, "msg", "无法请求悔棋"));
+            int undoCount = currentRoom.getUndoCount(userId);
+            if (undoCount >= 3) {
+                send(Message.of(Protocol.ERROR, "msg", "undo_limit_exceeded"));
+            } else {
+                send(Message.of(Protocol.ERROR, "msg", "无法请求悔棋"));
+            }
         }
     }
 
@@ -1291,7 +1376,12 @@ public class ClientHandler implements Runnable {
                     "requesterName", getUsername()));
             log.info("玩家 {} 请求求和", userId);
         } else {
-            send(Message.of(Protocol.ERROR, "msg", "无法请求求和"));
+            int drawCount = currentRoom.getDrawCount(userId);
+            if (drawCount >= 1) {
+                send(Message.of(Protocol.ERROR, "msg", "draw_limit_exceeded"));
+            } else {
+                send(Message.of(Protocol.ERROR, "msg", "无法请求求和"));
+            }
         }
     }
 
@@ -1389,89 +1479,99 @@ public class ClientHandler implements Runnable {
     private void handleReconnect(Message msg) {
         String token = msg.getString("token");
 
-        SessionManager.Session session = sessionManager.getSessionByToken(token);
+        synchronized (sessionManager) {
+            SessionManager.Session session = sessionManager.getSessionByToken(token);
 
-        if (session == null) {
-            send(Message.of("RECONNECT_FAIL", "msg", "会话不存在或已过期"));
-            log.warn("Reconnect failed: session not found for token {}",
-                    token != null ? token.substring(0, Math.min(8, token.length())) : "null");
-            return;
+            if (session == null) {
+                send(Message.of("RECONNECT_FAIL", "msg", "会话不存在或已过期"));
+                log.warn("Reconnect failed: session not found for token {}",
+                        token != null ? token.substring(0, Math.min(8, token.length())) : "null");
+                return;
+            }
+
+            SessionManager.Session currentSession = sessionManager.getSessionByUserId(session.userId);
+            if (currentSession != null && !currentSession.token.equals(token)) {
+                send(Message.of("RECONNECT_FAIL", "msg", "您的账号在其他设备登录"));
+                log.warn("Reconnect failed: userId {} has new session, old token {} rejected",
+                        session.userId, token.substring(0, 8));
+                return;
+            }
+
+            if (session.isExpired()) {
+                sessionManager.removeSession(token);
+                send(Message.of("RECONNECT_FAIL", "msg", "会话已过期"));
+                log.warn("Reconnect failed: session expired for userId {}", session.userId);
+                return;
+            }
+
+            this.userId = session.userId;
+            this.username = session.username;
+            this.role = session.role;
+            this.sessionToken = token;
+            this.authenticated = true;
+
+            sessionManager.updateSessionHandler(session.userId, this);
+            RedisManager.getInstance().setOnline(session.userId, token);
         }
 
-        if (session.isExpired()) {
-            sessionManager.removeSession(token);
-            send(Message.of("RECONNECT_FAIL", "msg", "会话已过期"));
-            log.warn("Reconnect failed: session expired for userId {}", session.userId);
-            return;
-        }
-
-        this.userId = session.userId;
-        this.username = session.username;
-        this.role = session.role;
-        this.sessionToken = token;
-        this.authenticated = true;
-
-        sessionManager.updateSessionHandler(session.userId, this);
-        RedisManager.getInstance().setOnline(session.userId, token);
-
-        Room room = roomManager.findRoomByUserId(session.userId);
+        Room room = roomManager.findRoomByUserId(userId);
         if (room != null) {
             boolean reconnected = room.reconnect(this);
             if (reconnected) {
                 this.currentRoom = room;
-                sessionManager.updateSessionRoom(session.userId, room.getRoomId());
+                sessionManager.updateSessionRoom(userId, room.getRoomId());
 
                 int rank = 0;
-                RankDAO.RankInfo rankInfo = rankDAO.getRankByUserId(session.userId);
+                RankDAO.RankInfo rankInfo = rankDAO.getRankByUserId(userId);
                 if (rankInfo != null) {
                     rank = rankInfo.getRank();
                 }
 
                 send(Message.builder("RECONNECT_OK")
-                        .set("userId", String.valueOf(session.userId))
-                        .set("username", session.username)
-                        .set("score", String.valueOf(session.score))
-                        .set("winCount", String.valueOf(session.winCount))
-                        .set("loseCount", String.valueOf(session.loseCount))
-                        .set("drawCount", String.valueOf(session.drawCount))
+                        .set("userId", String.valueOf(userId))
+                        .set("username", username)
+                        .set("score", String.valueOf(sessionManager.getSessionByUserId(userId).score))
+                        .set("winCount", String.valueOf(sessionManager.getSessionByUserId(userId).winCount))
+                        .set("loseCount", String.valueOf(sessionManager.getSessionByUserId(userId).loseCount))
+                        .set("drawCount", String.valueOf(sessionManager.getSessionByUserId(userId).drawCount))
                         .set("rank", String.valueOf(rank))
-                        .set("role", session.role)
+                        .set("role", role)
                         .set("roomId", room.getRoomId())
                         .set("roomName", room.getRoomName())
                         .set("players", room.getPlayerCount() + "/" + 2)
                         .build());
 
                 room.broadcastToPlayers(Message.of(Protocol.PLAYER_ENTER,
-                        "userId", String.valueOf(session.userId),
-                        "username", session.username));
+                        "userId", String.valueOf(userId),
+                        "username", username));
 
-                log.info("玩家 {} 断线重连成功，进入房间 {}", session.userId, room.getRoomId());
+                log.info("玩家 {} 断线重连成功，进入房间 {}", userId, room.getRoomId());
             } else {
                 send(Message.of("RECONNECT_FAIL", "msg", "无法重新加入房间"));
-                log.warn("Reconnect failed: cannot rejoin room {} for userId {}", room.getRoomId(), session.userId);
+                log.warn("Reconnect failed: cannot rejoin room {} for userId {}", room.getRoomId(), userId);
             }
         } else {
             int rank = 0;
-            RankDAO.RankInfo rankInfo = rankDAO.getRankByUserId(session.userId);
+            RankDAO.RankInfo rankInfo = rankDAO.getRankByUserId(userId);
             if (rankInfo != null) {
                 rank = rankInfo.getRank();
             }
 
             send(Message.builder("RECONNECT_OK")
-                    .set("userId", String.valueOf(session.userId))
-                    .set("username", session.username)
-                    .set("score", String.valueOf(session.score))
-                    .set("winCount", String.valueOf(session.winCount))
-                    .set("loseCount", String.valueOf(session.loseCount))
-                    .set("drawCount", String.valueOf(session.drawCount))
+                    .set("userId", String.valueOf(userId))
+                    .set("username", username)
+                    .set("score", String.valueOf(sessionManager.getSessionByUserId(userId).score))
+                    .set("winCount", String.valueOf(sessionManager.getSessionByUserId(userId).winCount))
+                    .set("loseCount", String.valueOf(sessionManager.getSessionByUserId(userId).loseCount))
+                    .set("drawCount", String.valueOf(sessionManager.getSessionByUserId(userId).drawCount))
                     .set("rank", String.valueOf(rank))
-                    .set("role", session.role)
+                    .set("role", role)
                     .set("roomId", "")
                     .set("roomName", "")
                     .set("players", "")
                     .build());
 
-            log.info("玩家 {} 断线重连成功，不在房间中", session.userId);
+            log.info("玩家 {} 断线重连成功，不在房间中", userId);
         }
     }
 
@@ -1595,7 +1695,7 @@ public class ClientHandler implements Runnable {
             obj.put("friendUsername", f.getFriendUsername());
             obj.put("friendScore", String.valueOf(f.getFriendScore()));
             obj.put("online", f.isOnline());
-            obj.put("avatarUrl", f.getAvatarUrl() != null ? f.getAvatarUrl() : "");
+            obj.put("avatarUrl", f.getAvatar() != null ? f.getAvatar() : "");
             arr.put(obj);
         }
         send(Message.builder("FRIEND_LIST").set("friends", arr).build());
@@ -2056,15 +2156,11 @@ public class ClientHandler implements Runnable {
         long targetUserId = msg.has("userId") ? msg.getLong("userId") : userId;
         
         String filePath = userDAO.getAvatar(targetUserId);
-        if (filePath != null && !filePath.isEmpty()) {
-            String presignedUrl = StorageManager.getInstance().getOssService().generatePresignedUrl(filePath, 86400 * 30);
-            send(Message.builder("AVATAR_DATA")
-                    .set("userId", String.valueOf(targetUserId))
-                    .set("url", presignedUrl)
-                    .build());
-        } else {
-            send(Message.of("AVATAR_DATA", "userId", String.valueOf(targetUserId), "url", ""));
-        }
+        String presignedUrl = generateAvatarUrl(filePath);
+        send(Message.builder("AVATAR_DATA")
+                .set("userId", String.valueOf(targetUserId))
+                .set("url", presignedUrl)
+                .build());
     }
 
     private void handleDeleteAvatar() {
@@ -2117,16 +2213,30 @@ public class ClientHandler implements Runnable {
                 currentRoom != null ? currentRoom.getRoomId() : "none");
 
         if (currentRoom != null) {
-            currentRoom.disconnect(this);
-            log.info("玩家 {} 从房间 {} 断开连接", userId, currentRoom.getRoomId());
+            // cleanupDisconnect 在 Room 的 synchronized 锁内原子判断状态，
+            // 避免 getStatus() 与实际操作之间的 TOCTOU 竞态。
+            // 返回 true 表示房间处于 WAITING，需要通过 RoomManager 清理残留。
+            boolean wasWaiting = currentRoom.cleanupDisconnect(this);
+            if (wasWaiting) {
+                roomManager.leaveRoom(this);
+            } else {
+                log.info("玩家 {} 从房间 {} 断开连接", userId, currentRoom.getRoomId());
+            }
         }
 
         if (authenticated && userId > 0) {
             roomManager.cancelMatch(userId);
-            sessionManager.updateSessionHandler(userId, null);
+            
+            SessionManager.Session session = sessionManager.getSessionByUserId(userId);
+            if (session != null && session.handler == this) {
+                sessionManager.updateSessionHandler(userId, null);
+                RedisManager.getInstance().setOffline(userId);
+                log.info("用户 {} 断开连接，保留会话等待重连", userId);
+            } else if (session != null && session.handler != this) {
+                log.info("用户 {} 的连接已被新设备替换，跳过清理", userId);
+            }
+            
             configService.flushAsync(userId);
-            RedisManager.getInstance().setOffline(userId);
-            log.info("用户 {} 断开连接，保留会话等待重连", userId);
         }
 
         try {

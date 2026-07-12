@@ -2,6 +2,7 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.network.ClientConfig;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -19,38 +20,38 @@ public class ServerConfigDialogController {
     @FXML
     private void initialize() {
         String host = AppConfig.SERVER_HOST;
-        if (host == null || host.trim().isEmpty()) host = "127.0.0.1";
-        ipComboBox.setValue(host);
+        if (ClientConfig.getDefaultHost().equals(host)) {
+            ipComboBox.getEditor().clear();
+        } else {
+            ipComboBox.setValue(host);
+        }
         portField.setText(String.valueOf(AppConfig.SERVER_PORT));
         refreshStatus();
     }
 
     private void refreshStatus() {
         if (ClientMain.getConnector().isConnected()) {
-            statusLabel.setText("已连接");
+            statusLabel.setText(I18N.get("serverconfig.connected"));
             statusLabel.setStyle("-fx-text-fill: green;");
         } else {
-            statusLabel.setText("未连接");
+            statusLabel.setText(I18N.get("serverconfig.disconnected"));
             statusLabel.setStyle("-fx-text-fill: #dc2626;");
         }
     }
 
     @FXML
     private void handleApply() {
-        String host = ipComboBox.getValue();
-        if (host == null || host.trim().isEmpty()) {
-            statusLabel.setText("错误：IP 地址不能为空");
-            statusLabel.setStyle("-fx-text-fill: #dc2626;");
-            return;
-        }
-        host = host.trim();
+        String enteredHost = ipComboBox.getEditor().getText();
+        String host = enteredHost == null || enteredHost.trim().isEmpty()
+                ? ClientConfig.getDefaultHost()
+                : enteredHost.trim();
 
         int port;
         try {
             port = Integer.parseInt(portField.getText().trim());
             if (port <= 0 || port > 65535) throw new NumberFormatException();
         } catch (NumberFormatException e) {
-            statusLabel.setText("错误：端口须为 1-65535 的整数");
+            statusLabel.setText(I18N.get("serverconfig.portInvalid"));
             statusLabel.setStyle("-fx-text-fill: #dc2626;");
             return;
         }
@@ -58,10 +59,10 @@ public class ServerConfigDialogController {
         // 保存配置
         AppConfig.SERVER_HOST = host;
         AppConfig.SERVER_PORT = port;
-        ClientConfig.saveConfig(host, port);
+        ClientConfig.saveConfig(enteredHost, port);
 
         // 置为"连接中"，禁用按钮防止重复点击
-        statusLabel.setText("连接中...");
+        statusLabel.setText(I18N.get("serverconfig.connecting"));
         statusLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
         applyBtn.setDisable(true);
 
@@ -74,13 +75,13 @@ public class ServerConfigDialogController {
             try {
                 ClientMain.getConnector().connect(finalHost, finalPort);
                 javafx.application.Platform.runLater(() -> {
-                    statusLabel.setText("✅ 已连接 (" + finalHost + ":" + finalPort + ")");
+                    statusLabel.setText(I18N.get("serverconfig.connected"));
                     statusLabel.setStyle("-fx-text-fill: green;");
                     applyBtn.setDisable(false);
                 });
             } catch (Exception e) {
                 javafx.application.Platform.runLater(() -> {
-                    statusLabel.setText("❌ 连接失败：" + e.getMessage());
+                    statusLabel.setText(I18N.get("serverconfig.connectFailed", e.getMessage()));
                     statusLabel.setStyle("-fx-text-fill: #dc2626;");
                     applyBtn.setDisable(false);
                     // 失败时保留弹窗，让用户看到错误信息

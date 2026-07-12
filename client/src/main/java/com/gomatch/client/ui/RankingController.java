@@ -2,6 +2,7 @@ package com.gomatch.client.ui;
 
 import com.gomatch.client.AppConfig;
 import com.gomatch.client.ClientMain;
+import com.gomatch.client.I18N;
 import com.gomatch.client.model.User;
 import com.gomatch.client.network.NetworkListener;
 import com.gomatch.common.Message;
@@ -54,11 +55,11 @@ public class RankingController implements NetworkListener {
 
     private void loadMockRanking() {
         String[][] fakeData = {
-            {"1", "棋圣",   "1500", "83.3%"},
-            {"2", "高手如云","1350", "72.7%"},
-            {"3", "五子连珠","1200", "63.6%"},
-            {"4", "新手求带","1050", "44.4%"},
-            {"5", "游客",   "1000",  "0%"  }
+            {"1", I18N.get("lobby.preview.rank1"),   "1500", "83.3%"},
+            {"2", I18N.get("lobby.preview.rank2"), "1350", "72.7%"},
+            {"3", I18N.get("lobby.preview.rank3"), "1200", "63.6%"},
+            {"4", I18N.get("ranking.preview.player4"), "1050", "44.4%"},
+            {"5", I18N.get("common.guest"),   "1000",  "0%"  }
         };
         rankingData.clear();
         for (String[] row : fakeData) {
@@ -73,7 +74,7 @@ public class RankingController implements NetworkListener {
 
     private void showRankingTab() {
         currentTab = "GLOBAL";
-        rankingTitleLabel.setText("全服积分排行榜");
+        rankingTitleLabel.setText(I18N.get("ranking.globalTitle"));
         menuGlobalBtn.getStyleClass().remove("active");
         menuFriendsBtn.getStyleClass().remove("active");
         menuGlobalBtn.getStyleClass().add("active");
@@ -84,7 +85,7 @@ public class RankingController implements NetworkListener {
         Platform.runLater(() -> {
             rankingContainer.getChildren().clear();
             if (rankingData.isEmpty()) {
-                Label noRankLabel = new Label("暂无排行数据。");
+                Label noRankLabel = new Label(I18N.get("ranking.noRankData"));
                 noRankLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
                 rankingContainer.getChildren().add(noRankLabel);
                 return;
@@ -94,7 +95,7 @@ public class RankingController implements NetworkListener {
             if ("FRIENDS".equals(currentTab) && rankingData.size() == 1
                     && currentUser != null && currentUser.getUsername() != null
                     && currentUser.getUsername().equals(rankingData.get(0).getUsername())) {
-                Label noFriendLabel = new Label("还没有好友，去大厅添加好友吧！");
+                Label noFriendLabel = new Label(I18N.get("ranking.noFriends"));
                 noFriendLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
                 rankingContainer.getChildren().add(noFriendLabel);
                 return;
@@ -142,7 +143,7 @@ public class RankingController implements NetworkListener {
                 avatarText.getStyleClass().add("avatar-badge-text");
 
                 // 加载真实头像（如果有）
-                String avatarUrl = user.getAvatarUrl();
+                String avatarUrl = user.getAvatar();
                 // 默认仅显示首字母；图片加载成功后再切到真实头像
                 avatarText.setVisible(true);
                 ImageView avatarImg = new ImageView();
@@ -203,8 +204,9 @@ public class RankingController implements NetworkListener {
                 nameRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 Label nameLabel = new Label(user.getUsername());
                 nameLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
                 if (isMe) {
-                    nameLabel.setText(nameLabel.getText() + " (我)");
+                    nameLabel.setText(nameLabel.getText() + " (" + I18N.get("ranking.me") + ")");
                     nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#0f766e", "#2dd4bf") + ";");
                 } else {
                     nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
@@ -215,7 +217,7 @@ public class RankingController implements NetworkListener {
                 if (!winRateStr.isEmpty() && !winRateStr.contains("%")) {
                     winRateStr = winRateStr + "%";
                 }
-                Label detailsLabel = new Label("积分: " + user.getScore() + " | 胜率: " + winRateStr);
+                Label detailsLabel = new Label(I18N.get("ranking.scoreWinRate", user.getScore(), winRateStr));
                 detailsLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 detailsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
 
@@ -230,8 +232,8 @@ public class RankingController implements NetworkListener {
     @FXML
     public void showGlobalRanking() {
         currentTab = "GLOBAL";
-        rankingTitleLabel.setText("全服积分排行榜");
-        
+        rankingTitleLabel.setText(I18N.get("ranking.globalTitle"));
+
         menuGlobalBtn.getStyleClass().remove("active");
         menuFriendsBtn.getStyleClass().remove("active");
         menuGlobalBtn.getStyleClass().add("active");
@@ -242,7 +244,7 @@ public class RankingController implements NetworkListener {
     @FXML
     public void showFriendsRanking() {
         currentTab = "FRIENDS";
-        rankingTitleLabel.setText("好友积分排行榜");
+        rankingTitleLabel.setText(I18N.get("ranking.friendTitle"));
         
         menuGlobalBtn.getStyleClass().remove("active");
         menuFriendsBtn.getStyleClass().remove("active");
@@ -260,11 +262,11 @@ public class RankingController implements NetworkListener {
         } else {
             if ("GLOBAL".equals(currentTab)) {
                 String[][] fakeData = {
-                    {"1", "棋圣",   "1500", "83.3%"},
-                    {"2", "高手如云","1350", "72.7%"},
-                    {"3", "五子连珠","1200", "63.6%"},
-                    {"4", "新手求带","1050", "44.4%"},
-                    {"5", "游客",   "1000",  "0%"  }
+                    {"1", I18N.get("lobby.preview.rank1"),   "1500", "83.3%"},
+                    {"2", I18N.get("lobby.preview.rank2"), "1350", "72.7%"},
+                    {"3", I18N.get("lobby.preview.rank3"), "1200", "63.6%"},
+                    {"4", I18N.get("ranking.preview.player4"), "1050", "44.4%"},
+                    {"5", I18N.get("common.guest"),   "1000",  "0%"  }
                 };
                 for (String[] row : fakeData) {
                     User u = new User();
@@ -276,14 +278,14 @@ public class RankingController implements NetworkListener {
                 }
             } else {
                 String[][] fakeData = {
-                    {"1", "我",     "1250", "66.7%"},
-                    {"2", "好基友",  "1150", "55.6%"},
-                    {"3", "下棋搭子","1050", "48.0%"}
+                    {"1", I18N.get("ranking.me"),     "1250", "66.7%"},
+                    {"2", I18N.get("ranking.preview.friend1"),  "1150", "55.6%"},
+                    {"3", I18N.get("ranking.preview.friend2"), "1050", "48.0%"}
                 };
                 for (String[] row : fakeData) {
                     User u = new User();
                     u.setRank(Integer.parseInt(row[0]));
-                    if ("我".equals(row[1]) && currentUser != null && currentUser.getUsername() != null) {
+                    if (I18N.get("ranking.me").equals(row[1]) && currentUser != null && currentUser.getUsername() != null) {
                         u.setUsername(currentUser.getUsername());
                     } else {
                         u.setUsername(row[1]);
@@ -349,8 +351,8 @@ public class RankingController implements NetworkListener {
                 user.setRank(u.optInt("rank", i + 1));
                 user.setUsername(u.optString("username", ""));
                 user.setScore(u.optInt("score", 0));
-                // 头像 URL
-                user.setAvatarUrl(u.optString("avatarUrl", ""));
+                // 头像 URL（服务端 key 为 avatarUrl，兼容旧版 avatar）
+                user.setAvatar(u.optString("avatarUrl", u.optString("avatar", "")));
                 // 服务端 winRate 可能是 double 或字符串，统一按字符串读取
                 Object winRateObj = u.opt("winRate");
                 String winRateStr = winRateObj != null ? String.valueOf(winRateObj) : "";

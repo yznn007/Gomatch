@@ -33,7 +33,6 @@ public class SettingsController {
     @FXML private CheckBox rememberPasswordCheckBox;
 
     // 图像设置
-    @FXML private ComboBox<String> resolutionComboBox;
     @FXML private CheckBox fullscreenCheckBox;
     @FXML private CheckBox vsyncCheckBox;
     @FXML private ComboBox<String> fpsComboBox;
@@ -87,37 +86,8 @@ public class SettingsController {
     private boolean initializing;
     private boolean audioConfigSyncSuppressed;
 
-    // 后台静音：记住音乐启用状态，用于恢复
-    private boolean wasGlobalMusicEnabled;
-    private boolean wasBgMusicEnabled;
-
-    /** 分辨率字符串 → 宽高映射（使用 i18n key 解析实际尺寸） */
-    private int[] parseResolution(String displayText) {
-        // 从显示文本中提取数字部分，如 "900x640 (默认)" → 900,640
-        try {
-            String nums = displayText.replaceAll("[^0-9x].*", "").trim();
-            String[] parts = nums.split("x");
-            if (parts.length >= 2) {
-                return new int[]{Integer.parseInt(parts[0].trim()), Integer.parseInt(parts[1].trim())};
-            }
-        } catch (Exception ignored) {}
-        return new int[]{900, 640};
-    }
-
-    private String resolutionToDisplay(int w, int h) {
-        if (w == 1024 && h == 768) return I18N.get("settings.resolution.2");
-        if (w == 1280 && h == 720) return I18N.get("settings.resolution.3");
-        return I18N.get("settings.resolution.1");
-    }
-
     /** 填充所有 ComboBox 的可选项（i18n） */
     private void populateComboBoxItems() {
-        // 分辨率
-        resolutionComboBox.getItems().setAll(
-                I18N.get("settings.resolution.1"),
-                I18N.get("settings.resolution.2"),
-                I18N.get("settings.resolution.3"));
-
         // 帧率
         fpsComboBox.getItems().setAll(
                 I18N.get("settings.fps.60"),
@@ -153,10 +123,11 @@ public class SettingsController {
 
         // 服务器配置
         String currentHost = AppConfig.SERVER_HOST;
-        if (currentHost == null || currentHost.trim().isEmpty()) {
-            currentHost = "127.0.0.1";
+        if (ClientConfig.getDefaultHost().equals(currentHost)) {
+            ipComboBox.getEditor().clear();
+        } else {
+            ipComboBox.setValue(currentHost);
         }
-        ipComboBox.setValue(currentHost);
         portField.setText(String.valueOf(AppConfig.SERVER_PORT));
 
         if (ClientMain.getConnector().isConnected()) {
@@ -180,10 +151,8 @@ public class SettingsController {
         // 图像设置
         Stage stage = ScreenManager.getStage();
         if (stage != null) {
-            resolutionComboBox.setValue(resolutionToDisplay((int) stage.getWidth(), (int) stage.getHeight()));
             fullscreenCheckBox.setSelected(stage.isFullScreen());
         } else {
-            resolutionComboBox.setValue(I18N.get("settings.resolution.1"));
             fullscreenCheckBox.setSelected(s.fullscreen);
         }
         vsyncCheckBox.setSelected(s.vsync);
@@ -191,7 +160,6 @@ public class SettingsController {
 
         // 后台静音
         muteOnBgCheckBox.setSelected(s.muteOnBackground);
-        setupMuteOnBackground();
 
         // UI 风格
         // 根据保存的 fontFamily key 设置当前显示值
@@ -333,36 +301,7 @@ public class SettingsController {
         updatePlayOrderButtonText();
     }
 
-    /** 后台静音：窗口失焦时暂停音乐，获焦时恢复 */
-    private void setupMuteOnBackground() {
-        Stage stage = ScreenManager.getStage();
-        if (stage == null) return;
 
-        stage.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-            if (!muteOnBgCheckBox.isSelected()) return;
-
-            if (!isNowFocused) {
-                // 窗口失焦：记住当前音乐状态，然后暂停
-                wasGlobalMusicEnabled = globalMusicCheckBox.isSelected();
-                wasBgMusicEnabled = backgroundMusicCheckBox.isSelected();
-                setAudioEnabled(globalMusicCheckBox, false);
-                setAudioEnabled(backgroundMusicCheckBox, false);
-            } else {
-                // 窗口获焦：恢复之前的音乐状态
-                setAudioEnabled(globalMusicCheckBox, wasGlobalMusicEnabled);
-                setAudioEnabled(backgroundMusicCheckBox, wasBgMusicEnabled);
-            }
-        });
-    }
-
-    private void setAudioEnabled(CheckBox toggle, boolean enabled) {
-        audioConfigSyncSuppressed = true;
-        try {
-            toggle.setSelected(enabled);
-        } finally {
-            audioConfigSyncSuppressed = false;
-        }
-    }
     public void setCurrentUser(User user) {
         this.currentUser = user;
     }
@@ -370,7 +309,7 @@ public class SettingsController {
     public void setPreviewMode(boolean previewMode) {
         this.previewMode = previewMode;
         if (previewMode) {
-            statusLabel.setText(I18N.get("settings.connected") + " (" + (I18N.isEnglish() ? "Preview" : "浏览模式") + ")");
+            statusLabel.setText(I18N.get("settings.connected") + " (" + I18N.get("settings.previewMode") + ")");
             statusLabel.setStyle("-fx-text-fill: #86efac;");
         }
     }
@@ -439,7 +378,7 @@ public class SettingsController {
                 }
             }
         } catch (Exception e) {
-            showInfoAlert("设置开机自启失败：" + e.getMessage());
+            showInfoAlert(I18N.get("settings.autoStartFail", e.getMessage()));
             autoStartCheckBox.setSelected(!enabled);
         }
     }
@@ -451,26 +390,6 @@ public class SettingsController {
     }
 
     // ========== 图像设置 ==========
-
-    @FXML
-    private void handleResolution() {
-        String val = resolutionComboBox.getValue();
-        if (val == null) return;
-        int[] size = parseResolution(val);
-        if (size == null) return;
-
-        Stage stage = ScreenManager.getStage();
-        if (stage != null) {
-            stage.setFullScreen(false);
-            fullscreenCheckBox.setSelected(false);
-            stage.setWidth(size[0]);
-            stage.setHeight(size[1]);
-            stage.centerOnScreen();
-        }
-
-        UserSettings.get().resolution = size[0] + "x" + size[1];
-        UserSettings.save();
-    }
 
     @FXML
     private void handleFullscreen() {
@@ -510,13 +429,12 @@ public class SettingsController {
         UserSettings.get().muteOnBackground = enabled;
         UserSettings.save();
 
-        // 如果取消了后台静音，立即恢复音乐（如果之前因失焦被暂停）
         if (!enabled) {
+            BackgroundMusicManager.setMutedByBackground(false);
+        } else {
             Stage stage = ScreenManager.getStage();
             if (stage != null && !stage.isFocused()) {
-                // 窗口仍在后台但用户取消了静音，恢复之前状态
-                setAudioEnabled(globalMusicCheckBox, wasGlobalMusicEnabled);
-                setAudioEnabled(backgroundMusicCheckBox, wasBgMusicEnabled);
+                BackgroundMusicManager.setMutedByBackground(true);
             }
         }
     }
@@ -581,13 +499,10 @@ public class SettingsController {
 
     @FXML
     private void handleSaveConfig() {
-        String host = ipComboBox.getValue();
-        if (host == null || host.trim().isEmpty()) {
-            statusLabel.setText("错误：IP 地址不能为空");
-            statusLabel.setStyle("-fx-text-fill: #dc2626;");
-            return;
-        }
-        host = host.trim();
+        String enteredHost = ipComboBox.getEditor().getText();
+        String host = enteredHost == null || enteredHost.trim().isEmpty()
+                ? ClientConfig.getDefaultHost()
+                : enteredHost.trim();
 
         int port;
         try {
@@ -596,16 +511,16 @@ public class SettingsController {
                 throw new NumberFormatException();
             }
         } catch (NumberFormatException e) {
-            statusLabel.setText("错误：端口须为 1-65535 的整数");
+            statusLabel.setText(I18N.get("settings.portInvalid"));
             statusLabel.setStyle("-fx-text-fill: #dc2626;");
             return;
         }
 
         AppConfig.SERVER_HOST = host;
         AppConfig.SERVER_PORT = port;
-        ClientConfig.saveConfig(host, port);
+        ClientConfig.saveConfig(enteredHost, port);
 
-        statusLabel.setText("连接中...");
+        statusLabel.setText(I18N.get("settings.connecting"));
         statusLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#64748b", "#a7b0c2") + ";");
 
         final String finalHost = host;
@@ -615,12 +530,12 @@ public class SettingsController {
             try {
                 ClientMain.getConnector().connect(finalHost, finalPort);
                 javafx.application.Platform.runLater(() -> {
-                    statusLabel.setText("✅ 已连接 (" + finalHost + ":" + finalPort + ")");
+                    statusLabel.setText(I18N.get("settings.connected"));
                     statusLabel.setStyle("-fx-text-fill: #86efac;");
                 });
             } catch (Exception e) {
                 javafx.application.Platform.runLater(() -> {
-                    statusLabel.setText("❌ 连接失败：" + e.getMessage());
+                    statusLabel.setText(I18N.get("settings.connectFailed", e.getMessage()));
                     statusLabel.setStyle("-fx-text-fill: #dc2626;");
                 });
             }
