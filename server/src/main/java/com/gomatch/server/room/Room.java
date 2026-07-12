@@ -891,10 +891,6 @@ public class Room {
             turnTimerFuture = null;
             log.debug("Turn timer cancelled for room {}", roomId);
         }
-        // 同步当前剩余时间到所有客户端（含观战者），避免观战方倒计时继续跑到 0
-        broadcastAll(Message.of(Protocol.TIME_SYNC,
-                "remainingSeconds", getRemainingSeconds(),
-                "currentPlayer", game.getCurrentPlayer()));
     }
 
     public synchronized int getRemainingSeconds() {
@@ -946,6 +942,8 @@ public class Room {
         undoRequesterId = requesterId;
         pendingUndoActionId = gameActionDAO.recordAction(currentRecordId > 0 ? currentRecordId : null, requesterId, "undo", game.getMoveCount());
         cancelTurnTimer(); // 等待对方回复期间暂停回合计时
+        broadcastAll(Message.of(Protocol.TIMER_PAUSE,
+                "remainingSeconds", getRemainingSeconds()));
         log.info("Undo requested by {} in room {}, actionId={}", requesterId, roomId, pendingUndoActionId);
         return true;
     }
@@ -1022,6 +1020,8 @@ public class Room {
         drawRequesterId = requesterId;
         pendingDrawActionId = gameActionDAO.recordAction(currentRecordId > 0 ? currentRecordId : null, requesterId, "draw", game.getMoveCount());
         cancelTurnTimer(); // 等待对方回复期间暂停回合计时
+        broadcastAll(Message.of(Protocol.TIMER_PAUSE,
+                "remainingSeconds", getRemainingSeconds()));
         log.info("Draw requested by {} in room {}, actionId={}", requesterId, roomId, pendingDrawActionId);
         return true;
     }

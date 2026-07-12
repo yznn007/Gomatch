@@ -19,11 +19,6 @@ foreach ($command in 'mvn.cmd', 'jpackage.exe', 'candle.exe', 'light.exe') {
     }
 }
 
-& mvn.cmd -pl client -am package
-if ($LASTEXITCODE -ne 0) {
-    throw "客户端 Maven 打包失败，退出码：$LASTEXITCODE"
-}
-
 # 从 Maven 本地仓库定位 JavaFX 模块 JAR
 $m2Repo = Join-Path $env:USERPROFILE '.m2\repository'
 if (-not (Test-Path (Join-Path $m2Repo 'org\openjfx'))) {

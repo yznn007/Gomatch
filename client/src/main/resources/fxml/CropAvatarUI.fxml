@@ -7,72 +7,42 @@
 <?import javafx.scene.shape.Rectangle?>
 
 <!--
-  裁剪框固定居中，用户拖动底部图片来调整裁剪位置。
-  遮罩用 Group 包裹 4 个 Rectangle。
+  头像裁剪弹窗。
+  StackPane 固定 540×540 正方形并裁剪溢出；
+  ImageView 直接放在 StackPane 中手动定位，允许拖拽/缩放；
+  遮罩 Group 覆盖在最上层（mouseTransparent），按钮在 VBox 下层。
 -->
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.gomatch.client.ui.CropAvatarController"
       styleClass="crop-avatar-dialog"
+      spacing="0" prefWidth="540" minWidth="540" maxWidth="540">
 
-      spacing="0" alignment="CENTER"
-      prefWidth="540" prefHeight="640"
-      minWidth="540" minHeight="640">
-
-    <!-- 顶部标题 -->
-    <HBox alignment="CENTER_LEFT" prefHeight="36" styleClass="crop-avatar-title"
-          style="-fx-padding: 0 16 0 16;">
-        <Label text="拖动图片调整位置" styleClass="crop-avatar-title-text"
-               style="-fx-font-size: 13px;"/>
-    </HBox>
-
-    <!-- 主画布 -->
-    <StackPane fx:id="canvasContainer"
-               VBox.vgrow="ALWAYS"
+    <!-- 固定正方形画布 -->
+    <StackPane fx:id="canvasContainer" prefWidth="540" prefHeight="540"
+               minWidth="540" minHeight="540" maxWidth="540" maxHeight="540"
                style="-fx-background-color: #000000;">
 
-        <!-- 图片层（可拖动） -->
-        <ImageView fx:id="imageView"
-                   preserveRatio="false"
-                   mouseTransparent="false"
+        <!-- 图片层：手动定位，TOP_LEFT 确保布局起点为 (0,0) -->
+        <ImageView fx:id="imageView" preserveRatio="false" mouseTransparent="false"
                    StackPane.alignment="TOP_LEFT"/>
 
-        <!-- 遮罩层：Group 穿透鼠标事件 -->
+        <!-- 遮罩层：固定不动，穿透鼠标事件 -->
         <Group fx:id="maskGroup" mouseTransparent="true">
-            <Rectangle fx:id="maskTop"
-                       fill="rgba(0,0,0,0.45)"
-                       mouseTransparent="true"/>
-            <Rectangle fx:id="maskBottom"
-                       fill="rgba(0,0,0,0.45)"
-                       mouseTransparent="true"/>
-            <Rectangle fx:id="maskLeft"
-                       fill="rgba(0,0,0,0.45)"
-                       mouseTransparent="true"/>
-            <Rectangle fx:id="maskRight"
-                       fill="rgba(0,0,0,0.45)"
-                       mouseTransparent="true"/>
-
-            <!-- 裁剪框（仅视觉，不响应鼠标） -->
-            <Rectangle fx:id="cropFrame"
-                       fill="transparent"
-                       stroke="rgba(255,255,255,0.9)"
-                       strokeWidth="2"
-                       mouseTransparent="true"/>
+            <Rectangle fx:id="maskTop" fill="rgba(0,0,0,0.45)" mouseTransparent="true"/>
+            <Rectangle fx:id="maskBottom" fill="rgba(0,0,0,0.45)" mouseTransparent="true"/>
+            <Rectangle fx:id="maskLeft" fill="rgba(0,0,0,0.45)" mouseTransparent="true"/>
+            <Rectangle fx:id="maskRight" fill="rgba(0,0,0,0.45)" mouseTransparent="true"/>
+            <Rectangle fx:id="cropFrame" fill="transparent"
+                       stroke="rgba(255,255,255,0.9)" strokeWidth="2" mouseTransparent="true"/>
         </Group>
     </StackPane>
 
-    <!-- 底部按钮栏 -->
-    <HBox spacing="30" alignment="CENTER" prefHeight="64" styleClass="crop-avatar-actions"
-          style="-fx-padding: 0 20 0 20;">
-
-        <Button text="取消" onAction="#handleCancel"
-                prefWidth="90" prefHeight="36"
-                styleClass="btn-secondary"
-                style="-fx-font-size: 13px;"/>
-
-        <Button text="确定" onAction="#handleConfirm"
-                prefWidth="90" prefHeight="36"
-                styleClass="btn-success"
-                style="-fx-font-size: 13px; -fx-font-weight: bold;"/>
-
+    <!-- 底部按钮栏：与画布完全分离 -->
+    <HBox spacing="30" alignment="CENTER" prefHeight="64"
+          styleClass="crop-avatar-actions" style="-fx-padding: 0 20 0 20;">
+        <Button text="取消" onAction="#handleCancel" prefWidth="90" prefHeight="36"
+                styleClass="btn-secondary" style="-fx-font-size: 13px;"/>
+        <Button text="确定" onAction="#handleConfirm" prefWidth="90" prefHeight="36"
+                styleClass="btn-success" style="-fx-font-size: 13px; -fx-font-weight: bold;"/>
     </HBox>
 </VBox>

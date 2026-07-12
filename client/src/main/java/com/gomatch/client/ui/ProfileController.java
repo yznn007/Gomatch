@@ -23,6 +23,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.File;
 import java.util.Base64;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ProfileController implements NetworkListener {
     @FXML private Label userIdLabel;
@@ -462,22 +463,34 @@ public class ProfileController implements NetworkListener {
             new FileChooser.ExtensionFilter("JPG", "*.jpg", "*.jpeg")
         );
 
-        File selectedFile = fileChooser.showOpenDialog(uploadAvatarBtn.getScene().getWindow());
-        if (selectedFile == null) {
-            return;
-        }
-
-        // 弹出裁剪对话框，让用户自由裁剪 640×640 头像
-        ScreenManager.showDialog("/fxml/CropAvatarUI.fxml",
-            (CropAvatarController ctrl) -> {
-                ctrl.setSourceFile(selectedFile);
-                ctrl.setOnCropComplete(croppedBytes -> {
-                    String base64Data = Base64.getEncoder().encodeToString(croppedBytes);
-                    ClientMain.getConnector().send(Message.of("UPLOAD_AVATAR", "data", base64Data));
-                    showUploadStatus(I18N.get("profile.uploadingAvatar"), "blue");
-                });
+        while (true) {
+            File selectedFile = fileChooser.showOpenDialog(uploadAvatarBtn.getScene().getWindow());
+            if (selectedFile == null) {
+                return;
             }
-        );
+
+            AtomicBoolean loadFailed = new AtomicBoolean(false);
+            ScreenManager.showDialog("/fxml/CropAvatarUI.fxml",
+                (CropAvatarController ctrl) -> {
+                    ctrl.setSourceFile(selectedFile);
+                    ctrl.setOnLoadError(() -> loadFailed.set(true));
+                    ctrl.setOnCropComplete(croppedBytes -> {
+                        String base64Data = Base64.getEncoder().encodeToString(croppedBytes);
+                        ClientMain.getConnector().send(Message.of(Protocol.UPLOAD_AVATAR, "data", base64Data));
+                        showUploadStatus(I18N.get("profile.uploadingAvatar"), "blue");
+                    });
+                }
+            );
+
+            if (loadFailed.get()) {
+                Alert alert = new Alert(Alert.AlertType.NONE, "图片超出限制，请重新选择");
+                alert.getDialogPane().getButtonTypes().add(ButtonType.OK);
+                alert.getDialogPane().setStyle("-fx-font-family: \"Maple Mono NF CN\", \"Maple-Mono-NF-CN\", \"Maple Mono\", \"Microsoft YaHei\", sans-serif;");
+                ScreenManager.showStyledAlert(alert);
+            } else {
+                break;
+            }
+        }
     }
     
     private void showUploadStatus(String message, String color) {
@@ -498,7 +511,7 @@ public class ProfileController implements NetworkListener {
         } else if (Protocol.ERROR.equals(cmd)) {
             errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
             errorLabel.setText(msg.has("msg") ? msg.getString("msg") : I18N.get("profile.operationFailed"));
-        } else if ("AVATAR_UPLOADED".equals(cmd)) {
+        } else if (Protocol.AVATAR_UPLOADED.equals(cmd)) {
             String url = msg.getString("url");
             String message = msg.getString("msg");
             if (url != null && !url.isEmpty()) {
@@ -510,7 +523,7 @@ public class ProfileController implements NetworkListener {
             } else {
                 showUploadStatus(message != null ? message : I18N.get("profile.avatarUploadFailed"), "red");
             }
-        } else if ("AVATAR_DATA".equals(cmd)) {
+        } else if (Protocol.AVATAR_DATA.equals(cmd)) {
             String url = msg.getString("url");
             if (currentUser != null && url != null) {
                 currentUser.setAvatar(url);
