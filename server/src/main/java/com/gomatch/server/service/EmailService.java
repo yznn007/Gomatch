@@ -76,18 +76,19 @@ public class EmailService {
     }
 
     private String buildEmailContent(String code) {
+        long ttl = com.gomatch.server.handler.VerificationCodeManager.CODE_TTL_SECONDS;
         return """
                 [Gomatch] 密码重置验证码
 
                 您的验证码是：%s
-                有效期 60 秒，请勿泄露给他人。
+                有效期 %d 秒，请勿泄露给他人。
 
                 ---
                 [Gomatch] Password Reset Code
 
                 Your verification code is: %s
-                Valid for 60 seconds. Do not share with others.
-                """.formatted(code, code);
+                Valid for %d seconds. Do not share with others.
+                """.formatted(code, ttl, code, ttl);
     }
 
     private static String getConfig(String key, String defaultValue) {

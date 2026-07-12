@@ -47,7 +47,6 @@ public class ServerMain {
         DBUtil.init();
         RoomManager.getInstance();
         RedisManager.getInstance().init();
-        StorageManager.getInstance().initialize(DBUtil.getConfig());
         initRankMaterializedView();
         initRoomPersistence();
         Runtime.getRuntime().addShutdownHook(new Thread(ServerMain::shutdown, "shutdown-hook"));

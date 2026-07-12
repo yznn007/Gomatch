@@ -246,8 +246,10 @@ public class Room {
     }
 
     public synchronized void leave(ClientHandler handler, boolean resetRoom) {
+        if (handler == null) return;
+
         log.debug("Attempting leave room {}: handler={}, resetRoom={}", roomId,
-                handler != null ? handler.getUserId() : "null", resetRoom);
+                handler.getUserId(), resetRoom);
 
         boolean removedFromPlayers = players.remove(handler);
         boolean removedFromObservers = observers.remove(handler);

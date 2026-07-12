@@ -21,7 +21,7 @@ public class VerificationCodeManager {
     private static final String KEY_PREFIX = "vcode:forgot:";
 
     /** 验证码有效期（秒） */
-    private static final long CODE_TTL_SECONDS = 120;
+    public static final long CODE_TTL_SECONDS = 120;
 
     /** 记录已通过验证码校验的邮箱，用于重置密码步骤的安全校验 */
     private final Map<String, Boolean> verifiedEmails = new ConcurrentHashMap<>();

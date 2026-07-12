@@ -308,6 +308,27 @@
 
 ### 2026-07-12 — 版本发布与文档 (v2.0.2)
 
-- 新增 `docs/release/RELEASE_GUIDE.md` 发布流程文档。
 - 新增 `docs/releases/v2.0.2.md` 版本文档。
 - pom.xml 版本号同步至 2.0.2。
+
+### 2026-07-12 — 代码审计修复
+
+- **RedisManager**: Pub/Sub 订阅连接存入 `ConcurrentHashMap`，新增 `unsubscribe()` 关闭连接，修复连接泄漏。
+- **ClientHandler**: 重连时将 `getSessionByUserId()` 结果捕获为局部变量，避免连续调用间 session 过期导致 NPE。
+- **ForgotPasswordController / ClientConfig / CasualLobbyController**: 多处 `catch (Exception ignored/ignored) {}` 改为输出 stderr，避免异常静默丢失。
+- **EmailService**: 邮件正文 TTL 从硬编码"60秒"改为动态读取 `CODE_TTL_SECONDS`（120秒）。
+- **Room.leave()**: 入口增加 null handler 防御。
+- **CasualLobbyController**: 移除未使用的 `java.util.Timer/TimerTask` import。
+- **ServerMain**: 移除重复的 `StorageManager.initialize()` 调用（`DBUtil.init()` 已处理）。
+- **VerificationCodeManager**: `CODE_TTL_SECONDS` 改为 public 供 EmailService 引用。
+
+### 2026-07-12 — 全量文档与代码同步
+
+- 删除 `docs/CLIENT_STYLE_GUIDE.md`（与 `UI_GUIDELINE.md` 完全重复）。
+- `docs/DB_DESIGN.md`：~50处 schema 对齐 `init.sql`，含 room_id 全局类型修正、缺失列/表补充、多余 FK 清理、密码明文→BCrypt、User 实体加 phone 等。
+- `docs/SERVER.md`：密码策略更新、RecordDAO 表名修正。
+- `docs/PRD.md`：注册流程补充邮箱/手机号/多标识登录，版本追加 v5.1。
+- `docs/COMMON.md`：补充 TIME_SYNC / TIMER_PAUSE 协议常量。
+- `docs/DEV_GUIDELINE.md`：版本规划表同步至 v2.0.2。
+- `docs/DEPLOY_GUIDE.md`：JAR 版本号同步。
+- `README.md`：密码存储明文→BCrypt。

@@ -143,7 +143,9 @@ public class ForgotPasswordController implements NetworkListener {
         ClientMain.getConnector().removeListener(this);
         try {
             ClientMain.getConnector().disconnect();
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            System.err.println("忘记密码页面断开连接失败: " + e.getMessage());
+        }
         ScreenManager.switchTo("/fxml/LoginUI.fxml");
     }
 

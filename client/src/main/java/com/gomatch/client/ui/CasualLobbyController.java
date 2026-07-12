@@ -18,8 +18,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.stream.Collectors;
 
 public class CasualLobbyController implements NetworkListener {
@@ -273,7 +271,9 @@ public class CasualLobbyController implements NetworkListener {
             String ps = msg.getString("players");
             if (!ps.isEmpty()) {
                 String[] pc = ps.split("/");
-                try { room.setPlayerCount(Integer.parseInt(pc[0])); } catch (Exception ignored) {}
+                try { room.setPlayerCount(Integer.parseInt(pc[0])); } catch (Exception e) {
+                    System.err.println("解析房间人数失败: " + ps + " - " + e.getMessage());
+                }
             }
             User u = currentUser != null ? currentUser : new com.gomatch.client.model.User();
             RoomWaitingController ctrl = ScreenManager.switchTo("/fxml/RoomWaitingUI.fxml");
