@@ -62,7 +62,8 @@ public class RegisterController implements NetworkListener {
         String password = passwordField.getText().trim();
         String confirm  = confirmField.getText().trim();
 
-        if (username.isEmpty() || password.isEmpty() || email.isEmpty()) {
+        String rawPhone = phoneField.getText().trim();
+        if (username.isEmpty() || password.isEmpty() || email.isEmpty() || rawPhone.isEmpty()) {
             errorLabel.setText(I18N.get("register.allRequired"));
             return;
         }
@@ -83,15 +84,10 @@ public class RegisterController implements NetworkListener {
             return;
         }
 
-        // 手机号为选填，若填写则校验格式
-        String rawPhone = phoneField.getText().trim();
-        String phone = null;
-        if (!rawPhone.isEmpty()) {
-            phone = PhoneInputValidator.toE164(selectedCode(), rawPhone);
-            if (phone == null) {
-                errorLabel.setText(I18N.get("register.phoneInvalid"));
-                return;
-            }
+        String phone = PhoneInputValidator.toE164(selectedCode(), rawPhone);
+        if (phone == null) {
+            errorLabel.setText(I18N.get("register.phoneInvalid"));
+            return;
         }
 
         try {
@@ -102,10 +98,8 @@ public class RegisterController implements NetworkListener {
             Message msg = Message.of(Protocol.REGISTER,
                     "username", username,
                     "password", password,
-                    "email", email);
-            if (phone != null) {
-                msg.getData().put("phone", phone);
-            }
+                    "email", email,
+                    "phone", phone);
             ClientMain.getConnector().send(msg);
         } catch (Exception e) {
             errorLabel.setText(I18N.get("register.connectFailed", e.getMessage()));
