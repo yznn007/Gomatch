@@ -10,6 +10,7 @@ import com.gomatch.server.room.RoomManager;
 import com.gomatch.server.session.SessionManager;
 import com.gomatch.server.security.PhoneNumberNormalizer;
 import com.gomatch.server.service.ConfigService;
+import com.gomatch.server.service.EmailService;
 import com.gomatch.server.storage.StorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -478,9 +479,18 @@ public class ClientHandler implements Runnable {
         }
 
         String code = VerificationCodeManager.getInstance().generateCode(email);
-        send(Message.of(Protocol.FORGOT_PWD_CODE,
-                "code", code,
-                "email", email));
+        if (code == null) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "验证码生成失败，请重试"));
+            return;
+        }
+
+        boolean sent = EmailService.getInstance().sendVerificationCode(email, code);
+        if (!sent && EmailService.getInstance().isConfigured()) {
+            send(Message.of(Protocol.FORGOT_PWD_FAIL, "msg", "邮件发送失败，请稍后重试"));
+            return;
+        }
+
+        send(Message.of(Protocol.FORGOT_PWD_CODE, "email", email));
         log.info("Forgot password code sent to {} (userId={})", email, userId);
     }
 
