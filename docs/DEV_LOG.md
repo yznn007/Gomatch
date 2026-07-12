@@ -273,3 +273,41 @@
 ### 2026-07-12 — 修复好友页暗色主题可读性
 
 - 好友页动态节点已从 Java 内联主题颜色迁移到 CSS 语义类，修复 PR #8 遗留暗色可读性回退。
+
+### 2026-07-12 — 悔棋/求和时间同步与服务端统一管控 (PR #65)
+
+- 新增 `TIMER_PAUSE` 协议常量，服务端在 `requestUndo()`/`requestDraw()` 中广播给所有客户端（含观战者），统一暂停倒计时并显示"等待回复..."状态。
+- 移除 `cancelTurnTimer()` 中原有的 `TIME_SYNC` 广播（该广播导致客户端重启倒计时而非暂停），改由请求方法显式发送暂停指令。
+- 客户端新增 `TIMER_PAUSE` 消息处理器，同步停止倒计时并更新标签文字；发起方本地 `handleUndo()`/`handleDraw()` 也补全等待状态显示。
+
+### 2026-07-12 — 注册页面手机号从选填改为必填 (PR #71)
+
+- `RegisterController`: 手机号为空时提示必填，格式校验始终执行，`REGISTER` 消息始终携带 `phone` 字段。
+- i18n: `register.phone` 去掉"（选填）"标注，`register.allRequired` 增加手机号提示。
+- 与服务端 `ProtocolRequestGuard` 的 phone length 校验对齐。
+
+### 2026-07-12 — 好友申请页面补齐请求方头像 (PR #72)
+
+- 补齐 FriendDAO → ClientHandler → FriendsController 4 层头像数据链路。
+- `FriendDAO.getPendingRequests()`: SQL 增加 `u.avatar` 列，`FriendRequestInfo` 新增 `avatar` 字段并生成 OSS 预签名 URL。
+- `FriendsController`: `FriendRequestModel` 加 `avatar` 字段；`renderRequestCards` 头像从纯文字改为异步图片加载 + 文字兜底。
+
+### 2026-07-12 — 悔棋/求和次数上限弹窗透明 (PR #73)
+
+- `showLimitAlert` 添加 `glass-card` CSS 类为 `TRANSPARENT` 舞台提供磨砂背景，背景不透明度从 0.96 提升至 0.98。
+
+### 2026-07-12 — D3D 管线 NPE 规避 (PR #74)
+
+- `jpackage` MSI 打包命令添加 `--java-options "-Dprism.dirtyopts=false"`，禁用 D3D 脏区域优化，规避 GPU 资源回收后 `D3DSwapChain.createGraphics()` 空指针崩溃。
+
+### 2026-07-12 — CI deploy-server 修复 (PR #75)
+
+- `deploy-server` job 添加 `environment: 1` 以读取环境级 SSH secrets。
+- 新增 SSH 凭据预检步骤，缺少 secrets 时跳过部署步骤并输出 warning 而非硬失败。
+- 后续下载/上传/重启步骤均添加 `if: steps.deploy-ready.outputs.enabled == 'true'` 门控。
+
+### 2026-07-12 — 版本发布与文档 (v2.0.2)
+
+- 新增 `docs/release/RELEASE_GUIDE.md` 发布流程文档。
+- 新增 `docs/releases/v2.0.2.md` 版本文档。
+- pom.xml 版本号同步至 2.0.2。

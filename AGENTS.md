@@ -99,6 +99,10 @@ LobbyUI → 管理 → ManagementUI（仅 ADMIN）
 | `AGENTS.md` | 命令/架构/约定变化时 |
 | `README.md` | 项目信息变化时 |
 
+## 发布流程
+
+发布前必须同步版本号，详见 [`docs/releases/README.md`](docs/releases/README.md)。
+
 ## 文档编写规范
 
 ### 命令示例中的环境变量
