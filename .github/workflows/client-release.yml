@@ -137,6 +137,7 @@ jobs:
 
   deploy-server:
     needs: build-client
+    environment: 1
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
     steps:
