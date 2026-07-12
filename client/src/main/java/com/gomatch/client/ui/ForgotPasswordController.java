@@ -35,10 +35,8 @@ public class ForgotPasswordController implements NetworkListener {
     @FXML private VBox stepPasswordBox;
 
     private String currentEmail = "";
-    private Timeline codeVisibleTimer;   // 验证码可见计时器（30s后隐藏）
     private Timeline codeExpiryTimer;    // 验证码过期计时器（60s后失效）
-    private int displaySecondsRemaining = 30;
-    private int expirySecondsRemaining = 60;
+    private int expirySecondsRemaining = 120;
 
     @FXML
     private void initialize() {
@@ -165,10 +163,6 @@ public class ForgotPasswordController implements NetworkListener {
     }
 
     private void handleCodeReceived(Message msg) {
-        String code = msg.getString("code");
-        codeDisplayLabel.setText(code);
-
-        // 显示验证码区域
         stepEmailBox.setVisible(false);
         stepEmailBox.setManaged(false);
         stepCodeBox.setVisible(true);
@@ -176,10 +170,12 @@ public class ForgotPasswordController implements NetworkListener {
         stepPasswordBox.setVisible(false);
         stepPasswordBox.setManaged(false);
 
+        codeDisplayLabel.setText(I18N.get("forgot.codeSent", currentEmail));
+        codeExpiryLabel.setText("");
+
         messageLabel.setText("");
         messageLabel.setStyle("-fx-text-fill: #16a34a;");
 
-        // 启动定时器
         startCodeTimers();
     }
 
@@ -216,30 +212,15 @@ public class ForgotPasswordController implements NetworkListener {
     // ==================== 验证码定时器 ====================
 
     private void startCodeTimers() {
-        // 可见计时器：30秒后隐藏验证码显示
-        displaySecondsRemaining = 30;
-        codeVisibleTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
-            displaySecondsRemaining--;
-            if (displaySecondsRemaining <= 0) {
-                codeDisplayLabel.setText("******");
-                codeExpiryLabel.setText("");
-                codeVisibleTimer.stop();
-            } else {
-                codeExpiryLabel.setText(I18N.get("forgot.codeExpiry", displaySecondsRemaining));
-            }
-        }));
-        codeVisibleTimer.setCycleCount(Timeline.INDEFINITE);
-        codeVisibleTimer.play();
-
-        // 过期计时器：60秒后提示过期
-        expirySecondsRemaining = 60;
+        expirySecondsRemaining = 120;
         codeExpiryTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             expirySecondsRemaining--;
             if (expirySecondsRemaining <= 0) {
                 codeExpiryTimer.stop();
-                codeDisplayLabel.setText(I18N.get("forgot.expired"));
-                codeExpiryLabel.setText(I18N.get("forgot.codeExpired"));
+                codeExpiryLabel.setText(I18N.get("forgot.expired"));
                 codeExpiryLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + ";");
+            } else {
+                codeExpiryLabel.setText(I18N.get("forgot.codeExpiry", expirySecondsRemaining));
             }
         }));
         codeExpiryTimer.setCycleCount(Timeline.INDEFINITE);
@@ -247,10 +228,6 @@ public class ForgotPasswordController implements NetworkListener {
     }
 
     private void stopTimers() {
-        if (codeVisibleTimer != null) {
-            codeVisibleTimer.stop();
-            codeVisibleTimer = null;
-        }
         if (codeExpiryTimer != null) {
             codeExpiryTimer.stop();
             codeExpiryTimer = null;
