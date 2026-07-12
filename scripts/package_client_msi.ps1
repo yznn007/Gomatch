@@ -25,8 +25,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # 从 Maven 本地仓库定位 JavaFX 模块 JAR
-$m2Repo = & mvn.cmd help:evaluate -Dexpression=settings.localRepository -q -DforceStdout 2>$null
-if (-not $m2Repo) { $m2Repo = Join-Path $HOME '.m2\repository' }
+$m2Repo = Join-Path $env:USERPROFILE '.m2\repository'
+if (-not (Test-Path (Join-Path $m2Repo 'org\openjfx'))) {
+    $raw = & mvn.cmd help:evaluate -Dexpression=settings.localRepository -q -DforceStdout 2>&1
+    $candidate = (@($raw) -split '\r?\n' | Where-Object { $_ -match '^[A-Za-z]:[\\/]' -and $_ -notmatch '[<>]' } | Select-Object -First 1)
+    if ($candidate) { $m2Repo = $candidate.Trim() }
+}
 $m2Repo = $m2Repo.Trim()
 $fxPath = Join-Path $m2Repo 'org\openjfx'
 $fxJars = Get-ChildItem -Path $fxPath -Recurse -Filter "javafx-*-21-win.jar" | Where-Object {
@@ -35,11 +39,15 @@ $fxJars = Get-ChildItem -Path $fxPath -Recurse -Filter "javafx-*-21-win.jar" | W
 $modulePath = ($fxJars -join ';')
 
 $inputDirectory = Join-Path $repoRoot 'client/target'
-$mainJar = 'gomatch-client-2.0.0-alpha.jar'
-$mainJarPath = Join-Path $inputDirectory $mainJar
-if (-not (Test-Path $mainJarPath)) {
-    throw "未找到客户端 JAR：$mainJarPath"
+$mainJarFile = Get-ChildItem -LiteralPath $inputDirectory -Filter "gomatch-client-*.jar" |
+    Where-Object { $_.Name -notmatch 'original' } |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
+if (-not $mainJarFile) {
+    throw "未在 $inputDirectory 找到客户端 JAR，请检查 Maven 构建结果。"
 }
+$mainJar = $mainJarFile.Name
+$mainJarPath = $mainJarFile.FullName
 
 if (-not $fxJars -or $fxJars.Count -lt 5) {
     throw "未找到全部 JavaFX 平台 JAR，检查 Maven 本地仓库：$fxPath"
