@@ -1106,6 +1106,7 @@ public class BoardController implements NetworkListener {
         }
 
         stopCountdown();
+        localUndoCount++;
         ClientMain.getConnector().send(Protocol.REQUEST_UNDO);
         pendingRequest = true;
         showPendingRequestDialog(I18N.get("board.undoRequest"), I18N.get("board.undoWait"));
@@ -1121,6 +1122,7 @@ public class BoardController implements NetworkListener {
         }
 
         stopCountdown();
+        localDrawCount++;
         ClientMain.getConnector().send(Protocol.REQUEST_DRAW);
         pendingRequest = true;
         showPendingRequestDialog(I18N.get("board.drawRequestTitle"), I18N.get("board.drawRequestWait"));
@@ -1596,7 +1598,6 @@ public class BoardController implements NetworkListener {
                 }
             });
         } else if ("DRAW_REJECTED".equals(cmd)) {
-            localDrawCount++;
             closePendingRequestDialog();
             resumeCountdown();
             chatArea.appendText("[System] " + I18N.get("board.drawRejected") + "\n");
