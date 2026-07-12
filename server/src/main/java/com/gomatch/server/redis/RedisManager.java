@@ -274,7 +274,6 @@ public class RedisManager {
         try {
             String key = "online:" + userId;
             syncCommands.set(key, token);
-            syncCommands.expire(key, 300);
             log.debug("User online: userId={}", userId);
         } catch (Exception e) {
             log.warn("Failed to set online status: {}", e.getMessage());
