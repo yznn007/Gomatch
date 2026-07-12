@@ -365,6 +365,11 @@ public class ClientHandler implements Runnable {
                     // 回放已有落子（在 LOGIN_OK 之后发送，确保客户端先初始化对局界面）
                     activeRoom.replayMovesTo(this);
 
+                    // 同步服务端当前回合倒计时，避免客户端始终用默认 60s
+                    send(Message.of(Protocol.TIME_SYNC,
+                            "remainingSeconds", activeRoom.getRemainingSeconds(),
+                            "currentPlayer", activeRoom.getGame().getCurrentPlayer()));
+
                     // 通知对手该玩家已重连
                     activeRoom.broadcastToPlayers(Message.of(Protocol.PLAYER_ENTER,
                             "userId", String.valueOf(userInfo.getUserId()),
