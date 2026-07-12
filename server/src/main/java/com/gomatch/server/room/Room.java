@@ -350,6 +350,21 @@ public class Room {
 
                 disconnectedPlayerIds.add(uid);
                 startReconnectTimer(uid);
+
+                // 双方都断线：立即结束对局，先断线者判负
+                if (disconnectedPlayerIds.contains(blackUserId) && disconnectedPlayerIds.contains(whiteUserId)) {
+                    long firstDisconnector = (uid == blackUserId) ? whiteUserId : blackUserId;
+                    String loserName = getPlayerUsername(firstDisconnector);
+                    String winnerName = getPlayerUsername(uid);
+                    log.info("Both players disconnected from room {}: {} disconnects first, {} wins",
+                            roomId, loserName, winnerName);
+                    cancelReconnectTimer(blackUserId);
+                    cancelReconnectTimer(whiteUserId);
+                    disconnectedPlayerIds.clear();
+                    endGame(uid, "both_disconnect", loserName + " 先断线，自动判负");
+                    return;
+                }
+
                 broadcastToPlayers(Message.of("PLAYER_DISCONNECTED",
                         "userId", uid,
                         "disconnectCount", count));
