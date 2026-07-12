@@ -1717,6 +1717,7 @@ public class ClientHandler implements Runnable {
             obj.put("fromUsername", r.getFromUsername());
             obj.put("fromScore", r.getFromScore());
             obj.put("message", r.getMessage() != null ? r.getMessage() : "");
+            obj.put("avatarUrl", r.getAvatar() != null ? r.getAvatar() : "");
             arr.put(obj);
         }
         send(Message.builder("FRIEND_REQUEST_LIST").set("requests", arr).build());

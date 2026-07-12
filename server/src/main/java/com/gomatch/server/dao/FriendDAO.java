@@ -68,10 +68,17 @@ public class FriendDAO {
         private final String status;
         private final String message;
         private final String createTime;
+        private final String avatar;
 
         public FriendRequestInfo(long requestId, long fromUserId, String fromUsername,
                                 int fromScore, long toUserId, String status,
                                 String message, String createTime) {
+            this(requestId, fromUserId, fromUsername, fromScore, toUserId, status, message, createTime, "");
+        }
+
+        public FriendRequestInfo(long requestId, long fromUserId, String fromUsername,
+                                int fromScore, long toUserId, String status,
+                                String message, String createTime, String avatar) {
             this.requestId = requestId;
             this.fromUserId = fromUserId;
             this.fromUsername = fromUsername;
@@ -80,6 +87,7 @@ public class FriendDAO {
             this.status = status;
             this.message = message;
             this.createTime = createTime;
+            this.avatar = avatar;
         }
 
         public long getRequestId() { return requestId; }
@@ -90,6 +98,7 @@ public class FriendDAO {
         public String getStatus() { return status; }
         public String getMessage() { return message; }
         public String getCreateTime() { return createTime; }
+        public String getAvatar() { return avatar; }
     }
 
     public boolean sendFriendRequest(long fromUserId, long toUserId, String message) {
@@ -331,7 +340,7 @@ public class FriendDAO {
     }
 
     public List<FriendRequestInfo> getPendingRequests(long toUserId) {
-        String sql = "SELECT r.request_id, r.from_user_id, u.username, u.score, r.to_user_id, r.status, r.message, r.create_time " +
+        String sql = "SELECT r.request_id, r.from_user_id, u.username, u.score, r.to_user_id, r.status, r.message, r.create_time, u.avatar " +
                      "FROM t_friend_request r JOIN t_user u ON r.from_user_id = u.user_id " +
                      "WHERE r.to_user_id = ? AND r.status = 'PENDING' " +
                      "ORDER BY r.create_time DESC";
@@ -342,6 +351,11 @@ public class FriendDAO {
             ps.setLong(1, toUserId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
+                    String avatarPath = rs.getString("avatar");
+                    String avatarUrl = "";
+                    if (avatarPath != null && !avatarPath.isEmpty() && com.gomatch.server.storage.StorageManager.getInstance().isEnabled()) {
+                        avatarUrl = com.gomatch.server.storage.StorageManager.getInstance().getOssService().generatePresignedUrl(avatarPath, 86400 * 30);
+                    }
                     result.add(new FriendRequestInfo(
                             rs.getLong("request_id"),
                             rs.getLong("from_user_id"),
@@ -350,7 +364,8 @@ public class FriendDAO {
                             rs.getLong("to_user_id"),
                             rs.getString("status"),
                             rs.getString("message"),
-                            rs.getString("create_time")
+                            rs.getString("create_time"),
+                            avatarUrl
                     ));
                 }
             }
