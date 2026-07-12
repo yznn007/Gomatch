@@ -156,15 +156,31 @@ public class RedisManager {
         }
     }
 
+    private final Map<String, StatefulRedisPubSubConnection<String, String>> pubSubConnections = new java.util.concurrent.ConcurrentHashMap<>();
+
     public void subscribe(String roomId, RedisPubSubListener<String, String> listener) {
         if (!isConnected()) return;
         try {
+            String channel = "gomatch:game:" + roomId;
             StatefulRedisPubSubConnection<String, String> pubSubConn = redisClient.connectPubSub();
             pubSubConn.addListener(listener);
-            pubSubConn.sync().subscribe("gomatch:game:" + roomId);
-            log.info("Subscribed to channel: gomatch:game:{}", roomId);
+            pubSubConn.sync().subscribe(channel);
+            pubSubConnections.put(roomId, pubSubConn);
+            log.info("Subscribed to channel: {}", channel);
         } catch (Exception e) {
             log.warn("Failed to subscribe: {}", e.getMessage());
+        }
+    }
+
+    public void unsubscribe(String roomId) {
+        StatefulRedisPubSubConnection<String, String> conn = pubSubConnections.remove(roomId);
+        if (conn != null) {
+            try {
+                conn.close();
+                log.info("Unsubscribed from channel: gomatch:game:{}", roomId);
+            } catch (Exception e) {
+                log.warn("Failed to unsubscribe: {}", e.getMessage());
+            }
         }
     }
 

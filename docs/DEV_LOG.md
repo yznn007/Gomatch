@@ -273,3 +273,62 @@
 ### 2026-07-12 — 修复好友页暗色主题可读性
 
 - 好友页动态节点已从 Java 内联主题颜色迁移到 CSS 语义类，修复 PR #8 遗留暗色可读性回退。
+
+### 2026-07-12 — 悔棋/求和时间同步与服务端统一管控 (PR #65)
+
+- 新增 `TIMER_PAUSE` 协议常量，服务端在 `requestUndo()`/`requestDraw()` 中广播给所有客户端（含观战者），统一暂停倒计时并显示"等待回复..."状态。
+- 移除 `cancelTurnTimer()` 中原有的 `TIME_SYNC` 广播（该广播导致客户端重启倒计时而非暂停），改由请求方法显式发送暂停指令。
+- 客户端新增 `TIMER_PAUSE` 消息处理器，同步停止倒计时并更新标签文字；发起方本地 `handleUndo()`/`handleDraw()` 也补全等待状态显示。
+
+### 2026-07-12 — 注册页面手机号从选填改为必填 (PR #71)
+
+- `RegisterController`: 手机号为空时提示必填，格式校验始终执行，`REGISTER` 消息始终携带 `phone` 字段。
+- i18n: `register.phone` 去掉"（选填）"标注，`register.allRequired` 增加手机号提示。
+- 与服务端 `ProtocolRequestGuard` 的 phone length 校验对齐。
+
+### 2026-07-12 — 好友申请页面补齐请求方头像 (PR #72)
+
+- 补齐 FriendDAO → ClientHandler → FriendsController 4 层头像数据链路。
+- `FriendDAO.getPendingRequests()`: SQL 增加 `u.avatar` 列，`FriendRequestInfo` 新增 `avatar` 字段并生成 OSS 预签名 URL。
+- `FriendsController`: `FriendRequestModel` 加 `avatar` 字段；`renderRequestCards` 头像从纯文字改为异步图片加载 + 文字兜底。
+
+### 2026-07-12 — 悔棋/求和次数上限弹窗透明 (PR #73)
+
+- `showLimitAlert` 添加 `glass-card` CSS 类为 `TRANSPARENT` 舞台提供磨砂背景，背景不透明度从 0.96 提升至 0.98。
+
+### 2026-07-12 — D3D 管线 NPE 规避 (PR #74)
+
+- `jpackage` MSI 打包命令添加 `--java-options "-Dprism.dirtyopts=false"`，禁用 D3D 脏区域优化，规避 GPU 资源回收后 `D3DSwapChain.createGraphics()` 空指针崩溃。
+
+### 2026-07-12 — CI deploy-server 修复 (PR #75)
+
+- `deploy-server` job 添加 `environment: 1` 以读取环境级 SSH secrets。
+- 新增 SSH 凭据预检步骤，缺少 secrets 时跳过部署步骤并输出 warning 而非硬失败。
+- 后续下载/上传/重启步骤均添加 `if: steps.deploy-ready.outputs.enabled == 'true'` 门控。
+
+### 2026-07-12 — 版本发布与文档 (v2.0.2)
+
+- 新增 `docs/releases/v2.0.2.md` 版本文档。
+- pom.xml 版本号同步至 2.0.2。
+
+### 2026-07-12 — 代码审计修复
+
+- **RedisManager**: Pub/Sub 订阅连接存入 `ConcurrentHashMap`，新增 `unsubscribe()` 关闭连接，修复连接泄漏。
+- **ClientHandler**: 重连时将 `getSessionByUserId()` 结果捕获为局部变量，避免连续调用间 session 过期导致 NPE。
+- **ForgotPasswordController / ClientConfig / CasualLobbyController**: 多处 `catch (Exception ignored/ignored) {}` 改为输出 stderr，避免异常静默丢失。
+- **EmailService**: 邮件正文 TTL 从硬编码"60秒"改为动态读取 `CODE_TTL_SECONDS`（120秒）。
+- **Room.leave()**: 入口增加 null handler 防御。
+- **CasualLobbyController**: 移除未使用的 `java.util.Timer/TimerTask` import。
+- **ServerMain**: 移除重复的 `StorageManager.initialize()` 调用（`DBUtil.init()` 已处理）。
+- **VerificationCodeManager**: `CODE_TTL_SECONDS` 改为 public 供 EmailService 引用。
+
+### 2026-07-12 — 全量文档与代码同步
+
+- 删除 `docs/CLIENT_STYLE_GUIDE.md`（与 `UI_GUIDELINE.md` 完全重复）。
+- `docs/DB_DESIGN.md`：~50处 schema 对齐 `init.sql`，含 room_id 全局类型修正、缺失列/表补充、多余 FK 清理、密码明文→BCrypt、User 实体加 phone 等。
+- `docs/SERVER.md`：密码策略更新、RecordDAO 表名修正。
+- `docs/PRD.md`：注册流程补充邮箱/手机号/多标识登录，版本追加 v5.1。
+- `docs/COMMON.md`：补充 TIME_SYNC / TIMER_PAUSE 协议常量。
+- `docs/DEV_GUIDELINE.md`：版本规划表同步至 v2.0.2。
+- `docs/DEPLOY_GUIDE.md`：JAR 版本号同步。
+- `README.md`：密码存储明文→BCrypt。

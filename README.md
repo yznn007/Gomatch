@@ -15,7 +15,7 @@
 | 连接池       | HikariCP            | 5.x                      |
 | JSON 序列化  | org.json / Gson     | -                        |
 | 日志         | SLF4J + Logback     | SLF4J 2.x / Logback 1.4+ |
-| 密码存储     | 明文                | -                        |
+| 密码存储     | BCrypt              | 旧密码自动升级迁移             |
 | Redis 客户端 | Lettuce             | -                        |
 
 ## 快速启动

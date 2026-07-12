@@ -178,6 +178,8 @@ String username = parsed.getString("username");
 | `TURN_TIMEOUT` | `TURN_TIMEOUT` | 回合超时 |
 | `MATCH_TIMEOUT` / `QUICK_MATCH_FOUND` / `RANKED_MATCH_FOUND` | 同名值 | 匹配状态：匹配超时 / 快速匹配成功 / 排位匹配成功 |
 | `HEARTBEAT_OK` | `HEARTBEAT_OK` | 心跳响应 |
+| `TIME_SYNC` | `TIME_SYNC` | 回合计时同步（服务端广播剩余秒数） |
+| `TIMER_PAUSE` | `TIMER_PAUSE` | 回合计时暂停（悔棋/求和等待期间） |
 | `AVATAR_DATA` / `AVATAR_UPLOADED` / `AVATAR_DELETED` | 同名值 | 头像响应 |
 | `ERROR` | `ERROR` | 通用错误响应 |
 | `DISCONNECT` | `DISCONNECT` | 服务端主动断开通知 |

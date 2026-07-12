@@ -1527,13 +1527,14 @@ public class ClientHandler implements Runnable {
                     rank = rankInfo.getRank();
                 }
 
+                com.gomatch.server.session.SessionManager.Session s = sessionManager.getSessionByUserId(userId);
                 send(Message.builder("RECONNECT_OK")
                         .set("userId", String.valueOf(userId))
                         .set("username", username)
-                        .set("score", String.valueOf(sessionManager.getSessionByUserId(userId).score))
-                        .set("winCount", String.valueOf(sessionManager.getSessionByUserId(userId).winCount))
-                        .set("loseCount", String.valueOf(sessionManager.getSessionByUserId(userId).loseCount))
-                        .set("drawCount", String.valueOf(sessionManager.getSessionByUserId(userId).drawCount))
+                        .set("score", String.valueOf(s.score))
+                        .set("winCount", String.valueOf(s.winCount))
+                        .set("loseCount", String.valueOf(s.loseCount))
+                        .set("drawCount", String.valueOf(s.drawCount))
                         .set("rank", String.valueOf(rank))
                         .set("role", role)
                         .set("roomId", room.getRoomId())

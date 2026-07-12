@@ -23,7 +23,9 @@ public class ClientConfig {
         if (localFile.exists()) {
             try (InputStream is = new FileInputStream(localFile)) {
                 localProps.load(is);
-            } catch (IOException ignored) {}
+        } catch (IOException e) {
+            System.err.println("保存配置文件失败: " + e.getMessage());
+        }
         }
     }
 
