@@ -158,12 +158,14 @@ public class LoginController implements NetworkListener {
         }
 
         String account;
+        String phone = null;
         if (isPhoneLogin) {
-            account = PhoneInputValidator.toE164(selectedCode(), rawAccount);
-            if (account == null) {
+            phone = PhoneInputValidator.toE164(selectedCode(), rawAccount);
+            if (phone == null) {
                 errorLabel.setText(I18N.get("login.invalidPhone"));
                 return;
             }
+            account = phone;
         } else {
             account = rawAccount;
         }
@@ -173,8 +175,12 @@ public class LoginController implements NetworkListener {
                 ClientMain.getConnector().connect(AppConfig.SERVER_HOST, AppConfig.SERVER_PORT);
             }
             ClientMain.getConnector().addListener(this);
-            ClientMain.getConnector().send(Message.of(Protocol.LOGIN,
-                    "account", account, "password", password));
+            Message loginMsg = Message.of(Protocol.LOGIN,
+                    "account", account, "password", password);
+            if (phone != null) {
+                loginMsg.getData().put("phone", phone);
+            }
+            ClientMain.getConnector().send(loginMsg);
         } catch (Exception error) {
             errorLabel.setText(I18N.get("login.connectFailed", error.getMessage()));
         }
