@@ -1095,6 +1095,11 @@ public class BoardController implements NetworkListener {
     private void handleUndo() {
         if (pendingRequest) return;
 
+        if (moveHistory.size() < 2) {
+            showLimitAlert(I18N.get("board.undoRequest"), I18N.get("board.undoNoMoves"));
+            return;
+        }
+
         if (localUndoCount >= MAX_UNDO_COUNT) {
             showLimitAlert("悔棋", "本局悔棋次数已达上限，不能再次悔棋。");
             return;
