@@ -10,6 +10,9 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $repoRoot
 
+# MSI ProductVersion 只接受纯数字 A.B.C，提取前三位数字部分
+$msiVersion = if ($Version -match '^(\d+\.\d+\.\d+)') { $Matches[1] } else { $Version }
+
 foreach ($command in 'mvn.cmd', 'jpackage.exe', 'candle.exe', 'light.exe') {
     if (-not (Get-Command $command -ErrorAction SilentlyContinue)) {
         throw "缺少 $command；请安装 Maven、JDK 21 与 WiX Toolset 3。"
@@ -34,7 +37,7 @@ New-Item -ItemType Directory -Force -Path $destination | Out-Null
 & jpackage.exe `
     --type msi `
     --name Gomatch `
-    --app-version $Version `
+    --app-version $msiVersion `
     --vendor Gomatch `
     --input $inputDirectory `
     --main-jar $mainJar `
