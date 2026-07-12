@@ -208,11 +208,13 @@ erDiagram
         bigint record_id PK "记录ID"
         bigint player1_id FK "玩家1ID"
         bigint player2_id FK "玩家2ID"
-        varchar game_type "游戏类型"
-        varchar result "结果"
+        varchar game_type "游戏类型: PVP/PVE/RANKED"
+        varchar result "结果: five_in_a_row/surrender/draw"
         text board_data "棋谱数据(JSON)"
         int duration "时长(秒)"
         int move_count "落子数"
+        int player1_score_change "玩家1积分变化"
+        int player2_score_change "玩家2积分变化"
         datetime create_time "创建时间"
     }
     
@@ -249,7 +251,7 @@ erDiagram
         varchar client_ip "客户端IP"
         varchar connection_id "连接ID"
         varchar status "连接状态"
-        bigint room_id FK "当前房间ID"
+        varchar room_id "当前房间ID"
         datetime last_heartbeat "最后活跃时间"
         datetime disconnect_time "断开时间"
         varchar disconnect_reason "断开原因"
@@ -260,7 +262,7 @@ erDiagram
     
     t_chat_message {
         bigint message_id PK "消息ID"
-        bigint room_id FK "房间ID"
+        varchar room_id "房间ID"
         bigint user_id FK "发送者ID"
         varchar content "消息内容"
         varchar message_type "消息类型"
@@ -268,7 +270,7 @@ erDiagram
     }
     
     t_room {
-        bigint room_id PK "房间ID"
+        varchar room_id PK "房间ID"
         varchar room_name "房间名称"
         varchar password "房间密码"
         int max_players "最大人数"
@@ -284,7 +286,7 @@ erDiagram
     
     t_room_watcher {
         bigint watcher_id PK "观战记录ID"
-        bigint room_id FK "房间ID"
+        varchar room_id "房间ID"
         bigint user_id FK "观战者ID"
         datetime join_time "加入时间"
         datetime leave_time "离开时间"
@@ -327,7 +329,7 @@ erDiagram
 | user_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | 用户唯一标识 |
 | username | VARCHAR(50) | NOT NULL, UNIQUE | 用户名 |
 | password | VARCHAR(100) | NOT NULL | 密码(BCrypt哈希，兼容旧明文) |
-| email | VARCHAR(100) | UNIQUE | 邮箱 |
+| email | VARCHAR(100) | NOT NULL, UNIQUE | 邮箱 |
 | avatar | VARCHAR(255) | NULL | 头像URL |
 | phone | VARCHAR(16) | UNIQUE, NULL | E.164国际手机号 |
 | role | VARCHAR(20) | NOT NULL, DEFAULT 'PLAYER' | 角色: PLAYER(玩家)/ADMIN(管理员) |
@@ -353,6 +355,23 @@ erDiagram
 | idx_score | score | 普通索引 |
 | idx_role_status | role, status | 联合索引 |
 
+#### 2.2.1b t_user_profile（用户云端配置表）
+
+| 字段名 | 类型 | 约束 | 说明 |
+|--------|------|------|------|
+| user_id | BIGINT | PRIMARY KEY, FOREIGN KEY | 用户ID |
+| config_json | JSON | NOT NULL | 客户端配置(JSON) |
+| update_time | DATETIME | NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 最后同步时间 |
+
+**索引设计**：
+| 索引名 | 字段 | 类型 |
+|--------|------|------|
+| PRIMARY | user_id | 主键 |
+
+**设计说明**：
+- 客户端启动时通过 TCP 协议读取/更新整份配置 JSON
+- 外键关联 `t_user.user_id`，级联删除
+
 #### 2.2.2 t_game_record（游戏记录表）
 
 | 字段名 | 类型 | 约束 | 说明 |
@@ -360,12 +379,14 @@ erDiagram
 | record_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | 记录唯一标识 |
 | player1_id | BIGINT | NOT NULL, FK | 玩家1ID |
 | player2_id | BIGINT | NOT NULL, FK | 玩家2ID |
-| game_type | VARCHAR(20) | NOT NULL, DEFAULT 'PVP' | 游戏类型: PVP(双人)/PVE(人机) |
+| game_type | VARCHAR(20) | NOT NULL, DEFAULT 'PVP' | 游戏类型: PVP(双人)/PVE(人机)/RANKED(排位) |
 | winner_id | BIGINT | FK, NULL | 胜者ID(平局为NULL) |
-| result | VARCHAR(10) | NOT NULL | 结果: win/lose/draw |
+| result | VARCHAR(30) | NOT NULL | 结果: five_in_a_row(五连)/surrender(认输)/draw(平局) |
 | board_data | TEXT | NOT NULL | 完整棋谱(JSON) |
 | duration | INT | NULL | 对局时长(秒) |
 | move_count | INT | DEFAULT 0 | 落子总数 |
+| player1_score_change | INT | DEFAULT 0 | 玩家1积分变化 |
+| player2_score_change | INT | DEFAULT 0 | 玩家2积分变化 |
 | create_time | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 
 **索引设计**：
@@ -543,11 +564,11 @@ erDiagram
 | 字段名 | 类型 | 约束 | 说明 |
 |--------|------|------|------|
 | action_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | 操作记录ID |
-| record_id | BIGINT | NOT NULL, FK | 关联对局ID |
+| record_id | BIGINT | FK | 关联对局ID(游戏进行中为NULL) |
 | user_id | BIGINT | NOT NULL, FK | 操作用户ID |
-| action_type | VARCHAR(20) | NOT NULL | 操作类型: REGRET(悔棋)/SURRENDER(投降)/DRAW(求和)/RESUME(继续) |
-| action_status | VARCHAR(20) | NOT NULL | 操作状态: PENDING(待确认)/ACCEPTED(已接受)/REJECTED(已拒绝)/CANCELLED(已取消) |
-| move_number | INT | NOT NULL | 操作发起时的落子数(用于悔棋回退) |
+| action_type | VARCHAR(20) | NOT NULL | 操作类型: UNDO_REQUEST(悔棋)/DRAW_REQUEST(求和) |
+| action_status | VARCHAR(20) | NOT NULL | 操作状态: PENDING(待确认)/ACCEPTED(已接受)/REJECTED(已拒绝) |
+| move_number | INT | DEFAULT 0 | 操作发起时的落子数(用于悔棋回退) |
 | reject_reason | VARCHAR(100) | NULL | 拒绝原因 |
 | opponent_response | DATETIME | NULL | 对手响应时间 |
 | create_time | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
@@ -600,7 +621,7 @@ erDiagram
 | request_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | 请求ID |
 | from_user_id | BIGINT | NOT NULL, FK | 发起者ID |
 | to_user_id | BIGINT | NOT NULL, FK | 接收者ID |
-| status | VARCHAR(20) | NOT NULL | 状态: PENDING(待处理)/ACCEPTED(已接受)/REJECTED(已拒绝)/EXPIRED(已过期) |
+| status | VARCHAR(20) | NOT NULL | 状态: PENDING(待处理)/ACCEPTED(已接受)/REJECTED(已拒绝) |
 | message | VARCHAR(200) | NULL | 请求附言 |
 | create_time | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 | respond_time | DATETIME | NULL | 响应时间 |
@@ -905,15 +926,15 @@ flowchart TD
 
 | 方法名 | 参数 | 返回值 | 说明 |
 |--------|------|--------|------|
-| findById | Long roomId | Room | 根据ID查询房间 |
+| findById | String roomId | Room | 根据ID查询房间 |
 | findByStatus | String status, int page, int size | List\<Room\> | 按状态查询房间 |
 | findByHostId | Long hostId | List\<Room\> | 查询房主创建的房间 |
 | findByName | String roomName | List\<Room\> | 按名称查询 |
 | save | Room room | Room | 保存房间 |
 | update | Room room | Room | 更新房间 |
-| updateStatus | Long roomId, String status | int | 更新房间状态 |
-| updatePlayerCount | Long roomId, int count | int | 更新人数 |
-| deleteById | Long roomId | void | 删除房间 |
+| updateStatus | String roomId, String status | int | 更新房间状态 |
+| updatePlayerCount | String roomId, int count | int | 更新人数 |
+| deleteById | String roomId | void | 删除房间 |
 | countByStatus | String status | int | 统计房间数 |
 
 ### 5.8 ChatMessageRepository（聊天消息接口）
@@ -921,27 +942,27 @@ flowchart TD
 | 方法名 | 参数 | 返回值 | 说明 |
 |--------|------|--------|------|
 | findById | Long messageId | ChatMessage | 根据ID查询消息 |
-| findByRoomId | Long roomId, int page, int size | List\<ChatMessage\> | 查询房间消息 |
+| findByRoomId | String roomId, int page, int size | List\<ChatMessage\> | 查询房间消息 |
 | findByUserId | Long userId, int page, int size | List\<ChatMessage\> | 查询用户发送的消息 |
-| findRecentByRoomId | Long roomId, int limit | List\<ChatMessage\> | 查询房间最近消息 |
+| findRecentByRoomId | String roomId, int limit | List\<ChatMessage\> | 查询房间最近消息 |
 | save | ChatMessage message | ChatMessage | 保存消息 |
 | deleteById | Long messageId | void | 删除消息 |
-| deleteByRoomId | Long roomId | void | 删除房间所有消息 |
-| countByRoomId | Long roomId | int | 统计房间消息数 |
+| deleteByRoomId | String roomId | void | 删除房间所有消息 |
+| countByRoomId | String roomId | int | 统计房间消息数 |
 
 ### 5.9 RoomWatcherRepository（房间观战接口）
 
 | 方法名 | 参数 | 返回值 | 说明 |
 |--------|------|--------|------|
 | findById | Long watcherId | RoomWatcher | 根据ID查询 |
-| findByRoomId | Long roomId | List\<RoomWatcher\> | 查询房间观战者 |
+| findByRoomId | String roomId | List\<RoomWatcher\> | 查询房间观战者 |
 | findByUserId | Long userId | List\<RoomWatcher\> | 查询用户观战记录 |
-| findByRoomIdAndUserId | Long roomId, Long userId | RoomWatcher | 查询特定观战记录 |
+| findByRoomIdAndUserId | String roomId, Long userId | RoomWatcher | 查询特定观战记录 |
 | save | RoomWatcher watcher | RoomWatcher | 保存观战记录 |
 | updateLeaveTime | Long watcherId, Date leaveTime | int | 更新离开时间 |
 | deleteById | Long watcherId | void | 删除观战记录 |
-| deleteByRoomId | Long roomId | void | 删除房间所有观战记录 |
-| countByRoomId | Long roomId | int | 统计房间观战人数 |
+| deleteByRoomId | String roomId | void | 删除房间所有观战记录 |
+| countByRoomId | String roomId | int | 统计房间观战人数 |
 
 ### 5.10 GameActionRepository（游戏操作接口）
 
@@ -999,6 +1020,7 @@ public class User {
     private String username;
     private String password;
     private String email;
+    private String phone;
     private String avatarUrl;
     private String role;
     private String status;
@@ -1027,6 +1049,8 @@ public class GameRecord {
     private String boardData;
     private Integer duration;
     private Integer moveCount;
+    private Integer player1ScoreChange;
+    private Integer player2ScoreChange;
     private Date createTime;
 }
 ```
@@ -1074,7 +1098,7 @@ public class SocketSession {
     private String sessionKey;
     private String clientIp;
     private String connectionId;
-    private Long roomId;
+    private String roomId;
     private String status;
     private Date lastHeartbeat;
     private Date disconnectTime;
@@ -1090,7 +1114,7 @@ public class SocketSession {
 ```java
 public class ChatMessage {
     private Long messageId;
-    private Long roomId;
+    private String roomId;
     private Long userId;
     private String content;
     private String messageType;
@@ -1102,7 +1126,7 @@ public class ChatMessage {
 
 ```java
 public class Room {
-    private Long roomId;
+    private String roomId;
     private String roomName;
     private String password;
     private Integer maxPlayers;
@@ -1122,7 +1146,7 @@ public class Room {
 ```java
 public class RoomWatcher {
     private Long watcherId;
-    private Long roomId;
+    private String roomId;
     private Long userId;
     private Date joinTime;
     private Date leaveTime;
@@ -1231,7 +1255,7 @@ public class FriendRequest {
 | 字段名 | 类型 | 说明 |
 |--------|------|------|
 | messageId | Long | 消息ID |
-| roomId | Long | 房间ID |
+| roomId | String | 房间ID |
 | userId | Long | 发送者ID |
 | username | String | 发送者名称 |
 | content | String | 消息内容 |
@@ -1242,7 +1266,7 @@ public class FriendRequest {
 
 | 字段名 | 类型 | 说明 |
 |--------|------|------|
-| roomId | Long | 房间ID |
+| roomId | String | 房间ID |
 | roomName | String | 房间名称 |
 | passwordRequired | Boolean | 是否需要密码 |
 | maxPlayers | Integer | 最大人数 |
@@ -1310,7 +1334,8 @@ CREATE TABLE IF NOT EXISTS `t_user` (
     `user_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
     `username` VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
     `password` VARCHAR(100) NOT NULL COMMENT '密码(加密)',
-    `email` VARCHAR(100) UNIQUE COMMENT '邮箱',
+    `email` VARCHAR(100) NOT NULL UNIQUE COMMENT '邮箱',
+    `phone` VARCHAR(16) UNIQUE COMMENT 'E.164国际手机号',
     `avatar` VARCHAR(255) COMMENT '头像对象键或URL',
     `role` VARCHAR(20) NOT NULL DEFAULT 'PLAYER' COMMENT '角色: PLAYER/ADMIN',
     `status` VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' COMMENT '状态: ACTIVE/BANNED/INACTIVE',
@@ -1327,19 +1352,28 @@ CREATE TABLE IF NOT EXISTS `t_user` (
     INDEX `idx_role` (`role`),
     INDEX `idx_status` (`status`),
     INDEX `idx_role_status` (`role`, `status`),
-    INDEX `idx_score` (`score`),
+    INDEX `idx_score` (`score`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
+
+CREATE TABLE IF NOT EXISTS `t_user_profile` (
+    `user_id` BIGINT PRIMARY KEY COMMENT '用户ID',
+    `config_json` JSON NOT NULL COMMENT '客户端配置(JSON)',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后同步时间',
+    CONSTRAINT `fk_user_profile_user` FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户云端配置表';
 
 CREATE TABLE IF NOT EXISTS `t_game_record` (
     `record_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '记录ID',
     `player1_id` BIGINT NOT NULL COMMENT '玩家1ID',
     `player2_id` BIGINT NOT NULL COMMENT '玩家2ID',
-    `game_type` VARCHAR(20) NOT NULL DEFAULT 'PVP' COMMENT '游戏类型: PVP/PVE',
+    `game_type` VARCHAR(20) NOT NULL DEFAULT 'PVP' COMMENT '游戏类型: PVP/PVE/RANKED',
     `winner_id` BIGINT COMMENT '胜者ID(平局为NULL)',
-    `result` VARCHAR(10) NOT NULL COMMENT '结果: win/lose/draw',
+    `result` VARCHAR(30) NOT NULL COMMENT '结果: five_in_a_row/surrender/draw',
     `board_data` TEXT NOT NULL COMMENT '棋谱数据(JSON格式)',
     `duration` INT COMMENT '对局时长(秒)',
     `move_count` INT DEFAULT 0 COMMENT '落子总数',
+    `player1_score_change` INT DEFAULT 0 COMMENT '玩家1积分变化',
+    `player2_score_change` INT DEFAULT 0 COMMENT '玩家2积分变化',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     INDEX `idx_player1` (`player1_id`),
     INDEX `idx_player2` (`player2_id`),
@@ -1379,8 +1413,7 @@ CREATE TABLE IF NOT EXISTS `t_game_save` (
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX `idx_user_id` (`user_id`),
     INDEX `idx_record_id` (`record_id`),
-    FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE,
-    FOREIGN KEY (`record_id`) REFERENCES `t_game_record`(`record_id`) ON DELETE SET NULL
+    FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='棋局保存表';
 
 CREATE TABLE IF NOT EXISTS `t_socket_session` (
@@ -1389,8 +1422,8 @@ CREATE TABLE IF NOT EXISTS `t_socket_session` (
     `session_key` VARCHAR(64) NOT NULL UNIQUE COMMENT '会话密钥',
     `client_ip` VARCHAR(50) COMMENT '客户端IP',
     `connection_id` VARCHAR(64) COMMENT '连接ID',
-    `room_id` BIGINT COMMENT '当前所在房间ID',
-    `status` VARCHAR(20) NOT NULL DEFAULT 'connected' COMMENT '连接状态',
+    `room_id` VARCHAR(50) COMMENT '当前所在房间ID',
+    `status` VARCHAR(20) NOT NULL DEFAULT 'connected' COMMENT '连接状态: connected/disconnected/reconnecting',
     `last_heartbeat` DATETIME COMMENT '最后活跃时间',
     `disconnect_time` DATETIME COMMENT '断开连接时间',
     `disconnect_reason` VARCHAR(50) COMMENT '断开原因',
@@ -1402,8 +1435,7 @@ CREATE TABLE IF NOT EXISTS `t_socket_session` (
     INDEX `idx_last_heartbeat` (`last_heartbeat`),
     INDEX `idx_room_id` (`room_id`),
     INDEX `idx_room_status` (`room_id`, `status`),
-    FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE,
-    FOREIGN KEY (`room_id`) REFERENCES `t_room`(`room_id`) ON DELETE SET NULL
+    FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Socket会话表';
 
 CREATE TABLE IF NOT EXISTS `t_room` (
@@ -1436,9 +1468,7 @@ CREATE TABLE IF NOT EXISTS `t_chat_message` (
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     INDEX `idx_room_id` (`room_id`),
     INDEX `idx_user_id` (`user_id`),
-    INDEX `idx_create_time` (`create_time`),
-    FOREIGN KEY (`room_id`) REFERENCES `t_room`(`room_id`) ON DELETE CASCADE,
-    FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
+    INDEX `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='聊天消息表';
 
 CREATE TABLE IF NOT EXISTS `t_room_watcher` (
@@ -1449,18 +1479,16 @@ CREATE TABLE IF NOT EXISTS `t_room_watcher` (
     `leave_time` DATETIME COMMENT '离开观战时间',
     INDEX `idx_room_id` (`room_id`),
     INDEX `idx_user_id` (`user_id`),
-    UNIQUE INDEX `uk_room_user` (`room_id`, `user_id`),
-    FOREIGN KEY (`room_id`) REFERENCES `t_room`(`room_id`) ON DELETE CASCADE,
-    FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
+    UNIQUE INDEX `uk_room_user` (`room_id`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='房间观战表';
 
 CREATE TABLE IF NOT EXISTS `t_game_action` (
     `action_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '操作记录ID',
-    `record_id` BIGINT NOT NULL COMMENT '关联对局ID',
+    `record_id` BIGINT COMMENT '关联对局ID(游戏进行中为NULL)',
     `user_id` BIGINT NOT NULL COMMENT '操作用户ID',
-    `action_type` VARCHAR(20) NOT NULL COMMENT '操作类型',
-    `action_status` VARCHAR(20) NOT NULL COMMENT '操作状态',
-    `move_number` INT NOT NULL COMMENT '操作时落子数',
+    `action_type` VARCHAR(20) NOT NULL COMMENT '操作类型: UNDO_REQUEST/DRAW_REQUEST',
+    `action_status` VARCHAR(20) NOT NULL COMMENT '操作状态: PENDING/ACCEPTED/REJECTED',
+    `move_number` INT DEFAULT 0 COMMENT '操作时落子数',
     `reject_reason` VARCHAR(100) COMMENT '拒绝原因',
     `opponent_response` DATETIME COMMENT '对手响应时间',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -1469,7 +1497,6 @@ CREATE TABLE IF NOT EXISTS `t_game_action` (
     INDEX `idx_action_type` (`action_type`),
     INDEX `idx_action_status` (`action_status`),
     INDEX `idx_record_status` (`record_id`, `action_status`),
-    FOREIGN KEY (`record_id`) REFERENCES `t_game_record`(`record_id`) ON DELETE CASCADE,
     FOREIGN KEY (`user_id`) REFERENCES `t_user`(`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='游戏操作表';
 
@@ -1492,7 +1519,7 @@ CREATE TABLE IF NOT EXISTS `t_friend_request` (
     `request_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '请求ID',
     `from_user_id` BIGINT NOT NULL COMMENT '发起者ID',
     `to_user_id` BIGINT NOT NULL COMMENT '接收者ID',
-    `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT '请求状态',
+    `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT '请求状态: PENDING/ACCEPTED/REJECTED',
     `message` VARCHAR(200) COMMENT '请求附言',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `respond_time` DATETIME COMMENT '响应时间',
@@ -1509,12 +1536,7 @@ CREATE TABLE IF NOT EXISTS `t_friend_request` (
 
 ### 7.4 初始化数据
 
-```sql
-INSERT INTO `t_user` (`username`, `password`, `email`, `role`, `status`, `score`) VALUES
-('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjzqAKL9xL5jvMFVdNJHvGCgTq/VEq', '[redacted-email]', 'ADMIN', 'ACTIVE', 9999),
-('player1', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjzqAKL9xL5jvMFVdNJHvGCgTq/VEq', '[redacted-email]', 'PLAYER', 'ACTIVE', 1000),
-('player2', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjzqAKL9xL5jvMFVdNJHvGCgTq/VEq', '[redacted-email]', 'PLAYER', 'ACTIVE', 1000);
-```
+> 初始化数据见 `sql/init.sql`，包含 15 个测试用户（含 AI 占位用户 -1）和排行榜种子数据。
 
 ### 7.5 JDBC连接配置
 
@@ -1680,9 +1702,9 @@ CREATE TABLE IF NOT EXISTS `t_distributed_lock` (
 
 | 表名 | 新增字段 | 说明 |
 |------|----------|------|
-| t_user | version INT DEFAULT 1 | 用户数据版本号 |
-| t_rank | version INT DEFAULT 1 | 排名数据版本号 |
-| t_room | version INT DEFAULT 1 | 房间数据版本号 |
+| t_user | version INT DEFAULT 0 | 用户数据版本号 |
+| t_rank | version INT DEFAULT 0 | 排名数据版本号 |
+| t_room | version INT DEFAULT 0 | 房间数据版本号 |
 
 #### 10.2.2 更新SQL示例
 
