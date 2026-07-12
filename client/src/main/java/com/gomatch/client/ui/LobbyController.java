@@ -354,7 +354,7 @@ public class LobbyController extends AutoCleanupController {
                     int rank = u.optInt("rank", i + 1);
                     String username = u.optString("username", "");
                     int score = u.optInt("score", 0);
-                    String avatar = u.optString("avatar", "");
+                    String avatar = u.optString("avatarUrl", u.optString("avatar", ""));
                     items.add(new RankItem(rank, username, score, avatar));
                 }
                 Platform.runLater(() -> drawerRanks.setAll(items));
