@@ -15,6 +15,7 @@
 > FXML 布局、CSS 样式、动画特效、视觉组件
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
+| 2026-07-12 17:02 | Contributor| fix(ci): 修复 build-client 在预装新版 WiX 时失败 (PR #57) | 将 `choco install wixtoolset --version=3.14.1` 替换为 `choco upgrade wixtoolset`，避免 runner 已预装新版 WiX 时 Chocolatey 退出非零导致构建失败。 | 验证通过 |
 | 2026-07-12 02:24 | Contributor| fix(client): 连接成功提示隐藏服务器 IP 和端口以防泄漏 | 在设置页和服务器配置弹窗中，连接成功后提示统一改为使用无参的已连接词条，不再显式渲染服务器的具体 IP 和端口，并清理了 messages 配置文件中多余的带参数词条。 | 验证通过 |
 | 2026-07-12 00:05 | Contributor| fix(client): 修复本地凭据存储逻辑以通过单元测试并防范明文密码残留 | 优化了 `CredentialStore.java`：1. 仅在传入密码非空时写入 `password` 属性；2. 增加 `loadUsername` 时的旧明文密码判定逻辑，当解密失败时自动剥离明文密码并更新存储文件，修复了 `CredentialStoreTest` 两个单元测试 100% 失败的缺陷。 | 编译与测试成功 |
 | 2026-07-11 23:05 | Contributor| fix(client): 修复好友请求列表无法渲染及好友头像缺失的 Bug (Issue #17) | 在 FriendsController 中重构 FRIEND_LIST 和 FRIEND_REQUEST_LIST 消息解析逻辑，改用 opt/optString 等防御性 API 读取字段，避免 requestId 作为数字类型传回时触发 `r.getString()` 产生的 JSONException 导致中断；并将头像字段映射修改为与服务端一致的 avatarUrl。 | 编译与测试成功 |
