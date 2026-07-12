@@ -7,12 +7,13 @@
 <?import javafx.scene.shape.Rectangle?>
 
 <!--
-  图片固定铺满画布，用户拖动白色裁剪框选择 640×640 区域。
-  遮罩用 Group 包裹 4 个 Rectangle（Group 不做 layout，Rectangle 自己的尺寸生效）。
+  裁剪框固定居中，用户拖动底部图片来调整裁剪位置。
+  遮罩用 Group 包裹 4 个 Rectangle。
 -->
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.gomatch.client.ui.CropAvatarController"
       styleClass="crop-avatar-dialog"
+
       spacing="0" alignment="CENTER"
       prefWidth="540" prefHeight="640"
       minWidth="540" minHeight="640">
@@ -20,7 +21,7 @@
     <!-- 顶部标题 -->
     <HBox alignment="CENTER_LEFT" prefHeight="36" styleClass="crop-avatar-title"
           style="-fx-padding: 0 16 0 16;">
-        <Label text="拖动方框调整裁剪区域" styleClass="crop-avatar-title-text"
+        <Label text="拖动图片调整位置" styleClass="crop-avatar-title-text"
                style="-fx-font-size: 13px;"/>
     </HBox>
 
@@ -29,14 +30,14 @@
                VBox.vgrow="ALWAYS"
                style="-fx-background-color: #000000;">
 
-        <!-- 图片层 -->
+        <!-- 图片层（可拖动） -->
         <ImageView fx:id="imageView"
                    preserveRatio="false"
-                   mouseTransparent="true"
-                   StackPane.alignment="CENTER"/>
+                   mouseTransparent="false"
+                   StackPane.alignment="TOP_LEFT"/>
 
-        <!-- 遮罩层：Group 不做自动 layout -->
-        <Group fx:id="maskGroup" mouseTransparent="false">
+        <!-- 遮罩层：Group 穿透鼠标事件 -->
+        <Group fx:id="maskGroup" mouseTransparent="true">
             <Rectangle fx:id="maskTop"
                        fill="rgba(0,0,0,0.45)"
                        mouseTransparent="true"/>
@@ -50,12 +51,12 @@
                        fill="rgba(0,0,0,0.45)"
                        mouseTransparent="true"/>
 
-            <!-- 可拖动的透明裁剪框（接收鼠标事件，无边框） -->
+            <!-- 裁剪框（仅视觉，不响应鼠标） -->
             <Rectangle fx:id="cropFrame"
                        fill="transparent"
-                       stroke="transparent"
-                       strokeWidth="0"
-                       mouseTransparent="false"/>
+                       stroke="rgba(255,255,255,0.9)"
+                       strokeWidth="2"
+                       mouseTransparent="true"/>
         </Group>
     </StackPane>
 
