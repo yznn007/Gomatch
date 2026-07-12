@@ -1213,7 +1213,8 @@ public class BoardController implements NetworkListener {
         javafx.scene.layout.VBox layout = new javafx.scene.layout.VBox(15);
         layout.setAlignment(javafx.geometry.Pos.CENTER);
         layout.setPadding(new javafx.geometry.Insets(30));
-        layout.setStyle("-fx-background-color: " + ScreenManager.themeColor("rgba(255,255,255,0.96)", "rgba(10,15,28,0.96)") + "; -fx-border-radius: 12px; -fx-background-radius: 12px;");
+        layout.getStyleClass().add("glass-card");
+        layout.setStyle("-fx-background-color: " + ScreenManager.themeColor("rgba(255,255,255,0.96)", "rgba(10,15,28,0.96)") + "; -fx-background-radius: 12; -fx-border-radius: 12;");
 
         javafx.scene.control.Label titleLabel = new javafx.scene.control.Label(title);
         titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + ScreenManager.themeColor("#1e293b", "#f8fafc") + ";");
