@@ -116,6 +116,8 @@ public class FriendsController implements NetworkListener {
         String msg = addMsgField.getText().trim();
         errorLabel.setText("");
         if (targetIdStr.isEmpty()) {
+            errorLabel.getStyleClass().removeAll("friend-status-success", "friend-status-error");
+            errorLabel.getStyleClass().add("friend-status-error");
             errorLabel.setText(I18N.get("friends.idEmpty"));
             return;
         }
@@ -123,7 +125,8 @@ public class FriendsController implements NetworkListener {
         if (ClientMain.getConnector().isConnected()) {
             ClientMain.getConnector().send(Message.of(Protocol.ADD_FRIEND, "friendUserId", Long.parseLong(targetIdStr), "message", msg));
         } else {
-            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+            errorLabel.getStyleClass().removeAll("friend-status-success", "friend-status-error");
+            errorLabel.getStyleClass().add("friend-status-success");
             errorLabel.setText(I18N.get("friends.preview.sentRequest", targetIdStr));
         }
     }
@@ -214,12 +217,14 @@ public class FriendsController implements NetworkListener {
                 }
             }
         } else if ("ADD_FRIEND_OK".equals(cmd)) {
-            errorLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#16a34a", "#86efac") + ";");
+            errorLabel.getStyleClass().removeAll("friend-status-success", "friend-status-error");
+            errorLabel.getStyleClass().add("friend-status-success");
             errorLabel.setText(I18N.get("friends.requestSent"));
             friendIdField.clear();
             addMsgField.clear();
         } else if ("ADD_FRIEND_FAIL".equals(cmd)) {
-            errorLabel.setStyle("-fx-text-fill: red;");
+            errorLabel.getStyleClass().removeAll("friend-status-success", "friend-status-error");
+            errorLabel.getStyleClass().add("friend-status-error");
             errorLabel.setText(msg.getString("msg"));
         } else if ("ACCEPT_FRIEND_OK".equals(cmd)) {
             showAlert(I18N.get("friends.addedSuccess"));
@@ -297,7 +302,8 @@ public class FriendsController implements NetworkListener {
             friendsContainer.getChildren().clear();
             if (friendsData.isEmpty()) {
                 Label noFriendLabel = new Label(I18N.get("friends.noFriends"));
-                noFriendLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
+                noFriendLabel.getStyleClass().add("friend-empty-state");
+
                 friendsContainer.getChildren().add(noFriendLabel);
                 return;
             }
@@ -375,21 +381,21 @@ public class FriendsController implements NetworkListener {
                 nameRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 Label nameLabel = new Label(friend.getFriendUsername());
                 nameLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
+                nameLabel.getStyleClass().add("friend-card-name");
                 Label idLabel = new Label("#" + friend.getFriendUserId());
                 idLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
+                idLabel.getStyleClass().add("friend-card-meta");
                 nameRow.getChildren().addAll(nameLabel, idLabel);
 
                 HBox detailRow = new HBox(8);
                 detailRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 Label scoreLabel = new Label(friend.getFriendScore() + I18N.get("board.score"));
                 scoreLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                scoreLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
+                scoreLabel.getStyleClass().add("friend-card-meta");
                 
                 Label activeLabel = new Label(isOnline ? I18N.get("friends.online") : I18N.get("friends.offline"));
                 activeLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                activeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + (isOnline ? "#16a34a;" : "#64748b;"));
+                activeLabel.getStyleClass().add(isOnline ? "friend-card-status-online" : "friend-card-status-offline");
                 
                 detailRow.getChildren().addAll(scoreLabel, activeLabel);
                 infoBox.getChildren().addAll(nameRow, detailRow);
@@ -400,13 +406,15 @@ public class FriendsController implements NetworkListener {
 
                 Button deleteBtn = new Button(I18N.get("friends.delete"));
                 deleteBtn.getStyleClass().add("btn-danger");
+                deleteBtn.getStyleClass().add("friend-card-action");
                 deleteBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                deleteBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px; -fx-text-fill: #ef4444;");
+
  
                 // Create ContextMenu for double confirmation (secondary menu)
                 ContextMenu confirmMenu = new ContextMenu();
                 MenuItem confirmItem = new MenuItem(I18N.get("friends.confirmDelete"));
-                confirmItem.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#dc2626", "#fca5a5") + "; -fx-font-weight: bold;");
+                confirmItem.getStyleClass().add("friend-delete-confirmation");
+
                 confirmItem.setOnAction(evt -> handleDeleteFriend(friend.getFriendUserId()));
                 confirmMenu.getItems().add(confirmItem);
  
@@ -428,7 +436,8 @@ public class FriendsController implements NetworkListener {
             requestsContainer.getChildren().clear();
             if (requestsData.isEmpty()) {
                 Label noReqLabel = new Label(I18N.get("friends.noRequests"));
-                noReqLabel.setStyle("-fx-text-fill: " + ScreenManager.themeColor("#94a3b8", "#64748b") + "; -fx-font-size: 13px; -fx-padding: 20 0;");
+                noReqLabel.getStyleClass().add("friend-empty-state");
+
                 requestsContainer.getChildren().add(noReqLabel);
                 return;
             }
@@ -444,7 +453,7 @@ public class FriendsController implements NetworkListener {
                 // Avatar Circle
                 javafx.scene.layout.StackPane avatar = new javafx.scene.layout.StackPane();
                 avatar.getStyleClass().add("avatar-badge");
-                avatar.setStyle("-fx-background-color: #f59e0b;"); // Orange for requests
+                avatar.getStyleClass().add("friend-request-avatar");
                 String name = req.getFromUsername() != null ? req.getFromUsername() : "R";
                 String charVal = name.isEmpty() ? "R" : name.substring(0, 1).toUpperCase();
                 Label avatarText = new Label(charVal);
@@ -461,17 +470,17 @@ public class FriendsController implements NetworkListener {
                 nameRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 Label nameLabel = new Label(req.getFromUsername());
                 nameLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
+                nameLabel.getStyleClass().add("friend-card-name");
                 Label idLabel = new Label("#" + req.getFromUserId());
                 idLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
+                idLabel.getStyleClass().add("friend-card-meta");
                 nameRow.getChildren().addAll(nameLabel, idLabel);
 
                 String msg = req.getMessage() != null && !req.getMessage().isEmpty() ? 
                              "\u201C" + req.getMessage() + "\u201D" : I18N.get("friends.defaultReqMsg");
                 Label msgLabel = new Label(msg);
                 msgLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                msgLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b; -fx-font-style: italic;");
+                msgLabel.getStyleClass().add("friend-card-message");
                 infoBox.getChildren().addAll(nameRow, msgLabel);
 
                 // Action Buttons
@@ -480,14 +489,16 @@ public class FriendsController implements NetworkListener {
 
                 Button acceptBtn = new Button(I18N.get("friends.accept"));
                 acceptBtn.getStyleClass().add("btn-primary");
+                acceptBtn.getStyleClass().add("friend-card-action");
                 acceptBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                acceptBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px;");
+
                 acceptBtn.setOnAction(e -> handleAcceptRequest(req.getRequestId()));
 
                 Button rejectBtn = new Button(I18N.get("friends.reject"));
                 rejectBtn.getStyleClass().add("btn-danger");
+                rejectBtn.getStyleClass().add("friend-card-action");
                 rejectBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-                rejectBtn.setStyle("-fx-padding: 4 14; -fx-font-size: 12px; -fx-text-fill: #ef4444;");
+
                 rejectBtn.setOnAction(e -> handleRejectRequest(req.getRequestId()));
 
                 actionBox.getChildren().addAll(acceptBtn, rejectBtn);

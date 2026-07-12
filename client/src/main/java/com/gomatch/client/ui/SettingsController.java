@@ -530,7 +530,7 @@ public class SettingsController {
             try {
                 ClientMain.getConnector().connect(finalHost, finalPort);
                 javafx.application.Platform.runLater(() -> {
-                    statusLabel.setText(I18N.get("settings.connectedWith", finalHost, finalPort));
+                    statusLabel.setText(I18N.get("settings.connected"));
                     statusLabel.setStyle("-fx-text-fill: #86efac;");
                 });
             } catch (Exception e) {
