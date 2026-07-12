@@ -35,7 +35,7 @@ $fxJars = Get-ChildItem -Path $fxPath -Recurse -Filter "javafx-*-21-win.jar" | W
 $modulePath = ($fxJars -join ';')
 
 $inputDirectory = Join-Path $repoRoot 'client/target'
-$mainJar = 'gomatch-client-1.0.0.jar'
+$mainJar = 'gomatch-client-2.0.0-alpha.jar'
 $mainJarPath = Join-Path $inputDirectory $mainJar
 if (-not (Test-Path $mainJarPath)) {
     throw "未找到客户端 JAR：$mainJarPath"

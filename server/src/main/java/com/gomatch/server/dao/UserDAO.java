@@ -190,7 +190,7 @@ public class UserDAO {
                     String status = rs.getString("status");
                     if ("BANNED".equals(status)) {
                         log.warn("Banned user attempt to login: {}", account);
-                        return new UserInfo(userId, username, score, winCount, loseCount, drawCount, role, status, phone);
+                        return new UserInfo(userId, rs.getString("username"), rs.getInt("score"), rs.getInt("win_count"), rs.getInt("lose_count"), rs.getInt("draw_count"), rs.getString("role"), status, rs.getString("phone"));
                     }
                     return new UserInfo(
                             userId,
