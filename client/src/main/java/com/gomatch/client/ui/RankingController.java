@@ -351,8 +351,8 @@ public class RankingController implements NetworkListener {
                 user.setRank(u.optInt("rank", i + 1));
                 user.setUsername(u.optString("username", ""));
                 user.setScore(u.optInt("score", 0));
-                // 头像 URL
-                user.setAvatar(u.optString("avatar", ""));
+                // 头像 URL（服务端 key 为 avatarUrl，兼容旧版 avatar）
+                user.setAvatar(u.optString("avatarUrl", u.optString("avatar", "")));
                 // 服务端 winRate 可能是 double 或字符串，统一按字符串读取
                 Object winRateObj = u.opt("winRate");
                 String winRateStr = winRateObj != null ? String.valueOf(winRateObj) : "";
