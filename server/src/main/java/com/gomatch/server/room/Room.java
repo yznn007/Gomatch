@@ -891,6 +891,10 @@ public class Room {
             turnTimerFuture = null;
             log.debug("Turn timer cancelled for room {}", roomId);
         }
+        // 同步当前剩余时间到所有客户端（含观战者），避免观战方倒计时继续跑到 0
+        broadcastAll(Message.of(Protocol.TIME_SYNC,
+                "remainingSeconds", getRemainingSeconds(),
+                "currentPlayer", game.getCurrentPlayer()));
     }
 
     public synchronized int getRemainingSeconds() {
