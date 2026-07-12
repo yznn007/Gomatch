@@ -32,7 +32,7 @@ jobs:
 
       - name: 安装 WiX Toolset 3
         shell: powershell
-        run: choco install wixtoolset --version=3.14.1 --no-progress --yes
+        run: choco upgrade wixtoolset --no-progress --yes
 
       - name: 确定发布版本
         id: version
