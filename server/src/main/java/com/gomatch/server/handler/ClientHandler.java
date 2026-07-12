@@ -287,6 +287,11 @@ public class ClientHandler implements Runnable {
 
         UserDAO.UserInfo userInfo = userDAO.login(account, password, phone);
         if (userInfo != null) {
+            if ("BANNED".equals(userInfo.getStatus())) {
+                send(Message.of(Protocol.LOGIN_FAIL, "msg", "该账号已被封禁"));
+                log.warn("Banned user {} attempted login", account);
+                return;
+            }
             SessionManager.Session session = null;
             synchronized (sessionManager) {
                 SessionManager.Session existingSession = sessionManager.getSessionByUserId(userInfo.getUserId());
