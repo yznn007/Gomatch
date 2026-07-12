@@ -137,19 +137,37 @@ jobs:
 
   deploy-server:
     needs: build-client
+    environment: 1
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
     steps:
+      - name: 检查部署凭据
+        id: deploy-ready
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          if [ -n "$SSH_HOST" ] && [ -n "$SSH_USER" ] && [ -n "$SSH_KEY" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::跳过 deploy-server：请在仓库 Secrets 中配置 SSH_HOST、SSH_USER、SSH_KEY。"
+          fi
+
       - name: 下载服务端 JAR 产物
+        if: steps.deploy-ready.outputs.enabled == 'true'
         uses: actions/download-artifact@v4
         with:
           name: Gomatch-${{ needs.build-client.outputs.tag }}-server-jar
 
       - name: 获取 JAR 文件名
+        if: steps.deploy-ready.outputs.enabled == 'true'
         id: jar
         run: echo "name=$(ls gomatch-server-*.jar)" >> $GITHUB_OUTPUT
 
       - name: 上传 JAR 到服务器
+        if: steps.deploy-ready.outputs.enabled == 'true'
         uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -159,6 +177,7 @@ jobs:
           target: /opt/gomatch/
 
       - name: 重启服务端
+        if: steps.deploy-ready.outputs.enabled == 'true'
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
