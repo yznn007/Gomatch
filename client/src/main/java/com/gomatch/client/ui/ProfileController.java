@@ -376,7 +376,7 @@ public class ProfileController implements NetworkListener {
  
         // 计算并设置总局数
         int total = user.getWinCount() + user.getLoseCount() + user.getDrawCount();
-        totalGamesLabel.setText(I18N.get("profile.totalGames", total));
+        totalGamesLabel.setText(I18N.get("profile.totalGamesValue", total));
  
         // 计算并设置综合胜率
         String winRateStr = user.getWinRate();
