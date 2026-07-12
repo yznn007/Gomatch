@@ -80,6 +80,7 @@ public class Protocol {
     public static final String QUICK_MATCH_FOUND = "QUICK_MATCH_FOUND";
     public static final String QUICK_READY = "QUICK_READY";
     public static final String TIME_SYNC = "TIME_SYNC";
+    public static final String TIMER_PAUSE = "TIMER_PAUSE";
     // Forgot password - Client -> Server
     public static final String FORGOT_PASSWORD     = "FORGOT_PASSWORD";
     public static final String VERIFY_FORGOT_CODE  = "VERIFY_FORGOT_CODE";

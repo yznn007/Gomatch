@@ -1106,6 +1106,9 @@ public class BoardController implements NetworkListener {
         }
 
         stopCountdown();
+        if (timerLabel != null) {
+            timerLabel.setText(I18N.get("board.undoWaitTimer"));
+        }
         localUndoCount++;
         ClientMain.getConnector().send(Protocol.REQUEST_UNDO);
         pendingRequest = true;
@@ -1122,6 +1125,9 @@ public class BoardController implements NetworkListener {
         }
 
         stopCountdown();
+        if (timerLabel != null) {
+            timerLabel.setText(I18N.get("board.undoWaitTimer"));
+        }
         localDrawCount++;
         ClientMain.getConnector().send(Protocol.REQUEST_DRAW);
         pendingRequest = true;
@@ -1440,6 +1446,11 @@ public class BoardController implements NetworkListener {
         } else if (Protocol.TIME_SYNC.equals(cmd)) {
             int remaining = msg.getInt("remainingSeconds");
             startCountdown(remaining);
+        } else if (Protocol.TIMER_PAUSE.equals(cmd)) {
+            stopCountdown();
+            if (timerLabel != null) {
+                timerLabel.setText(I18N.get("board.undoWaitTimer"));
+            }
         } else if (Protocol.GAME_OVER.equals(cmd)) {
             gameOver = true;
             myTurn = false;
@@ -1531,6 +1542,10 @@ public class BoardController implements NetworkListener {
             chatArea.setScrollTop(Double.MAX_VALUE);
             // 观战者只显示系统消息，不弹确认框（悔棋是玩家私事，观战者无权决定）
             if (spectatorMode || previewMode) {
+                stopCountdown();
+                if (timerLabel != null) {
+                    timerLabel.setText(I18N.get("board.undoWaitTimer"));
+                }
                 return;
             }
             stopCountdown();
@@ -1582,6 +1597,10 @@ public class BoardController implements NetworkListener {
             chatArea.setScrollTop(Double.MAX_VALUE);
             // 观战者只显示系统消息，不弹确认框
             if (spectatorMode || previewMode) {
+                stopCountdown();
+                if (timerLabel != null) {
+                    timerLabel.setText(I18N.get("board.undoWaitTimer"));
+                }
                 return;
             }
             stopCountdown();
