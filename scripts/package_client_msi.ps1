@@ -1,7 +1,7 @@
 ﻿[CmdletBinding()]
 param(
     [Parameter(Mandatory)]
-    [ValidatePattern('^\d+\.\d+\.\d+(?:[-.]\d+)?$')]
+    [ValidatePattern('^\d+\.\d+\.\d+(-[\w.]+)?$')]
     [string]$Version,
     [string]$OutputDirectory = 'client/target/installer'
 )
