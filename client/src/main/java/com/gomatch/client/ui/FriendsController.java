@@ -212,7 +212,8 @@ public class FriendsController implements NetworkListener {
                             String.valueOf(r.optLong("fromUserId")),
                             r.optString("fromUsername"),
                             String.valueOf(r.optInt("fromScore")),
-                            r.optString("message")
+                            r.optString("message"),
+                            r.optString("avatarUrl", "")
                     ));
                 }
             }
@@ -280,13 +281,19 @@ public class FriendsController implements NetworkListener {
         private final String fromUsername;
         private final String fromScore;
         private final String message;
+        private final String avatar;
 
         public FriendRequestModel(String requestId, String fromUserId, String fromUsername, String fromScore, String message) {
+            this(requestId, fromUserId, fromUsername, fromScore, message, "");
+        }
+
+        public FriendRequestModel(String requestId, String fromUserId, String fromUsername, String fromScore, String message, String avatar) {
             this.requestId = requestId;
             this.fromUserId = fromUserId;
             this.fromUsername = fromUsername;
             this.message = message;
             this.fromScore = fromScore;
+            this.avatar = avatar;
         }
 
         public String getRequestId() { return requestId; }
@@ -294,6 +301,7 @@ public class FriendsController implements NetworkListener {
         public String getFromUsername() { return fromUsername; }
         public String getFromScore() { return fromScore; }
         public String getMessage() { return message; }
+        public String getAvatar() { return avatar; }
     }
 
     private void renderFriendCards() {
@@ -459,7 +467,39 @@ public class FriendsController implements NetworkListener {
                 Label avatarText = new Label(charVal);
                 avatarText.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 avatarText.getStyleClass().add("avatar-badge-text");
-                avatar.getChildren().add(avatarText);
+
+                String avatarUrl = req.getAvatar();
+                if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                    try {
+                        Image image = new Image(avatarUrl, true);
+                        ImageView avatarImg = new ImageView();
+                        avatarImg.setFitWidth(36);
+                        avatarImg.setFitHeight(36);
+                        image.errorProperty().addListener((obs, oldVal, newVal) -> {
+                            if (newVal) {
+                                avatarImg.setVisible(false);
+                                avatarText.setVisible(true);
+                            }
+                        });
+                        image.progressProperty().addListener((obs, oldVal, newVal) -> {
+                            if (newVal.doubleValue() >= 1.0 && !image.isError()) {
+                                avatarImg.setImage(image);
+                                avatarImg.setVisible(true);
+                                avatarText.setVisible(false);
+                            }
+                        });
+                        if (!image.isBackgroundLoading() && !image.isError()) {
+                            avatarImg.setImage(image);
+                            avatarImg.setVisible(true);
+                            avatarText.setVisible(false);
+                        }
+                        avatar.getChildren().addAll(avatarText, avatarImg);
+                    } catch (Exception e) {
+                        avatar.getChildren().add(avatarText);
+                    }
+                } else {
+                    avatar.getChildren().add(avatarText);
+                }
 
                 // Info VBox
                 VBox infoBox = new VBox(4);
