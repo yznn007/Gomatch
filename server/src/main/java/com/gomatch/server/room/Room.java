@@ -941,6 +941,7 @@ public class Room {
         playerUndoCounts.put(requesterId, undoCount + 1);
         undoRequesterId = requesterId;
         pendingUndoActionId = gameActionDAO.recordAction(currentRecordId > 0 ? currentRecordId : null, requesterId, "undo", game.getMoveCount());
+        cancelTurnTimer(); // 等待对方回复期间暂停回合计时
         log.info("Undo requested by {} in room {}, actionId={}", requesterId, roomId, pendingUndoActionId);
         return true;
     }
@@ -984,6 +985,7 @@ public class Room {
             }
             undoRequesterId = null;
             pendingUndoActionId = null;
+            startTurnTimer(); // 悔棋被拒，恢复回合计时
             return true;
         }
     }
@@ -1015,6 +1017,7 @@ public class Room {
         playerDrawCounts.put(requesterId, drawCount + 1);
         drawRequesterId = requesterId;
         pendingDrawActionId = gameActionDAO.recordAction(currentRecordId > 0 ? currentRecordId : null, requesterId, "draw", game.getMoveCount());
+        cancelTurnTimer(); // 等待对方回复期间暂停回合计时
         log.info("Draw requested by {} in room {}, actionId={}", requesterId, roomId, pendingDrawActionId);
         return true;
     }
@@ -1053,6 +1056,7 @@ public class Room {
             }
             drawRequesterId = null;
             pendingDrawActionId = null;
+            startTurnTimer(); // 求和被拒，恢复回合计时
             return true;
         }
     }
