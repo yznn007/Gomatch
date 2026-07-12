@@ -17,6 +17,8 @@ permissions:
 jobs:
   build-client:
     runs-on: windows-2022
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -132,3 +134,42 @@ jobs:
             client/target/installer/*.msi
             ${{ steps.server-jar.outputs.path }}
             ${{ steps.client-jar.outputs.path }}
+
+  deploy-server:
+    needs: build-client
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    steps:
+      - name: 下载服务端 JAR 产物
+        uses: actions/download-artifact@v4
+        with:
+          name: Gomatch-${{ needs.build-client.outputs.tag }}-server-jar
+
+      - name: 获取 JAR 文件名
+        id: jar
+        run: echo "name=$(ls gomatch-server-*.jar)" >> $GITHUB_OUTPUT
+
+      - name: 上传 JAR 到服务器
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: ${{ steps.jar.outputs.name }}
+          target: /opt/gomatch/
+
+      - name: 重启服务端
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /opt/gomatch
+            pkill -f gomatch-server || true
+            sleep 2
+            nohup java -Xmx256m -jar ${{ steps.jar.outputs.name }} > server.log 2>&1 &
+            sleep 3
+            ps aux | grep java | grep -v grep
+            echo "---"
+            tail -5 server.log
