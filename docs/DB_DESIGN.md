@@ -326,9 +326,10 @@ erDiagram
 |--------|------|------|------|
 | user_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | 用户唯一标识 |
 | username | VARCHAR(50) | NOT NULL, UNIQUE | 用户名 |
-| password | VARCHAR(100) | NOT NULL | 密码(明文) |
+| password | VARCHAR(100) | NOT NULL | 密码(BCrypt哈希，兼容旧明文) |
 | email | VARCHAR(100) | UNIQUE | 邮箱 |
 | avatar | VARCHAR(255) | NULL | 头像URL |
+| phone | VARCHAR(16) | UNIQUE, NULL | E.164国际手机号 |
 | role | VARCHAR(20) | NOT NULL, DEFAULT 'PLAYER' | 角色: PLAYER(玩家)/ADMIN(管理员) |
 | status | VARCHAR(20) | NOT NULL, DEFAULT 'ACTIVE' | 状态: ACTIVE(活跃)/BANNED(封禁)/INACTIVE(未激活) |
 | score | INT | DEFAULT 1000 | 积分(初始1000) |
@@ -431,7 +432,7 @@ erDiagram
 | session_key | VARCHAR(64) | NOT NULL, UNIQUE | 会话密钥(UUID) |
 | client_ip | VARCHAR(50) | NULL | 客户端IP地址 |
 | connection_id | VARCHAR(64) | NULL | Socket连接唯一标识 |
-| room_id | BIGINT | FK, NULL | 当前所在房间ID |
+| room_id | VARCHAR(50) | NULL | 当前所在房间ID |
 | status | VARCHAR(20) | NOT NULL | 连接状态: connected/disconnected/reconnecting |
 | last_heartbeat | DATETIME | NULL | 最后活跃时间 |
 | disconnect_time | DATETIME | NULL | 断开连接时间 |
@@ -462,7 +463,7 @@ erDiagram
 | 字段名 | 类型 | 约束 | 说明 |
 |--------|------|------|------|
 | message_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | 消息ID |
-| room_id | BIGINT | NOT NULL, FK | 房间ID |
+| room_id | VARCHAR(50) | NOT NULL | 房间ID |
 | user_id | BIGINT | NOT NULL, FK | 发送者ID |
 | content | VARCHAR(500) | NOT NULL | 消息内容 |
 | message_type | VARCHAR(20) | NOT NULL | 消息类型: text/system/game |
@@ -519,7 +520,7 @@ erDiagram
 | 字段名 | 类型 | 约束 | 说明 |
 |--------|------|------|------|
 | watcher_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | 观战记录ID |
-| room_id | BIGINT | NOT NULL, FK | 房间ID |
+| room_id | VARCHAR(50) | NOT NULL | 房间ID |
 | user_id | BIGINT | NOT NULL, FK | 观战者ID |
 | join_time | DATETIME | NOT NULL | 加入观战时间 |
 | leave_time | DATETIME | NULL | 离开观战时间 |
@@ -1918,7 +1919,7 @@ flowchart TD
 
 | 数据项 | 加密方式 | 说明 |
 |--------|----------|------|
-| 密码 | 明文 | 实训演示环境直接存储 |
+| 密码 | BCrypt哈希 | 新密码BCrypt哈希，旧明文登录后自动迁移 |
 | 文件URI | Base64编码 | 防止敏感信息泄露 |
 | 房间密码 | 明文 | 实训演示环境直接存储 |
 | 棋谱数据 | 无 | 非敏感数据 |

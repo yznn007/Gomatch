@@ -438,7 +438,7 @@ gomatch:game:{roomId}  ->  游戏事件频道
 | DAO 类 | 表名 | 主要操作 |
 |--------|------|---------|
 | `UserDAO` | `t_user` | 用户注册、登录验证、密码修改、积分更新（ELO） |
-| `RecordDAO` | `t_record` | 创建对战记录、更新结果、查询历史（winner_id NULL 值使用 wasNull() 正确处理）|
+| `RecordDAO` | `t_game_record` | 创建对战记录、更新结果、查询历史（winner_id NULL 值使用 wasNull() 正确处理）|
 | `ChatDAO` | `t_chat_message` | 保存聊天消息、查询房间聊天历史 |
 | `FriendDAO` | `t_friend`, `t_friend_request` | 发起/接受/拒绝/删除好友关系；发送请求前清理旧记录；删除好友时同步清理请求记录 |
 | `GameSaveDAO` | `t_game_save` | 保存/加载/删除棋局存档（含落子序列JSON）|
@@ -732,8 +732,8 @@ gomatch:game:{roomId}  ->  游戏事件频道
 - 协议格式：`{"cmd":"COMMAND","data":{"key":"value"}}`（JSON 消息）
 
 ### 11.2 密码策略
-- 注册时直接保存明文密码（实训演示简化）
-- 登录时使用明文密码比对
+- 密码使用 BCrypt 哈希存储，旧明文密码首次登录时自动升级迁移
+- 登录时使用 BCrypt 哈希校验，兼容旧明文密码
 
 ### 11.3 断线策略
 - 客户端断开后，保留会话 5 分钟（SessionManager + Redis）

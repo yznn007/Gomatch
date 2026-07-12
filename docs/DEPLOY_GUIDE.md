@@ -9,7 +9,7 @@ mvn clean install -pl common -am -DskipTests
 mvn clean package -pl server -am -DskipTests
 ```
 
-将 `server/target/gomatch-server-1.0.0.jar` 部署到服务端，并准备 MySQL 8.x 与 Redis 7.x。执行 `sql/init.sql` 及需要的迁移脚本；SQL 初始化用户维持脚本原有定义。
+将 `server/target/gomatch-server-2.0.2.jar` 部署到服务端，并准备 MySQL 8.x 与 Redis 7.x。执行 `sql/init.sql` 及需要的迁移脚本；SQL 初始化用户维持脚本原有定义。
 
 ## 运行凭据
 
@@ -28,7 +28,7 @@ mvn clean package -pl server -am -DskipTests
 确保运行目录含有 `.env`，然后执行：
 
 ```bash
-java -Dfile.encoding=UTF-8 -jar gomatch-server-1.0.0.jar
+java -Dfile.encoding=UTF-8 -jar gomatch-server-2.0.2.jar
 ```
 
 服务端启动时会校验 MySQL 与 Redis 的必填变量；缺失时会报告变量名而不会打印凭据。开放游戏 TCP 端口 `8888`，并限制 MySQL 与 Redis 的网络访问范围。
