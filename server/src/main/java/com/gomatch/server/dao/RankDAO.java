@@ -104,8 +104,8 @@ public class RankDAO {
     private List<RankInfo> getRankingFromDB(int limit) {
         String sql = "SELECT r.rank_id, r.user_id, u.username, u.avatar, r.rank, r.score, r.win_rate, r.ai_win_rate " +
                      "FROM t_rank r JOIN t_user u ON r.user_id = u.user_id " +
-                     "WHERE u.status = 'ACTIVE' " +
-                     "ORDER BY r.score DESC LIMIT ?";
+                      "WHERE u.status = 'ACTIVE' AND u.user_id > 0 AND u.role != 'ADMIN' " +
+                      "ORDER BY r.score DESC LIMIT ?";
 
         List<RankInfo> result = new ArrayList<>();
         try (Connection conn = DBUtil.getConnection();
@@ -137,8 +137,8 @@ public class RankDAO {
         String sql = "SELECT r.rank_id, r.user_id, u.username, u.avatar, r.rank, r.score, r.win_rate, r.ai_win_rate " +
                      "FROM t_rank r JOIN t_user u ON r.user_id = u.user_id " +
                      "WHERE (u.user_id = ? OR u.user_id IN (SELECT friend_user_id FROM t_friend WHERE user_id = ? AND relation_type = 'FRIEND')) " +
-                     "AND u.status = 'ACTIVE' " +
-                     "ORDER BY r.score DESC";
+                      "AND u.status = 'ACTIVE' AND u.user_id > 0 AND u.role != 'ADMIN' " +
+                      "ORDER BY r.score DESC";
 
         List<RankInfo> result = new ArrayList<>();
         try (Connection conn = DBUtil.getConnection();
@@ -170,7 +170,7 @@ public class RankDAO {
         String sql = "SELECT r.rank_id, r.user_id, u.username, u.avatar, r.rank, r.score, r.win_rate, r.ai_win_rate " +
                      "FROM t_rank r JOIN t_user u ON r.user_id = u.user_id " +
                      "WHERE r.user_id IN (" + buildPlaceholders(userIds.size()) + ") " +
-                     "AND u.status = 'ACTIVE'";
+                      "AND u.status = 'ACTIVE' AND u.user_id > 0 AND u.role != 'ADMIN'";
 
         List<RankInfo> result = new ArrayList<>();
         try (Connection conn = DBUtil.getConnection();
