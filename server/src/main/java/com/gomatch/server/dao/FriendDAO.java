@@ -302,9 +302,9 @@ public class FriendDAO {
                     if (RedisManager.getInstance().isConnected()) {
                         online = RedisManager.getInstance().isOnline(friendUserId);
                     }
-                    // SessionManager 兜底：Redis key 丢失或 Redis 不可用时仍能正确判断在线状态
                     if (!online) {
-                        online = com.gomatch.server.session.SessionManager.getInstance().getSessionByUserId(friendUserId) != null;
+                        var s = com.gomatch.server.session.SessionManager.getInstance().getSessionByUserId(friendUserId);
+                        online = s != null && s.handler != null;
                     }
                     String avatarPath = rs.getString("avatar");
                     String avatarUrl = "";
