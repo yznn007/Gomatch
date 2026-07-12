@@ -185,10 +185,34 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd /opt/gomatch
-            pkill -f gomatch-server || true
+
+            # 1. 优雅停止旧服务（仅匹配 Java JAR 进程，避免误伤当前远程 shell）
+            pkill -f '^java .*gomatch-server-.*\.jar$' || true
             sleep 2
+
+            # 2. 后台启动新服务并写入日志
             nohup java -Xmx256m -jar ${{ steps.jar.outputs.name }} > server.log 2>&1 &
-            sleep 3
-            ps aux | grep java | grep -v grep
-            echo "---"
-            tail -5 server.log
+            sleep 1
+
+            # 3. 轮询等待进程启动（最多 30 秒）
+            echo "正在等待服务端进程启动..."
+            for i in {1..30}; do
+              if pgrep -f "${{ steps.jar.outputs.name }}" > /dev/null; then
+                echo "[SUCCESS] 服务端进程已成功创建！"
+                break
+              fi
+              sleep 1
+            done
+
+            # 4. 启动失败时输出日志并显式失败
+            pgrep -f "${{ steps.jar.outputs.name }}" > /dev/null || {
+              echo "[ERROR] 服务端未能成功启动，以下为启动日志末尾内容："
+              tail -n 50 server.log || true
+              exit 1
+            }
+
+            # 5. 安全诊断输出，避免严格模式下因无匹配导致失败
+            echo "--- 当前 Java 进程状态 ---"
+            ps aux | grep java | grep -v grep || true
+            echo "--- 日志最近 20 行输出 ---"
+            tail -n 20 server.log || true
