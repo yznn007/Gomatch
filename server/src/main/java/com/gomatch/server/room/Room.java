@@ -1160,6 +1160,10 @@ public class Room {
         disconnectedPlayerIds.clear();
         cancelAllReconnectTimers();
 
+        // 清除悔棋/求和次数（新对局重新计数）
+        playerUndoCounts.clear();
+        playerDrawCounts.clear();
+
         // 刷新双方积分（可能因上一局变化）
         if (!aiMode) {
             UserDAO.UserInfo blackInfo = userDAO.getUserById(blackUserId);
