@@ -39,7 +39,7 @@ jobs:
         shell: powershell
         run: |
           $version = if ('${{ github.ref_type }}' -eq 'tag') { '${{ github.ref_name }}'.TrimStart('v') } else { '${{ inputs.version }}' }
-          if ($version -notmatch '^\d+\.\d+\.\d+(?:[-.]\d+)?$') { throw "无效版本：$version" }
+          if ($version -notmatch '^\d+\.\d+\.\d+(-[\w.]+)?$') { throw "无效版本：$version" }
           "value=$version" >> $env:GITHUB_OUTPUT
           "tag=v$version" >> $env:GITHUB_OUTPUT
 
