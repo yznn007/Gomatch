@@ -24,11 +24,25 @@ if ($LASTEXITCODE -ne 0) {
     throw "客户端 Maven 打包失败，退出码：$LASTEXITCODE"
 }
 
+# 从 Maven 本地仓库定位 JavaFX 模块 JAR
+$m2Repo = & mvn.cmd help:evaluate -Dexpression=settings.localRepository -q -DforceStdout 2>$null
+if (-not $m2Repo) { $m2Repo = Join-Path $HOME '.m2\repository' }
+$m2Repo = $m2Repo.Trim()
+$fxPath = Join-Path $m2Repo 'org\openjfx'
+$fxJars = Get-ChildItem -Path $fxPath -Recurse -Filter "javafx-*-21-win.jar" | Where-Object {
+    $_.Name -match '^javafx-(base|controls|fxml|graphics|media)-21-win\.jar$'
+} | ForEach-Object { $_.FullName }
+$modulePath = ($fxJars -join ';')
+
 $inputDirectory = Join-Path $repoRoot 'client/target'
 $mainJar = 'gomatch-client-1.0.0.jar'
 $mainJarPath = Join-Path $inputDirectory $mainJar
 if (-not (Test-Path $mainJarPath)) {
     throw "未找到客户端 JAR：$mainJarPath"
+}
+
+if (-not $fxJars -or $fxJars.Count -lt 5) {
+    throw "未找到全部 JavaFX 平台 JAR，检查 Maven 本地仓库：$fxPath"
 }
 
 $destination = [IO.Path]::GetFullPath((Join-Path $repoRoot $OutputDirectory))
@@ -42,8 +56,9 @@ New-Item -ItemType Directory -Force -Path $destination | Out-Null
     --input $inputDirectory `
     --main-jar $mainJar `
     --main-class com.gomatch.client.ClientMain `
+    --module-path $modulePath `
+    --add-modules javafx.controls,javafx.fxml,javafx.media,javafx.graphics,javafx.base,java.desktop,java.logging,java.naming,java.sql,java.xml `
     --dest $destination `
-    --add-modules java.desktop,java.logging,java.naming,java.sql,java.xml `
     --win-menu `
     --win-menu-group Gomatch `
     --win-shortcut `
