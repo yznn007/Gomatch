@@ -2,9 +2,10 @@ package com.gomatch.client.ui;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Group;
+import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
@@ -12,6 +13,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelReader;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
@@ -25,12 +27,17 @@ import java.util.function.Consumer;
 /**
  * 头像裁剪控制器。
  * <p>
- * 裁剪框固定居中，用户拖动图片来调整裁剪区域。
- * 4 个 Rectangle 围成暗色遮罩，固定在裁剪框外侧。
+ * StackPane 固定 540×540 正方形，Clip 裁剪溢出。
+ * ImageView 使用 translateX/Y 定位（不受 StackPane 布局影响），
+ * 用户拖拽/滚轮缩放都操作 translate 值。
+ * 遮罩 Group 固定在最上层（mouseTransparent），按钮区域与画布完全分离。
  */
 public class CropAvatarController {
 
+    private static final int CANVAS_SIZE = 540;
     private static final int OUTPUT_SIZE = 640;
+    private static final double CROP_MARGIN = 40;
+    private static final double MAX_DISPLAY_DIM = 4096;
 
     @FXML private StackPane canvasContainer;
     @FXML private Group maskGroup;
@@ -40,22 +47,23 @@ public class CropAvatarController {
 
     private Image sourceImage;
     private Consumer<byte[]> onCropComplete;
+    private Runnable onLoadError;
 
     private double cropW, cropH;
-    private double cw, ch;
     private double imgScale = 1.0;
     private double minImgScale = 1.0;
     private double sourceImgW, sourceImgH;
 
-    private double dragStartImgX, dragStartImgY;
+    private double dragStartTx, dragStartTy;
     private double pressSceneX, pressSceneY;
+
+    private double imgTx() { return imageView.getTranslateX(); }
+    private double imgTy() { return imageView.getTranslateY(); }
+    private void setImgTx(double v) { imageView.setTranslateX(v); }
+    private void setImgTy(double v) { imageView.setTranslateY(v); }
 
     @FXML
     private void initialize() {
-        if (maskGroup != null) {
-            StackPane.setAlignment(maskGroup, Pos.TOP_LEFT);
-        }
-        // 裁剪画布溢出，防止图片遮挡底部按钮
         Rectangle clip = new Rectangle();
         clip.widthProperty().bind(canvasContainer.widthProperty());
         clip.heightProperty().bind(canvasContainer.heightProperty());
@@ -63,22 +71,34 @@ public class CropAvatarController {
 
         canvasContainer.widthProperty().addListener((o, a, b) -> onCanvasResized());
         canvasContainer.heightProperty().addListener((o, a, b) -> onCanvasResized());
+
+        canvasContainer.setOnMousePressed(e -> {
+            if (sourceImage == null) return;
+            pressSceneX = e.getSceneX();
+            pressSceneY = e.getSceneY();
+            dragStartTx = imgTx();
+            dragStartTy = imgTy();
+        });
+        canvasContainer.setOnMouseDragged(e -> {
+            if (sourceImage == null) return;
+            double dx = e.getSceneX() - pressSceneX;
+            double dy = e.getSceneY() - pressSceneY;
+            setImgTx(dragStartTx + dx);
+            setImgTy(dragStartTy + dy);
+            clampImagePosition();
+            redrawMask();
+        });
+
         Platform.runLater(() -> {
-            cw = canvasContainer.getWidth();
-            ch = canvasContainer.getHeight();
-            if (cw > 0 && ch > 0) {
-                if (sourceImage != null) {
-                    initCropFrame();
-                }
+            if (canvasContainer.getWidth() > 0 && canvasContainer.getHeight() > 0) {
+                initCropFrame();
                 redrawMask();
             }
         });
     }
 
     private void onCanvasResized() {
-        cw = canvasContainer.getWidth();
-        ch = canvasContainer.getHeight();
-        if (cw <= 0 || ch <= 0) return;
+        if (canvasContainer.getWidth() <= 0 || canvasContainer.getHeight() <= 0) return;
         initCropFrame();
         if (sourceImage != null) {
             clampImagePosition();
@@ -87,11 +107,20 @@ public class CropAvatarController {
     }
 
     public void setSourceFile(File file) {
-        sourceImage = new Image(file.toURI().toString(), true);
+        try {
+            sourceImage = new Image(file.toURI().toString(), true);
+        } catch (Exception e) {
+            System.err.println("[CropAvatar] 图片打开失败: " + e.getMessage());
+            if (onLoadError != null) Platform.runLater(onLoadError);
+            Platform.runLater(this::closeDialog);
+            return;
+        }
         sourceImage.progressProperty().addListener((obs, old, val) -> {
             if (val.doubleValue() >= 1.0) {
                 if (sourceImage.isError()) {
                     System.err.println("[CropAvatar] 图片加载失败: " + sourceImage.getException());
+                    if (onLoadError != null) Platform.runLater(onLoadError);
+                    Platform.runLater(this::closeDialog);
                     return;
                 }
                 Platform.runLater(this::initImage);
@@ -104,17 +133,20 @@ public class CropAvatarController {
 
     private void initImage() {
         if (sourceImage == null) return;
-        cw = canvasContainer.getWidth() > 0 ? canvasContainer.getWidth() : 540;
-        ch = canvasContainer.getHeight() > 0 ? canvasContainer.getHeight() : 540;
 
         sourceImgW = sourceImage.getWidth();
         sourceImgH = sourceImage.getHeight();
-
         initCropFrame();
-        // 最小缩放：保证裁剪框区域完全被图片覆盖
+
         minImgScale = Math.max(cropW / sourceImgW, cropH / sourceImgH);
-        double fillScale = Math.max(cw / sourceImgW, ch / sourceImgH);
+        double fillScale = Math.max(CANVAS_SIZE / sourceImgW, CANVAS_SIZE / sourceImgH);
         imgScale = Math.max(fillScale, minImgScale);
+
+        // 防止超大尺寸图片超出 GPU 纹理上限导致黑屏
+        double maxSafeScale = Math.min(MAX_DISPLAY_DIM / sourceImgW, MAX_DISPLAY_DIM / sourceImgH);
+        if (imgScale > maxSafeScale) {
+            imgScale = Math.max(maxSafeScale, minImgScale);
+        }
 
         applyScaleToImage();
         centerImage();
@@ -122,35 +154,20 @@ public class CropAvatarController {
         redrawMask();
 
         imageView.setCursor(Cursor.MOVE);
-        imageView.setOnMousePressed(e -> {
-            pressSceneX = e.getSceneX();
-            pressSceneY = e.getSceneY();
-            dragStartImgX = imageView.getLayoutX();
-            dragStartImgY = imageView.getLayoutY();
-        });
-        imageView.setOnMouseDragged(e -> {
-            double dx = e.getSceneX() - pressSceneX;
-            double dy = e.getSceneY() - pressSceneY;
-            imageView.setLayoutX(dragStartImgX + dx);
-            imageView.setLayoutY(dragStartImgY + dy);
-            clampImagePosition();
-            redrawMask();
-        });
 
-        // 滚轮缩放
         canvasContainer.setOnScroll(e -> {
             double oldScale = imgScale;
             double delta = e.getDeltaY() > 0 ? 1.1 : 0.9;
             double newScale = oldScale * delta;
             double maxScale = Math.max(minImgScale, 3.0);
-            newScale = Math.max(minImgScale, Math.min(maxScale, newScale));
+            double safeLimit = Math.min(MAX_DISPLAY_DIM / sourceImgW, MAX_DISPLAY_DIM / sourceImgH);
+            newScale = Math.max(minImgScale, Math.min(Math.min(maxScale, safeLimit), newScale));
             if (Math.abs(newScale - oldScale) < 0.001) return;
 
-            // 以裁剪框中心为锚点缩放
             double anchorX = cropFrame.getX() + cropW / 2;
             double anchorY = cropFrame.getY() + cropH / 2;
-            double imgX = imageView.getLayoutX();
-            double imgY = imageView.getLayoutY();
+            double imgX = imgTx();
+            double imgY = imgTy();
 
             double anchorImgX = (anchorX - imgX) / oldScale;
             double anchorImgY = (anchorY - imgY) / oldScale;
@@ -158,8 +175,8 @@ public class CropAvatarController {
             imgScale = newScale;
             applyScaleToImage();
 
-            imageView.setLayoutX(anchorX - anchorImgX * newScale);
-            imageView.setLayoutY(anchorY - anchorImgY * newScale);
+            setImgTx(anchorX - anchorImgX * newScale);
+            setImgTy(anchorY - anchorImgY * newScale);
             clampImagePosition();
             redrawMask();
         });
@@ -173,23 +190,22 @@ public class CropAvatarController {
     }
 
     private void initCropFrame() {
-        if (cw <= 0 || ch <= 0) return;
-        double side = Math.min(cw, ch) - 40;
+        double side = CANVAS_SIZE - CROP_MARGIN * 2;
         cropW = side;
         cropH = side;
         if (cropFrame != null) {
             cropFrame.setWidth(cropW);
             cropFrame.setHeight(cropH);
-            cropFrame.setX((cw - cropW) / 2);
-            cropFrame.setY((ch - cropH) / 2);
+            cropFrame.setX(CROP_MARGIN);
+            cropFrame.setY(CROP_MARGIN);
         }
     }
 
     private void centerImage() {
         double imgW = sourceImgW * imgScale;
         double imgH = sourceImgH * imgScale;
-        imageView.setLayoutX((cw - imgW) / 2);
-        imageView.setLayoutY((ch - imgH) / 2);
+        setImgTx((CANVAS_SIZE - imgW) / 2);
+        setImgTy((CANVAS_SIZE - imgH) / 2);
     }
 
     private void clampImagePosition() {
@@ -205,26 +221,25 @@ public class CropAvatarController {
         double minY = fy + fh - imgH;
         double maxY = fy;
 
-        double x = Math.max(minX, Math.min(maxX, imageView.getLayoutX()));
-        double y = Math.max(minY, Math.min(maxY, imageView.getLayoutY()));
-        imageView.setLayoutX(x);
-        imageView.setLayoutY(y);
+        double x = Math.max(minX, Math.min(maxX, imgTx()));
+        double y = Math.max(minY, Math.min(maxY, imgTy()));
+        setImgTx(x);
+        setImgTy(y);
     }
 
     private void redrawMask() {
-        if (cropFrame == null) return;
-        if (cw <= 0 || ch <= 0) return;
-        if (maskTop == null) return;
+        if (cropFrame == null || maskTop == null) return;
 
         double fx = cropFrame.getX();
         double fy = cropFrame.getY();
         double fw = cropFrame.getWidth();
         double fh = cropFrame.getHeight();
+        double sz = CANVAS_SIZE;
 
-        setRect(maskTop, 0, 0, cw, fy);
-        setRect(maskBottom, 0, fy + fh, cw, Math.max(0, ch - fy - fh));
+        setRect(maskTop, 0, 0, sz, fy);
+        setRect(maskBottom, 0, fy + fh, sz, Math.max(0, sz - fy - fh));
         setRect(maskLeft, 0, fy, Math.max(0, fx), fh);
-        setRect(maskRight, fx + fw, fy, Math.max(0, cw - fx - fw), fh);
+        setRect(maskRight, fx + fw, fy, Math.max(0, sz - fx - fw), fh);
     }
 
     private void setRect(Rectangle r, double x, double y, double w, double h) {
@@ -247,19 +262,24 @@ public class CropAvatarController {
         double fw = cropFrame.getWidth();
         double fh = cropFrame.getHeight();
 
-        double srcX = (fx - imageView.getLayoutX()) / imgScale;
-        double srcY = (fy - imageView.getLayoutY()) / imgScale;
+        double srcX = (fx - imgTx()) / imgScale;
+        double srcY = (fy - imgTy()) / imgScale;
         double srcW = fw / imgScale;
         double srcH = fh / imgScale;
 
         Canvas canvas = new Canvas(OUTPUT_SIZE, OUTPUT_SIZE);
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.setImageSmoothing(true);
-        gc.drawImage(sourceImage,
-                srcX, srcY, srcW, srcH,
-                0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+        gc.drawImage(sourceImage, srcX, srcY, srcW, srcH, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
 
-        WritableImage wi = canvas.snapshot(null, null);
+        Group tempRoot = new Group(canvas);
+        new Scene(tempRoot);
+
+        SnapshotParameters sp = new SnapshotParameters();
+        sp.setFill(Color.TRANSPARENT);
+        WritableImage wi = new WritableImage(OUTPUT_SIZE, OUTPUT_SIZE);
+        canvas.snapshot(sp, wi);
+
         byte[] bytes = encodeToPng(wi);
 
         if (bytes != null && onCropComplete != null) {
@@ -275,6 +295,10 @@ public class CropAvatarController {
 
     public void setOnCropComplete(Consumer<byte[]> callback) {
         this.onCropComplete = callback;
+    }
+
+    public void setOnLoadError(Runnable callback) {
+        this.onLoadError = callback;
     }
 
     private byte[] encodeToPng(WritableImage wi) {

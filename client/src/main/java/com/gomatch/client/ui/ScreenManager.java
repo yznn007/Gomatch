@@ -375,19 +375,9 @@ public class ScreenManager {
         titleBar.getStyleClass().add("custom-title-bar");
         titleBar.setStyle("-fx-pref-height: 32; -fx-min-height: 32; -fx-max-height: 32;");
 
-        Label titleLabel = new Label(I18N.get("message.title"));
-        titleLabel.getStyleClass().add("muted");
-        titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px;");
-
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Button closeBtn = new Button("×");
-        closeBtn.getStyleClass().addAll("title-bar-btn", "title-bar-close");
-        closeBtn.setStyle("-fx-pref-height: 32; -fx-pref-width: 36;");
-        closeBtn.setOnAction(e -> dialog.close());
-
-        titleBar.getChildren().addAll(titleLabel, spacer, closeBtn);
+        titleBar.getChildren().add(spacer);
 
         // 拖拽弹窗
         titleBar.setOnMousePressed(event -> {
@@ -628,6 +618,7 @@ public class ScreenManager {
                     if (newScene != null) {
                         newScene.setFill(javafx.scene.paint.Color.TRANSPARENT);
                         applyDialogTheme(newScene);
+                        applyUserFont(newScene);
                         newScene.fillProperty().addListener((o, oldFill, newFill) -> {
                             if (newFill != javafx.scene.paint.Color.TRANSPARENT) {
                                 newScene.setFill(javafx.scene.paint.Color.TRANSPARENT);
@@ -639,6 +630,7 @@ public class ScreenManager {
                 if (scene != null) {
                     scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
                     applyDialogTheme(scene);
+                    applyUserFont(scene);
                     scene.fillProperty().addListener((o, oldFill, newFill) -> {
                         if (newFill != javafx.scene.paint.Color.TRANSPARENT) {
                             scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
