@@ -24,6 +24,7 @@
 | docs | 文档变更 | `docs: 新增 Git 提交规范说明` |
 | style | 代码格式与样式调整 | `style(ui): 统一全局 CSS 控件按钮、文本框和主题类` |
 | build | 构建工具或外部依赖修改 | `build(client): 新增 JUnit 测试依赖与 surefire 插件` |
+| perf | 性能优化 | `perf(server): 优化房间列表查询减少数据库往返` |
 | chore | 其他辅助/日常杂项 | `chore: 清理冗余配置与旧运行脚本` |
 | test | 测试用例编写/重构 | `test(session): 编写 SessionPolicy 规则判定测试` |
 
