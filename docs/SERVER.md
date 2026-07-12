@@ -357,6 +357,9 @@ public static class MoveRecord {
 | `pollMatchQueue()` | 从快速匹配队列取出对手 |
 | `addRankedMatchQueue(userId, score)` | 加入排位匹配队列 |
 | `pollRankedMatchQueue(score)` | 从排位队列取出积分相近（±200）的对手 |
+| `publish(roomId, message)` | 向房间频道发布消息 |
+| `subscribe(roomId, listener)` | 订阅房间频道（创建 Pub/Sub 连接，存入连接池） |
+| `unsubscribe(roomId)` | 取消订阅并关闭 Pub/Sub 连接 |
 | `close()` | 关闭 Lettuce 连接 |
 
 > [!NOTE]
