@@ -1,4 +1,4 @@
-name: 发布客户端 MSI
+name: 发布版本
 
 on:
   push:
@@ -43,6 +43,34 @@ jobs:
           "value=$version" >> $env:GITHUB_OUTPUT
           "tag=v$version" >> $env:GITHUB_OUTPUT
 
+      - name: 构建服务端与客户端 JAR
+        shell: powershell
+        run: mvn package -pl server,client -am -DskipTests --no-transfer-progress
+
+      - name: 打包服务端 JAR
+        id: server-jar
+        shell: powershell
+        run: |
+          $jar = Get-ChildItem -Path server/target -Filter "gomatch-server-*.jar" |
+            Where-Object { $_.Name -notmatch 'original' } |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+          if (-not $jar) { throw "未找到服务端 JAR" }
+          "path=$($jar.FullName -replace '\\', '/')" >> $env:GITHUB_OUTPUT
+          "name=$($jar.Name)" >> $env:GITHUB_OUTPUT
+
+      - name: 打包客户端 JAR
+        id: client-jar
+        shell: powershell
+        run: |
+          $jar = Get-ChildItem -Path client/target -Filter "gomatch-client-*.jar" |
+            Where-Object { $_.Name -notmatch 'original' } |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+          if (-not $jar) { throw "未找到客户端 JAR" }
+          "path=$($jar.FullName -replace '\\', '/')" >> $env:GITHUB_OUTPUT
+          "name=$($jar.Name)" >> $env:GITHUB_OUTPUT
+
       - name: 构建 MSI
         shell: powershell
         run: powershell -ExecutionPolicy Bypass -File scripts/package_client_msi.ps1 -Version '${{ steps.version.outputs.value }}'
@@ -52,6 +80,20 @@ jobs:
         with:
           name: Gomatch-${{ steps.version.outputs.tag }}-msi
           path: client/target/installer/*.msi
+          if-no-files-found: error
+
+      - name: 上传服务端 JAR 构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gomatch-${{ steps.version.outputs.tag }}-server-jar
+          path: ${{ steps.server-jar.outputs.path }}
+          if-no-files-found: error
+
+      - name: 上传客户端 JAR 构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gomatch-${{ steps.version.outputs.tag }}-client-jar
+          path: ${{ steps.client-jar.outputs.path }}
           if-no-files-found: error
 
       - name: 检查版本说明
@@ -74,7 +116,10 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Gomatch ${{ github.ref_name }}
           body_path: ${{ steps.notes.outputs.path }}
-          files: client/target/installer/*.msi
+          files: |
+            client/target/installer/*.msi
+            ${{ steps.server-jar.outputs.path }}
+            ${{ steps.client-jar.outputs.path }}
 
       - name: 自动生成说明并创建 Release
         if: github.ref_type == 'tag' && steps.notes.outputs.has_file != 'true'
@@ -83,4 +128,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Gomatch ${{ github.ref_name }}
           generate_release_notes: true
-          files: client/target/installer/*.msi
+          files: |
+            client/target/installer/*.msi
+            ${{ steps.server-jar.outputs.path }}
+            ${{ steps.client-jar.outputs.path }}
