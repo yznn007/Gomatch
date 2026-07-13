@@ -15,6 +15,7 @@
 > FXML 布局、CSS 样式、动画特效、视觉组件
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
+| 2026-07-13 | Contributor| fix(build): MSI 打包缺少 jdk.crypto.ec 模块导致头像不显示 | MSI 自带精简 JRE 无法完成 OSS HTTPS TLS 握手，补全 modules 声明。 |
 | 2026-07-13 | Contributor| chore(release): bump version to 2.0.4 | 创建 v2.0.4 版本说明，同步所有 pom.xml 版本号。 |
 | 2026-07-13 | Contributor| refactor(build): 移除 ProGuard 混淆配置 | ProGuard 混淆导致 FXML 引用的类名与运行时类名不匹配，客户端打包后启动崩溃。移除 proguard-maven-plugin 及 proguard.conf，改为纯 shade 打包。 |
 | 2026-07-12 | Contributor| docs(DB_DESIGN): 同步数据库设计文档至 init.sql 和 Java 实体代码 | |

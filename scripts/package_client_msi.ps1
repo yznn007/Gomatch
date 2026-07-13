@@ -60,7 +60,7 @@ New-Item -ItemType Directory -Force -Path $destination | Out-Null
     --main-jar $mainJar `
     --main-class com.gomatch.client.ClientMain `
     --module-path $modulePath `
-    --add-modules javafx.controls,javafx.fxml,javafx.media,javafx.graphics,javafx.base,java.desktop,java.logging,java.naming,java.sql,java.xml `
+    --add-modules javafx.controls,javafx.fxml,javafx.media,javafx.graphics,javafx.base,java.desktop,java.logging,java.naming,java.sql,java.xml,jdk.crypto.ec `
     --dest $destination `
     --win-menu `
     --win-menu-group Gomatch `
