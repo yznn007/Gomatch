@@ -15,6 +15,9 @@
 > FXML 布局、CSS 样式、动画特效、视觉组件
 
 | 时间 | 作者 | 工作内容 | Problem/备注 |
+| 2026-07-13 | Contributor| chore(release): bump version to 2.0.4 | 创建 v2.0.4 版本说明，同步所有 pom.xml 版本号。 |
+| 2026-07-13 | Contributor| refactor(build): 移除 ProGuard 混淆配置 | ProGuard 混淆导致 FXML 引用的类名与运行时类名不匹配，客户端打包后启动崩溃。移除 proguard-maven-plugin 及 proguard.conf，改为纯 shade 打包。 |
+| 2026-07-12 | Contributor| docs(DB_DESIGN): 同步数据库设计文档至 init.sql 和 Java 实体代码 | |
 | 2026-07-12 17:02 | Contributor| fix(ci): 修复 build-client 在预装新版 WiX 时失败 (PR #57) | 将 `choco install wixtoolset --version=3.14.1` 替换为 `choco upgrade wixtoolset`，避免 runner 已预装新版 WiX 时 Chocolatey 退出非零导致构建失败。 | 验证通过 |
 | 2026-07-12 17:30 | Contributor| fix(ci): 修复版本正则表达式不支持 alpha/beta 等预发布标识 | 将 `client-release.yml` 中的版本校验正则从 `^\d+\.\d+\.\d+(?:[-.]\d+)?$` 改为 `^\d+\.\d+\.\d+(-[\w.]+)?$`，支持 `2.0.0-alpha`、`2.0.0-beta.1` 等符合 semver 规范的预发布标签。 | 验证通过 |
 | 2026-07-12 02:24 | Contributor| fix(client): 连接成功提示隐藏服务器 IP 和端口以防泄漏 | 在设置页和服务器配置弹窗中，连接成功后提示统一改为使用无参的已连接词条，不再显式渲染服务器的具体 IP 和端口，并清理了 messages 配置文件中多余的带参数词条。 | 验证通过 |
