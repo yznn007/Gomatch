@@ -162,7 +162,7 @@ Use `git filter-repo --force --replace-refs update-no-add` over all existing ref
 Run:
 
 ```bash
-git remote get-url origin || git remote add origin <repository-url>
+git remote get-url origin || git remote add origin "<重写前记录的 origin URL>"
 ```
 
 The repository owner in this remote URL is infrastructure identity, not a secret; changing it would disconnect the project from its GitHub repository.
