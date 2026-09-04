@@ -22,7 +22,12 @@ public final class RuntimeConfig {
             Map.entry("oss.endpoint", "OSS_ENDPOINT"),
             Map.entry("oss.bucket", "OSS_BUCKET"),
             Map.entry("oss.access-key-id", "OSS_ACCESS_KEY_ID"),
-            Map.entry("oss.access-key-secret", "OSS_ACCESS_KEY_SECRET")
+            Map.entry("oss.access-key-secret", "OSS_ACCESS_KEY_SECRET"),
+            Map.entry("mail.host", "MAIL_HOST"),
+            Map.entry("mail.port", "MAIL_PORT"),
+            Map.entry("mail.user", "MAIL_USER"),
+            Map.entry("mail.password", "MAIL_PASSWORD"),
+            Map.entry("mail.from", "MAIL_FROM")
     );
 
     private static final List<Map.Entry<String, String>> REQUIRED_VARIABLES = List.of(

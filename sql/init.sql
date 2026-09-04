@@ -1,25 +1,20 @@
 -- =============================================================
 -- Gomatch 数据库初始化脚本（仅供本地开发使用）
 -- -------------------------------------------------------------
--- ⚠️  安全警告：此脚本使用弱密码 'gomatch' 且授权 'gomatch'@'%'
---     允许任意主机连接，仅适合本地开发/CI 环境。
---     生产部署前请务必：
---       1. 替换为强密码（或通过环境变量注入）
---       2. 将 '%' 限制为具体 IP 段或删除远程账号
+-- 运行前请先执行 scripts/init-db.sh 或 scripts/init-db.ps1。
+-- 这两个脚本从根目录 .env 读取应用数据库账号，并以最小权限创建账号。
+-- 初始化脚本还会把种子账号密码标记替换为 .env 中的 GOMATCH_SEED_PASSWORD。
+-- 请勿直接使用 mysql 执行本文件，否则种子密码标记不会被替换。
 -- =============================================================
 CREATE DATABASE IF NOT EXISTS `gomatch` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- 本地连接账号（localhost 限定，适合所有环境）
-
--- 远程连接账号（仅开发/Docker 环境使用，生产环境请删除或限制 IP）
 
 USE `gomatch`;
 
 CREATE TABLE IF NOT EXISTS `t_user` (
     `user_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
     `username` VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
-    `password` VARCHAR(100) NOT NULL COMMENT '密码(BCrypt哈希或明文)',
-    `email` VARCHAR(100) NOT NULL UNIQUE COMMENT '邮箱',
+    `password` VARCHAR(100) NOT NULL COMMENT '密码(初始化标记或BCrypt哈希)',
+    `email` VARCHAR(100) UNIQUE COMMENT '邮箱',
     `phone` VARCHAR(16) UNIQUE COMMENT 'E.164国际手机号',
     `avatar` VARCHAR(255) COMMENT '头像URL',
     `role` VARCHAR(20) NOT NULL DEFAULT 'PLAYER' COMMENT '角色: PLAYER/ADMIN',
@@ -232,25 +227,25 @@ CREATE TABLE IF NOT EXISTS `t_audit_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审计日志表';
 
 INSERT INTO `t_user` (`username`, `password`, `email`, `phone`, `role`, `status`, `score`, `win_count`, `lose_count`, `draw_count`) VALUES
-('admin',   '${GOMATCH_SEED_PASSWORD}', '[redacted-email]',   '+8618800000000', 'ADMIN',  'ACTIVE', 9999, 0, 0, 0),
-('player1', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', '+8618800000001', 'PLAYER', 'ACTIVE', 1300, 8, 4, 1),
-('player2', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', '+8618800000002', 'PLAYER', 'ACTIVE', 1200, 5, 3, 0),
-('player3', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', '+8618800000003', 'PLAYER', 'ACTIVE', 1150, 4, 2, 1),
-('player4', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', '+8618800000004', 'PLAYER', 'ACTIVE', 1100, 3, 1, 0),
-('player5', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', '+8618800000005', 'PLAYER', 'ACTIVE', 1080, 3, 0, 2),
-('player6', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', '+8618800000006', 'PLAYER', 'ACTIVE', 1060, 2, 1, 1),
-('player7', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', '+8618800000007', 'PLAYER', 'ACTIVE', 1050, 2, 2, 0),
-('player8', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', '+8618800000008', 'PLAYER', 'ACTIVE', 1020, 1, 1, 0),
-('player9', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', '+8618800000009', 'PLAYER', 'ACTIVE', 1000, 0, 0, 0),
-('player10','${GOMATCH_SEED_PASSWORD}', '[redacted-email]','+8618800000010', 'PLAYER', 'ACTIVE',  990, 0, 0, 0),
-('player11','${GOMATCH_SEED_PASSWORD}', '[redacted-email]','+8618800000011', 'PLAYER', 'ACTIVE',  980, 1, 3, 0),
-('player12','${GOMATCH_SEED_PASSWORD}', '[redacted-email]','+8618800000012', 'PLAYER', 'ACTIVE',  950, 0, 2, 0),
-('player13','${GOMATCH_SEED_PASSWORD}', '[redacted-email]','+8618800000013', 'PLAYER', 'ACTIVE', 1180, 5, 5, 0),
-('player14','${GOMATCH_SEED_PASSWORD}', '[redacted-email]','+8618800000014', 'PLAYER', 'ACTIVE', 1000, 0, 0, 0);
+('admin',   '${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000000', 'ADMIN',  'ACTIVE', 9999, 0, 0, 0),
+('player1', '${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000001', 'PLAYER', 'ACTIVE', 1300, 8, 4, 1),
+('player2', '${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000002', 'PLAYER', 'ACTIVE', 1200, 5, 3, 0),
+('player3', '${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000003', 'PLAYER', 'ACTIVE', 1150, 4, 2, 1),
+('player4', '${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000004', 'PLAYER', 'ACTIVE', 1100, 3, 1, 0),
+('player5', '${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000005', 'PLAYER', 'ACTIVE', 1080, 3, 0, 2),
+('player6', '${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000006', 'PLAYER', 'ACTIVE', 1060, 2, 1, 1),
+('player7', '${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000007', 'PLAYER', 'ACTIVE', 1050, 2, 2, 0),
+('player8', '${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000008', 'PLAYER', 'ACTIVE', 1020, 1, 1, 0),
+('player9', '${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000009', 'PLAYER', 'ACTIVE', 1000, 0, 0, 0),
+('player10','${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000010', 'PLAYER', 'ACTIVE',  990, 0, 0, 0),
+('player11','${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000011', 'PLAYER', 'ACTIVE',  980, 1, 3, 0),
+('player12','${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000012', 'PLAYER', 'ACTIVE',  950, 0, 2, 0),
+('player13','${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000013', 'PLAYER', 'ACTIVE', 1180, 5, 5, 0),
+('player14','${GOMATCH_SEED_PASSWORD}', NULL, '+8618800000014', 'PLAYER', 'ACTIVE', 1000, 0, 0, 0);
 
 -- AI 占位用户，用于满足对战记录表的外键约束
 INSERT INTO `t_user` (`user_id`, `username`, `password`, `email`, `role`, `status`, `score`) VALUES
-(-1, 'AI', '${GOMATCH_SEED_PASSWORD}', '[redacted-email]', 'PLAYER', 'ACTIVE', 0);
+(-1, 'AI', '${GOMATCH_SEED_PASSWORD}', NULL, 'PLAYER', 'ACTIVE', 0);
 
 INSERT INTO `t_rank` (`user_id`, `rank`, `score`, `win_rate`, `ai_win_rate`) VALUES
 (1,  1,  9999, 0.00, 0.00),

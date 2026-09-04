@@ -39,6 +39,22 @@ class RuntimeConfigTest {
     }
 
     @Test
+    void mapsMailFieldsFromDotEnv() {
+        Properties resolved = RuntimeConfig.resolve(new Properties(), Map.of(
+                "MAIL_HOST", "smtp.example.com",
+                "MAIL_PORT", "465",
+                "MAIL_USER", "mail-user",
+                "MAIL_PASSWORD", "mail-secret",
+                "MAIL_FROM", "mail-from"), Map.of());
+
+        assertEquals("smtp.example.com", resolved.getProperty("mail.host"));
+        assertEquals("465", resolved.getProperty("mail.port"));
+        assertEquals("mail-user", resolved.getProperty("mail.user"));
+        assertEquals("mail-secret", resolved.getProperty("mail.password"));
+        assertEquals("mail-from", resolved.getProperty("mail.from"));
+    }
+
+    @Test
     void parsesCommentsAndValuesContainingEquals() throws Exception {
         Path envFile = Files.createTempFile("gomatch-runtime-config", ".env");
         Files.writeString(envFile, "# local settings\nGOMATCH_DB_PASSWORD=abc=123\n\n", StandardCharsets.UTF_8);

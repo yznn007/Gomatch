@@ -29,7 +29,7 @@ class UserAvatarTest {
 
     private long createTestUser() {
         String username = "test_" + System.currentTimeMillis() % 10000000;
-        String email = username + "@test.com";
+        String email = "test-email-" + username;
         
         try (java.sql.Connection conn = DBUtil.getConnection();
              java.sql.PreparedStatement ps = conn.prepareStatement(

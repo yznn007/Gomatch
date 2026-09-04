@@ -1,3 +1,7 @@
+# Run from the repository root so ClientConfig can discover .env consistently.
+$ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+Set-Location $ProjectRoot
+
 # Auto-detect JDK 21+
 $JDKCandidates = @(
     "$env:JAVA_HOME",

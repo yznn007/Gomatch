@@ -10,6 +10,12 @@
 
 ## 日志
 
+### 安全与配置（Security）
+
+| 时间 | 作者 | 工作内容 | Problem/备注 |
+|------|------|----------|-----------|
+| 2026-09-04 | Contributor| chore(security): 清理当前配置与历史敏感信息 | 运行时凭据由本地 `.env` 注入，种子密码由初始化脚本替换；当前非教学文本中的个人信息已移除，后续对全部可达 Git 历史执行脱敏，`docs/school_materials/**` 按要求保持不变。 | 待完成历史重写、远端同步与轮换旧凭据 |
+
 ### 前端（Frontend）
 
 > FXML 布局、CSS 样式、动画特效、视觉组件
@@ -29,7 +35,7 @@
 | 2026-07-11 | Contributor| fix(auth): 修复旧密码改密兼容 | 旧明文密码账户改密时使用兼容校验，成功后统一写入 BCrypt 哈希；新增旧密码与 BCrypt 密码匹配回归测试。 |
 | 2026-07-11 | Contributor| fix(build): 取消 Maven forked javac 编译 | Windows 下 forked javac 无法访问 common 模块的 classpath，导致客户端误报 `com.gomatch.common` 缺失；统一改用 Maven 进程内编译。 |
 | 2026-07-11 | Contributor| fix(scripts): 客户端启动不再强制清理构建目录 | 移除四份客户端脚本中的 `clean`，避免运行中的 JavaFX MediaPlayer 锁定音频资源时导致启动失败。 |
-| 2026-07-11 | Contributor| fix(client): 空服务器地址回退至发布服务器 | 客户端默认连接改为 `${GOMATCH_SERVER_HOST}:8888`；登录弹窗与设置页的 IP 输入框留空时使用该默认地址，填写 IP 才保存为本地覆盖；连接状态不显示服务器地址。 |
+| 2026-07-11 | Contributor| fix(client): 空服务器地址回退至发布服务器 | 客户端默认连接改为发布服务器；登录弹窗与设置页的 IP 输入框留空时使用该默认地址，填写 IP 才保存为本地覆盖；连接状态不显示服务器地址。 |
 | 2026-07-11 | Contributor| fix(config): 允许无认证 Redis 使用 `.env` 配置 | Redis 密码保持环境变量来源；未启用 Redis 认证时允许其为空，避免旧本地配置无法启动。 |
 | 2026-07-11 | Contributor| docs(config): 补充运行凭据优先级 | 明确系统环境变量、`.env` 与非敏感资源默认值的优先级，以及 `GOMATCH_ENV_FILE` 的定位规则。 |
 | 2026-07-11 | Contributor| feat(config): 统一运行时凭据为 `.env` 与环境变量 | MySQL、Redis 与 OSS 凭据不再提交到资源配置；系统环境变量优先于 `.env`，服务端启动校验必填 MySQL/Redis 配置。 |
@@ -109,6 +115,7 @@
 
 | 时间 | 作者 | 工作内容 | 问题/备注 |
 |------|------|----------|-----------|
+| 2026-09-04 | Contributor| chore(config): 将运行时配置迁移到本地 `.env` | 新增被 Git 忽略的 `.env`，统一加载邮件配置；移除 `sql/init.sql` 中的数据库账号密码，新增 macOS/Linux 与 Windows 初始化脚本并收紧为本地最小权限账号。 | 静态验证通过；Maven 未安装，构建待在配置好 Maven 的环境执行；未连接外部数据库 |
 | 2026-07-12 00:09 | Contributor| fix(database): 修复 init.sql 约束与种子数据不匹配导致初始化失败的 Bug | 将 t_user 表的 phone 字段 NOT NULL 约束移除（改为允许为 NULL），并为初始种子用户数据补全符合 E.164 规范的唯一测试手机号，解决初始化数据冲突问题。 | 验证通过 |
 | 2026-07-11 23:05 | Contributor| fix(server): 允许手机号为选填进行注册 (Issue #16) | 修复 ClientHandler.java 与 UserDAO.java 中注册校验逻辑对空手机号的不当检验；若手机号为空则不再进行 E.164 规范化和唯一性校验，直接允许空值插入，打通了“手机号选填”的注册通路。 | 编译与测试成功 |
 | 2026-07-11 21:42 | Contributor| fix(storage): 修复未配置 OSS 对象存储时，读取头像触发 NullPointerException 的 Bug | 在 ClientHandler.java 与 RankDAO.java 中补齐对 StorageManager.getInstance().isEnabled() 的前置防御检查，防止本地开发或未启用 OSS 服务时触发 `getOssService().generatePresignedUrl(...)` 空指针异常崩溃。 | 验证通过 |
@@ -152,6 +159,7 @@
 
 | 时间 | 作者 | 工作内容 | 问题/备注 |
 |------|------|----------|-----------|
+| 2026-09-04 | Contributor| refactor(client): 将公网服务器地址迁移到 `.env` | 客户端读取 `GOMATCH_SERVER_HOST`/`GOMATCH_SERVER_PORT` 及 `GOMATCH_CLIENT_ENV_FILE`，移除包内硬编码公网地址，保留用户本地配置覆盖与本机回退；客户端启动脚本统一切到仓库根目录读取 `.env`。 | Shell/PowerShell/Java 配置加载验证通过；Maven 未安装，未连接外部服务 |
 | 2026-07-11 02:42 | Contributor| fix(ui): 解决弹窗出现方形直角边底色（假圆角）的渲染缺陷 | 1. 在 style.css 的 .dialog-pane 中重写 -fx-background-insets: 0 并配合 -fx-background-radius 消除多层内底色直角；2. 为 Dialog 的 Scene fill 添加 fillProperty 变更监听，防止 JavaFX 在运行时重置透明度，彻底实现完美圆角与毛玻璃边框融合。同时修复 RegisterController 的语法错误。 | 验证通过 |
 | 2026-07-11 02:18 | Contributor| feat(ui): 全局启用无边框毛玻璃/磨砂质感自定义弹窗/警示框样式 | 重构 ScreenManager 的 showStyledAlert 并在其基础上封装通用的 showStyledDialog。将全系统 Alert 与 TextInputDialog 全部升级为无边框模式（StageStyle.TRANSPARENT）并配置鼠标拖拽移动逻辑，同时实现圆角外框背景完全透明化。 | 验证通过 |
 | 2026-07-11 02:09 | Contributor| fix(ui): 统一排位与快速匹配成功后的“未准备”按钮样式为 btn-primary | 解决排位匹配成功后“未准备”按钮错误被渲染为红色（btn-danger）的体验冲突，使其与快速匹配一致呈现为蓝色主按钮样式（btn-primary）。并避免清除默认 button class。 | 验证通过 |

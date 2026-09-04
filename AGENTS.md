@@ -16,7 +16,8 @@
 # 1. 安装 common 到本地 Maven 仓库（首次或 common 变更后）
 mvn install -pl common -am
 
-# 2. 初始化数据库（首次）：执行 sql/init.sql 建表与种子数据
+# 2. 初始化数据库（首次）：确保根目录 `.env` 已配置后执行
+./scripts/init-db.sh
 
 # 3. 启动服务端（需先启动 MySQL 与 Redis）
 .\scripts\ssc_server.ps1
@@ -24,7 +25,10 @@ mvn install -pl common -am
 # 4. 启动客户端
 .\scripts\ssc_client.ps1
 
-# 或手动：
+# Windows PowerShell 可执行：
+.\scripts\init-db.ps1
+
+# 或手动启动客户端：
 mvn -f client/pom.xml javafx:run
 ```
 

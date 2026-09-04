@@ -2,7 +2,7 @@
 
 ## Goal
 
-Remove committed runtime account credentials and secrets from the application configuration while keeping SQL initialization users unchanged.
+Remove committed runtime account credentials and secrets from the application configuration while keeping seed data non-personal and injecting its local password through `.env` at initialization time.
 
 ## Scope
 
@@ -15,7 +15,7 @@ Remove committed runtime account credentials and secrets from the application co
 
 ## Exclusions
 
-- `sql/init.sql` keeps its current database-user creation statements and seed data unchanged.
+- `sql/init.sql` contains no database-account creation credentials or seed email addresses; initialization scripts inject the local seed password from `.env`.
 - User login, registration, password-reset, and room-password protocol behavior is not changed.
 - This change does not introduce a new external secret-management service.
 
@@ -41,7 +41,7 @@ Required variables are `GOMATCH_DB_URL`, `GOMATCH_DB_USERNAME`, and `GOMATCH_DB_
 
 ## Failure Handling
 
-Startup validates required MySQL and Redis values before initializing connection pools or clients. A missing or blank value produces an actionable error naming the variable, without echoing credentials. No `[redacted-credential]` credential fallback remains.
+Startup validates required MySQL and Redis values before initializing connection pools or clients. A missing or blank value produces an actionable error naming the variable, without echoing credentials. No committed database credential fallback remains.
 
 ## Verification
 

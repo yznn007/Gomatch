@@ -9,7 +9,7 @@ mvn clean install -pl common -am -DskipTests
 mvn clean package -pl server -am -DskipTests
 ```
 
-将 `server/target/gomatch-server-2.0.2.jar` 部署到服务端，并准备 MySQL 8.x 与 Redis 7.x。执行 `sql/init.sql` 及需要的迁移脚本；SQL 初始化用户维持脚本原有定义。
+将 `server/target/gomatch-server-2.0.2.jar` 部署到服务端，并准备 MySQL 8.x 与 Redis 7.x。开发机可执行 `scripts/init-db.sh`（Windows 使用 `scripts/init-db.ps1`）初始化数据库；脚本从 `.env` 读取应用账号并按最小权限创建本地连接账号，`sql/init.sql` 只负责库表和种子数据。
 
 ## 运行凭据
 
@@ -18,6 +18,7 @@ mvn clean package -pl server -am -DskipTests
 - `GOMATCH_DB_URL`、`GOMATCH_DB_USERNAME`、`GOMATCH_DB_PASSWORD`
 - `GOMATCH_REDIS_HOST`、`GOMATCH_REDIS_PORT`、`GOMATCH_REDIS_DATABASE`，以及 Redis 启用认证时的 `GOMATCH_REDIS_PASSWORD`
 - 启用 OSS 存储时填写 `OSS_ENDPOINT`、`OSS_BUCKET`、`OSS_ACCESS_KEY_ID`、`OSS_ACCESS_KEY_SECRET`
+- 启用密码重置邮件时填写 `MAIL_HOST`、`MAIL_PORT`、`MAIL_USER`、`MAIL_PASSWORD`、`MAIL_FROM`
 
 进程环境变量优先于 `.env`，因此 Docker、CI 和 systemd 可以通过其各自的安全凭据机制注入同名变量。不要提交 `.env`，也不要在 systemd 单元、Compose 文件或 Markdown 中写入实际密码。
 
@@ -25,7 +26,7 @@ mvn clean package -pl server -am -DskipTests
 
 ## 启动
 
-确保运行目录含有 `.env`，然后执行：
+确保运行目录含有 `.env`，并已完成数据库初始化，然后执行：
 
 ```bash
 java -Dfile.encoding=UTF-8 -jar gomatch-server-2.0.2.jar

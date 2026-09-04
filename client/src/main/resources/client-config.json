@@ -1,2 +1,1 @@
-server.host=${GOMATCH_SERVER_HOST}
-server.port=8888
+# Runtime endpoint is supplied by GOMATCH_SERVER_HOST/GOMATCH_SERVER_PORT in .env.

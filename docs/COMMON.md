@@ -45,11 +45,11 @@ mvn install -pl common -am
 ### 2.2 示例报文
 
 ```json
-{"cmd":"LOGIN","data":{"username":"alice","password":"[redacted-credential]"}}
+{"cmd":"LOGIN","data":{"username":"<user-name>","password":"<user-password>"}}
 ```
 
 ```json
-{"cmd":"LOGIN_OK","data":{"userId":1,"username":"alice","score":1500,"wins":10,"losses":3,"draws":1,"role":"PLAYER"}}
+{"cmd":"LOGIN_OK","data":{"userId":1,"username":"<user-name>","score":1500,"wins":10,"losses":3,"draws":1,"role":"PLAYER"}}
 ```
 
 ```json
@@ -73,8 +73,8 @@ mvn install -pl common -am
 ```java
 Message login = Message.of(
     Protocol.LOGIN,
-    "username", "alice",
-    "password", "[redacted-credential]"
+    "username", "<user-name>",
+    "password", "<user-password>"
 );
 ```
 
@@ -82,8 +82,8 @@ Message login = Message.of(
 Message gameStart = Message.builder(Protocol.GAME_START)
     .set("blackUserId", 1)
     .set("whiteUserId", 2)
-    .set("blackUsername", "alice")
-    .set("whiteUsername", "bob")
+    .set("blackUsername", "<black-user>")
+    .set("whiteUsername", "<white-user>")
     .build();
 ```
 

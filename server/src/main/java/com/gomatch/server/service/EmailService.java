@@ -1,5 +1,6 @@
 package com.gomatch.server.service;
 
+import com.gomatch.database.config.RuntimeConfig;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
 import org.slf4j.Logger;
@@ -19,11 +20,12 @@ public class EmailService {
     private final boolean configured;
 
     private EmailService() {
-        host = getConfig("MAIL_HOST", "smtp.qq.com");
-        port = Integer.parseInt(getConfig("MAIL_PORT", "587"));
-        username = getConfig("MAIL_USER", "");
-        password = getConfig("MAIL_PASSWORD", "");
-        from = getConfig("MAIL_FROM", username);
+        Properties runtime = RuntimeConfig.loadRuntimeProperties("database.properties");
+        host = getConfig(runtime, "mail.host", "MAIL_HOST", "smtp.qq.com");
+        port = Integer.parseInt(getConfig(runtime, "mail.port", "MAIL_PORT", "587"));
+        username = getConfig(runtime, "mail.user", "MAIL_USER", "");
+        password = getConfig(runtime, "mail.password", "MAIL_PASSWORD", "");
+        from = getConfig(runtime, "mail.from", "MAIL_FROM", username);
         configured = !username.isEmpty() && !password.isEmpty();
         if (configured) {
             log.info("EmailService configured: host={}, port={}, from={}", host, port, from);
@@ -91,11 +93,13 @@ public class EmailService {
                 """.formatted(code, ttl, code, ttl);
     }
 
-    private static String getConfig(String key, String defaultValue) {
+    private static String getConfig(Properties runtime, String property, String key, String defaultValue) {
         String env = System.getenv(key);
         if (env != null && !env.isEmpty()) return env;
         String prop = System.getProperty(key);
         if (prop != null && !prop.isEmpty()) return prop;
+        String dotEnv = runtime.getProperty(property);
+        if (dotEnv != null && !dotEnv.isEmpty()) return dotEnv;
         return defaultValue;
     }
 }

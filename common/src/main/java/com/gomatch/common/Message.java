@@ -14,7 +14,7 @@ import org.json.JSONObject;
  * <pre>{@code
  * // 构建消息
  * Message msg = Message.builder("LOGIN")
- *     .set("username", "alice")
+ *     .set("username", "<user-name>")
  *     .set("password", "<user-password>")
  *     .build();
  * String json = msg.toJson();

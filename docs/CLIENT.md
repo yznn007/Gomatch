@@ -188,12 +188,14 @@ public interface NetworkListener {
 **文件**：[ClientConfig.java](../client/src/main/java/com/gomatch/client/network/ClientConfig.java)  
 **类型**：静态配置读写类
 
-负责加载和保存客户端的服务器 IP 及端口配置，避免不同启动路径对配置文件的依赖。
+负责加载和保存客户端的服务器 IP 及端口配置，并支持从 `.env` 或系统环境变量注入公网服务地址。
 
-#### 双向存储路由机制
-1. **默认包内配置**：从类路径下加载只读默认配置文件 `client-config.json`（采用 Java Properties 属性名键值对格式保存）。
+#### 配置来源与优先级
+1. **运行时配置**：从工作目录 `.env` 读取 `GOMATCH_SERVER_HOST` 和 `GOMATCH_SERVER_PORT`；也可通过 `GOMATCH_CLIENT_ENV_FILE`（优先）或 `GOMATCH_ENV_FILE` 指定客户端 `.env` 路径。客户端发布包不再保存公网地址。
 2. **用户本地配置**：当用户在设置页面中更改服务器地址并应用时，配置将被自动写入用户主目录的隐藏文件夹：`${user.home}/.gomatch/config.json`（亦为 Properties 格式）。
-3. **加载优先级**：启动时优先加载本地的 `config.json`，若文件不存在则降级加载包内默认的 `client-config.json`。
+3. **加载优先级**：系统环境变量 → `.env` → 用户本地 `config.json` → 包内默认配置 `client-config.json`。未配置运行时地址时，主机回退到 `127.0.0.1`，端口回退到 `8888`。
+
+> 发布客户端时，只提供包含 `GOMATCH_SERVER_HOST`/`GOMATCH_SERVER_PORT` 的客户端 `.env` 或通过系统环境变量注入；不要把服务端 `.env` 中的 MySQL、Redis、OSS 密钥分发给客户端。客户端解析器只消费这两个变量。
 
 ---
 

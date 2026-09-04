@@ -123,12 +123,15 @@ mvn clean compile -pl client -am
 
 ### 7.3 数据库初始化
 
-```powershell
-mysql -u root -p
-source sql/init.sql
+```bash
+# macOS / Linux
+./scripts/init-db.sh
+
+# Windows PowerShell
+.\scripts\init-db.ps1
 ```
 
-数据库和 Redis 连接参数维护在 `database/src/main/resources/database.properties`。团队成员本机路径和 JDK 安装位置不同，文档命令中不要写死环境变量设置；优先使用 `scripts/` 下的启动脚本。
+数据库和 Redis 的运行时连接参数维护在项目根目录 `.env`，非敏感的连接池参数仍维护在 `database/src/main/resources/database.properties`。团队成员本机路径和 JDK 安装位置不同，文档命令中不要写死环境变量设置；优先使用 `scripts/` 下的启动脚本。
 
 ## 8. 文档维护规则
 

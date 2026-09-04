@@ -39,9 +39,12 @@ net start MySQL80
 # 终端 B - 启动 Redis
 redis-server
 
-# 2. 复制 `.env.example` 为 `.env`，填写 MySQL、Redis 与可选 OSS 凭据。
+# 2. 复制 `.env.example` 为 `.env`，填写公网服务地址、MySQL、Redis 以及可选的 OSS/邮件凭据。
 # 3. 初始化数据库（首次运行或数据库结构变更后执行）
-mysql -u root -p < sql/init.sql
+# macOS / Linux
+./scripts/init-db.sh
+# Windows PowerShell
+.\scripts\init-db.ps1
 
 # 4. 安装 common 到本地 Maven 仓库（首次或 common 变更后必须执行）
 mvn install -pl common -am
@@ -123,8 +126,7 @@ mvn -f client/pom.xml javafx:run
 ## 注意事项
 
 1. **JDK 21**：JavaFX 21 依赖 JDK 17+，项目强制使用 JDK 21，启动脚本已内置 `JAVA_HOME` 检测。
-2. **首次运行**：必须先执行 `mvn install -pl common -am` 和 `mysql -u root -p < sql/init.sql`。
+2. **首次运行**：必须先执行 `mvn install -pl common -am` 和 `scripts/init-db.sh`（Windows 使用 `scripts/init-db.ps1`）。初始化脚本从根目录 `.env` 读取应用数据库账号，并提示输入 MySQL root 密码。
 3. **启动顺序**：MySQL → Redis → 初始化数据库 → 服务端 → 客户端，缺一不可。
-4. **运行凭据**：将 `.env.example` 复制为 `.env`，填写 MySQL、Redis 与可选 OSS 变量；优先级为系统环境变量 → `.env` → `database.properties` 中的非敏感默认值。空值不会覆盖较低层；MySQL 与 Redis 的主机/端口等必填变量缺失时服务端停止启动；`GOMATCH_REDIS_PASSWORD` 仅在 Redis 启用认证时填写。默认从项目根目录读取 `.env`，可用系统环境变量 `GOMATCH_ENV_FILE` 指定其他文件。
+4. **运行配置**：将 `.env.example` 复制为 `.env`，填写 `GOMATCH_SERVER_HOST`/`GOMATCH_SERVER_PORT`（客户端公网服务地址）、MySQL、Redis、可选 OSS 和邮件变量；客户端与服务端默认从工作目录读取 `.env`，客户端也可用 `GOMATCH_CLIENT_ENV_FILE` 指定仅含公网地址的客户端配置文件，或使用 `GOMATCH_ENV_FILE` 指定路径。服务端配置优先级为系统环境变量 → `.env` → `database.properties` 中的非敏感默认值；客户端为系统环境变量 → `.env` → 用户本地 `~/.gomatch/config.json` → 包内默认值。不要把包含数据库密钥的服务端 `.env` 分发给客户端；`.env` 已被 Git 忽略，不要提交。
 5. **端口**：服务端 TCP 8888、MySQL 3306、Redis 6379，确保未被占用。
-

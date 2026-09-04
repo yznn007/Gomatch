@@ -785,7 +785,7 @@ gomatch:game:{roomId}  ->  游戏事件频道
 
 服务端启动命令统一维护在 [docs/README.md](README.md) 第 6 节。服务端模块额外前置条件：
 
-1. MySQL 已启动，数据库 `gomatch` 已初始化（执行 `sql/init.sql`）。
+1. MySQL 已启动，数据库 `gomatch` 已初始化（执行 `scripts/init-db.sh`；Windows 使用 `scripts/init-db.ps1`）。
 2. Redis 已启动。
 3. JDK 21 已配置。
 4. 已执行 `mvn install -pl common -am` 安装 common 模块。

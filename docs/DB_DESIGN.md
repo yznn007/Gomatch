@@ -1657,14 +1657,14 @@ CREATE TABLE IF NOT EXISTS `t_friend_request` (
 确保Java应用连接数据库时使用UTF-8编码：
 
 ```java
-// JDBC URL配置
-String url = "jdbc:mysql://localhost:3306/gomatch?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Shanghai";
+Properties runtimeProperties = RuntimeConfig.loadRuntimeProperties("database.properties");
+String url = runtimeProperties.getProperty("mysql.url");
 
 // HikariCP连接池配置
 HikariConfig config = new HikariConfig();
 config.setJdbcUrl(url);
-config.setUsername("gomatch");
-config.setPassword("gomatch");
+config.setUsername(runtimeProperties.getProperty("mysql.username"));
+config.setPassword(runtimeProperties.getProperty("mysql.password"));
 config.setMaximumPoolSize(60);
 config.setMinimumIdle(10);
 config.setConnectionTimeout(30000);
