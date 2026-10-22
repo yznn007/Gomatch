@@ -1,8 +1,8 @@
 # 我的第一次 Git 贡献：从 fork 到合并 PR #3130
 
-> 🎉 **这是我人生中的第一篇博客！** 记录一个编程小白第一次用 Git 给开源项目提 PR 的全过程，顺便聊聊这次 PR 到底修了什么。
+> 🦀 **这是我人生中的第一篇博客！** 想把第一次给开源项目提 PR 的经历好好记下来，也顺便聊聊这次 PR 到底修了什么。
 >
-> 写得不好的地方请多多包涵，欢迎在评论区交流～
+> 第一次写博客，有点紧张，写得不好的地方请大家多多包涵呀～如果有什么想说的，欢迎在评论区告诉我，我会认真看的。
 
 - 作者：KIM406-CMD
 - 日期：2026-10-23
@@ -10,7 +10,9 @@
 
 ---
 
-说实话，第一次打开终端敲下 `git` 命令的时候，我的手心是出汗的。看着屏幕上一堆看不懂的英文，脑子里只有一个念头：「这玩意儿会不会把我电脑搞坏？」但就是在这种紧张又兴奋的状态下，我完成了人生第一个 Pull Request。
+其实到现在我都还记得，第一次打开终端敲下 `git` 命令的时候，手心是有点出汗的。看着屏幕上滚过一堆看不懂的英文，心里偷偷想：「这玩意儿……会不会把我电脑搞坏啊？」
+
+但就是在这种又紧张又有点小兴奋的状态下，我完成了人生第一个 Pull Request。现在回头看，心里还是暖暖的。
 
 ## 目录
 
@@ -20,32 +22,38 @@
 4. [第三步：动手改代码](#四第三步动手改代码)
 5. [第四步：写测试——新手最容易忽略的一步](#五第四步写测试新手最容易忽略的一步)
 6. [第五步：Commit、Push、提 PR](#六第五步commitpush提-pr)
-7. [新手踩坑清单与心得](#七新手踩坑清单与心得)
+7. [踩过的坑与心里的话](#七踩过的坑与心里的话)
 8. [写在最后](#八写在最后)
 
 ---
 
 ## 一、故事的开始：我为什么要学 Git
 
-我是一个刚学 Java 没多久的小白。我了解到一个叫 **AgentScope** 的开源项目——它是一个用来构建分布式、生产级长时运行 Agent 的框架。在浏览项目的 Issue 列表时，我看到了 [#3114](https://github.com/agentscope-ai/agentscope-java/issues/3114)，说的是 `callTool` 没有走共享的工具基础设施流水线（缺少超时、重试等保护）。维护者回复说「欢迎提 PR」。
+我是一个刚学 Java 没多久的小白。后来了解到一个叫 **AgentScope** 的开源项目——它是一个用来构建分布式、生产级长时运行 Agent 的框架，听起来挺厉害的。
 
-我正想学学 Git 怎么用，这个 issue 看起来是个不错的切入点——改动范围不大，但能完整体验从 fork 到提 PR 的全流程。于是我决定动手把它修了。
+有一天我随手翻了翻项目的 Issue 列表，看到了 [#3114](https://github.com/agentscope-ai/agentscope-java/issues/3114)，说的是 `callTool` 没有走共享的工具基础设施流水线（缺少超时、重试这些保护）。维护者在下面回复说「欢迎提 PR」。
+
+我盯着这条回复看了好久。说实话，心里有点痒痒的——我一直想学学 Git 到底怎么用，但总觉得「开源贡献」这四个字离我好远，好像是大佬们才做的事。
+
+可这个 issue 看起来改动范围不大，又能完整体验从 fork 到提 PR 的全流程。我咬了咬牙，默默在心里说：要不……就试试吧。大不了搞砸了再删嘛。
 
 > **为什么是 Git？**
 >
-> Git 是现在几乎所有开源项目的「版本控制系统」。简单说，它能记录你每一次改动，还能让一群人同时改同一份代码而不打架。GitHub 则是把 Git 仓库托管在网上的平台——你能看到全世界的开源项目，也能贡献自己的代码。
+> 如果你和我一样是新手，可能会问：Git 到底是啥呀？简单说，它是一个「版本控制系统」，能记住你每一次改了什么，还能让好多人一起改同一份代码而不打架。GitHub 就是把这些代码放在网上的地方——在那里你能看到全世界的开源项目，也能把自己的改动贡献出去。
 
 ---
 
 ## 二、第一步：Fork 与 Clone——把项目「搬」到自己手里
 
-刚接触 Git 时，我搞不懂 `fork`、`clone`、`branch` 这几个词到底什么区别。后来用大白话想明白了：
+说实话，刚接触 Git 的时候，`fork`、`clone`、`branch` 这几个词我搞了好久才弄明白。后来用大白话想通了，其实没那么吓人：
 
-- **Fork**：在 GitHub 上点一下「Fork」按钮，相当于在**你自己的账号下复制一份项目副本**。原项目叫 `upstream`，你 fork 出来的叫 `origin`。
-- **Clone**：把你 fork 出来的那份代码**下载到本地电脑**，这样你就能在本地编辑了。
-- **Branch**：在本地开一条「支线」来改代码，改完再合并回主线。这样改坏了也不影响主代码。
+- **Fork**：在 GitHub 上点一下「Fork」按钮，就相当于在**你自己的账号下复制了一份项目副本**。原项目叫 `upstream`，你 fork 出来的那份叫 `origin`。这样改坏了也不怕，反正不影响别人。
+- **Clone**：把你 fork 出来的那份代码**下载到自己电脑上**，这样就能在本地慢慢改了。
+- **Branch**：在本地开一条「支线」来写代码，改完再合并回主线。我把它理解成「打草稿」——草稿改坏了扔掉就行，正文不会受影响。
 
 ### 我的操作顺序
+
+我对着教程一步一步敲，每敲一行都要深呼吸一下：
 
 ```bash
 $ git clone https://github.com/KIM406-CMD/agentscope-java.git
@@ -59,31 +67,35 @@ $ git checkout -b fix/route-calltool-shared-infra
 Switched to a new branch 'fix/route-calltool-shared-infra'
 ```
 
+看到终端回显「Switched to a new branch」的时候，我心里小小的松了一口气——第一步好像……成功了？
+
 > **新手小贴士**
 >
-> 别忘了加 `upstream` 远程地址！这样以后原项目有更新，你可以用 `git fetch upstream && git merge upstream/main` 把最新代码同步过来，避免提交时出现一堆冲突。
+> 一定要记得加 `upstream` 远程地址哦！这样以后原项目有更新，你可以用 `git fetch upstream && git merge upstream/main` 把最新代码同步过来，不然后面提交的时候可能会出现一堆冲突，到时候会慌的（别问我怎么知道的……）。
 
-分支名我用了 `fix/route-calltool-shared-infra`，这是项目推荐的命名方式——**类型前缀 + 简短描述**。看起来专业一点，维护者审 PR 时也一目了然。
+分支名我用了 `fix/route-calltool-shared-infra`，是按照项目推荐的方式起的——**类型前缀 + 简短描述**。虽然只是个名字，但总觉得起得规规矩矩的，维护者看到会愿意多瞄两眼。
 
 ---
 
 ## 三、第二步：读懂这个 PR 要修什么
 
-在动手之前，必须先搞清楚问题在哪。我花了一个下午读 `Toolkit.java` 和 `ToolExecutor.java` 的源码，终于理清楚了来龙去脉。
+在动手改代码之前，我反复提醒自己：先别急着写，先把问题搞懂。
+
+于是我花了整整一个下午，捧着 `Toolkit.java` 和 `ToolExecutor.java` 的源码慢慢啃。说实话中间有好几次都想放弃了，觉得「这都什么跟什么啊」，但还是硬着头皮一行一行读下去。终于，理清楚了来龙去脉。
 
 ### 问题：callTool 绕过了共享基础设施
 
 项目里有两个调用工具的入口：
 
 - `callTool(ToolCallParam)` —— 调用**单个**工具
-- `callTools(List<ToolUseBlock>, ...)` —— 调用**多个**工具（支持并发）
+- `callTools(List<ToolUseBlock>, ...)` —— 调用**多个**工具（还支持并发）
 
-原来的代码里，`callTools` 走了完整的基础设施流水线（调度、超时、重试、优雅关闭守卫、结果 id/name 打标），但 `callTool` 只调用了 `executor.execute(param)`——这是一个**纯核心执行**路径，没有任何超时和重试保护。
+原来的代码里，`callTools` 走了完整的基础设施流水线（调度、超时、重试、优雅关闭守卫、结果 id/name 打标），但 `callTool` 只调用了 `executor.execute(param)`——这是一个**纯核心执行**路径，什么超时啊重试啊，统统没有。
 
-这就导致两个问题：
+这就导致两个让人有点头疼的问题：
 
-1. 单个工具调用如果卡住，**没有超时机制**，整个 Agent 可能被拖死。
-2. 返回的 `ToolResultBlock` **没有打上 id 和 name**，调用方没法把结果和原始请求对应起来。
+1. 单个工具调用如果卡住了，**没有超时机制**，整个 Agent 可能就被拖死在那里了。
+2. 返回的 `ToolResultBlock` **没有打上 id 和 name**，调用方拿到结果都不知道是哪个请求返回的，怪难受的。
 
 **修复前后的调用路径对比：**
 
@@ -106,17 +118,17 @@ flowchart TB
     end
 ```
 
-> 读懂问题花的时间，比写代码花的时间还长。但这一步是绝对值得的——你改的不是「代码」，而是「理解」。
+> 读懂问题花的时间，其实比写代码花的时间还长。但现在想想，这一步真的特别值得——你改的不是「代码」，而是「理解」。理解对了，写代码反而顺了。
 
 ---
 
 ## 四、第三步：动手改代码
 
-思路很清晰：让 `callTool` 也走 `executeWithInfrastructure` 这条共享路径。但说起来简单，做起来要注意不少细节。
+思路其实很清晰：让 `callTool` 也走 `executeWithInfrastructure` 这条共享路径就好了。但说起来轻飘飘的，真动手的时候还是要小心翼翼，生怕哪里写错了。
 
 ### 4.1 Toolkit.callTool 改造
 
-原来的代码：
+原来的代码长这样：
 
 ```java
 // 旧实现
@@ -125,7 +137,7 @@ public Mono<ToolResultBlock> callTool(ToolCallParam param) {
 }
 ```
 
-改成走共享基础设施：
+我把它改成走共享基础设施：
 
 ```java
 public Mono<ToolResultBlock> callTool(ToolCallParam param) {
@@ -140,7 +152,7 @@ public Mono<ToolResultBlock> callTool(ToolCallParam param, ExecutionConfig perCa
 
 ### 4.2 提取配置合并逻辑
 
-原来 `callTools` 里有一大段「合并执行配置」的代码，优先级是 *agent 级 > toolkit 级 > 系统默认*。我把它抽成了一个私有方法 `resolveToolExecutionConfig`，这样两个入口都能用：
+我发现原来 `callTools` 里有一大段「合并执行配置」的代码，优先级是 *agent 级 > toolkit 级 > 系统默认*。这段逻辑如果两个入口各写一份，以后改起来容易漏。于是我把它抽成了一个私有方法 `resolveToolExecutionConfig`，这样两边都能用：
 
 ```java
 private ExecutionConfig resolveToolExecutionConfig(ExecutionConfig perCallConfig) {
@@ -153,11 +165,11 @@ private ExecutionConfig resolveToolExecutionConfig(ExecutionConfig perCallConfig
 
 > **DRY 原则**
 >
-> Don't Repeat Yourself（不要重复自己）。把重复的配置合并逻辑抽成一个方法，以后改优先级只需要改一处。这是我从这次 PR 里学到的最重要的编码习惯之一。
+> Don't Repeat Yourself，就是不要重复自己。把重复的逻辑抽成一个方法，以后要改优先级只需要改一处就好了。这是我从这次 PR 里学到的最重要的编码习惯之一，虽然简单，但真的很有用。
 
 ### 4.3 ToolExecutor 的重载拆分
 
-为了让 `executeWithInfrastructure` 既能被批量路径调用，也能被单工具路径调用，我把它拆成了三个重载：
+为了让 `executeWithInfrastructure` 既能被批量路径调用，也能被单工具路径调用，我把它拆成了三个重载。一开始我还担心会不会拆多了，后来想清楚了——其实就是「薄入口 + 一个真正干活的实现」，反而更清楚：
 
 | 重载签名 | 用途 |
 |---------|------|
@@ -165,25 +177,27 @@ private ExecutionConfig resolveToolExecutionConfig(ExecutionConfig perCallConfig
 | `executeWithInfrastructure(ToolCallParam, ExecutionConfig)` | 单工具直接调用，从 runtimeContext 解析 requestConfig |
 | `executeWithInfrastructure(ToolCallParam, ExecutionConfig, ToolRequestConfig, BiConsumer)` | **真正的共享实现**，前两个最终都调到这里 |
 
-这样就实现了**「单工具和批量工具走同一条基础设施流水线」**的目标。
+改完之后，**单工具和批量工具就走同一条基础设施流水线了**。看到代码跑通的那一刻，我偷偷开心了好久。
 
 ---
 
 ## 五、第四步：写测试——新手最容易忽略的一步
 
-说实话，一开始我只想改完代码就提 PR。但看了项目的贡献指南，发现必须有测试。硬着头皮写了 7 个测试用例，没想到这一步帮我发现了好几个边界问题。
+说实话，一开始我真的只想改完代码就赶紧提 PR。但翻了翻项目的贡献指南，发现必须有测试才行。我对着屏幕纠结了一会儿，还是硬着头皮开始写。
+
+没想到，写测试这一步反而帮我发现了好几个之前没注意到的边界问题。现在想想，幸好写了测试，不然提上去肯定会被打回来。
 
 ### 我写的测试覆盖了这些场景
 
 - **成功结果打标**：`callTool` 返回的结果应该带有正确的 `id` 和 `name`
-- **错误结果打标**：工具抛异常时，结果也应该带上 id/name
-- **ToolCallParam.input 优先于 ToolUseBlock.input**：确保调用方传入的 input 不会被覆盖
-- **null 配置 == 单参数重载**：传 `null` 作为 per-call 配置时行为一致
-- **per-call 配置生效**：传自定义配置后结果正常打标
-- **per-call 超时覆盖 toolkit 超时**：用一个 `SlowTool` 验证短超时被长 per-call 超时覆盖
-- **工具不存在 / 参数校验失败时打标**：异常路径也要带 id/name
+- **错误结果打标**：工具抛异常的时候，结果也应该带上 id/name
+- **ToolCallParam.input 优先于 ToolUseBlock.input**：确保调用方传进来的 input 不会被偷偷覆盖
+- **null 配置 == 单参数重载**：传 `null` 作为 per-call 配置时，行为应该和单参数版本一致
+- **per-call 配置生效**：传了自定义配置之后，结果还是能正常打标
+- **per-call 超时覆盖 toolkit 超时**：用一个 `SlowTool` 验证短超时能被更长的 per-call 超时覆盖
+- **工具不存在 / 参数校验失败时打标**：就算是异常路径，结果也要带上 id/name
 
-其中最有意思的是「超时覆盖」测试。我写了一个故意慢 300ms 的工具，给 toolkit 设了 100ms 的超时，再给 per-call 设 10 分钟超时——如果 per-call 配置正确生效，工具应该能正常返回 `"done"` 而不是超时错误。
+其中最有意思的是「超时覆盖」那个测试。我写了一个故意慢 300ms 的工具，给 toolkit 设了 100ms 的超时，再给 per-call 设 10 分钟超时——如果 per-call 配置真的生效了，工具应该能慢悠悠地返回 `"done"`，而不是被 100ms 的超时干掉。
 
 ```java
 public static class SlowTool {
@@ -195,17 +209,19 @@ public static class SlowTool {
 }
 ```
 
-> **心得**
+> **心里的话**
 >
-> 测试不是「写完代码后的负担」，而是**帮你验证理解是否正确的工具**。跑通测试的那一刻，我才真正确信自己的改动是对的。
+> 以前我总觉得测试是「写完代码之后的负担」，能不写就不写。但这次之后我才明白，测试其实是**帮你验证自己理解对不对的工具**。跑通测试的那一刻，我才真正确信：嗯，我改的是对的。那种踏实的感觉，比随便改完就提交要安心多了。
 
 ---
 
 ## 六、第五步：Commit、Push、提 PR
 
-代码和测试都跑通了，终于到了最激动人心的环节——提交！
+代码和测试都跑通了，终于到了我最紧张又最期待的环节——提交！
 
-### 6.1 查看改动
+### 6.1 先看看自己改了啥
+
+我先敲了个 `git status`，确认一下改的文件是不是都对：
 
 ```bash
 $ git status
@@ -216,9 +232,11 @@ Changes not staged for commit:
   modified:   agentscope-core/.../tool/ToolkitTest.java
 ```
 
+嗯，三个文件，和预期的一样。
+
 ### 6.2 写 Commit Message
 
-项目用的是 **Conventional Commits** 规范，格式是 `<type>(<scope>): <描述>`。我写的是：
+项目用的是 **Conventional Commits** 规范，格式是 `<type>(<scope>): <描述>`。我对着规范斟酌了好一会儿，写下了这段：
 
 ```text
 fix(core): route callTool through shared tool infrastructure
@@ -235,11 +253,13 @@ pipeline used by Toolkit.callTools(...):
 Closes #3114.
 ```
 
-> **Commit 小技巧**
+> **小小心得**
 >
-> 第一行不超过 50 个字符，空一行后写详细描述。写上 `Closes #3114`，PR 合并时 GitHub 会自动关闭对应的 Issue，非常方便。
+> 第一行尽量不要超过 50 个字符，空一行之后再写详细描述。另外写上 `Closes #3114` 很重要哦——这样 PR 合并的时候，GitHub 会自动把对应的 Issue 关掉，省得维护者还要手动去关，能帮上一点小忙我也挺开心的。
 
 ### 6.3 提交并推送
+
+深吸一口气，开始提交：
 
 ```bash
 $ git add -A
@@ -253,51 +273,61 @@ remote: Create a pull request for 'fix/...' on GitHub by visiting:
 remote:   https://github.com/KIM406-CMD/agentscope-java/pull/new/fix/...
 ```
 
+看到 `3 files changed, 210 insertions(+), 12 deletions(-)` 的时候，我居然有点小小的成就感。
+
 ### 6.4 在 GitHub 上发起 Pull Request
 
-点击终端输出的链接，就跳到了 GitHub 的 PR 创建页面。我填好标题和描述，确认 `base: main` ← `compare: fix/route-calltool-shared-infra`，点击「Create pull request」——
+我点了终端输出的那个链接，跳到了 GitHub 的 PR 创建页面。认认真真填好了标题和描述，确认 `base: main` ← `compare: fix/route-calltool-shared-infra`，然后把鼠标移到「Create pull request」按钮上……
 
-**PR #3130 就这样诞生了。** 我盯着屏幕看了好一会儿，不敢相信这是真的。
+手指悬在鼠标上停了几秒，心里默默想：真的要提交了吗？万一写错了怎么办？
+
+然后我对自己说：没事的，大不了改嘛。
+
+点了下去。
+
+**PR #3130 就这样诞生了。** 我盯着屏幕看了好一会儿，有点不敢相信——这真的是我提交的吗？
 
 ---
 
-## 七、新手踩坑清单与心得
+## 七、踩过的坑与心里的话
 
-第一次贡献并不顺利，我踩了不少坑。把它们记下来，希望能帮到和我一样的小白：
+第一次贡献说实话并不顺利，中间踩了好几个坑。我把它们都记下来了，希望能帮到和我一样有点紧张的小白：
 
-### 踩过的坑
+### 那些让我慌了一下的坑
 
-1. **忘了同步 upstream，导致 push 时冲突一堆。**
-   *解决*：提 PR 前先 `git fetch upstream && git rebase upstream/main`，把你的改动「叠」在最新代码之上。
+1. **忘了同步 upstream，push 的时候冲突一大堆。**
+   当时真的有点懵，后来才知道提 PR 之前要先 `git fetch upstream && git rebase upstream/main`，把自己的改动「叠」在最新的代码上面。学会之后就再也没踩过这个坑了。
 
-2. **Commit message 写得太随意。**
-   *解决*：严格按 Conventional Commits 写，维护者看到规范的 message 会更愿意审你的 PR。
+2. **Commit message 一开始写得很随意。**
+   后来看了项目规范才认真改。其实维护者看到规规矩矩的 message，会更愿意花时间审你的 PR——这也是对别人时间的尊重嘛。
 
-3. **没跑测试就提交。**
-   *解决*：本地一定要先 `mvn test` 跑通，CI 绿了才好意思提 PR。
+3. **没跑测试就差点提交。**
+   幸好最后忍住了。本地一定要先 `mvn test` 跑通，看到 CI 绿了再提 PR，心里才踏实。
 
-4. **一个 Commit 塞了太多不相关的改动。**
-   *解决*：保持 Commit 粒度小，一个改动一个 Commit，方便 review 和回滚。
+4. **一开始想把所有改动塞进一个 Commit 里。**
+   后来发现还是拆成小的 Commit 比较好，一个改动一个，这样 review 的人看着不累，万一要回滚也方便。
 
-### 最大的心得
+### 最想跟自己说的话
 
 > **一句话总结**
 >
-> Git 并不可怕，可怕的是「不敢开始」。只要你愿意读文档、愿意试错、愿意把 Commit message 写清楚，维护者们大多是非常友善的——他们比你更希望项目变好。
+> Git 其实没那么可怕，真正可怕的是「不敢开始」。只要你愿意翻文档、愿意试错、愿意把 Commit message 写清楚，维护者们大多都很友善——他们其实比你更希望这个项目变好。
 
-这次 PR 让我从「只会用 `git add . && git commit`」的小白，变成了能看懂分支、rebase、提 PR 的贡献者。更重要的是，我学会了**通过读源码来理解一个真实项目是怎么运作的**——这比看十篇教程都管用。
+这次 PR 之后，我从一个「只会用 `git add . && git commit`」的小白，变成了能看懂分支、会 rebase、能完整提 PR 的贡献者。但更重要的是，我学会了**通过读源码去理解一个真实项目是怎么运作的**——这比看十篇教程都管用。
 
 ---
 
 ## 八、写在最后
 
-如果你也是一个想给开源项目贡献代码但还在犹豫的小白，我的建议是：**找一个你正在用的项目，翻一翻它的 Issue 列表，挑一个你觉得「我好像能改」的，然后动手。**
+如果你也和我一样，是一个想给开源项目贡献代码、但心里一直有点打鼓的小白，我想轻轻跟你说：**别害怕，找一个你感兴趣的项目，翻一翻它的 Issue 列表，挑一个你觉得「我好像能改」的，然后动手就好了。**
 
-你的第一个 PR 不需要很完美。它可以是修一个错别字、补一行注释、改一个小 bug。重要的是**迈出第一步**。一旦你提交了第一个 PR，GitHub 这个庞大的世界就向你打开了一扇门。
+你的第一个 PR 不需要很完美的。它可以是修一个错别字、补一行注释、改一个小小的 bug。重要的是**迈出第一步**。一旦你提交了第一个 PR，GitHub 那个看起来很庞大的世界，就悄悄为你打开了一扇门。
 
-最后，感谢 AgentScope 团队维护了这么棒的项目，也感谢每一个耐心审我 PR 的维护者。
+最后，想好好感谢 AgentScope 团队维护了这么棒的项目，也感谢每一个耐心审我 PR 的维护者——你们的每一句回复，对我来说都很珍贵。
 
-这是我的第一篇博客，能坚持写完它，对我来说已经是一个小小的胜利。下一个 PR，下一篇博客，我来了。
+这是我的第一篇博客。说实话，能坚持把它写完，对我来说已经是一个小小的胜利了。心里有点暖暖的。
+
+下一个 PR，下一篇博客，我还会来的。🦀
 
 ---
 
