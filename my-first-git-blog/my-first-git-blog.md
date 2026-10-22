@@ -29,7 +29,9 @@
 
 我是一个刚学 Java 没多久的小白。最近在玩一个叫 **AgentScope** 的开源项目——它是一个用来构建分布式、生产级长时运行 Agent 的框架。我在写自己的小玩具时，发现调用单个工具的 `callTool` 方法和批量调用的 `callTools` 行为不太一样：单个调用似乎没有走超时、重试这些基础设施。
 
-我翻了翻 Issue，发现已经有人提了 [#3114](https://github.com/agentscope-ai/agentscope-java/issues/3114)。维护者回复说「欢迎提 PR」。于是我想，要不就趁这个机会，把 Git 真正用起来吧。
+我仔细排查了一下源码，确认这是一个真实存在的 bug：`callTool` 绕过了共享的工具基础设施流水线。于是我在项目仓库里**提交了人生第一个 Issue [#3114](https://github.com/agentscope-ai/agentscope-java/issues/3114)**，把问题描述清楚。维护者很快回复了我，说「欢迎提 PR 修复」。
+
+既然 issue 是我自己发现的，那不如就由我来修吧——顺便把 Git 真正用起来。
 
 > **为什么是 Git？**
 >
