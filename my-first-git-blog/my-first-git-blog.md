@@ -64,20 +64,7 @@ $ git checkout -b fix/route-calltool-shared-infra
 
 **修复前后对比：**
 
-```mermaid
-flowchart TB
-    subgraph Before["修复前"]
-        A1[callTool] --> B1[execute 纯核心路径]
-        B1 --> C1[无超时 无重试 无打标]
-        A2[callTools] --> B2[executeWithInfrastructure]
-        B2 --> C2[完整基础设施]
-    end
-    subgraph After["修复后"]
-        E1[callTool] --> G[共享基础设施流水线]
-        E2[callTools] --> G
-        G --> H[调度+超时+重试+关闭守卫+打标]
-    end
-```
+![修复前后 callTool 调用路径对比](assets/calltool-flowchart.png)
 
 > 读懂问题花的时间比写代码还长，但真的特别值得——你改的不是「代码」，而是「理解」。
 
