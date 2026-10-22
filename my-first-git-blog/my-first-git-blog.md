@@ -64,9 +64,7 @@ $ git checkout -b fix/route-calltool-shared-infra
 
 **修复前后对比：**
 
-修复前，`callTool` 直接走 `executor.execute` 纯核心路径，没有超时、重试和结果打标；而 `callTools` 走的是完整的 `executeWithInfrastructure` 基础设施流水线。修复后，`callTool` 也接入了同一条共享基础设施流水线，两个入口行为统一。
-
-（这里可以放一张修复前后调用路径对比的截图）
+![修复前后 callTool 调用路径对比](assets/calltool-flowchart.png)
 
 > 读懂问题花的时间比写代码还长，但真的特别值得——你改的不是「代码」，而是「理解」。
 

@@ -1,0 +1,53 @@
+digraph G {
+    rankdir=LR;
+    graph [fontname="Helvetica", fontsize=12, bgcolor="white", nodesep=0.4, ranksep=0.6];
+    node [fontname="Helvetica", fontsize=11, style="filled", shape="box", penwidth=1.5];
+    edge [fontname="Helvetica", fontsize=9, color="#666666", penwidth=1.2];
+
+    // ===== 修复前 =====
+    subgraph cluster_before {
+        label="修复前 (Before)";
+        labeljust="l";
+        fontsize=14;
+        fontcolor="#c0392b";
+        color="#e74c3c";
+        style="rounded";
+        bgcolor="#fdf2f2";
+        penwidth=2;
+
+        before_callTool [label="callTool(toolName,\n toolArgs)", fillcolor="#ffe0e0", color="#c0392b"];
+        before_executor [label="executor.execute(...)\n(纯核心路径)", fillcolor="#fff0e0", color="#e67e22"];
+        before_note [label="❌ 无超时控制\n❌ 无重试机制\n❌ 无结果打标\n❌ 与 callTools 行为不一致", fillcolor="#fff5f5", color="#e74c3c", shape="note"];
+
+        before_callTool -> before_executor [color="#c0392b", penwidth=2];
+        before_executor -> before_note [style="dashed", color="#c0392b"];
+    }
+
+    // ===== 修复后 =====
+    subgraph cluster_after {
+        label="修复后 (After)";
+        labeljust="l";
+        fontsize=14;
+        fontcolor="#27ae60";
+        color="#27ae60";
+        style="rounded";
+        bgcolor="#f0fdf4";
+        penwidth=2;
+
+        after_callTool [label="callTool(toolName,\n toolArgs)", fillcolor="#e0ffe0", color="#27ae60"];
+        after_executor [label="executor.executeWithInfrastructure(...)\n(共享基础设施流水线)", fillcolor="#d4f5e0", color="#27ae60"];
+        after_timeout [label="⏱ 超时控制", fillcolor="#e8f8f0", color="#16a085"];
+        after_retry [label="🔄 重试机制", fillcolor="#e8f8f0", color="#16a085"];
+        after_tag [label="🏷 结果打标", fillcolor="#e8f8f0", color="#16a085"];
+        after_note [label="✅ 与 callTools 统一行为\n✅ 共享完整基础设施", fillcolor="#f0fff0", color="#27ae60", shape="note"];
+
+        after_callTool -> after_executor [color="#27ae60", penwidth=2];
+        after_executor -> after_timeout [color="#27ae60"];
+        after_timeout -> after_retry [color="#27ae60"];
+        after_retry -> after_tag [color="#27ae60"];
+        after_tag -> after_note [style="dashed", color="#27ae60"];
+    }
+
+    // 对比箭头
+    before_executor -> after_executor [label="统一调用路径", style="bold", color="#3498db", penwidth=2.5, fontcolor="#3498db", fontsize=11];
+}

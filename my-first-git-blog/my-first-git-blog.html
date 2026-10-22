@@ -429,11 +429,7 @@
       <p>项目里有两个调用工具的入口：<code>callTool</code>（单个）和 <code>callTools</code>（批量）。原来 <code>callTools</code> 走了完整的基础设施流水线（调度、超时、重试、优雅关闭、结果 id/name 打标），但 <code>callTool</code> 只走了纯核心路径，什么保护都没有。</p>
       <p>这就导致两个问题：工具卡住没有超时会拖死整个 Agent；返回结果没有 id/name，调用方没法对应请求。</p>
       <figure class="diagram">
-        <p style="color:var(--muted);font-style:italic;padding:1rem;">
-          修复前，<code>callTool</code> 直接走 <code>executor.execute</code> 纯核心路径，没有超时、重试和结果打标；而 <code>callTools</code> 走的是完整的 <code>executeWithInfrastructure</code> 基础设施流水线。修复后，<code>callTool</code> 也接入了同一条共享基础设施流水线，两个入口行为统一。
-          <br><br>
-          <span style="color:var(--accent);">（这里可以放一张修复前后调用路径对比的截图）</span>
-        </p>
+        <img src="assets/calltool-flowchart.png" alt="修复前后 callTool 调用路径对比" style="max-width:100%;height:auto;border-radius:8px;">
         <figcaption>修复前后 callTool 调用路径对比</figcaption>
       </figure>
       <blockquote>读懂问题花的时间比写代码还长，但真的特别值得——你改的不是「代码」，而是「理解」。</blockquote>
