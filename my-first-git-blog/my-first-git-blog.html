@@ -81,7 +81,6 @@
       padding: 3rem 1.5rem 5rem;
     }
 
-    /* Header */
     .blog-header {
       text-align: center;
       padding: 2rem 0 2.5rem;
@@ -124,14 +123,13 @@
     .blog-meta span { display: inline-flex; align-items: center; gap: 0.3rem; }
     .blog-meta .dot { color: var(--accent); }
 
-    /* Sections */
-    section { margin-bottom: 3rem; }
+    section { margin-bottom: 2.8rem; }
     h2 {
       font-family: var(--font-heading);
-      font-size: 1.55rem;
+      font-size: 1.5rem;
       font-weight: 700;
       color: var(--ink);
-      margin-bottom: 1.2rem;
+      margin-bottom: 1rem;
       padding-bottom: 0.5rem;
       border-bottom: 2px solid var(--rule);
       position: relative;
@@ -145,20 +143,12 @@
     }
     h3 {
       font-family: var(--font-heading);
-      font-size: 1.18rem;
+      font-size: 1.15rem;
       font-weight: 700;
       color: var(--accent2);
-      margin: 1.8rem 0 0.8rem;
-    }
-    h4 {
-      font-family: var(--font-heading);
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--ink);
-      margin: 1.3rem 0 0.6rem;
+      margin: 1.5rem 0 0.7rem;
     }
     p { margin-bottom: 1rem; }
-    p + p { margin-top: -0.3rem; }
 
     strong { color: var(--ink); font-weight: 700; }
     mark.key {
@@ -167,11 +157,9 @@
       font-weight: 600;
       padding: 0 2px;
     }
-
     a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(194,65,12,0.3); }
     a:hover { border-bottom-color: var(--accent); }
 
-    /* Lead paragraph */
     .lead {
       font-size: 1.12rem;
       color: var(--muted);
@@ -181,13 +169,12 @@
       margin: 1.5rem 0 2rem;
     }
 
-    /* Callouts */
     .callout {
       background: rgba(194,65,12,0.06);
       border-left: 4px solid var(--accent);
       border-radius: 0 8px 8px 0;
-      padding: 1rem 1.2rem;
-      margin: 1.5rem 0;
+      padding: 0.9rem 1.1rem;
+      margin: 1.3rem 0;
     }
     .callout.teal {
       background: rgba(15,118,110,0.06);
@@ -200,22 +187,21 @@
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--accent);
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.3rem;
     }
     .callout.teal .label { color: var(--accent2); }
     .callout p:last-child { margin-bottom: 0; }
 
-    /* Code blocks */
     pre {
       background: #1e293b;
       color: #e2e8f0;
       border-radius: 10px;
-      padding: 1.1rem 1.3rem;
+      padding: 1rem 1.2rem;
       overflow-x: auto;
       font-family: var(--font-mono);
-      font-size: 0.86rem;
-      line-height: 1.65;
-      margin: 1.2rem 0;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 1rem 0;
       box-shadow: 0 4px 20px rgba(0,0,0,0.12);
     }
     code {
@@ -233,29 +219,27 @@
       padding: 0;
       font-weight: 400;
     }
-    .code-comment { color: #94a3b8; font-style: italic; }
     .code-kw { color: #f472b6; }
     .code-str { color: #86efac; }
     .code-type { color: #7dd3fc; }
     .code-fn { color: #fde047; }
 
-    /* Inline terminal */
     .terminal {
       background: #0f172a;
       border-radius: 10px;
       overflow: hidden;
-      margin: 1.2rem 0;
+      margin: 1rem 0;
       box-shadow: 0 4px 20px rgba(0,0,0,0.12);
     }
     .terminal .bar {
       background: #1e293b;
-      padding: 0.5rem 1rem;
+      padding: 0.45rem 0.9rem;
       display: flex;
       gap: 6px;
       align-items: center;
     }
     .terminal .bar span {
-      width: 12px; height: 12px; border-radius: 50%;
+      width: 11px; height: 11px; border-radius: 50%;
       display: inline-block;
     }
     .terminal .bar .r { background: #ef4444; }
@@ -264,7 +248,7 @@
     .terminal .bar .title {
       color: #94a3b8;
       font-size: 0.78rem;
-      margin-left: 0.7rem;
+      margin-left: 0.6rem;
       font-family: var(--font-mono);
     }
     .terminal pre {
@@ -274,43 +258,20 @@
       background: #0f172a;
     }
     .terminal .prompt { color: #4ade80; }
-    .terminal .cmd { color: #e2e8f0; }
     .terminal .out { color: #94a3b8; }
 
-    /* Lists */
-    ul, ol { margin: 0.8rem 0 1.2rem 1.5rem; }
-    li { margin-bottom: 0.45rem; }
+    ul, ol { margin: 0.7rem 0 1rem 1.4rem; }
+    li { margin-bottom: 0.4rem; }
     li::marker { color: var(--accent); }
 
-    /* Tables */
-    .table-wrap { overflow-x: auto; overflow-y: auto; max-height: 600px; margin: 1.2rem 0; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.92rem;
-    }
-    th, td {
-      padding: 0.7rem 1rem;
-      text-align: left;
-      border-bottom: 1px solid var(--rule);
-    }
-    th {
-      font-family: var(--font-heading);
-      background: var(--bg2);
-      color: var(--ink);
-      font-weight: 700;
-    }
-    tr:last-child td { border-bottom: none; }
-
-    /* Diagrams */
     .diagram {
-      margin: 1.8rem 0;
+      margin: 1.5rem 0;
       text-align: center;
       background: rgba(255,255,255,0.5);
       backdrop-filter: blur(8px);
       border: 1px solid var(--rule);
       border-radius: 12px;
-      padding: 1.5rem 1rem 1rem;
+      padding: 1.3rem 0.8rem 0.8rem;
     }
     .diagram .mermaid {
       display: inline-block;
@@ -320,53 +281,40 @@
     .diagram figcaption {
       font-size: 0.82rem;
       color: var(--muted);
-      margin-top: 0.8rem;
+      margin-top: 0.7rem;
       font-style: italic;
     }
 
-    /* Quote */
     blockquote {
       border-left: 3px solid var(--accent2);
-      padding: 0.3rem 0 0.3rem 1.2rem;
-      margin: 1.2rem 0;
+      padding: 0.2rem 0 0.2rem 1.1rem;
+      margin: 1.1rem 0;
       color: var(--muted);
       font-style: italic;
     }
 
-    /* Footnote marker */
-    sup a {
-      color: var(--accent);
-      text-decoration: none;
-      font-size: 0.72em;
-      font-weight: 700;
-      border-bottom: none;
-    }
-
-    /* TOC */
     .toc {
       background: rgba(255,255,255,0.5);
       backdrop-filter: blur(8px);
       border: 1px solid var(--rule);
       border-radius: 12px;
-      padding: 1.3rem 1.5rem;
-      margin-bottom: 2.5rem;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 2.2rem;
     }
     .toc h3 {
-      margin: 0 0 0.8rem;
+      margin: 0 0 0.6rem;
       color: var(--ink);
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       text-transform: uppercase;
       letter-spacing: 0.1em;
     }
-    .toc ol { margin: 0 0 0 1.2rem; }
-    .toc li { margin-bottom: 0.3rem; font-size: 0.95rem; }
+    .toc ol { margin: 0 0 0 1.1rem; }
+    .toc li { margin-bottom: 0.25rem; font-size: 0.93rem; }
     .toc a { border-bottom: none; }
-    .toc a:hover { color: var(--accent); }
 
-    /* Footer */
     footer {
-      margin-top: 3rem;
-      padding-top: 2rem;
+      margin-top: 2.5rem;
+      padding-top: 1.8rem;
       border-top: 1px solid var(--rule);
     }
     footer .sources h2 {
@@ -376,15 +324,15 @@
     }
     footer .sources h2::after { display: none; }
     footer .sources ol {
-      padding-left: 1.2rem;
+      padding-left: 1.1rem;
       font-size: 0.85rem;
       color: var(--muted);
     }
-    footer .sources li { margin-bottom: 0.5rem; overflow-wrap: break-word; word-break: break-all; }
+    footer .sources li { margin-bottom: 0.4rem; overflow-wrap: break-word; word-break: break-all; }
     footer .sources .src-title { color: var(--ink); word-break: normal; }
     footer .sources .src-url {
       display: block;
-      margin-top: 0.15rem;
+      margin-top: 0.1rem;
       font-size: 0.82rem;
       color: var(--accent);
       word-break: break-all;
@@ -394,13 +342,13 @@
       text-align: center;
       color: var(--muted);
       font-size: 0.9rem;
-      margin-top: 3rem;
+      margin-top: 2.5rem;
       font-style: italic;
     }
 
     @media (max-width: 600px) {
       article.page { padding: 1.5rem 1rem 3rem; }
-      h2 { font-size: 1.3rem; }
+      h2 { font-size: 1.25rem; }
     }
     @media print {
       body::before { display: none; }
@@ -414,407 +362,181 @@
     <header class="blog-header">
       <span class="eyebrow">新手入门 · Git 实战</span>
       <h1>我的第一次 Git 贡献：<br>从 fork 到合并 PR #3130</h1>
-      <p class="subtitle">一个编程小白第一次用 Git 给开源项目提 PR 的全过程，顺便聊聊这次 PR 到底修了什么。</p>
+      <p class="subtitle">🦀 这是我人生中的第一篇博客！记录一个编程小白第一次给开源项目提 PR 的全过程。第一次写，有点紧张，写得不好请多多包涵呀～</p>
       <div class="blog-meta">
         <span><span class="dot">●</span> 作者：KIM406-CMD</span>
         <span><span class="dot">●</span> 2026-10-23</span>
-        <span><span class="dot">●</span> 约 12 分钟阅读</span>
+        <span><span class="dot">●</span> 约 8 分钟阅读</span>
       </div>
     </header>
 
     <p class="lead">
-      说实话，第一次打开终端敲下 <code>git</code> 命令的时候，我的手心是出汗的。看着屏幕上一堆看不懂的英文，脑子里只有一个念头：「这玩意儿会不会把我电脑搞坏？」但就是在这种紧张又兴奋的状态下，我完成了人生第一个 Pull Request。
+      其实到现在我都还记得，第一次打开终端敲下 <code>git</code> 命令的时候，手心是有点出汗的。但就是在这种又紧张又有点小兴奋的状态下，我完成了人生第一个 Pull Request。
     </p>
 
     <nav class="toc">
       <h3>目录</h3>
       <ol>
-        <li><a href="#sec-1">故事的开始：我为什么要学 Git</a></li>
-        <li><a href="#sec-2">第一步：Fork 与 Clone——把项目「搬」到自己手里</a></li>
-        <li><a href="#sec-3">第二步：读懂这个 PR 要修什么</a></li>
-        <li><a href="#sec-4">第三步：动手改代码</a></li>
-        <li><a href="#sec-5">第四步：写测试——新手最容易忽略的一步</a></li>
-        <li><a href="#sec-6">第五步：Commit、Push、提 PR</a></li>
-        <li><a href="#sec-7">新手踩坑清单与心得</a></li>
+        <li><a href="#sec-1">故事的开始</a></li>
+        <li><a href="#sec-2">Fork 与 Clone：把项目搬到自己手里</a></li>
+        <li><a href="#sec-3">读懂要修什么</a></li>
+        <li><a href="#sec-4">动手改代码（和 ossmainer ai 一起）</a></li>
+        <li><a href="#sec-5">写测试</a></li>
+        <li><a href="#sec-6">Commit、Push、提 PR</a></li>
+        <li><a href="#sec-7">踩过的坑与心里的话</a></li>
         <li><a href="#sec-8">写在最后</a></li>
       </ol>
     </nav>
 
-    <!-- ===== Section 1 ===== -->
     <section id="sec-1">
-      <h2>一、故事的开始：我为什么要学 Git</h2>
-
+      <h2>一、故事的开始</h2>
       <p>
-        我是一个刚学 Java 没多久的小白。我了解到一个叫 <mark class="key">AgentScope</mark> 的开源项目——它是一个用来构建分布式、生产级长时运行 Agent 的框架。在浏览项目的 Issue 列表时，我看到了 <a href="https://github.com/agentscope-ai/agentscope-java/issues/3114" target="_blank" rel="noopener">#3114</a>，说的是 <code>callTool</code> 没有走共享的工具基础设施流水线（缺少超时、重试等保护）。维护者回复说「欢迎提 PR」。
+        我是一个刚学 Java 没多久的小白。后来了解到一个叫 <mark class="key">AgentScope</mark> 的开源项目——一个用来构建分布式、长时运行 Agent 的框架。
       </p>
       <p>
-        我正想学学 Git 怎么用，这个 issue 看起来是个不错的切入点——改动范围不大，但能完整体验从 fork 到提 PR 的全流程。于是我决定动手把它修了。
+        有一天我翻了翻项目的 Issue 列表，看到了 <a href="https://github.com/agentscope-ai/agentscope-java/issues/3114" target="_blank" rel="noopener">#3114</a>，说的是 <code>callTool</code> 没有走共享的工具基础设施流水线（缺少超时、重试等保护）。维护者回复说「欢迎提 PR」。
       </p>
-
-      <div class="callout">
-        <div class="label">为什么是 Git？</div>
-        <p>Git 是现在几乎所有开源项目的「版本控制系统」。简单说，它能记录你每一次改动，还能让一群人同时改同一份代码而不打架。GitHub 则是把 Git 仓库托管在网上的平台——你能看到全世界的开源项目，也能贡献自己的代码。</p>
-      </div>
+      <p>
+        我盯着这条回复看了好久。说实话心里有点痒痒的——我一直想学 Git，但总觉得「开源贡献」是大佬们才做的事。可这个 issue 改动范围不大，又能完整体验全流程。我咬了咬牙：要不……就试试吧。大不了搞砸了再删嘛。
+      </p>
     </section>
 
-    <!-- ===== Section 2 ===== -->
     <section id="sec-2">
-      <h2>二、第一步：Fork 与 Clone——把项目「搬」到自己手里</h2>
-
-      <p>
-        刚接触 Git 时，我搞不懂 <code>fork</code>、<code>clone</code>、<code>branch</code> 这几个词到底什么区别。后来用大白话想明白了：
-      </p>
-
+      <h2>二、Fork 与 Clone：把项目搬到自己手里</h2>
+      <p>刚开始 <code>fork</code>、<code>clone</code>、<code>branch</code> 我搞了好久才弄明白，其实没那么吓人：</p>
       <ul>
-        <li><strong>Fork</strong>：在 GitHub 上点一下「Fork」按钮，相当于在<mark class="key">你自己的账号下复制一份项目副本</mark>。原项目叫 <code>upstream</code>，你 fork 出来的叫 <code>origin</code>。</li>
-        <li><strong>Clone</strong>：把你 fork 出来的那份代码<mark class="key">下载到本地电脑</mark>，这样你就能在本地编辑了。</li>
-        <li><strong>Branch</strong>：在本地开一条「支线」来改代码，改完再合并回主线。这样改坏了也不影响主代码。</li>
+        <li><strong>Fork</strong>：在 GitHub 点一下「Fork」，在自己账号下复制一份项目副本。原项目叫 <code>upstream</code>，你的叫 <code>origin</code>。改坏了也不怕。</li>
+        <li><strong>Clone</strong>：把 fork 出来的代码下载到本地。</li>
+        <li><strong>Branch</strong>：开一条「支线」改代码，改完再合并回主线。就像打草稿，草稿废了不影响正文。</li>
       </ul>
-
-      <h3>我的操作顺序</h3>
-
+      <p>我对着教程一步一步敲：</p>
       <div class="terminal">
-        <div class="bar">
-          <span class="r"></span><span class="y"></span><span class="g"></span>
-          <span class="title">bash — zsh</span>
-        </div>
-<pre><code><span class="prompt">$</span> <span class="cmd">git clone https://github.com/KIM406-CMD/agentscope-java.git</span>
-<span class="out">Cloning into 'agentscope-java'...</span>
-
-<span class="prompt">$</span> <span class="cmd">cd agentscope-java</span>
-
-<span class="prompt">$</span> <span class="cmd">git remote add upstream https://github.com/agentscope-ai/agentscope-java.git</span>
-
-<span class="prompt">$</span> <span class="cmd">git checkout -b fix/route-calltool-shared-infra</span>
-<span class="out">Switched to a new branch 'fix/route-calltool-shared-infra'</span></code></pre>
+        <div class="bar"><span class="r"></span><span class="y"></span><span class="g"></span><span class="title">bash</span></div>
+<pre><code><span class="prompt">$</span> git clone https://github.com/KIM406-CMD/agentscope-java.git
+<span class="prompt">$</span> cd agentscope-java
+<span class="prompt">$</span> git remote add upstream https://github.com/agentscope-ai/agentscope-java.git
+<span class="prompt">$</span> git checkout -b fix/route-calltool-shared-infra</code></pre>
       </div>
-
-      <div class="callout teal">
-        <div class="label">新手小贴士</div>
-        <p>别忘了加 <code>upstream</code> 远程地址！这样以后原项目有更新，你可以用 <code>git fetch upstream &amp;&amp; git merge upstream/main</code> 把最新代码同步过来，避免提交时出现一堆冲突。</p>
+      <div class="callout">
+        <div class="label">小贴士</div>
+        <p>一定要记得加 <code>upstream</code>！不然后面提交可能会冲突一堆，到时候会慌的（别问我怎么知道的……）。</p>
       </div>
-
-      <p>
-        分支名我用了 <code>fix/route-calltool-shared-infra</code>，这是项目推荐的命名方式——<mark class="key">类型前缀 + 简短描述</mark>。看起来专业一点，维护者审 PR 时也一目了然。
-      </p>
     </section>
 
-    <!-- ===== Section 3 ===== -->
     <section id="sec-3">
-      <h2>三、第二步：读懂这个 PR 要修什么</h2>
-
-      <p>
-        在动手之前，必须先搞清楚问题在哪。我花了一个下午读 <code>Toolkit.java</code> 和 <code>ToolExecutor.java</code> 的源码，终于理清楚了来龙去脉。
-      </p>
-
-      <h3>问题：callTool 绕过了共享基础设施</h3>
-
-      <p>
-        项目里有两个调用工具的入口：
-      </p>
-      <ul>
-        <li><code>callTool(ToolCallParam)</code> —— 调用<mark class="key">单个</mark>工具</li>
-        <li><code>callTools(List&lt;ToolUseBlock&gt;, ...)</code> —— 调用<mark class="key">多个</mark>工具（支持并发）</li>
-      </ul>
-
-      <p>
-        原来的代码里，<code>callTools</code> 走了完整的基础设施流水线（调度、超时、重试、优雅关闭守卫、结果 id/name 打标），但 <code>callTool</code> 只调用了 <code>executor.execute(param)</code>——这是一个<mark class="key">纯核心执行</mark>路径，没有任何超时和重试保护。
-      </p>
-
-      <p>这就导致两个问题：</p>
-      <ol>
-        <li>单个工具调用如果卡住，<strong>没有超时机制</strong>，整个 Agent 可能被拖死。</li>
-        <li>返回的 <code>ToolResultBlock</code> <strong>没有打上 id 和 name</strong>，调用方没法把结果和原始请求对应起来。</li>
-      </ol>
-
+      <h2>三、读懂要修什么</h2>
+      <p>动手前我反复提醒自己：先别急着写，先把问题搞懂。花了一个下午啃 <code>Toolkit.java</code> 和 <code>ToolExecutor.java</code> 的源码，终于理清楚了。</p>
+      <p>项目里有两个调用工具的入口：<code>callTool</code>（单个）和 <code>callTools</code>（批量）。原来 <code>callTools</code> 走了完整的基础设施流水线（调度、超时、重试、优雅关闭、结果 id/name 打标），但 <code>callTool</code> 只走了纯核心路径，什么保护都没有。</p>
+      <p>这就导致两个问题：工具卡住没有超时会拖死整个 Agent；返回结果没有 id/name，调用方没法对应请求。</p>
       <figure class="diagram">
         <pre class="mermaid">
 flowchart TB
     subgraph Before["修复前"]
-        A1[callTool] --> B1[executor.execute]
-        B1 --> C1[executeCore 纯核心路径]
-        C1 --> D1[无超时 无重试 无 id/name 打标]
-        A2[callTools] --> B2[executor.executeAll]
-        B2 --> C2[executeWithInfrastructure]
-        C2 --> D2[调度 + 超时 + 重试 + 关闭守卫 + id/name 打标]
+        A1[callTool] --> B1[execute 纯核心路径]
+        B1 --> C1[无超时 无重试 无打标]
+        A2[callTools] --> B2[executeWithInfrastructure]
+        B2 --> C2[完整基础设施]
     end
     subgraph After["修复后"]
-        E1[callTool] --> F1[executor.executeWithInfrastructure]
-        F1 --> G1[共享基础设施流水线]
-        E2[callTools] --> F2[executor.executeAll]
-        F2 --> G1
-        G1 --> H1[调度 + 超时 + 重试 + 关闭守卫 + id/name 打标]
+        E1[callTool] --> G[共享基础设施流水线]
+        E2[callTools] --> G
+        G --> H[调度+超时+重试+关闭守卫+打标]
     end
         </pre>
-        <figcaption>图 1：修复前后 callTool 调用路径对比</figcaption>
+        <figcaption>修复前后 callTool 调用路径对比</figcaption>
       </figure>
-
-      <blockquote>
-        读懂问题花的时间，比写代码花的时间还长。但这一步是绝对值得的——你改的不是「代码」，而是「理解」。
-      </blockquote>
+      <blockquote>读懂问题花的时间比写代码还长，但真的特别值得——你改的不是「代码」，而是「理解」。</blockquote>
     </section>
 
-    <!-- ===== Section 4 ===== -->
     <section id="sec-4">
-      <h2>四、第三步：动手改代码</h2>
+      <h2>四、动手改代码（和 ossmainer ai 一起）</h2>
+      <p>思路很清晰：让 <code>callTool</code> 也走 <code>executeWithInfrastructure</code> 这条共享路径。主要改了三处：</p>
+      <ol>
+        <li><strong><code>callTool</code> 改走共享基础设施</strong>，并加了一个支持 per-call 配置的重载</li>
+        <li><strong>提取配置合并逻辑</strong>为 <code>resolveToolExecutionConfig</code> 方法（DRY 原则，别重复自己）</li>
+        <li><strong>拆分 <code>executeWithInfrastructure</code> 为三个重载</strong>，让批量和单工具路径最终都调用同一个共享实现</li>
+      </ol>
 
-      <p>
-        思路很清晰：让 <code>callTool</code> 也走 <code>executeWithInfrastructure</code> 这条共享路径。但说起来简单，做起来要注意不少细节。
-      </p>
-
-      <h3>4.1 Toolkit.callTool 改造</h3>
-
-      <p>原来的代码：</p>
-<pre><code><span class="code-comment">// 旧实现</span>
-<span class="code-kw">public</span> <span class="code-type">Mono</span>&lt;<span class="code-type">ToolResultBlock</span>&gt; <span class="code-fn">callTool</span>(<span class="code-type">ToolCallParam</span> param) {
-    <span class="code-kw">return</span> executor.<span class="code-fn">execute</span>(param);
-}</code></pre>
-
-      <p>改成走共享基础设施：</p>
-<pre><code><span class="code-kw">public</span> <span class="code-type">Mono</span>&lt;<span class="code-type">ToolResultBlock</span>&gt; <span class="code-fn">callTool</span>(<span class="code-type">ToolCallParam</span> param) {
-    <span class="code-kw">return</span> executor.<span class="code-fn">executeWithInfrastructure</span>(param, <span class="code-fn">resolveToolExecutionConfig</span>(<span class="code-kw">null</span>));
-}
-
-<span class="code-comment">// 顺便加了一个支持 per-call 配置的重载</span>
-<span class="code-kw">public</span> <span class="code-type">Mono</span>&lt;<span class="code-type">ToolResultBlock</span>&gt; <span class="code-fn">callTool</span>(<span class="code-type">ToolCallParam</span> param, <span class="code-type">ExecutionConfig</span> perCallConfig) {
-    <span class="code-kw">return</span> executor.<span class="code-fn">executeWithInfrastructure</span>(param, <span class="code-fn">resolveToolExecutionConfig</span>(perCallConfig));
-}</code></pre>
-
-      <h3>4.2 提取配置合并逻辑</h3>
-
-      <p>
-        原来 <code>callTools</code> 里有一大段「合并执行配置」的代码，优先级是 <em>agent 级 &gt; toolkit 级 &gt; 系统默认</em>。我把它抽成了一个私有方法 <code>resolveToolExecutionConfig</code>，这样两个入口都能用：
-      </p>
-
-<pre><code><span class="code-kw">private</span> <span class="code-type">ExecutionConfig</span> <span class="code-fn">resolveToolExecutionConfig</span>(<span class="code-type">ExecutionConfig</span> perCallConfig) {
-    <span class="code-type">ExecutionConfig</span> base = <span class="code-type">ExecutionConfig</span>.<span class="code-fn">mergeConfigs</span>(
-            config.<span class="code-fn">getExecutionConfig</span>(), <span class="code-type">ExecutionConfig</span>.TOOL_DEFAULTS);
-    <span class="code-kw">return</span> perCallConfig == <span class="code-kw">null</span> ? base
-            : <span class="code-type">ExecutionConfig</span>.<span class="code-fn">mergeConfigs</span>(perCallConfig, base);
-}</code></pre>
-
-      <div class="callout">
-        <div class="label">DRY 原则</div>
-        <p>Don't Repeat Yourself（不要重复自己）。把重复的配置合并逻辑抽成一个方法，以后改优先级只需要改一处。这是我从这次 PR 里学到的最重要的编码习惯之一。</p>
-      </div>
-
-      <h3>4.3 ToolExecutor 的重载拆分</h3>
-
-      <p>
-        为了让 <code>executeWithInfrastructure</code> 既能被批量路径调用，也能被单工具路径调用，我把它拆成了三个重载：
-      </p>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>重载签名</th><th>用途</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>executeWithInfrastructure(ToolUseBlock, ExecutionConfig, Agent, ...)</code></td>
-              <td>批量路径调用，从 ToolUseBlock 构造 ToolCallParam</td>
-            </tr>
-            <tr>
-              <td><code>executeWithInfrastructure(ToolCallParam, ExecutionConfig)</code></td>
-              <td>单工具直接调用，从 runtimeContext 解析 requestConfig</td>
-            </tr>
-            <tr>
-              <td><code>executeWithInfrastructure(ToolCallParam, ExecutionConfig, ToolRequestConfig, BiConsumer)</code></td>
-              <td><strong>真正的共享实现</strong>，前两个最终都调到这里</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <p>
-        改完之后，<mark class="key">单工具和批量工具就走同一条基础设施流水线了</mark>。看到代码跑通的那一刻，我偷偷开心了好久。
-      </p>
-
-      <h3>4.4 和 ossmainer ai 一起反复打磨</h3>
-
-      <p>
-        其实这些代码不是我一个人闷头写出来的。整个修改过程中，我一直和 <strong>ossmainer ai</strong> 在一起打磨——它就像一个耐心的搭档，陪着我一遍又一遍地改。
-      </p>
-      <p>
-        第一次改完，我自我感觉还挺良好的。结果把代码丢给 ossmainer ai 一看，它马上指出了好几个我没注意到的问题：这里少了个空指针判断，那里的重载顺序不太对，还有注释写得不够清楚……我当时心里有点小小的挫败，但还是老老实实照着改了。
-      </p>
-      <p>
-        改完第二轮，我以为这次总该没问题了吧？结果 ossmainer ai 又揪出了新的细节：<code>executeWithInfrastructure</code> 的可见性应该放宽，不然外部调不到；配置合并的优先级注释要写明白；还有几个边界情况没覆盖到……
-      </p>
-      <p>
-        就这样，一轮、两轮、三轮……我们来来回回改了好多次。每次我觉得「差不多了」，ossmainer ai 总能再找出一点可以更好的地方。说实话中间有几次我都有点不耐烦了，心里想「至于这么较真吗」，但改完之后回头看，又不得不承认它说得对。
-      </p>
-
+      <h3>和 ossmainer ai 一起反复打磨</h3>
+      <p>这些代码不是我一个人闷头写的。整个过程我一直和 <strong>ossmainer ai</strong> 在一起打磨——它像个耐心的搭档，陪我一遍又一遍地改。</p>
+      <p>第一次改完我自我感觉良好，结果丢给 ossmainer ai 一看，它马上指出好几个问题：空指针判断漏了、重载顺序不对、注释不清楚……我有点小挫败，但还是老老实实改了。</p>
+      <p>第二轮以为没问题了，它又揪出新细节：方法可见性要放宽、优先级注释要写明白、边界情况没覆盖……就这样一轮两轮三轮，每次我觉得「差不多了」，它总能再找出一点可以更好的地方。中间有几次我都不耐烦了，心想「至于这么较真吗」，但改完回头看，又不得不承认它说得对。</p>
       <div class="callout">
         <div class="label">和 AI 协作的小心得</div>
-        <p>AI 不会累，也不会嫌你烦，但你自己要有判断力。它提的建议不一定全都对，你要自己想清楚「为什么要这么改」，而不是无脑全收。把每一次修改都想明白，代码才真的是「你写的」，而不是「AI 写的」。</p>
+        <p>AI 不会累，但你要有判断力。它的建议不一定全对，你要想清楚「为什么这么改」，而不是无脑全收。想明白了，代码才真的是「你写的」。</p>
       </div>
-
-      <p>
-        最后一轮改完，ossmainer ai 说「这次没问题了」的时候，我长长地舒了一口气。看着干干净净的代码，心里有种说不出的踏实——因为每一行我都知道为什么要这么写。
-      </p>
+      <p>最后一轮改完，看着干干净净的代码，心里有种说不出的踏实——因为每一行我都知道为什么要这么写。</p>
     </section>
 
-    <!-- ===== Section 5 ===== -->
     <section id="sec-5">
-      <h2>五、第四步：写测试——新手最容易忽略的一步</h2>
-
-      <p>
-        说实话，一开始我真的只想改完代码就赶紧提 PR。但翻了翻项目的贡献指南，发现必须有测试才行。我对着屏幕纠结了一会儿，还是硬着头皮开始写。写测试的时候我也拉着 ossmainer ai 一起——它帮我想边界场景，我负责判断哪些是真正需要覆盖的。
-      </p>
-
-      <h3>我写的测试覆盖了这些场景</h3>
-
-      <ul>
-        <li><strong>成功结果打标</strong>：<code>callTool</code> 返回的结果应该带有正确的 <code>id</code> 和 <code>name</code></li>
-        <li><strong>错误结果打标</strong>：工具抛异常时，结果也应该带上 id/name</li>
-        <li><strong>ToolCallParam.input 优先于 ToolUseBlock.input</strong>：确保调用方传入的 input 不会被覆盖</li>
-        <li><strong>null 配置 == 单参数重载</strong>：传 <code>null</code> 作为 per-call 配置时行为一致</li>
-        <li><strong>per-call 配置生效</strong>：传自定义配置后结果正常打标</li>
-        <li><strong>per-call 超时覆盖 toolkit 超时</strong>：用一个 <code>SlowTool</code> 验证短超时被长 per-call 超时覆盖</li>
-        <li><strong>工具不存在 / 参数校验失败时打标</strong>：异常路径也要带 id/name</li>
-      </ul>
-
-      <p>其中最有意思的是「超时覆盖」测试。我写了一个故意慢 300ms 的工具，给 toolkit 设了 100ms 的超时，再给 per-call 设 10 分钟超时——如果 per-call 配置正确生效，工具应该能正常返回 <code>"done"</code> 而不是超时错误。</p>
-
-<pre><code><span class="code-kw">public static class</span> <span class="code-type">SlowTool</span> {
-    <span class="code-kw">@Tool</span>(name = <span class="code-str">"slow"</span>, description = <span class="code-str">"Delay then return done"</span>)
-    <span class="code-kw">public</span> <span class="code-type">Mono</span>&lt;<span class="code-type">String</span>&gt; <span class="code-fn">slow</span>(
-            <span class="code-kw">@ToolParam</span>(name = <span class="code-str">"delayMs"</span>) <span class="code-kw">long</span> delayMs) {
-        <span class="code-kw">return</span> <span class="code-type">Mono</span>.<span class="code-fn">delay</span>(<span class="code-type">Duration</span>.<span class="code-fn">ofMillis</span>(delayMs)).<span class="code-fn">thenReturn</span>(<span class="code-str">"done"</span>);
-    }
-}</code></pre>
-
-      <div class="callout teal">
-        <div class="label">心得</div>
-        <p>测试不是「写完代码后的负担」，而是<mark class="key">帮你验证理解是否正确的工具</mark>。跑通测试的那一刻，我才真正确信自己的改动是对的。</p>
-      </div>
+      <h2>五、写测试</h2>
+      <p>一开始我只想改完代码就提 PR，但项目要求必须有测试。我硬着头皮开始写，写测试时也拉着 ossmainer ai 一起想边界场景。</p>
+      <p>一共写了 7 个测试，覆盖了：成功/错误结果打标、input 优先级、null 配置一致性、per-call 配置生效、超时覆盖、工具不存在和参数校验失败的打标。</p>
+      <p>最有意思的是「超时覆盖」测试——写了个慢 300ms 的工具，toolkit 超时设 100ms，per-call 超时设 10 分钟，验证 per-call 配置能覆盖 toolkit 配置。</p>
+      <blockquote>以前我觉得测试是「负担」，这次才明白，测试是帮你验证理解对不对的工具。跑通的那一刻，我才真正确信改对了。</blockquote>
     </section>
 
-    <!-- ===== Section 6 ===== -->
     <section id="sec-6">
-      <h2>六、第五步：Commit、Push、提 PR</h2>
+      <h2>六、Commit、Push、提 PR</h2>
+      <p>终于到了最紧张又最期待的环节。</p>
 
-      <p>代码和测试都跑通了，终于到了最激动人心的环节——提交！</p>
-
-      <h3>6.1 查看改动</h3>
-
+      <h3>查看改动</h3>
       <div class="terminal">
-        <div class="bar">
-          <span class="r"></span><span class="y"></span><span class="g"></span>
-          <span class="title">bash — git status</span>
-        </div>
-<pre><code><span class="prompt">$</span> <span class="cmd">git status</span>
-<span class="out">On branch fix/route-calltool-shared-infra</span>
-<span class="out">Changes not staged for commit:</span>
+        <div class="bar"><span class="r"></span><span class="y"></span><span class="g"></span><span class="title">bash — git status</span></div>
+<pre><code><span class="prompt">$</span> git status
 <span class="out">  modified:   agentscope-core/.../tool/ToolExecutor.java</span>
 <span class="out">  modified:   agentscope-core/.../tool/Toolkit.java</span>
 <span class="out">  modified:   agentscope-core/.../tool/ToolkitTest.java</span></code></pre>
       </div>
 
-      <h3>6.2 写 Commit Message</h3>
-
-      <p>项目用的是 <mark class="key">Conventional Commits</mark> 规范，格式是 <code>&lt;type&gt;(&lt;scope&gt;): &lt;描述&gt;</code>。我写的是：</p>
-
+      <h3>写 Commit Message</h3>
+      <p>按 <strong>Conventional Commits</strong> 规范写的：</p>
 <pre><code><span class="code-kw">fix</span>(core): route callTool through shared tool infrastructure
 
 Route <span class="code-type">Toolkit</span>.<span class="code-fn">callTool</span>(<span class="code-type">ToolCallParam</span>) through the same infrastructure
-pipeline used by <span class="code-type">Toolkit</span>.<span class="code-fn">callTools</span>(...):
-
-- scheduling
-- timeout
-- retry
-- graceful shutdown guard
-- final ToolResult id/name stamping
+pipeline used by <span class="code-type">Toolkit</span>.<span class="code-fn">callTools</span>(...): scheduling, timeout, retry,
+graceful shutdown guard, final ToolResult id/name stamping.
 
 Closes <span class="code-str">#3114</span>.</code></pre>
-
       <div class="callout">
-        <div class="label">Commit 小技巧</div>
-        <p>第一行不超过 50 个字符，空一行后写详细描述。写上 <code>Closes #3114</code>，PR 合并时 GitHub 会自动关闭对应的 Issue，非常方便。</p>
+        <div class="label">小技巧</div>
+        <p>第一行不超 50 字符，写 <code>Closes #3114</code> 能让 PR 合并时自动关闭 Issue。</p>
       </div>
 
-      <h3>6.3 提交并推送</h3>
-
+      <h3>提交并推送</h3>
       <div class="terminal">
-        <div class="bar">
-          <span class="r"></span><span class="y"></span><span class="g"></span>
-          <span class="title">bash — commit &amp; push</span>
-        </div>
-<pre><code><span class="prompt">$</span> <span class="cmd">git add -A</span>
-
-<span class="prompt">$</span> <span class="cmd">git commit -m "fix(core): route callTool through shared tool infrastructure"</span>
-<span class="out">[fix/route-calltool-shared-infra a1b2c3d] fix(core): ...</span>
+        <div class="bar"><span class="r"></span><span class="y"></span><span class="g"></span><span class="title">bash — commit &amp; push</span></div>
+<pre><code><span class="prompt">$</span> git add -A
+<span class="prompt">$</span> git commit -m "fix(core): route callTool through shared tool infrastructure"
 <span class="out"> 3 files changed, 210 insertions(+), 12 deletions(-)</span>
-
-<span class="prompt">$</span> <span class="cmd">git push -u origin fix/route-calltool-shared-infra</span>
-<span class="out">remote: Create a pull request for 'fix/...' on GitHub by visiting:</span>
-<span class="out">remote:   https://github.com/KIM406-CMD/agentscope-java/pull/new/fix/...</span></code></pre>
+<span class="prompt">$</span> git push -u origin fix/route-calltool-shared-infra</code></pre>
       </div>
 
-      <h3>6.4 在 GitHub 上发起 Pull Request</h3>
-
-      <p>
-        点击终端输出的链接，就跳到了 GitHub 的 PR 创建页面。我填好标题和描述，确认 <code>base: main</code> ← <code>compare: fix/route-calltool-shared-infra</code>，点击「Create pull request」——
-      </p>
-
-      <p>
-        <strong>PR #3130 就这样诞生了。</strong> 我盯着屏幕看了好一会儿，不敢相信这是真的。
-      </p>
+      <h3>发起 PR</h3>
+      <p>点终端里的链接跳到 GitHub，填好标题描述，鼠标悬在「Create pull request」上停了几秒——真的要提交了吗？万一写错了怎么办？</p>
+      <p>然后我对自己说：没事的，大不了改嘛。</p>
+      <p>点了下去。<strong>PR #3130 就这样诞生了。</strong></p>
     </section>
 
-    <!-- ===== Section 7 ===== -->
     <section id="sec-7">
-      <h2>七、新手踩坑清单与心得</h2>
-
-      <p>第一次贡献并不顺利，我踩了不少坑。把它们记下来，希望能帮到和我一样的小白：</p>
-
-      <h3>踩过的坑</h3>
-
+      <h2>七、踩过的坑与心里的话</h2>
+      <p>第一次贡献踩了不少坑，记下来希望能帮到同样紧张的小白：</p>
       <ol>
-        <li>
-          <strong>忘了同步 upstream，导致 push 时冲突一堆。</strong><br>
-          <em>解决</em>：提 PR 前先 <code>git fetch upstream &amp;&amp; git rebase upstream/main</code>，把你的改动「叠」在最新代码之上。
-        </li>
-        <li>
-          <strong>Commit message 写得太随意。</strong><br>
-          <em>解决</em>：严格按 Conventional Commits 写，维护者看到规范的 message 会更愿意审你的 PR。
-        </li>
-        <li>
-          <strong>没跑测试就提交。</strong><br>
-          <em>解决</em>：本地一定要先 <code>mvn test</code> 跑通，CI 绿了才好意思提 PR。
-        </li>
-        <li>
-          <strong>一个 Commit 塞了太多不相关的改动。</strong><br>
-          <em>解决</em>：保持 Commit 粒度小，一个改动一个 Commit，方便 review 和回滚。
-        </li>
+        <li><strong>忘了同步 upstream</strong> → 提 PR 前先 <code>git fetch upstream &amp;&amp; git rebase upstream/main</code></li>
+        <li><strong>Commit message 太随意</strong> → 按规范写，是对维护者时间的尊重</li>
+        <li><strong>差点没跑测试就提交</strong> → 本地 <code>mvn test</code> 跑通再提，心里才踏实</li>
+        <li><strong>想把所有改动塞一个 Commit</strong> → 拆成小 Commit，review 不累，回滚也方便</li>
       </ol>
-
-      <h3>最大的心得</h3>
-
-      <div class="callout teal">
-        <div class="label">一句话总结</div>
-        <p>Git 并不可怕，可怕的是「不敢开始」。只要你愿意读文档、愿意试错、愿意把 Commit message 写清楚，维护者们大多是非常友善的——他们比你更希望项目变好。</p>
-      </div>
-
-      <p>
-        这次 PR 让我从「只会用 <code>git add . &amp;&amp; git commit</code>」的小白，变成了能看懂分支、rebase、提 PR 的贡献者。更重要的是，我学会了<mark class="key">通过读源码来理解一个真实项目是怎么运作的</mark>——这比看十篇教程都管用。
-      </p>
+      <blockquote>Git 其实没那么可怕，可怕的是「不敢开始」。维护者们大多很友善，他们比你更希望项目变好。</blockquote>
     </section>
 
-    <!-- ===== Section 8 ===== -->
     <section id="sec-8">
       <h2>八、写在最后</h2>
-
-      <p>
-        如果你也是一个想给开源项目贡献代码但还在犹豫的小白，我的建议是：<strong>找一个你正在用的项目，翻一翻它的 Issue 列表，挑一个你觉得「我好像能改」的，然后动手。</strong>
-      </p>
-      <p>
-        你的第一个 PR 不需要很完美。它可以是修一个错别字、补一行注释、改一个小 bug。重要的是<mark class="key">迈出第一步</mark>。一旦你提交了第一个 PR，GitHub 这个庞大的世界就向你打开了一扇门。
-      </p>
-      <p>
-        最后，感谢 AgentScope 团队维护了这么棒的项目，也感谢每一个耐心审我 PR 的维护者。下一个 PR，我来了。
-      </p>
+      <p>如果你也想给开源项目贡献代码但心里打鼓，我想轻轻跟你说：<strong>别害怕，找个感兴趣的项目，翻一翻 Issue，挑一个「我好像能改」的，动手就好了。</strong></p>
+      <p>第一个 PR 不需要完美。修个错别字、补行注释、改个小 bug 都行。重要的是迈出第一步。</p>
+      <p>感谢 AgentScope 团队，也感谢每一个审我 PR 的维护者——你们的每一句回复对我都很珍贵。</p>
+      <p>这是我的第一篇博客，能坚持写完对我来说已经是小小的胜利了。心里有点暖暖的。</p>
+      <p>下一个 PR，下一篇博客，我还会来的。🦀</p>
     </section>
 
     <p class="end-mark">— 全文完 —</p>
@@ -824,15 +546,15 @@ Closes <span class="code-str">#3114</span>.</code></pre>
         <h2>参考链接</h2>
         <ol>
           <li id="cite-1">
-            <span class="src-title">GitHub Pull Request #3130 — fix(core): route callTool through shared tool infrastructure</span>
+            <span class="src-title">PR #3130 — fix(core): route callTool through shared tool infrastructure</span>
             <a class="src-url" href="https://github.com/agentscope-ai/agentscope-java/pull/3130" target="_blank" rel="noopener">https://github.com/agentscope-ai/agentscope-java/pull/3130</a>
           </li>
           <li id="cite-2">
-            <span class="src-title">GitHub Issue #3114 — callTool does not route through shared tool infrastructure</span>
+            <span class="src-title">Issue #3114</span>
             <a class="src-url" href="https://github.com/agentscope-ai/agentscope-java/issues/3114" target="_blank" rel="noopener">https://github.com/agentscope-ai/agentscope-java/issues/3114</a>
           </li>
           <li id="cite-3">
-            <span class="src-title">AgentScope Java 官方仓库</span>
+            <span class="src-title">AgentScope Java 仓库</span>
             <a class="src-url" href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">https://github.com/agentscope-ai/agentscope-java</a>
           </li>
           <li id="cite-4">
