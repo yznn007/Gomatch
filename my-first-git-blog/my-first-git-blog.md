@@ -27,7 +27,7 @@
 
 ## 一、故事的开始：我为什么要学 Git
 
-我是一个刚学 Java 没多久的小白。最近在玩一个叫 **AgentScope** 的开源项目——它是一个用来构建分布式、生产级长时运行 Agent 的框架。在浏览项目的 Issue 列表时，我看到了 [#3114](https://github.com/agentscope-ai/agentscope-java/issues/3114)，说的是 `callTool` 没有走共享的工具基础设施流水线（缺少超时、重试等保护）。维护者回复说「欢迎提 PR」。
+我是一个刚学 Java 没多久的小白。我了解到一个叫 **AgentScope** 的开源项目——它是一个用来构建分布式、生产级长时运行 Agent 的框架。在浏览项目的 Issue 列表时，我看到了 [#3114](https://github.com/agentscope-ai/agentscope-java/issues/3114)，说的是 `callTool` 没有走共享的工具基础设施流水线（缺少超时、重试等保护）。维护者回复说「欢迎提 PR」。
 
 我正想学学 Git 怎么用，这个 issue 看起来是个不错的切入点——改动范围不大，但能完整体验从 fork 到提 PR 的全流程。于是我决定动手把它修了。
 
